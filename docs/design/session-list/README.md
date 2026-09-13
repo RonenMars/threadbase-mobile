@@ -54,6 +54,36 @@ This brief was written from a read of `main` a day earlier. A verification pass 
 4. **Eyebrows use the existing mono stack.** There is no JetBrains Mono in the bundle — mono today is `Platform.OS === 'ios' ? 'Menlo' : 'monospace'` (`SessionCard.tsx:270`). Use that. **Do not add a font dependency for an eyebrow.**
 5. **The existing row settings win where they overlap.** `stores/settings.ts:61-65` already ships `rowTitleSource`, `rowPreviewMode`, `rowDensity`, `rowPathDisplay`, `rowServerIndicator`. Resolution: **adaptive density replaces `rowDensity`** (delete it — state decides height, not a preference); **`rowPreviewMode` survives** as the subtitle on/off control and is what the title pipeline's subtitle step reads; **retire `rowTitleSource` and `aiGeneratedNames`**, which have no consumer outside `app/settings.tsx`.
 
+### PR 5 correction — the wash, and "keep glass on chrome"
+
+A second audit pass found the canvas wash: **two full-screen `expo-linear-gradient` layers at `app/_layout.tsx:503-531`**, drawn whenever `isGlass` is true, showing through because the nav theme, the stack content style and the sessions screen container are all transparent. Dropping the `GlassCard` route does **not** remove it. On `main` the session cards are already see-through, and **neither the header nor the FAB has glass today**.
+
+Three consequences:
+
+1. **PR 5 is the app-wide cut** (revised — see the addendum below). Originally scoped to four files on the sessions screen: `app/index.tsx` paints `bg.primary` on the container and drops the conversation-card transparency; `SessionCard.tsx` drops its transparent variant and inert `GlassFill`; `Card.tsx` drops the `GlassCard` branch; `GlassCard.tsx` is deleted. The gradient stays behind every other screen. Flattening the whole app is a separate design call, like the canvas-darkening one already deferred.
+2. **"Keep glass on chrome" is additive work — remove it from PR 5.** Sequence it after PR 6, which ships the header anyway, and **gate it on measurement**: blurred chrome over a `FlashList` is the classic jank site, and every contrast gain in this brief comes from the flat canvas plus opaque cards. If it costs frames on the oldest supported device, don't ship it. The design does not depend on it.
+3. **Two defects for their own issues, not for PR 5:**
+   - `useIsGlass()` has returned true for every theme since #924, so all fifteen themes — Solarized Light, One Light, Catppuccin Latte, Rosé Pine Dawn included — are painted with a blue gradient. The glass theme is not a choice anyone is making.
+   - The wash **ignores Reduce Transparency**. `GlassView` honours it and falls back to opaque `bg.secondary`; a `LinearGradient` does not. A user who asked the OS for less translucency still gets two translucent full-screen layers. This is the stronger case for removing them app-wide than the contrast measurement below.
+
+Note for anyone diffing against `screenshots/01-today-classic-annotated.png`: it recreates the user's build, where cards read as solid. On `main` they are see-through.
+
+#### Addendum — PR 5 goes app-wide
+
+A separate session on 2026-09-06, working from a photo of a "dark rectangle" on the homepage, traced the **same** gradient. The second full-screen layer ran from (0.1, 0) to (0.9, 0.55); past its endpoints a gradient clamps to a solid colour rather than fading, so on a tall phone it produced a solid tinted block top-left and a solid untinted block across the lower 45% — the hard edge in the photo. That session stretched the endpoint to (1,1), left the edit uncommitted in a `homepage-bg-fix` worktree, and never opened a PR.
+
+**Scope is therefore app-wide:** delete both gradients in `app/_layout.tsx:503-531`, set the nav background to `bg.primary`, plus the four sessions-screen files, and update the one test asserting a transparent nav background. Remove the `homepage-bg-fix` worktree — it has nothing committed, and its only edit repairs a gradient this PR deletes.
+
+Why this overrides the scope-discipline argument:
+
+- The defect is **visible and user-reported**, not just measurable. A sessions-screen-only fix leaves a hard-edged rectangle on every other screen and a half-finished fix rotting in a worktree — two open bugs where there was one.
+- **Two independent investigations found the same 28 lines in one week**, from unrelated starting points.
+- It **converges the app on the onboarding palette**, which the user has already said reads as more dominant and higher-contrast than the list screens. Onboarding is flat near-black with no wash; flattening the nav and header screens moves the rest of the app toward the part that already works.
+
+**Accept one consequence deliberately:** after this the app has no glass anywhere. Flat dark and high contrast is a defensible place to land. If the Apple Glass identity is still wanted, it returns **after PR 6**, as chrome only (header, sheet, action pill), gated on a frame measurement on the oldest supported device — never on content.
+
+The `useIsGlass()` issue stays open: it still mis-routes `GlassCard` and `GlassSheet` on settings surfaces, which this PR does not touch. The Reduce Transparency issue closes with the gradients.
+
 ### Factual corrections
 
 - **Use `isPresentationLive` (`lib/sessionPresentation.ts:389`), not the expression in this brief.** Mine drops `orphaned` — which `sessionPhase` treats as live — and drops the older-server fallback. There are 13 status-based gates to replace; the audit lists them. The rows in the LIVE block already return `live: false`; they appear there only because the header covers every session.
