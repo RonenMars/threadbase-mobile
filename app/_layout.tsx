@@ -16,7 +16,6 @@ import {
 } from 'expo-router'
 import { CaretLeft } from 'phosphor-react-native'
 import { StatusBar } from 'expo-status-bar'
-import { LinearGradient } from 'expo-linear-gradient'
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { queryClient, queryPersister, persistBuster, shouldPersistQuery } from '@/services/query-client'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -397,14 +396,15 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
   const { t } = useTranslation(['common', 'browse', 'settings', 'sessions'])
   // expo-router 57.0.4 paints the native screen container with the
   // react-navigation theme's `colors.background`. Its default is opaque light
-  // grey, which covers our glass gradient backdrop. Feed it a transparent
-  // background under glass (theme.bg.primary otherwise) so the gradient shows.
+  // grey; feed it the palette's canvas. The canvas is flat on every theme —
+  // the old gradient backdrop cost up to 1.7:1 of secondary-text contrast by
+  // scroll position (docs/design/session-list/README.md).
   const navBase = theme.colorMode === 'light' ? NavDefaultTheme : NavDarkTheme
   const navTheme = {
     ...navBase,
     colors: {
       ...navBase.colors,
-      background: isGlass ? 'transparent' : theme.bg.primary,
+      background: theme.bg.primary,
     },
   }
   // A transparent header leaves screen content laid out from y=0, behind the
@@ -419,7 +419,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         headerTransparent,
         headerTintColor: theme.text.primary,
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: isGlass ? 'transparent' : theme.bg.primary },
+        contentStyle: { backgroundColor: theme.bg.primary },
         animation: isRTL ? 'slide_from_left' : undefined,
         // Native stack headerLeft stays on the I18nManager leading edge;
         // Yoga direction cannot move it. Mirror the caret so the icon at
@@ -500,42 +500,8 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
     </Stack>
   )
 
-  if (isGlass) {
-    return (
-      <NavThemeProvider value={navTheme}>
-        <View style={styles.flex}>
-          {/* Each palette supplies the backdrop sampled by the native material. */}
-          <LinearGradient
-            colors={[
-              theme.bg.primary,
-              theme.bg.secondary,
-              `${theme.text.accent}55`,
-              theme.bg.primary,
-            ]}
-            locations={[0, 0.38, 0.68, 1]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          {/* A low-opacity accent lift gives the material depth without tinting it. */}
-          <LinearGradient
-            colors={[`${theme.text.accent}26`, 'transparent']}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.9, y: 0.55 }}
-            style={StyleSheet.absoluteFill}
-          />
-          {stack}
-        </View>
-      </NavThemeProvider>
-    )
-  }
-
   return <NavThemeProvider value={navTheme}>{stack}</NavThemeProvider>
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-})
 
 function ThemedStatusBar() {
   const theme = useTheme()
