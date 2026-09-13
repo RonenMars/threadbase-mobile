@@ -21,3 +21,7 @@ type Story = StoryObj<typeof SplashAnimation>
 export const InsideRTLLayout: Story = {
   args: { onComplete: () => undefined },
 }
+
+export const ReturningLaunchFade: Story = {
+  args: { onComplete: () => undefined, variant: 'fade' },
+}

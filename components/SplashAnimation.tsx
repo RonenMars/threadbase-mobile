@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { THREAD_LINES, LINE_GAP } from './MatrixRain'
 import { P5_START } from './RainAndSweep'
-import { View, StyleSheet, useWindowDimensions } from 'react-native'
+import { Platform, View, StyleSheet, useWindowDimensions } from 'react-native'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -36,8 +36,16 @@ const P4_START = 2500    // vertical line exit
 const P4_DURATION = 500  // vertical line exit duration
 
 
+const FADE_DURATION = 300
+
 interface Props {
   onComplete: () => void
+  /**
+   * `full` plays the logo intro. `fade` dissolves a plain background, covering
+   * the onboarding/Hub redirect without the animation. `hold` shows the plain
+   * background and waits, while the caller is still deciding between the two.
+   */
+  variant?: 'full' | 'fade' | 'hold'
 }
 
 function ThreadLine({
@@ -114,7 +122,7 @@ function ThreadLine({
 }
 
 
-export function SplashAnimation({ onComplete }: Props) {
+export function SplashAnimation({ onComplete, variant = 'full' }: Props) {
   const { width: screenWidth } = useWindowDimensions()
   const nodeLeft = screenWidth * 0.32
   const lineLeft = nodeLeft + NODE_SIZE / 2 + 8
@@ -134,6 +142,14 @@ export function SplashAnimation({ onComplete }: Props) {
   const containerOpacity = useSharedValue(1)
 
   useEffect(() => {
+    if (variant === 'hold') return
+    if (variant === 'fade') {
+      containerOpacity.value = withTiming(0, { duration: FADE_DURATION }, (finished) => {
+        if (finished) runOnJS(onComplete)()
+      })
+      return
+    }
+
     vLineHeight.value = withTiming(totalHeight, {
       duration: P1_DURATION,
       easing: Easing.out(Easing.cubic),
@@ -168,7 +184,7 @@ export function SplashAnimation({ onComplete }: Props) {
     )
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [variant])
 
   const containerAnimStyle = useAnimatedStyle(() => ({
     opacity: containerOpacity.value,
@@ -187,39 +203,43 @@ export function SplashAnimation({ onComplete }: Props) {
 
   return (
     <Animated.View pointerEvents="none" style={[styles.container, containerAnimStyle]}>
-      {/* Vertical line */}
-      <Animated.View
-        style={[
-          styles.verticalLine,
-          {
-            left: nodeLeft + NODE_SIZE / 2 - VERTICAL_LINE_WIDTH / 2,
-          },
-          vLineStyle,
-        ]}
-      />
-
-      {/* Thread lines group */}
-      <View style={styles.threadGroup}>
-        {THREAD_LINES.map((line, i) => (
-          <ThreadLine
-            key={i}
-            index={i}
-            widthPct={line.widthPct}
-            color={line.color}
-            nodeColor={line.nodeColor}
-            nodeLeft={nodeLeft}
-            lineLeft={lineLeft}
-            screenWidth={screenWidth}
+      {variant === 'full' && (
+        <>
+          {/* Vertical line */}
+          <Animated.View
+            style={[
+              styles.verticalLine,
+              {
+                left: nodeLeft + NODE_SIZE / 2 - VERTICAL_LINE_WIDTH / 2,
+              },
+              vLineStyle,
+            ]}
           />
-        ))}
 
-        {/* Text */}
-        {/* eslint-disable-next-line i18next/no-literal-string */}
-        <Animated.Text style={[styles.brandText, textAnimStyle]}>
-          Threadbase
-        </Animated.Text>
+          {/* Thread lines group */}
+          <View style={styles.threadGroup}>
+            {THREAD_LINES.map((line, i) => (
+              <ThreadLine
+                key={i}
+                index={i}
+                widthPct={line.widthPct}
+                color={line.color}
+                nodeColor={line.nodeColor}
+                nodeLeft={nodeLeft}
+                lineLeft={lineLeft}
+                screenWidth={screenWidth}
+              />
+            ))}
 
-      </View>
+            {/* Text */}
+            {/* eslint-disable-next-line i18next/no-literal-string */}
+            <Animated.Text style={[styles.brandText, textAnimStyle]}>
+              Threadbase
+            </Animated.Text>
+
+          </View>
+        </>
+      )}
     </Animated.View>
   )
 }
@@ -227,7 +247,10 @@ export function SplashAnimation({ onComplete }: Props) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    direction: 'ltr',
+    // Pins the logo LTR under an RTL locale on native. React Native Web rejects
+    // `direction` with a console error, and needs no pin: every piece is placed
+    // by an absolute `left`, which the web renderer never mirrors.
+    ...(Platform.OS === 'web' ? null : { direction: 'ltr' as const }),
     backgroundColor: COLORS.bg,
     justifyContent: 'center',
     zIndex: 9999,
