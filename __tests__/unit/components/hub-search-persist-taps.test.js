@@ -28,7 +28,7 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', '..', '..');
 
 const SEARCH_RESULT_LISTS = [
-  'app/index.tsx',
+  'components/sessions/now/NowList.tsx',
   'components/sessions/tree/TreeSessionsList.tsx',
   'components/sessions/hub/ProjectHubList.tsx',
 ];

@@ -267,10 +267,6 @@ export default function SettingsScreen() {
     setColorScheme,
     autoNameFromMessage,
     setAutoNameFromMessage,
-    aiGeneratedNames,
-    setAiGeneratedNames,
-    rowDensity,
-    setRowDensity,
     rowPreviewMode,
     setRowPreviewMode,
     rowPathDisplay,
@@ -622,8 +618,6 @@ await refreshServerInfo(serverId)
           <GlassFill material />
           <SettingsRow label={t('sessionNaming.autoNameFromMessage')} value={autoNameFromMessage} onValueChange={setAutoNameFromMessage} />
           <Text style={s.rowNote}>{t('sessionNaming.autoNameNote')}</Text>
-          <SettingsRow label={t('sessionNaming.aiGeneratedNames')} value={aiGeneratedNames} onValueChange={setAiGeneratedNames} />
-          <Text style={s.rowNote}>{t('sessionNaming.aiGeneratedNote')}</Text>
         </View>
 
         <SectionHeader title={t('section.session')} />
@@ -690,23 +684,6 @@ await refreshServerInfo(serverId)
         <SectionHeader title={t('conversationRows.title')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill material />
-          <View style={s.row}>
-            <Text style={s.rowLabel}>{t('conversationRows.density')}</Text>
-            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <TouchableOpacity
-                style={[s.segmentBtn, rowDensity === 'comfortable' && s.segmentBtnActive]}
-                onPress={() => setRowDensity('comfortable')}
-              >
-                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowDensity === 'comfortable' && s.segmentBtnTextActive]}>{t('conversationRows.comfortable')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.segmentBtn, rowDensity === 'compact' && s.segmentBtnActive]}
-                onPress={() => setRowDensity('compact')}
-              >
-                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, rowDensity === 'compact' && s.segmentBtnTextActive]}>{t('conversationRows.compact')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
           <View style={s.row}>
             <Text style={s.rowLabel}>{t('conversationRows.messagePreview')}</Text>
             <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
