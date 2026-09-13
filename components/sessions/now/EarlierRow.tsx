@@ -22,8 +22,9 @@ interface Props {
   onLongPressConversation?: (conv: MultiConversation) => void
 }
 
-function SessionEarlierRow({ session, title, isFirst, highlight, previewMode, dominantProvider }: {
+function SessionEarlierRow({ session, ms, title, isFirst, highlight, previewMode, dominantProvider }: {
   session: MultiSession
+  ms: number
   title: string
   isFirst?: boolean
   highlight?: string
@@ -38,7 +39,7 @@ function SessionEarlierRow({ session, title, isFirst, highlight, previewMode, do
     <ConversationListItem
       testID={isFirst ? 'first-session-card' : `session-row-${session.id}`}
       title={title}
-      timestamp={session.completedAt ?? session.startedAt}
+      timestamp={ms}
       tier={tier}
       lastOutput={session.lastOutput || null}
       serverLabel={session.serverLabel}
@@ -58,8 +59,9 @@ function SessionEarlierRow({ session, title, isFirst, highlight, previewMode, do
   )
 }
 
-function ConversationEarlierRow({ conv, title, highlight, previewMode, dominantProvider, onLongPress }: {
+function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, dominantProvider, onLongPress }: {
   conv: MultiConversation
+  ms: number
   title: string
   highlight?: string
   previewMode: MessagePreviewMode
@@ -79,7 +81,7 @@ function ConversationEarlierRow({ conv, title, highlight, previewMode, dominantP
     <ConversationListItem
       testID={`conversation-row-${conv.id}`}
       title={title}
-      timestamp={conv.lastMessage?.timestamp ?? conv.lastActivity}
+      timestamp={ms}
       firstMessage={conv.firstMessage}
       lastMessage={conv.lastMessage}
       preview={conv.preview}
@@ -101,7 +103,11 @@ function ConversationEarlierRow({ conv, title, highlight, previewMode, dominantP
   )
 }
 
-/** A history row in the Now list: title, one subtitle line, clock stamp. Two lines, no card. */
+/**
+ * A history row in the Now list: title, one subtitle line, clock stamp. Two lines, no card.
+ * The stamp is `item.ms`, the same clock NowList buckets by, so a row can never sit under
+ * EARLIER TODAY while showing last week's date.
+ */
 export function EarlierRow({ item, title, isFirst, highlight, dominantProvider, onLongPressConversation }: Props) {
   const rowPreviewMode = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewMode === 'off' ? 'none' : rowPreviewMode
@@ -109,6 +115,7 @@ export function EarlierRow({ item, title, isFirst, highlight, dominantProvider, 
     return (
       <SessionEarlierRow
         session={item.item}
+        ms={item.ms}
         title={title}
         isFirst={isFirst}
         highlight={highlight}
@@ -120,6 +127,7 @@ export function EarlierRow({ item, title, isFirst, highlight, dominantProvider, 
   return (
     <ConversationEarlierRow
       conv={item.item}
+      ms={item.ms}
       title={title}
       highlight={highlight}
       previewMode={previewMode}

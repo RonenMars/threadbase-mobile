@@ -25,6 +25,25 @@ describe('cleanFirstMessage', () => {
     ).toBe('Rename the helper please')
   })
 
+  it('strips an unclosed injected tag to the end, as the streamer cuts session names at 80 chars', () => {
+    expect(cleanFirstMessage('<user_action> <action>review</action> <results>')).toBe('')
+  })
+
+  it('rejects a whole-message Codex injected context', () => {
+    expect(cleanFirstMessage('# AGENTS.md instructions for tb-mobile\n\nAlways run lint first')).toBe('')
+  })
+
+  it('strips bash tool blocks with their bodies', () => {
+    expect(cleanFirstMessage('<bash-input>git pull</bash-input>')).toBe('')
+    expect(cleanFirstMessage('<bash-input>git pull</bash-input><bash-stdout>Already up to date.</bash-stdout> why no change')).toBe(
+      'Why no change',
+    )
+  })
+
+  it('keeps the slash of a closing tag through the path pass', () => {
+    expect(cleanFirstMessage('fix the </system-reminder> handling please')).toBe('Fix the </system-reminder> handling please')
+  })
+
   it('strips JSON blobs', () => {
     expect(cleanFirstMessage('parse this payload {"a": [1, 2], "b": {"c": null}} for me')).toBe(
       'Parse this payload for me',
