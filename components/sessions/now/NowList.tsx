@@ -276,7 +276,7 @@ export const NowList = React.memo(function NowList({
         {...inset.props}
         ListHeaderComponent={
           // The header is full-bleed; undo the row gutter around it.
-          ListHeaderComponent ? <View style={{ marginHorizontal: -(spacing.sm + 2) }}>{ListHeaderComponent}</View> : null
+          ListHeaderComponent ? <View style={{ marginHorizontal: -(spacing.sm + 2), paddingTop: spacing.xs }}>{ListHeaderComponent}</View> : null
         }
         contentContainerStyle={[
           {
@@ -288,7 +288,12 @@ export const NowList = React.memo(function NowList({
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.text.secondary}
+            progressViewOffset={inset.progressViewOffset}
+          />
         }
         ListEmptyComponent={
           <View style={{ flex: 1 }}>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Text } from 'react-native'
+import { StyleSheet, Text } from 'react-native'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
@@ -137,8 +137,9 @@ describe('NowList', () => {
       ListHeaderComponent: <Text>QUICK ACCESS</Text>,
     })
     expect(getByText('QUICK ACCESS')).toBeTruthy()
-    // jest-expo runs as iOS, where the chrome height becomes a content inset.
-    expect(getByTestId('now-list-scroll').props.contentInset).toEqual({ top: 120 })
+    const list = getByTestId('now-list-scroll')
+    expect(StyleSheet.flatten(list.props.contentContainerStyle).paddingTop).toBe(120)
+    expect(list.props.scrollIndicatorInsets).toEqual({ top: 120 })
   })
 
   it('keeps two rejected titles as plain rows', async () => {

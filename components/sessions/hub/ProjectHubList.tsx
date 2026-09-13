@@ -379,10 +379,15 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           {...inset.props}
           ListHeaderComponent={
             // The header is full-bleed; undo the card gutter around it.
-            ListHeaderComponent ? <View style={{ marginHorizontal: -spacing.sm }}>{ListHeaderComponent}</View> : null
+            ListHeaderComponent ? <View style={{ marginHorizontal: -spacing.sm, paddingTop: spacing.xs }}>{ListHeaderComponent}</View> : null
           }
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.text.secondary}
+              progressViewOffset={inset.progressViewOffset}
+            />
           }
           contentContainerStyle={[hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent, inset.contentStyle]}
           ListEmptyComponent={

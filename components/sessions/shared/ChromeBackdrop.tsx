@@ -6,12 +6,11 @@ import { useTheme } from '@/contexts/ThemeContext'
 
 /**
  * Backdrop of the floating list chrome. The scrim is the contrast mechanism and
- * is always painted, on both platforms: rows fade into the canvas as they pass
- * under the header. It holds full opacity through the brand row and fades to
- * clear across the segmented control, so the title never sits on a half-faded
- * row while the control still shows what is scrolling beneath it.
- * Liquid Glass is decoration beneath it, gated on device capability rather
- * than OS, and dropped under Reduce Transparency.
+ * is always painted, on both platforms: a plain fade from the canvas colour at
+ * the top to clear at the bottom, so a row passing under the chrome dims
+ * gradually instead of being cut at the edge. Liquid Glass is decoration
+ * beneath it, gated on device capability rather than OS, and dropped under
+ * Reduce Transparency; the clear style keeps the rows visible through it.
  */
 export function ChromeBackdrop() {
   const theme = useTheme()
@@ -22,15 +21,14 @@ export function ChromeBackdrop() {
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {glass ? (
         <NativeGlassView
-          glassEffectStyle="regular"
+          glassEffectStyle="clear"
           colorScheme={theme.colorMode}
           style={StyleSheet.absoluteFill}
           testID="chrome-glass"
         />
       ) : null}
       <LinearGradient
-        colors={[theme.bg.primary, theme.bg.primary, `${theme.bg.primary}00`]}
-        locations={[0, 0.55, 1]}
+        colors={[theme.bg.primary, `${theme.bg.primary}00`]}
         style={StyleSheet.absoluteFill}
         testID="chrome-scrim"
       />
