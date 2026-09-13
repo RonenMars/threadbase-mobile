@@ -134,8 +134,11 @@
     "unavailablePath": "לא זמין",
     "unavailableWorktree": "אין worktree",
     "stale": "לא עדכני",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
+    "needsYou": "צריך אותך",
+    "working": "עובד",
+    "resumable": "ניתן לחידוש",
+    "cantResume": "לא ניתן לחידוש",
+    "observed": "בצפייה"
   },
   "phase": {
     "thinking": "חושב",
@@ -162,5 +165,8 @@
   },
   "tree": {
     "unknownPath": "(לא ידוע)"
+  },
+  "row": {
+    "waitingFor": "ממתין {{elapsed}}"
   }
 }

@@ -2,7 +2,8 @@ import { useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ActionSheetIOS, Platform, Alert } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { SessionStatusBadge } from './SessionStatusBadge'
+import { colorForToken } from './SessionStatusBadge'
+import { StateBadge, getSessionTierLabel, isLiveTier } from './StateBadge'
 import { MachineBadge } from './MachineBadge'
 import { ServerChip } from '@/components/sessions/shared/ServerChip'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
@@ -14,9 +15,10 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
 import { conversationHref } from '@/lib/conversationHref'
-import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
+import { isExternalSession } from '@/lib/externalSession'
 import {
   deriveSessionPresentation,
+  tierColorToken,
   type SessionPresentationInput,
 } from '@/lib/sessionPresentation'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -25,11 +27,20 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useNavLockStore } from '@/stores/navLock'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { getSessionStatusLabel } from './sessionStatusLabel'
 
 interface Props {
   session: MultiSession
   isFirstSession?: boolean
+}
+
+/** Coarse elapsed since `statusUpdatedAt` for the Needs-you qualifier: "45s", "2m", "1h 5m". */
+function formatWaitingSince(iso: string): string {
+  const s = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000))
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  if (m < 60) return `${m}m`
+  const h = Math.floor(m / 60)
+  return `${h}h ${m % 60}m`
 }
 
 function formatElapsed(ms: number): string {
@@ -54,41 +65,34 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const displayName = customName ?? session.projectName
 
   // A discovered process the streamer only observes — read-only, not
-  // interactive. Routing keys on `ownership` (strict); the alive indicator keys
-  // on the liveness fields with a pid fallback for older servers, so it does
-  // not require `ownership` to be present.
+  // interactive. Routing keys on `ownership` (strict).
   const isExternal = isExternalSession(session)
-  // Liveness is strict once the server states `ownership`; an unstated one is
-  // an older server, which still sends `pid` for a process it only discovered
-  // (managed PTY and historical shapes never carry one). Gating the loose read
-  // behind the absent-ownership case keeps a managed session that happens to be
-  // writing JSONL from reading as external.
+  // An older server states no `ownership` but still sends `pid` for a process
+  // it only discovered (managed PTY and historical shapes never carry one).
+  // `deriveSessionPresentation` keys external strictly on `ownership`, so hand
+  // it the legacy shape as external-alive rather than letting the badge and the
+  // accessibility label each derive their own answer.
   const legacyDiscovered = session.ownership == null && session.pid != null
-  const externalAlive = isExternal ? isExternalAlive(session) : legacyDiscovered
-  // `deriveSessionPresentation` keys external strictly on `ownership` so that
-  // routing stays strict, which leaves it nothing to read on the legacy shape —
-  // name it here so the badge and the accessibility label agree on one answer
-  // rather than each deriving its own.
   const presentedSession: SessionPresentationInput = legacyDiscovered
     ? { ...session, ownership: 'external', processLiveness: 'alive' }
     : session
   const presentation = deriveSessionPresentation(presentedSession)
-  const statusLabel = getSessionStatusLabel(presentation.statusLabel, t)
-  // Liveness comes from the shared derivation (lifecycle-aware), not from
-  // `status`, which a held session keeps after its process is gone.
-  const isLive = presentation.live && !presentation.externalLive
-  // Brand thread spine: amber for live (running / waiting_input), blue for an
-  // alive external (observed) session, then the server's assigned identity
-  // color when multi-server (so you can see at a glance which server the card
-  // came from), then brand blue for idle. Echoes the brand mark; not a
-  // decorative side-stripe border.
-  const spineColor = isLive
-    ? theme.status.waiting
-    : externalAlive
-      ? theme.status.completed
-      : multipleServers
-        ? serverColor
-        : theme.text.accent
+  const tierLabel = getSessionTierLabel(presentation.tier, t)
+  const liveTier = isLiveTier(presentation.tier)
+  // Thread spine: the tier colour while a process is live (amber needs-you,
+  // green working, blue observed), then the server's identity colour when
+  // multi-server, then brand blue. Echoes the brand mark; not a side-stripe.
+  const spineColor = liveTier
+    ? colorForToken(theme, tierColorToken(presentation.tier))
+    : multipleServers
+      ? serverColor
+      : theme.text.accent
+  // `statusUpdatedAt` is stamped on every status flip, so while the status is
+  // `waiting_input` it is when the wait began.
+  const waitingFor =
+    presentation.tier === 'needsYou' && session.statusUpdatedAt
+      ? t('row.waitingFor', { elapsed: formatWaitingSince(session.statusUpdatedAt) })
+      : undefined
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -156,13 +160,13 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
         onPress={handlePress}
         onLongPress={handleLongPress}
         activeOpacity={0.75}
-        accessibilityLabel={`Session ${displayName}, status ${statusLabel}, ${elapsedLabel}`}
+        accessibilityLabel={`Session ${displayName}, status ${tierLabel}, ${elapsedLabel}`}
         accessibilityRole="button"
         style={styles.touchable}
       >
         <View style={styles.row}>
           {/* Thread spine — structural column, brand-mark echo. */}
-          <View style={[styles.spine, { backgroundColor: spineColor, opacity: isLive || externalAlive ? 1 : 0.55 }]} />
+          <View style={[styles.spine, { backgroundColor: spineColor, opacity: liveTier ? 1 : 0.55 }]} />
 
           <View style={styles.body}>
             {/* Line 1: project name + trailing meta chips */}
@@ -186,7 +190,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
             {/* Line 2: status + runtime + prompts in mono. The bullets give
                 the row a terminal-log rhythm without adding chrome. */}
             <View style={styles.statusRow}>
-              <SessionStatusBadge session={presentedSession} />
+              <StateBadge tier={presentation.tier} qualifier={waitingFor} />
               <Text style={styles.metaSeparator}>•</Text>
               <Text style={styles.metaMono}>{elapsedLabel}</Text>
               <Text style={styles.metaSeparator}>•</Text>

@@ -39,7 +39,7 @@ export function DrillRow({ item }: Props) {
       lastMessage={item.lastMessage}
       lastOutput={item.lastOutput}
       branch={item.branch}
-      live={item.live ?? false}
+      tier={item.tier}
       serverLabel={item.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}

@@ -43,6 +43,12 @@ export type SessionKind =
 
 export type SessionColorToken = 'running' | 'waiting' | 'completed' | 'idle' | 'failed'
 
+/**
+ * The five words a list row may render (docs/design/session-list). The 15
+ * `SessionStatusLabel` values survive for detail-screen copy only.
+ */
+export type SessionTier = 'needsYou' | 'working' | 'resumable' | 'cantResume' | 'observed'
+
 export type SessionConfidence = 'process' | 'jsonl' | 'status' | 'unknown'
 
 export interface SessionCapabilities {
@@ -76,6 +82,7 @@ export interface SessionPresentation {
   live: boolean
   externalLive: boolean
   colorToken: SessionColorToken
+  tier: SessionTier
   confidence: SessionConfidence
   activityAt: string | null
   capabilities: SessionCapabilities
@@ -174,14 +181,41 @@ export function deriveSessionPresentation(
   // value from a newer server means "no phase" — never coerce it.
   return {
     ...presentation,
+    tier: tierFor(presentation),
     subStatus:
       presentation.live && isAgentPhase(session.subStatus) ? session.subStatus : null,
   }
 }
 
+function tierFor(
+  p: Pick<SessionPresentation, 'kind' | 'live' | 'externalLive' | 'colorToken'>,
+): SessionTier {
+  if (p.externalLive) return 'observed'
+  if (p.kind === 'unavailable' || p.colorToken === 'failed') return 'cantResume'
+  if (p.live) return p.colorToken === 'waiting' ? 'needsYou' : 'working'
+  // Pre-attach: the process is being spawned, so it belongs with Working.
+  if (p.kind === 'starting') return 'working'
+  return 'resumable'
+}
+
+export function tierColorToken(tier: SessionTier): SessionColorToken {
+  switch (tier) {
+    case 'needsYou':
+      return 'waiting'
+    case 'working':
+      return 'running'
+    case 'observed':
+      return 'completed'
+    case 'cantResume':
+      return 'failed'
+    case 'resumable':
+      return 'idle'
+  }
+}
+
 function classifySession(
   session: SessionPresentationInput,
-): Omit<SessionPresentation, 'subStatus'> {
+): Omit<SessionPresentation, 'subStatus' | 'tier'> {
   const external = isExternalSession(session)
   const externalAlive = external && isExternalAlive(session)
   const status = session.status
@@ -370,6 +404,7 @@ export function deriveConversationPresentation(
       live: false,
       externalLive: false,
       colorToken: 'failed',
+      tier: 'cantResume',
       confidence: 'status',
       activityAt: null,
       capabilities: {

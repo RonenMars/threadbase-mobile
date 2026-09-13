@@ -127,8 +127,11 @@
     "unavailablePath": "Unavailable",
     "unavailableWorktree": "Worktree gone",
     "stale": "Stale",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
+    "needsYou": "Needs you",
+    "working": "Working",
+    "resumable": "Resumable",
+    "cantResume": "Can't resume",
+    "observed": "Observed"
   },
   "phase": {
     "thinking": "Thinking",
@@ -155,5 +158,8 @@
   },
   "tree": {
     "unknownPath": "(unknown)"
+  },
+  "row": {
+    "waitingFor": "waiting {{elapsed}}"
   }
 }

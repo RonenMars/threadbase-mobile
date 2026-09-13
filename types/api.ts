@@ -66,6 +66,12 @@ export interface Session {
    * server too old to have the feature, never "cleared".
    */
   subStatus: AgentPhase | null
+  /**
+   * ISO timestamp of the last `status` change, stamped by every runner. While
+   * `status` is `waiting_input` this is when the wait began. Additive; older
+   * servers omit it.
+   */
+  statusUpdatedAt?: string
   lastOutput: string
   elapsedMs: number
   promptCount: number
