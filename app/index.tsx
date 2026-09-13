@@ -46,6 +46,9 @@ import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
 import { CacheAlertModal } from '@/components/servers/CacheAlertModal'
 import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
+import { ServerOfflineBanner } from '@/components/sessions/banners/ServerOfflineBanner'
+import { ServerWarmingBanner } from '@/components/sessions/banners/ServerWarmingBanner'
+import { ServerUnsupportedBanner } from '@/components/sessions/banners/ServerUnsupportedBanner'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -387,6 +390,17 @@ export default function ProjectsHub() {
 
   const fabRef = useRef<View>(null)
 
+  // One banner per unhealthy host, so the other machines keep rendering below.
+  // When every host is down the empty state above says so instead.
+  const serverBanners = activeServerIds.map((id) => {
+    const label = servers[id]?.label ?? id
+    const status = fetchStatuses[id]?.status
+    if (status === 'error') return <ServerOfflineBanner key={id} serverLabel={label} onRetry={() => retryFailed()} />
+    if (status === 'warming_up') return <ServerWarmingBanner key={id} serverLabel={label} />
+    if (unsupportedServerIds.includes(id)) return <ServerUnsupportedBanner key={id} serverLabel={label} />
+    return null
+  })
+
   return (
     <SafeAreaView
       style={styles.container}
@@ -483,6 +497,7 @@ export default function ProjectsHub() {
 
       {/* Content */}
       <View style={styles.contentArea}>
+      {allServersFailed ? null : serverBanners}
       {activeServerIds.length === 0 && !hasEverHadServer ? (
         <NoServersWelcome />
       ) : allServersFailed ? (
