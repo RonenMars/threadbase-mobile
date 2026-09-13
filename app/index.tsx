@@ -5,21 +5,17 @@ import {
   View,
   Text,
   Image,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
-  FlatList,
-  RefreshControl,
-} from 'react-native'
+  } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useProjectSummaries } from '@/hooks/useProjectSummaries'
 import { useServersStore } from '@/stores/servers'
-import { useNavLockStore } from '@/stores/navLock'
 import { useLiveInstanceCount } from '@/lib/openTrace'
 import { useSettingsStore } from '@/stores/settings'
 import { useTreeDrillStore } from '@/stores/treeDrill'
@@ -27,15 +23,10 @@ import { useFetchSessionNames } from '@/hooks/useSessionName'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
-import { MessagePreview, pickMatch } from '@/components/sessions/shared/MessagePreview'
-import { HighlightText } from 'one-more-highlight/native'
-import { ClassicSessionsList } from '@/components/sessions/classic/ClassicSessionsList'
+import { NowList } from '@/components/sessions/now/NowList'
+import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
-import { SessionCard } from '@/components/sessions/SessionCard'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
-import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
-import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
-import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
 import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
@@ -45,13 +36,9 @@ import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, BellRinging, Lightning, Books, Gear, FolderSimple } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, BellRinging, Lightning, Books, Gear } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
-import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
-import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
-import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { clientLog } from '@/lib/clientLog'
-import { conversationHref } from '@/lib/conversationHref'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { EncryptionRefusalBanner } from '@/components/servers/EncryptionRefusalBanner'
@@ -61,11 +48,9 @@ import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
-import { providerLabelKey, type ProviderName } from '@/constants/providers'
+import type { ProviderName } from '@/constants/providers'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { useAppDirection } from '@/lib/rtl'
 import { GlassFill } from '@/components/ui/GlassFill'
-import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import type { MultiSession, MultiConversation, SessionStatus } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 
@@ -76,28 +61,6 @@ const ALL_STATUSES: SessionStatus[] = ['running', 'waiting_input', 'idle']
 const EMPTY_CONVERSATIONS: MultiConversation[] = []
 
 type ClassicTab = 'sessions' | 'history'
-
-export type MergedItem =
-  | { kind: 'session'; ms: number; item: MultiSession }
-  | { kind: 'conversation'; ms: number; item: MultiConversation }
-
-// Sessions always match client-side — /api/search does not cover them.
-// Conversations only do when they came from the paged set: server results are
-// already matched on message bodies, so re-checking title/preview here could
-// only drop rows the server correctly found.
-export function mergedItemMatchesQuery(
-  item: MergedItem,
-  q: string,
-  conversationsFromServer: boolean,
-): boolean {
-  if (item.kind === 'session') {
-    return Boolean(
-      item.item.projectName?.toLowerCase().includes(q) || item.item.lastOutput?.toLowerCase().includes(q),
-    )
-  }
-  if (conversationsFromServer) return true
-  return Boolean(item.item.title?.toLowerCase().includes(q) || item.item.preview?.toLowerCase().includes(q))
-}
 
 function lastActivityMs(s: MultiSession): number {
   if (s.completedAt) return Date.parse(s.completedAt)
@@ -354,6 +317,11 @@ export default function ProjectsHub() {
     return [...liveSessions, ...idleSessions, ...convs]
   }, [visibleSessions, paginatedConversations, debouncedConvSearch, convSearchData])
 
+  const sessionOnlyItems = useMemo(
+    () => mergedClassicItems.filter((it) => it.kind === 'session'),
+    [mergedClassicItems],
+  )
+
   // FAB
   // When the user is drilled into a directory in TreeView, the drill store
   // holds { serverId, path } and we pre-fill the browse screen's cwd with
@@ -543,8 +511,7 @@ export default function ProjectsHub() {
       ) : (
         <View style={styles.classicContainer}>
           {mergeChats ? (
-            // Merged: single chronological list of sessions + conversations
-            <MergedClassicList
+            <NowList
               items={mergedClassicItems}
               refreshing={manualRefreshing}
               onRefresh={handleRefresh}
@@ -581,13 +548,16 @@ export default function ProjectsHub() {
                 </TouchableOpacity>
               </View>
 
-              {/* Classic sessions */}
               {classicTab === 'sessions' ? (
-                <ClassicSessionsList
-                  sessions={visibleSessions}
+                <NowList
+                  items={sessionOnlyItems}
                   refreshing={manualRefreshing}
                   onRefresh={handleRefresh}
                   searchOpen={searchOpen}
+                  searchQuery={classicConvSearch}
+                  conversationsFromServer={false}
+                  onSearchChange={setClassicConvSearch}
+                  isBackgroundRefreshing={isBackgroundRefreshing}
                 />
               ) : (
                 /* Classic history — ADR 0001 prototype: infinite pagination */
@@ -683,317 +653,6 @@ export default function ProjectsHub() {
     </SafeAreaView>
   )
 }
-
-// Mirrors what the card actually prints, so `pickMatch` can drop a metadata
-// snippet that would just repeat it.
-const convCardTitle = (item: MultiConversation) => item.title || item.projectPath
-
-const MergedClassicList = React.memo(function MergedClassicList({
-  items,
-  refreshing,
-  onRefresh,
-  onEndReached,
-  searchOpen,
-  searchQuery,
-  conversationsFromServer,
-  onSearchChange,
-  isBackgroundRefreshing,
-}: {
-  items: MergedItem[]
-  refreshing: boolean
-  onRefresh: () => void
-  onEndReached: () => void
-  searchOpen: boolean
-  searchQuery: string
-  conversationsFromServer: boolean
-  onSearchChange: (q: string) => void
-  isBackgroundRefreshing?: boolean
-}) {
-  const theme = useTheme()
-  const isGlass = useIsGlass()
-  const { direction } = useAppDirection()
-  const styles = useMemo(() => makeStyles(theme), [theme])
-  const searchStyles = makeSearchStyles(theme, direction)
-  const { t } = useTranslation('sessions')
-  const router = useRouter()
-  const activeServerIds = useServersStore((s) => s.activeServerIds)
-  const servers = useServersStore((s) => s.servers)
-  const showServerHeaders = activeServerIds.length > 1
-  const SESSIONS_COLLAPSE_THRESHOLD = 3
-  const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
-  // Shared with the Tree/Hub views so a collapsed server stays collapsed, and
-  // with the Tree/Classic live-sessions header, across every layout.
-  const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
-  const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
-  const storedSessionsCollapsed = useViewPrefsStore((s) => s.sessionsHeaderCollapsed)
-  const setSessionsCollapsed = useViewPrefsStore((s) => s.setSessionsHeaderCollapsed)
-  const sessionsCollapsed =
-    storedSessionsCollapsed ??
-    items.filter((it) => it.kind === 'session').length > SESSIONS_COLLAPSE_THRESHOLD
-  const { favorites, pinItem, unpinItem } = useQuickAccessStore()
-
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) return items
-    const q = searchQuery.toLowerCase()
-    return items.filter((item) => mergedItemMatchesQuery(item, q, conversationsFromServer))
-  }, [searchQuery, items, conversationsFromServer])
-
-  const visibleServerCount = useMemo(
-    () => new Set(filteredItems.map((it) => it.item.serverId)).size,
-    [filteredItems],
-  )
-
-  type ClassicFlatItem =
-    | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
-    | { kind: 'liveHeader'; id: string; count: number; hasLive: boolean; collapsed: boolean; collapsible: boolean }
-    | MergedItem
-
-  const flatData = useMemo((): ClassicFlatItem[] => {
-    // Single-server: inject one LIVE/IDLE eyebrow above the contiguous
-    // session block at the top. Sessions are already clustered first by
-    // mergedClassicItems' sort (live → idle → conversations).
-    if (!showServerHeaders) {
-      const sessionItems = filteredItems.filter((it) => it.kind === 'session')
-      if (sessionItems.length === 0) return filteredItems
-      const liveCount = sessionItems.filter((it) => isPresentationLive(it.item as MultiSession)).length
-      const hasLive = liveCount > 0
-      const collapsible = sessionItems.length > SESSIONS_COLLAPSE_THRESHOLD
-      const nonSessionItems = filteredItems.filter((it) => it.kind !== 'session')
-      // The eyebrow reads LIVE · N when any session is live, so N must be the
-      // live ones; IDLE · N covers the whole block.
-      return [
-        { kind: 'liveHeader', id: 'live-header', count: hasLive ? liveCount : sessionItems.length, hasLive, collapsed: sessionsCollapsed, collapsible },
-        ...(collapsible && sessionsCollapsed ? [] : sessionItems),
-        ...nonSessionItems,
-      ]
-    }
-
-    const buckets = new Map<string, MergedItem[]>()
-    for (const id of activeServerIds) buckets.set(id, [])
-    for (const item of filteredItems) {
-      const sid = item.item.serverId
-      buckets.get(sid)?.push(item)
-    }
-
-    // Collapse only applies when more than one server actually has items;
-    // with a single visible server a stale collapsed flag would otherwise
-    // hide its sessions with no way to expand (header isn't collapsible).
-    const serversWithItems = activeServerIds.filter((id) => (buckets.get(id)?.length ?? 0) > 0)
-    const collapseApplies = serversWithItems.length > 1
-
-    const result: ClassicFlatItem[] = []
-    for (const id of serversWithItems) {
-      const bucket = buckets.get(id) ?? []
-      result.push({
-        kind: 'header',
-        serverId: id,
-        serverLabel: servers[id]?.label ?? id,
-        totalCount: bucket.length,
-      })
-      if (!collapseApplies || !collapsedServers.includes(id)) result.push(...bucket)
-    }
-    return result
-  }, [filteredItems, showServerHeaders, activeServerIds, servers, collapsedServers, sessionsCollapsed])
-
-  // Find the index of the first session in the flat list
-  const firstSessionIndex = useMemo(() => {
-    return flatData.findIndex((item) => item.kind === 'session')
-  }, [flatData])
-
-  const needle = searchQuery.trim()
-
-  const renderConvCard = useCallback(
-    (item: MultiConversation) => (
-      <TouchableOpacity
-        style={[styles.convCard, isGlass && styles.convCardGlass]}
-        activeOpacity={0.75}
-        onPress={() => {
-          useNavLockStore.getState().lock()
-          router.push(conversationHref(item.id, item.serverId, searchQuery))
-        }}
-        onLongPress={() => setActiveConvItem(item)}
-        accessibilityLabel={item.title || item.projectPath}
-        testID={`conversation-row-${item.id}`}
-      >
-        <GlassFill />
-        <View style={styles.convCardTitleRow}>
-          <FolderSimple size={18} color={theme.text.secondary} weight="fill" />
-          {needle ? (
-            <HighlightText
-              text={convCardTitle(item)}
-              searchWords={[needle]}
-              highlightStyle={styles.convCardTitleMatch}
-              style={styles.convCardTitle}
-              textProps={{ numberOfLines: 1 }}
-            />
-          ) : (
-            <Text style={styles.convCardTitle} numberOfLines={1}>{convCardTitle(item)}</Text>
-          )}
-          {item.provider != null ? (
-            <View style={
-              providerLabelKey(item.provider) === 'codex'
-                ? styles.convCardCodexBadge
-                : providerLabelKey(item.provider) === 'cursor'
-                  ? styles.convCardCursorBadge
-                  : styles.convCardClaudeBadge
-            }>
-              <Text style={
-                providerLabelKey(item.provider) === 'codex'
-                  ? styles.convCardCodexBadgeText
-                  : providerLabelKey(item.provider) === 'cursor'
-                    ? styles.convCardCursorBadgeText
-                    : styles.convCardClaudeBadgeText
-              }>
-                {t(`provider.${providerLabelKey(item.provider)}`)}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        {/* A search row shows the matched passage; every other row keeps the
-            plain two-line preview, which MessagePreview's generic path would
-            truncate to one line. */}
-        {pickMatch(item.matches, convCardTitle(item)) ? (
-          <MessagePreview matches={item.matches} rowTitle={convCardTitle(item)} highlight={needle} />
-        ) : item.preview ? (
-          needle ? (
-            <HighlightText
-              text={item.preview}
-              searchWords={[needle]}
-              highlightStyle={styles.convCardPreviewMatch}
-              style={styles.convCardPreview}
-              textProps={{ numberOfLines: 2 }}
-            />
-          ) : (
-            <Text style={styles.convCardPreview} numberOfLines={2}>{item.preview}</Text>
-          )
-        ) : null}
-        <Text style={styles.convCardMeta}>
-          {t('hub.msgs', { count: item.messageCount })}
-        </Text>
-      </TouchableOpacity>
-    ),
-    [router, t, styles, theme, isGlass, searchQuery, needle],
-  )
-
-  return (
-    <View style={{ flex: 1 }}>
-      {searchOpen ? (
-        <View style={searchStyles.searchBar}>
-          <TextInput
-            testID="hub-search-input"
-            style={searchStyles.searchInput}
-            value={searchQuery}
-            onChangeText={onSearchChange}
-            placeholder={t('search.placeholder')}
-            placeholderTextColor={theme.text.secondary}
-            autoFocus
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
-      ) : null}
-      <FlatList
-        data={flatData}
-        // The search bar above autoFocuses, so the first tap on a result lands
-        // while the keyboard is up — and the RN default ("never") spends that
-        // tap dismissing the keyboard instead of delivering it to the row.
-        keyboardShouldPersistTaps="handled"
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        keyExtractor={(item) => {
-          if (item.kind === 'header') return `header-${item.serverId}`
-          if (item.kind === 'liveHeader') return item.id
-          if (item.kind === 'session') return `session:${item.item.serverId}::${item.item.id}`
-          return `conversation:${item.item.serverId}::${item.item.id}`
-        }}
-        renderItem={({ item, index }) => {
-          if (item.kind === 'header') {
-            return (
-              <ServerHeaderRow
-                serverId={item.serverId}
-                serverLabel={item.serverLabel}
-                totalCount={item.totalCount}
-                collapsible={visibleServerCount > 1}
-                isExpanded={!collapsedServers.includes(item.serverId)}
-                onToggle={() => toggleServer(item.serverId)}
-                isRefreshing={isBackgroundRefreshing}
-              />
-            )
-          }
-          if (item.kind === 'liveHeader') {
-            return (
-              <LiveSessionsHeader
-                count={item.count}
-                hasLive={item.hasLive}
-                collapsed={item.collapsed}
-                onToggle={item.collapsible ? () => setSessionsCollapsed(!sessionsCollapsed) : undefined}
-              />
-            )
-          }
-          if (item.kind === 'session') {
-            return <SessionCard session={item.item as MultiSession} isFirstSession={index === firstSessionIndex} />
-          }
-          return renderConvCard(item.item as MultiConversation)
-        }}
-        {...LIST_WINDOW}
-        contentContainerStyle={styles.mergedContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
-        }
-        ListEmptyComponent={
-          <View style={{ flex: 1 }}>
-            {searchQuery ? (
-              <EmptyState
-                title={t('list.noResults')}
-                subtitle={t('list.noResultsSubtitle', { query: searchQuery })}
-              />
-            ) : (
-              <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
-            )}
-          </View>
-        }
-      />
-      {activeConvItem ? (() => {
-        const favId = buildFavoriteId(activeConvItem.serverId, 'conversation', activeConvItem.id)
-        const isFav = favorites.some((f) => f.id === favId)
-        return (
-          <QuickAccessActionSheet
-            item={{
-              type: 'conversation',
-              id: favId,
-              label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
-              serverId: activeConvItem.serverId,
-            }}
-            isFavorite={isFav}
-            onClose={() => setActiveConvItem(null)}
-            onNewSession={() => setActiveConvItem(null)}
-            onBrowse={() => setActiveConvItem(null)}
-            onOpenSession={() => {
-              setActiveConvItem(null)
-              useNavLockStore.getState().lock()
-              router.push(conversationHref(activeConvItem.id, activeConvItem.serverId, searchQuery))
-            }}
-            onTogglePin={() => {
-              if (isFav) {
-                unpinItem(favId)
-              } else {
-                pinItem({
-                  type: 'conversation',
-                  id: favId,
-                  label: activeConvItem.title || activeConvItem.projectPath || activeConvItem.id,
-                  serverId: activeConvItem.serverId,
-                  conversationId: activeConvItem.id,
-                })
-              }
-              setActiveConvItem(null)
-            }}
-          />
-        )
-      })() : null}
-    </View>
-  )
-})
-
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
@@ -1110,49 +769,13 @@ function makeStyles(theme: Theme) {
     color: theme.text.primary,
     fontWeight: '600',
   },
-  mergedContent: {
-    padding: spacing.sm,
-    flexGrow: 1,
-  },
-  convCard: {
-    backgroundColor: theme.bg.card,
-    borderRadius: 10,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  convCardGlass: {
-    backgroundColor: 'transparent',
-    overflow: 'hidden',
-  },
-  convCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  convCardTitle: {
-    flex: 1,
-    color: theme.text.primary,
-    fontSize: font.base,
-    fontWeight: '600',
-  },
   convCardTitleMatch: {
     backgroundColor: `${theme.text.accent}38`,
     color: theme.text.primary,
   },
-  convCardPreview: {
-    color: theme.text.secondary,
-    fontSize: font.xs,
-  },
   convCardPreviewMatch: {
     backgroundColor: `${theme.text.accent}38`,
     color: theme.text.primary,
-  },
-  convCardMeta: {
-    color: theme.text.secondary,
-    fontSize: font.xs,
   },
   convCardCodexBadge: {
     paddingHorizontal: 5,
@@ -1160,35 +783,17 @@ function makeStyles(theme: Theme) {
     borderRadius: 4,
     backgroundColor: `${brand.codex}20`,
   },
-  convCardCodexBadgeText: {
-    color: brand.codex,
-    fontSize: font.xs - 2,
-    fontWeight: '700' as const,
-    letterSpacing: 0.3,
-  },
   convCardClaudeBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
     backgroundColor: `${brand.claude}20`,
   },
-  convCardClaudeBadgeText: {
-    color: brand.claude,
-    fontSize: font.xs - 2,
-    fontWeight: '700' as const,
-    letterSpacing: 0.3,
-  },
   convCardCursorBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
     backgroundColor: `${brand.cursor}20`,
-  },
-  convCardCursorBadgeText: {
-    color: brand.cursor,
-    fontSize: font.xs - 2,
-    fontWeight: '700' as const,
-    letterSpacing: 0.3,
   },
   fabToast: {
     position: 'absolute',

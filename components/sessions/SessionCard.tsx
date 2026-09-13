@@ -1,12 +1,10 @@
-import { useCallback } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ActionSheetIOS, Platform, Alert } from 'react-native'
-import * as Haptics from 'expo-haptics'
-import { useRouter } from 'expo-router'
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import { colorForToken } from './SessionStatusBadge'
 import { StateBadge, getSessionTierLabel, isLiveTier } from './StateBadge'
 import { MachineBadge } from './MachineBadge'
 import { ServerChip } from '@/components/sessions/shared/ServerChip'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { formatWaitingSince } from '@/components/sessions/shared/formatCoarseElapsed'
 import { sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 import { Badge } from '@/components/ui/Badge'
@@ -15,33 +13,19 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { FolderSimple } from 'phosphor-react-native'
 import type { MultiSession } from '@/types/api'
-import { conversationHref } from '@/lib/conversationHref'
-import { isExternalSession } from '@/lib/externalSession'
 import {
   deriveSessionPresentation,
   tierColorToken,
   type SessionPresentationInput,
 } from '@/lib/sessionPresentation'
-import { useSessionActions } from '@/hooks/useSessionActions'
+import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
-import { useNavLockStore } from '@/stores/navLock'
 import { useTranslation } from 'react-i18next'
-import i18n from '@/lib/i18n'
 
 interface Props {
   session: MultiSession
   isFirstSession?: boolean
-}
-
-/** Coarse elapsed since `statusUpdatedAt` for the Needs-you qualifier: "45s", "2m", "1h 5m". */
-function formatWaitingSince(iso: string): string {
-  const s = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000))
-  if (s < 60) return `${s}s`
-  const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m`
-  const h = Math.floor(m / 60)
-  return `${h}h ${m % 60}m`
 }
 
 function formatElapsed(ms: number): string {
@@ -58,17 +42,12 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
-  const router = useRouter()
-  const { cancelSession } = useSessionActions(session.serverId, session.id)
   const multipleServers = useServersStore((s) => s.activeServerIds.length > 1)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color) ?? SERVER_COLOR_DEFAULT
   const storedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
   const storedOrigin = useSessionNamesStore((s) => s.getOrigin(session.serverId, session.id))
   const displayName = sessionRowTitle(session, { name: storedName, origin: storedOrigin })
 
-  // A discovered process the streamer only observes — read-only, not
-  // interactive. Routing keys on `ownership` (strict).
-  const isExternal = isExternalSession(session)
   // An older server states no `ownership` but still sends `pid` for a process
   // it only discovered (managed PTY and historical shapes never carry one).
   // `deriveSessionPresentation` keys external strictly on `ownership`, so hand
@@ -96,58 +75,7 @@ export function SessionCard({ session, isFirstSession = false }: Props) {
       ? t('row.waitingFor', { elapsed: formatWaitingSince(session.statusUpdatedAt) })
       : undefined
 
-  const handlePress = useCallback(() => {
-    Haptics.selectionAsync()
-    useNavLockStore.getState().lock()
-    if (isExternal) {
-      const convId = session.boundConversationId ?? session.conversationId ?? session.id
-      router.push(conversationHref(convId, session.serverId))
-      return
-    }
-    router.push(`/session/${session.id}?server=${session.serverId}`)
-  }, [session, isExternal, router])
-
-  const handleLongPress = useCallback(() => {
-    // External sessions are read-only — suppress the input-oriented actions
-    // (Send Input / Cancel) entirely so they can never be triggered.
-    if (isExternal) return
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    const options = [
-      i18n.t('sessions:card.copyId'),
-      i18n.t('sessions:card.sendInput'),
-      i18n.t('sessions:card.cancel'),
-      i18n.t('common:button.cancel'),
-    ]
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options, destructiveButtonIndex: 2, cancelButtonIndex: 3 },
-        (index) => {
-          if (index === 2) {
-            Alert.alert(i18n.t('terminal:dialog.cancelTitle'), i18n.t('terminal:dialog.cancelMessage'), [
-              { text: i18n.t('common:button.cancel'), style: 'cancel' },
-              {
-                text: i18n.t('terminal:dialog.cancelConfirm'), style: 'destructive',
-                onPress: () => {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-                  cancelSession.mutate()
-                },
-              },
-            ])
-          } else if (index === 1) {
-            router.push(`/session/${session.id}?server=${session.serverId}`)
-          }
-        }
-      )
-    } else {
-      Alert.alert(i18n.t('sessions:card.actionsTitle'), session.projectName, [
-        { text: i18n.t('sessions:card.copyId'), onPress: () => {} },
-        { text: i18n.t('sessions:card.sendInput'), onPress: () => router.push(`/session/${session.id}?server=${session.serverId}`) },
-        { text: i18n.t('sessions:card.cancel'), style: 'destructive', onPress: () => cancelSession.mutate() },
-        { text: i18n.t('sessions:card.dismiss'), style: 'cancel' },
-      ])
-    }
-  }, [session, isExternal, cancelSession, router])
+  const { handlePress, handleLongPress } = useSessionRowActions(session)
 
   const elapsedLabel = formatElapsed(session.elapsedMs)
   const promptsLabel = t('card.prompts', { count: session.promptCount })

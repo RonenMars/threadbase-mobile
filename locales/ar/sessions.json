@@ -66,12 +66,6 @@
     "seeAll_few": "عرض كل {{count}} محادثات",
     "seeAll_many": "عرض كل {{count}} محادثة",
     "seeAll_other": "عرض كل {{count}} محادثة",
-    "msgs_zero": "لا رسائل",
-    "msgs_one": "رسالة واحدة",
-    "msgs_two": "رسالتان",
-    "msgs_few": "{{count}} رسائل",
-    "msgs_many": "{{count}} رسالة",
-    "msgs_other": "{{count}} رسالة",
     "activityLive_zero": "لا توجد جلسات نشطة",
     "activityLive_one": "جلسة نشطة واحدة",
     "activityLive_two": "جلستان نشطتان",
@@ -109,7 +103,21 @@
     "headerIdle_two": "خامل · {{count}}",
     "headerIdle_few": "خامل · {{count}}",
     "headerIdle_many": "خامل · {{count}}",
-    "headerIdle_other": "خامل · {{count}}"
+    "headerIdle_other": "خامل · {{count}}",
+    "headerNeedsYou_zero": "بحاجة إليك · {{count}}",
+    "headerNeedsYou_one": "بحاجة إليك · {{count}}",
+    "headerNeedsYou_two": "بحاجة إليك · {{count}}",
+    "headerNeedsYou_few": "بحاجة إليك · {{count}}",
+    "headerNeedsYou_many": "بحاجة إليك · {{count}}",
+    "headerNeedsYou_other": "بحاجة إليك · {{count}}",
+    "headerWorking_zero": "يعمل · {{count}}",
+    "headerWorking_one": "يعمل · {{count}}",
+    "headerWorking_two": "يعمل · {{count}}",
+    "headerWorking_few": "يعمل · {{count}}",
+    "headerWorking_many": "يعمل · {{count}}",
+    "headerWorking_other": "يعمل · {{count}}",
+    "headerEarlierToday": "في وقت سابق اليوم",
+    "headerEarlier": "في وقت سابق"
   },
   "preview": {
     "liveUnavailable": "معاينة السيشن المباشر غير متاحة — افتح السيشن لرؤية الطرفية المباشرة.",
@@ -126,7 +134,8 @@
     "addToFavorites": "إضافة إلى المفضلة"
   },
   "fab": {
-    "noServerHint": "أضف خادمًا في الإعدادات للبدء"
+    "noServerHint": "أضف خادمًا في الإعدادات للبدء",
+    "newSession": "جلسة جديدة"
   },
   "noServer": {
     "title": "اتصل بأول خادم لك",
@@ -187,6 +196,14 @@
     "unknownPath": "(غير معروف)"
   },
   "row": {
-    "waitingFor": "في الانتظار منذ {{elapsed}}"
+    "waitingFor": "في الانتظار منذ {{elapsed}}",
+    "groupedOneLine_zero": "لا توجد جلسات من سطر واحد",
+    "groupedOneLine_one": "جلسة واحدة من سطر واحد",
+    "groupedOneLine_two": "جلستان من سطر واحد",
+    "groupedOneLine_few": "{{count}} جلسات من سطر واحد",
+    "groupedOneLine_many": "{{count}} جلسة من سطر واحد",
+    "groupedOneLine_other": "{{count}} جلسة من سطر واحد",
+    "groupedPill": "مجمّعة",
+    "open": "فتح"
   }
 }

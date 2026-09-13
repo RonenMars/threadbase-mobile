@@ -58,8 +58,6 @@
   "hub": {
     "seeAll_one": "See all {{count}} conversation",
     "seeAll_other": "See all {{count}} conversations",
-    "msgs_one": "{{count}} msg",
-    "msgs_other": "{{count}} msgs",
     "activityLive_one": "{{count}} live",
     "activityLive_other": "{{count}} live",
     "activityToday": "{{total}} today",
@@ -81,7 +79,13 @@
     "headerLive_one": "LIVE · {{count}}",
     "headerLive_other": "LIVE · {{count}}",
     "headerIdle_one": "IDLE · {{count}}",
-    "headerIdle_other": "IDLE · {{count}}"
+    "headerIdle_other": "IDLE · {{count}}",
+    "headerNeedsYou_one": "NEEDS YOU · {{count}}",
+    "headerNeedsYou_other": "NEEDS YOU · {{count}}",
+    "headerWorking_one": "WORKING · {{count}}",
+    "headerWorking_other": "WORKING · {{count}}",
+    "headerEarlierToday": "EARLIER TODAY",
+    "headerEarlier": "EARLIER"
   },
   "preview": {
     "liveUnavailable": "Live session preview not available — open the session to see the live terminal.",
@@ -98,7 +102,8 @@
     "addToFavorites": "Add to favorites"
   },
   "fab": {
-    "noServerHint": "Add a server in Settings to get started"
+    "noServerHint": "Add a server in Settings to get started",
+    "newSession": "New session"
   },
   "noServer": {
     "title": "Connect your first server",
@@ -159,6 +164,10 @@
     "unknownPath": "(unknown)"
   },
   "row": {
-    "waitingFor": "waiting {{elapsed}}"
+    "waitingFor": "waiting {{elapsed}}",
+    "groupedOneLine_one": "{{count}} one-line session",
+    "groupedOneLine_other": "{{count}} one-line sessions",
+    "groupedPill": "GROUPED",
+    "open": "Open"
   }
 }
