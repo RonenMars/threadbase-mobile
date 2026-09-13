@@ -5,6 +5,7 @@ import { Plus } from 'phosphor-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font } from '@/constants/theme'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 
 interface Props {
   onPress: () => void
@@ -16,6 +17,7 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const [glowAnim] = useState(() => new Animated.Value(0.08))
+  const reduceMotion = useReduceMotion()
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -32,9 +34,9 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
         }),
       ])
     )
-    loop.start()
+    if (!reduceMotion) loop.start()
     return () => loop.stop()
-  }, [glowAnim])
+  }, [glowAnim, reduceMotion])
 
   return (
     <TouchableOpacity

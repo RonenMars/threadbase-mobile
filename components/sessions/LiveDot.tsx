@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { StyleSheet } from 'react-native'
 import Animated, {
   Easing,
@@ -26,9 +27,10 @@ interface Props {
  */
 export function LiveDot({ live, color, size = 7 }: Props) {
   const opacity = useSharedValue(1)
+  const reduceMotion = useReduceMotion()
 
   useEffect(() => {
-    if (live) {
+    if (live && !reduceMotion) {
       opacity.value = 0.4
       opacity.value = withRepeat(
         withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) }),
@@ -40,7 +42,7 @@ export function LiveDot({ live, color, size = 7 }: Props) {
       opacity.value = 1
     }
     return () => cancelAnimation(opacity)
-  }, [live, opacity])
+  }, [live, reduceMotion, opacity])
 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
 

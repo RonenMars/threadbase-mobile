@@ -22,12 +22,12 @@ import {
   ALL_TIERS,
   DEFAULT_FILTERS,
   isDefaultFilters,
-  isNeedsMePreset,
   type ActiveWithin,
   type ListFilters,
 } from '@/lib/sessionFilters'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { useAppDirection } from '@/lib/rtl'
+import { FilterPresets } from './FilterPresets'
 import { getActiveWithinLabel, getSortByLabel, getSortOrderLabel } from './filterSortLabels'
 
 interface Props {
@@ -114,8 +114,6 @@ export function FilterSortSheet({
     direction === DEFAULT_DIRECTION &&
     isDefaultFilters(filters) &&
     displayedServerIds.length === activeServerIds.length
-  const needsMe = isNeedsMePreset(filters)
-  const everything = isDefaultFilters(filters)
   const noResults = resultCount === 0
 
   const handleReset = () => {
@@ -165,28 +163,7 @@ export function FilterSortSheet({
         </View>
       </View>
 
-      {/* Presets */}
-      <View style={styles.presetRow}>
-        <TouchableOpacity
-          onPress={() => onChangeFilters({ ...DEFAULT_FILTERS, tiers: ['needsYou'] })}
-          style={[styles.preset, styles.presetNeedsMe, needsMe && styles.presetNeedsMeOn]}
-          accessibilityRole="button"
-          accessibilityState={{ selected: needsMe }}
-          testID="preset-needs-me"
-        >
-          <View style={[styles.chipDot, { backgroundColor: theme.status.waiting }]} />
-          <Text style={[styles.presetText, { color: theme.status.waiting }]}>{t('servers:filter.presetNeedsMe')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => onChangeFilters(DEFAULT_FILTERS)}
-          style={[styles.preset, everything && styles.presetOn]}
-          accessibilityRole="button"
-          accessibilityState={{ selected: everything }}
-          testID="preset-everything"
-        >
-          <Text style={[styles.presetText, everything && styles.presetTextOn]}>{t('servers:filter.presetEverything')}</Text>
-        </TouchableOpacity>
-      </View>
+      <FilterPresets filters={filters} onChange={onChangeFilters} />
 
       {/* Show — the five tiers, multi-select with live counts */}
       <View style={styles.section}>
@@ -399,24 +376,6 @@ function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
     settingsButton: { padding: spacing.xs },
     closeButton: { padding: spacing.xs },
     closeButtonText: { color: theme.text.secondary, fontSize: font.lg, lineHeight: font.lg },
-    presetRow: { flexDirection: 'row', gap: spacing.sm },
-    preset: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs + 3,
-      height: 42,
-      paddingHorizontal: spacing.lg,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.bg.card,
-    },
-    presetNeedsMe: { flex: 1, borderColor: `${theme.status.waiting}80` },
-    presetNeedsMeOn: { backgroundColor: `${theme.status.waiting}29`, borderColor: theme.status.waiting },
-    presetOn: { borderColor: theme.text.accent, backgroundColor: theme.bg.primary },
-    presetText: { color: theme.text.secondary, fontSize: font.sm + 1, fontWeight: '600' },
-    presetTextOn: { color: theme.text.primary },
     section: { gap: spacing.sm },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: {

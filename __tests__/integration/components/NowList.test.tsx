@@ -1,4 +1,5 @@
 import React from 'react'
+import { StyleSheet, Text } from 'react-native'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
@@ -51,7 +52,11 @@ const conversation = (overrides: Partial<MultiConversation>): MultiConversation 
 const asItem = (s: MultiSession, ms = NOW - 60_000): MergedItem => ({ kind: 'session', ms, item: s })
 const asConv = (c: MultiConversation, ms = NOW - 120_000): MergedItem => ({ kind: 'conversation', ms, item: c })
 
-function renderList(items: MergedItem[], order: 'state' | 'lastActivity' | 'projectName' = 'state') {
+function renderList(
+  items: MergedItem[],
+  order: 'state' | 'lastActivity' | 'projectName' = 'state',
+  extra: Partial<React.ComponentProps<typeof NowList>> = {},
+) {
   return renderWithI18n(
     <NowList
       items={items}
@@ -60,7 +65,7 @@ function renderList(items: MergedItem[], order: 'state' | 'lastActivity' | 'proj
       onRefresh={() => {}}
       searchQuery=""
       conversationsFromServer={false}
-      onSearchChange={() => {}}
+      {...extra}
     />,
   )
 }
@@ -123,6 +128,18 @@ describe('NowList', () => {
     expect(queryByText('EARLIER')).toBeNull()
     expect(getByText(formatListTime(ms))).toBeTruthy()
     expect(queryByText(formatListTime(startedAt))).toBeNull()
+  })
+
+  it('scrolls the header with the rows and insets them by the chrome height', async () => {
+    const real = asConv(conversation({ id: 'real', sessionName: 'Fix the resume collision copy' }))
+    const { getByText, getByTestId } = await renderList([real], 'state', {
+      topInset: 120,
+      ListHeaderComponent: <Text>QUICK ACCESS</Text>,
+    })
+    expect(getByText('QUICK ACCESS')).toBeTruthy()
+    const list = getByTestId('now-list-scroll')
+    expect(StyleSheet.flatten(list.props.contentContainerStyle).paddingTop).toBe(120)
+    expect(list.props.scrollIndicatorInsets).toEqual({ top: 120 })
   })
 
   it('keeps two rejected titles as plain rows', async () => {

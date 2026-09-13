@@ -11,6 +11,7 @@ import Animated, {
 import { useTranslation } from 'react-i18next'
 import { type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { StateBadge, getSessionTierLabel } from '@/components/sessions/StateBadge'
 import { getAgentPhaseLabel } from '@/components/sessions/agentPhaseLabel'
 import { formatCoarseElapsed } from '@/components/sessions/shared/formatCoarseElapsed'
@@ -33,10 +34,15 @@ const SWEEP_WIDTH = 0.34
 /** 2 px indeterminate sweep. There is no percentage anywhere in the API, so never a determinate bar. */
 function SweepBar({ color, track }: { color: string; track: string }) {
   const progress = useSharedValue(0)
+  const reduceMotion = useReduceMotion()
   useEffect(() => {
-    progress.value = withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.linear }), -1, false)
+    if (reduceMotion) {
+      progress.value = 0.5
+    } else {
+      progress.value = withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.linear }), -1, false)
+    }
     return () => cancelAnimation(progress)
-  }, [progress])
+  }, [progress, reduceMotion])
   const style = useAnimatedStyle(() => ({
     left: `${progress.value * (100 + SWEEP_WIDTH * 100) - SWEEP_WIDTH * 100}%`,
   }))

@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { FlatList, View, Text, TextInput, SectionList, RefreshControl, TouchableOpacity } from 'react-native'
+import React, { useState, useCallback, useMemo } from 'react'
+import { FlatList, View, Text, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -18,8 +18,8 @@ import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { XCircle } from 'phosphor-react-native'
 import { isMultiSession } from './types'
 import { makeStyles } from './ProjectHubList.styles'
 import type { ProjectHubListProps, SearchSection } from './types'
@@ -29,7 +29,6 @@ import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessAct
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
-import { useTextDirectionStyle } from '@/lib/rtl'
 import { isExternalSession } from '@/lib/externalSession'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import {
@@ -38,6 +37,7 @@ import {
 } from '@/lib/projectDisambiguation'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
+import { listTopInset } from '@/components/sessions/shared/listTopInset'
 
 // Memoized: the Hub root re-renders on every fetch-progress tick; with stable
 // props (query data is a stable ref mid-drain) this skips re-running the list.
@@ -49,16 +49,18 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   refreshing,
   onRefresh,
   searchOpen,
+  searchQuery,
   isBackgroundRefreshing,
   unsupportedServerIds = [],
+  topInset = 0,
+  ListHeaderComponent,
 }: ProjectHubListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const styles = makeStyles(theme, insets.bottom)
+  const inset = listTopInset(topInset)
   const router = useRouter()
   const { t } = useTranslation('sessions')
-  const searchDirection = useTextDirectionStyle()
-  const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   // Tracks which groups are expanded, keyed by projectId (with projectPath
   // fallback during migration — see useProjectGroups).
@@ -74,7 +76,6 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     const node = findProjectNode(root, group.projectPath)
     if (node) setDrill({ node, serverId: group.serverId })
   }, [sessions, summaries])
-  const inputRef = useRef<TextInput>(null)
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
@@ -103,10 +104,6 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   )
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
-
-  useEffect(() => {
-    if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
-  }, [searchOpen])
 
   const toggleOpen = useCallback((projectId: string) => {
     setOpenIds((prev) => {
@@ -283,33 +280,11 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers])
 
   if (drill && !searchOpen) {
-    return <DrillView node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} />
+    return <DrillView node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} topInset={topInset} />
   }
 
   return (
     <View style={styles.container}>
-      {searchOpen ? (
-        <View style={styles.searchBar}>
-          <View style={styles.searchRow}>
-            <TextInput
-              ref={inputRef}
-              style={[styles.searchInput, searchDirection]}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder={t('search.placeholder')}
-              placeholderTextColor={theme.text.secondary}
-              autoFocus
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn} hitSlop={8}>
-                <XCircle size={20} color={theme.text.primary} weight="fill" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        </View>
-      ) : null}
-
       {showSearch ? (
         searchSections.length === 0 ? (
           <View style={{ flex: 1 }}>
@@ -331,7 +306,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             }
             renderItem={renderSearchResultItem}
             renderSectionHeader={renderSectionHeader}
-            contentContainerStyle={styles.listContent}
+            {...inset.props}
+            contentContainerStyle={[styles.listContent, inset.contentStyle]}
             stickySectionHeadersEnabled={false}
           />
         )
@@ -400,10 +376,20 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             )
           }}
           {...LIST_WINDOW}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
+          {...inset.props}
+          ListHeaderComponent={
+            // The header is full-bleed; undo the card gutter around it.
+            ListHeaderComponent ? <View style={{ marginHorizontal: -spacing.sm, paddingTop: spacing.xs }}>{ListHeaderComponent}</View> : null
           }
-          contentContainerStyle={hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={theme.text.secondary}
+              progressViewOffset={inset.progressViewOffset}
+            />
+          }
+          contentContainerStyle={[hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent, inset.contentStyle]}
           ListEmptyComponent={
             <View style={{ flex: 1 }}>
               <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
