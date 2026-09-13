@@ -25,8 +25,8 @@ import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
 import { useTextDirectionStyle } from '@/lib/rtl'
-import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
-import { isPresentationLive } from '@/lib/sessionPresentation'
+import { isExternalSession } from '@/lib/externalSession'
+import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import {
   collidingProjectPaths,
   shouldForceServerChip,
@@ -161,8 +161,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       const serverColor = item.serverId ? servers[item.serverId]?.color : undefined
       const forceServerChip = shouldForceServerChip(item.projectPath, collidingPaths)
       if (isSession) {
-        const externalAlive = isExternalAlive(item)
-        const isLive = isPresentationLive(item)
+        const { tier } = deriveSessionPresentation(item)
         return (
           <ConversationListItem
             testID={`session-row-${item.id}`}
@@ -171,8 +170,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             timestamp={item.completedAt ?? item.startedAt}
             branch={item.branch}
             messageCount={item.promptCount}
-            live={isLive}
-            external={externalAlive}
+            tier={tier}
             lastOutput={item.lastOutput || null}
             serverLabel={item.serverLabel}
             serverColor={serverColor}

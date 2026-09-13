@@ -300,3 +300,32 @@ describe('deriveConversationPresentation', () => {
     expect(deriveConversationPresentation({ resumable: true })).toBeNull()
   })
 })
+
+describe('tier', () => {
+  it('collapses every classification to one of five list words', () => {
+    expect(deriveSessionPresentation(base({ status: 'waiting_input' })).tier).toBe('needsYou')
+    expect(deriveSessionPresentation(base({ status: 'running' })).tier).toBe('working')
+    expect(
+      deriveSessionPresentation(base({ status: 'idle', lifecycle: 'starting' })).tier,
+    ).toBe('working')
+    expect(
+      deriveSessionPresentation({ status: 'idle', ownership: 'external', processLiveness: 'alive' }).tier,
+    ).toBe('observed')
+    expect(
+      deriveSessionPresentation(base({ status: 'idle', lifecycle: 'failed' })).tier,
+    ).toBe('cantResume')
+    expect(
+      deriveConversationPresentation({ resumable: false, unavailableReason: 'worktree_removed' })?.tier,
+    ).toBe('cantResume')
+  })
+
+  it('reads a held session as resumable even while its wire status still says waiting', () => {
+    expect(
+      deriveSessionPresentation(
+        base({ status: 'waiting_input', ptyAttached: false, lifecycle: 'resumable', interruptedStatus: 'waiting_input' }),
+      ).tier,
+    ).toBe('resumable')
+    expect(deriveSessionPresentation(base({ status: 'on_hold' })).tier).toBe('resumable')
+    expect(deriveSessionPresentation(base({ status: 'idle', ownership: 'historical' })).tier).toBe('resumable')
+  })
+})

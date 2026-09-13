@@ -155,8 +155,11 @@
     "unavailablePath": "غير متاح",
     "unavailableWorktree": "لا يوجد worktree",
     "stale": "قديم",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
+    "needsYou": "بحاجة إليك",
+    "working": "يعمل",
+    "resumable": "قابل للاستئناف",
+    "cantResume": "لا يمكن الاستئناف",
+    "observed": "مُراقَب"
   },
   "phase": {
     "thinking": "يفكر",
@@ -183,5 +186,8 @@
   },
   "tree": {
     "unknownPath": "(غير معروف)"
+  },
+  "row": {
+    "waitingFor": "في الانتظار منذ {{elapsed}}"
   }
 }

@@ -1,5 +1,9 @@
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
-import { isPresentationLive } from '@/lib/sessionPresentation'
+import {
+  deriveSessionPresentation,
+  isPresentationLive,
+  type SessionTier,
+} from '@/lib/sessionPresentation'
 import type { MultiSession } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { TreeNode, FlatNode } from './types'
@@ -9,11 +13,15 @@ import i18n from '@/lib/i18n'
 // gets amber, the brand "now" colour. Idle gets blue, the brand "thread /
 // archive" colour. Matches SessionCard's spine and SessionStatusBadge dots
 // so the same node reads identically across hub, classic, and tree modes.
-export const STATUS_COLOR: Record<string, string> = {
-  running: '#d29922',
-  waiting_input: '#d29922',
-  idle: '#58a6ff',
+const TIER_COLOR: Record<SessionTier, string> = {
+  needsYou: '#d29922',
+  working: '#3fb950',
+  observed: '#58a6ff',
+  cantResume: '#f85149',
+  resumable: '#58a6ff',
 }
+// Most urgent first; the first tier present decides the leaf colour.
+const TIER_PRIORITY: SessionTier[] = ['needsYou', 'working', 'observed', 'cantResume', 'resumable']
 
 function splitPath(p: string | null | undefined): string[] {
   // Becomes a real tree node's name (TreeRow / DrillView render node.name), so
@@ -161,15 +169,10 @@ export function latestActivityLabel(node: TreeNode): string {
 }
 
 export function activeSessionColor(node: TreeNode): string | null {
-  // Priority: live first (running / waiting_input both map to amber), then
-  // idle. The first matching status decides the leaf colour for the node.
-  const priority = ['running', 'waiting_input', 'idle']
-  for (const status of priority) {
-    if (node.sessions.some((s) => s.status === status)) {
-      return STATUS_COLOR[status]
-    }
-  }
-  return null
+  if (node.sessions.length === 0) return null
+  const tiers = new Set(node.sessions.map((s) => deriveSessionPresentation(s).tier))
+  const tier = TIER_PRIORITY.find((candidate) => tiers.has(candidate))
+  return tier ? TIER_COLOR[tier] : null
 }
 
 /**

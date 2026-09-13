@@ -56,7 +56,7 @@ describe('SessionCard', () => {
 
   it('renders the status badge', async () => {
     const { getByText } = await render(<SessionCard session={makeSession({ status: 'running' })} />)
-    expect(getByText('Running')).toBeTruthy()
+    expect(getByText('Working')).toBeTruthy()
   })
 
   it('renders elapsed time in correct format', async () => {
@@ -101,7 +101,7 @@ describe('SessionCard', () => {
 
   it('shows waiting_input status label', async () => {
     const { getByText } = await render(<SessionCard session={makeSession({ status: 'waiting_input' })} />)
-    expect(getByText('Waiting')).toBeTruthy()
+    expect(getByText('Needs you')).toBeTruthy()
   })
 
   it('navigates to session detail on press', async () => {
@@ -114,7 +114,7 @@ describe('SessionCard', () => {
   it('has correct accessibility label', async () => {
     const session = makeSession({ projectName: 'my-project', status: 'running', elapsedMs: 30000 })
     const { getByLabelText } = await render(<SessionCard session={session} />)
-    expect(getByLabelText('Session my-project, status Running, 30s')).toBeTruthy()
+    expect(getByLabelText('Session my-project, status Working, 30s')).toBeTruthy()
   })
 
   it('announces the same state the badge shows, not the raw wire status', async () => {
@@ -126,6 +126,6 @@ describe('SessionCard', () => {
       elapsedMs: 30000,
     })
     const { getByLabelText } = await render(<SessionCard session={session} />)
-    expect(getByLabelText('Session my-project, status Was waiting, 30s')).toBeTruthy()
+    expect(getByLabelText('Session my-project, status Resumable, 30s')).toBeTruthy()
   })
 })

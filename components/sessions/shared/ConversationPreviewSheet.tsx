@@ -1,4 +1,5 @@
 import React, { useRef, useMemo, useEffect, useCallback } from 'react'
+import type { SessionTier } from '@/lib/sessionPresentation'
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, StyleSheet } from 'react-native'
 import BottomSheet from '@gorhom/bottom-sheet'
 import { useRouter, type Href } from 'expo-router'
@@ -25,7 +26,7 @@ interface Props {
         timestamp?: string | number | Date | null
         branch?: string | null
         messageCount?: number
-        live?: boolean
+        tier?: SessionTier
         serverLabel?: string | null
       }
   onClose: () => void
@@ -94,7 +95,7 @@ export function ConversationPreviewSheet({ target, onClose, onPin, isPinned }: P
           timestamp={target.timestamp}
           branch={target.branch}
           messageCount={target.messageCount}
-          live={target.live}
+          tier={target.tier}
           serverLabel={target.serverLabel}
           density="compact"
           leading="dot"

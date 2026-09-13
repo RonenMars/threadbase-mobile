@@ -141,8 +141,11 @@
     "unavailablePath": "Недоступна",
     "unavailableWorktree": "Нет worktree",
     "stale": "Устарела",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
+    "needsYou": "Ждёт вас",
+    "working": "Работает",
+    "resumable": "Можно возобновить",
+    "cantResume": "Нельзя возобновить",
+    "observed": "Наблюдение"
   },
   "phase": {
     "thinking": "Думает",
@@ -169,5 +172,8 @@
   },
   "tree": {
     "unknownPath": "(неизвестно)"
+  },
+  "row": {
+    "waitingFor": "ждёт {{elapsed}}"
   }
 }

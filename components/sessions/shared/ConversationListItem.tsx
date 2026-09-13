@@ -6,6 +6,9 @@ import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { providerLabelKey, type ProviderName } from '@/constants/providers'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from '@/components/sessions/LiveDot'
+import { colorForToken } from '@/components/sessions/SessionStatusBadge'
+import { StateBadge, isLiveTier } from '@/components/sessions/StateBadge'
+import { tierColorToken, type SessionTier } from '@/lib/sessionPresentation'
 import { formatListTime, formatListTimeAccessible } from './formatListTime'
 import { pathDisplay, type PathDisplayMode } from './pathDisplay'
 import { MessagePreview, type MessagePreviewMode } from './MessagePreview'
@@ -30,15 +33,11 @@ export interface ConversationListItemProps {
   messageCount?: number
   /** Git branch shown next to msg count, in JetBrains Mono. */
   branch?: string | null
-  /** When set, the row gains a pulsing amber live indicator + LIVE pill. */
-  live?: boolean
   /**
-   * When set (with `live`), renders the read-only "external / observed" variant
-   * instead of the interactive amber treatment: a blue dot + EXTERNAL pill.
-   * Distinguishes a discovered process the streamer only observes from a
-   * streamer-owned live session.
+   * Session rows only. Drives the dot colour and pulse, the rail colour while
+   * live, and the state word at the head of the meta line.
    */
-  external?: boolean
+  tier?: SessionTier
 
   /** Optional message snapshots used by `MessagePreview`. */
   firstMessage?: { text: string } | null
@@ -121,8 +120,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     timestamp,
     messageCount,
     branch,
-    live = false,
-    external = false,
+    tier,
     firstMessage,
     lastMessage,
     preview,
@@ -152,9 +150,8 @@ export function ConversationListItem(props: ConversationListItemProps) {
     testID,
   } = props
 
-  // Blue for an observed external session, amber for an interactive live one.
-  const liveColor = external ? theme.status.completed : theme.status.waiting
-  const livePillLabel = external ? t('status.externalPill') : t('status.livePill')
+  const tierColor = tier ? colorForToken(theme, tierColorToken(tier)) : null
+  const liveRow = tier ? isLiveTier(tier) : false
   const serverVisible = shouldShowServer(
     showServer,
     activeServerCount,
@@ -163,7 +160,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
   )
   const stripColor = serverVisible
     ? (serverColor ?? SERVER_COLOR_DEFAULT)
-    : (live ? liveColor : null)
+    : (liveRow ? tierColor : null)
 
   // Path rendering — only consulted when no title.
   const pathParts = useMemo(() => {
@@ -209,6 +206,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
   const metaPieces: string[] = []
   if (showBranch && branch) metaPieces.push(branch)
   if (showCount && typeof messageCount === 'number') metaPieces.push(`${messageCount} msgs`)
+  const metaText = showMeta && metaPieces.length > 0 ? metaPieces.join(' · ') : null
 
   const Wrapper = onPress || onLongPress ? Pressable : View
   const wrapperProps =
@@ -231,7 +229,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       ]}
     >
       {/* Left server-identity strip (3px). Painted in server color when visible,
-         otherwise amber when live, otherwise nothing — preserves alignment. */}
+         otherwise the tier colour while live, otherwise nothing — preserves alignment. */}
       <View
         style={[
           styles.strip,
@@ -249,7 +247,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       )}
       {leading === 'dot' && !isChip && (
         <View style={styles.dotSlot}>
-          <LiveDot live={live} color={live ? liveColor : theme.text.accent} size={6} />
+          <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />
         </View>
       )}
       {leading === 'depth' && !isChip && (
@@ -279,22 +277,20 @@ export function ConversationListItem(props: ConversationListItemProps) {
           />
         ) : null}
 
-        {showMeta && metaPieces.length > 0 ? (
-          <Text style={styles.meta} numberOfLines={1}>{metaPieces.join(' · ')}</Text>
+        {!isChip && (tier || metaText) ? (
+          <View style={styles.metaRow}>
+            {tier ? <StateBadge tier={tier} /> : null}
+            {metaText ? (
+              <Text style={styles.meta} numberOfLines={1}>{metaText}</Text>
+            ) : null}
+          </View>
         ) : null}
       </View>
 
-      {/* Trailing meta column: time + live pill + server chip. */}
+      {/* Trailing meta column: time + server chip + provider badge. */}
       {!isChip ? (
         <View style={styles.tail}>
-          {live ? (
-            <View style={[styles.livePill, external && { backgroundColor: `${liveColor}24` }]}>
-              <View style={[styles.livePillDot, external && { backgroundColor: liveColor }]} />
-              <Text style={[styles.livePillText, external && { color: liveColor }]}>
-                {livePillLabel}
-              </Text>
-            </View>
-          ) : timeText ? (
+          {timeText ? (
             <Text
               style={styles.time}
               accessibilityLabel={timeA11y}
@@ -405,10 +401,16 @@ function makeStyles(theme: Theme) {
       fontWeight: '600',
       lineHeight: font.sm + 5,
     },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
     meta: {
       color: theme.text.secondary,
       fontSize: font.xs,
       lineHeight: font.xs + 4,
+      flexShrink: 1,
     },
     match: {
       backgroundColor: `${theme.text.accent}38`,
@@ -423,27 +425,6 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.xs,
       fontWeight: '500',
-    },
-    livePill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 999,
-      backgroundColor: `${theme.status.waiting}24`,
-    },
-    livePillDot: {
-      width: 5,
-      height: 5,
-      borderRadius: 2.5,
-      backgroundColor: theme.status.waiting,
-    },
-    livePillText: {
-      color: theme.status.waiting,
-      fontSize: font.xs - 2,
-      fontWeight: '700',
-      letterSpacing: 0.5,
     },
     codexBadge: {
       paddingHorizontal: 5,

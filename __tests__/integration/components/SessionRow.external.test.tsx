@@ -45,20 +45,20 @@ beforeEach(() => {
 })
 
 describe('SessionRow — external session', () => {
-  it('marks an alive external row with the distinct EXTERNAL pill', async () => {
+  it('marks an alive external row as Observed', async () => {
     const { getByText, queryByText } = await render(
       <SessionRow session={makeSession({ ownership: 'external', processLiveness: 'alive' })} />,
     )
-    expect(getByText('EXTERNAL')).toBeTruthy()
-    expect(queryByText('LIVE')).toBeNull()
+    expect(getByText('Observed')).toBeTruthy()
+    expect(queryByText('Working')).toBeNull()
   })
 
-  it('marks a managed live row with the interactive LIVE pill', async () => {
+  it('marks a managed live row as Working', async () => {
     const { getByText, queryByText } = await render(
       <SessionRow session={makeSession({ status: 'running', ptyAttached: true })} />,
     )
-    expect(getByText('LIVE')).toBeTruthy()
-    expect(queryByText('EXTERNAL')).toBeNull()
+    expect(getByText('Working')).toBeTruthy()
+    expect(queryByText('Observed')).toBeNull()
   })
 
   it('routes an external row to the read-only conversation view, not /session', async () => {
@@ -109,7 +109,7 @@ describe('SessionRow — external session', () => {
   it('renders an older-server payload (no new fields) without crashing', async () => {
     const { getByTestId, queryByText } = await render(<SessionRow session={makeSession()} />)
     expect(getByTestId('session-row-sess-1')).toBeTruthy()
-    expect(queryByText('EXTERNAL')).toBeNull()
-    expect(queryByText('LIVE')).toBeNull()
+    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('Working')).toBeNull()
   })
 })
