@@ -221,7 +221,7 @@ appId: com.ronenmars.threadbase
 - takeScreenshot: e2e/_artifacts/screenshots/promo-04-02-hub-two-machines
 
 # --- 7–10s · Filter & Sort sheet -------------------------------------------
-# Shows the Provider and Servers filters, plus the server-order lock that only
+# Shows the Agent and Servers filters, plus the server-order lock that only
 # appears once 2+ servers are paired.
 - tapOn:
     id: "filter-sort-button"
@@ -231,7 +231,7 @@ appId: com.ronenmars.threadbase
       id: "filter-sort-sheet"
     timeout: 5000
 
-- assertVisible: "Provider"
+- assertVisible: "AGENT"
 
 - assertVisible: "Servers"
 

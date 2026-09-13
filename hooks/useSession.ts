@@ -26,7 +26,7 @@ const SESSIONS_FETCH_TIMEOUT_MS = 12_000
 // 'lastActivityAt' to match the field on SessionResponse. All other names
 // happen to line up.
 function toWireSortKey(s: SortBy): SessionSortKeyWire {
-  return s === 'lastActivity' ? 'lastActivityAt' : s
+  return s === 'projectName' ? 'projectName' : 'lastActivityAt'
 }
 
 function buildSessionsQueryString(opts: {

@@ -1,7 +1,7 @@
 # Maestro E2E — Feature 1: tree drill pre-fills new-session cwd
 # Flow:
 #   1. Land on the hub (Classic is the default sessionsLayout).
-#   2. Switch to Tree via FilterSortSheet (self-sufficient — no Settings visit).
+#   2. Switch to Tree in Settings (the view switch no longer lives in the sheet).
 #   3. Drill into a project leaf row.
 #   4. Tap the FAB to start a new session.
 #   5. Assert the browse screen opened with cwd pre-filled to the drilled path.
@@ -20,20 +20,26 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "hub-screen"
 
-# Classic is default; switch to Tree so drill testIDs mount.
+# Classic is default; switch to Tree in Settings so drill testIDs mount. The
+# view switch left the Filter & Sort sheet (docs/design/session-list, PR 8).
 - tapOn:
-    id: "filter-sort-button"
+    id: "hub-settings-btn"
 
 - extendedWaitUntil:
     visible:
-      id: "filter-sort-sheet"
+      id: "settings-layout-tree"
     timeout: 5000
 
 - tapOn:
-    id: "layout-option-tree"
+    id: "settings-layout-tree"
 
 - tapOn:
-    id: "filter-sort-close-btn"
+    id: "header-back"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 5000
 
 # Drill into the my-project leaf row in the tree. Fixture has three sessions
 # under /home/user/my-project so it is rendered as a leaf in the compacted
