@@ -16,7 +16,7 @@ interface Props {
   isRefetching?: boolean
 }
 
-function colorForToken(theme: Theme, token: SessionColorToken): string {
+export function colorForToken(theme: Theme, token: SessionColorToken): string {
   switch (token) {
     case 'running':
       return theme.status.running

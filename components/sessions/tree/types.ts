@@ -1,4 +1,5 @@
 import type { MultiSession } from '@/types/api'
+import type { SessionTier } from '@/lib/sessionPresentation'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { ProviderName } from '@/constants/providers'
 
@@ -51,7 +52,7 @@ export type DrillItem = {
   firstMessage?: { text: string } | null
   lastMessage?: { text: string } | null
   branch?: string | null
-  live?: boolean
+  tier?: SessionTier
   serverId?: string
   serverLabel?: string
   provider?: ProviderName

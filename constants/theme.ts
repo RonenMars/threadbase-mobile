@@ -377,7 +377,8 @@ export const rosePine = {
   },
   border: '#403d52',
   status: {
-    running: '#31748f',
+    // Working must read as green, not the pine accent — see docs/design/session-list.
+    running: '#3fb950',
     waiting: '#f6c177',
     failed: '#eb6f92',
     completed: '#c4a7e7',
@@ -407,7 +408,8 @@ export const rosePineDawn = {
   },
   border: '#dfdad9',
   status: {
-    running: '#286983',
+    // Working must read as green, not the pine accent — see docs/design/session-list.
+    running: '#1a7f37',
     waiting: '#ea9d34',
     failed: '#b4637a',
     completed: '#907aa9',
