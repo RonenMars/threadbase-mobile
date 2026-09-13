@@ -1,3 +1,5 @@
+import { isCodexInjectedContext } from './codexInjectedContext'
+
 export interface DisplayTitleInput {
   /** User rename from the session-names store, if any. Always wins. */
   customName?: string | null
@@ -40,12 +42,13 @@ const FENCED_CODE = /```[\s\S]*?(?:```|$)/g
 const IMAGE_TAG = /<image\b[^>]*>/gi
 const IMAGE_PLACEHOLDER = /\[Image #\d+\]/gi
 // Tags the CLIs inject around the user's own words; isCodexInjectedContext only classifies
-// whole messages, so the tag bodies have to be cut out here.
+// whole messages, so the tag bodies have to be cut out here. The streamer slices a session
+// name to 80 chars, so a closing tag is routinely missing: an unclosed tag runs to the end.
 const INJECTED_TAG =
-  /<(user_action|context|system-reminder|INSTRUCTIONS|permissions instructions|environment_context)>[\s\S]*?<\/\1>/gi
+  /<(user_action|context|system-reminder|INSTRUCTIONS|permissions instructions|environment_context|bash-input|bash-stdout|bash-stderr)>[\s\S]*?(?:<\/\1>|$)/gi
 const LS_LINE = /^(?:total \d+|[-dlcbps][rwxsStT-]{9}[@+]?\s+\d+\s+.*)$/gm
 const URL = /https?:\/\/([^\s/?#]+)\S*/gi
-const ABSOLUTE_PATH = /(?<![\w:/])\/(?:[\w.@+~-]+\/)*([\w.@+~-]+)\/?/g
+const ABSOLUTE_PATH = /(?<![\w:/<])\/(?:[\w.@+~-]+\/)*([\w.@+~-]+)\/?/g
 const BARE_PATH = /^\/?[\w.@+~-]+(?:\/[\w.@+~-]+)+\/?$/
 const HEX_ID = /^[0-9a-f]{7,}$/i
 const NON_ALNUM = /[^\p{L}\p{N}]/gu
@@ -101,8 +104,9 @@ function collapseWhitespace(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
-/** Step 2 of the title pipeline: normalise a raw first prompt into one line of the user's words. */
-export function cleanFirstMessage(raw: string): string {
+/** Cut the tooling noise out of a raw message and flatten it to one line; '' when nothing is left. */
+export function stripMessageNoise(raw: string): string {
+  if (isCodexInjectedContext(raw)) return ''
   let text = raw
     .replace(HEADING_MARKS, '')
     .replace(FENCED_CODE, ' ')
@@ -112,7 +116,12 @@ export function cleanFirstMessage(raw: string): string {
   text = stripJsonBlobs(text)
   // URLs before paths: the path pass would otherwise eat a URL's path segment first.
   text = text.replace(LS_LINE, '').replace(URL, '$1').replace(ABSOLUTE_PATH, '$1')
-  text = collapseWhitespace(text)
+  return collapseWhitespace(text)
+}
+
+/** Step 2 of the title pipeline: normalise a raw first prompt into one line of the user's words. */
+export function cleanFirstMessage(raw: string): string {
+  const text = stripMessageNoise(raw)
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 

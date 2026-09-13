@@ -1,6 +1,7 @@
 import React from 'react'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
+import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -108,6 +109,20 @@ describe('NowList', () => {
     expect(queryByText('NEEDS YOU · 1')).toBeNull()
     expect(getByTestId('first-session-card')).toBeTruthy()
     expect(queryByText('Needs you')).toBeTruthy()
+  })
+
+  it('stamps a history row with the clock it was bucketed by', async () => {
+    const eightDays = 8 * 86_400_000
+    const startedAt = new Date(NOW - eightDays).toISOString()
+    // No completedAt: activity is startedAt + elapsedMs, which reaches today.
+    const old = session({ id: 'old', sessionName: 'Migrate the settings store to zustand', startedAt, elapsedMs: eightDays - 120_000 })
+    const ms = NOW - 120_000
+    const { getByText, queryByText } = await renderList([asItem(old, ms)])
+
+    expect(getByText('EARLIER TODAY')).toBeTruthy()
+    expect(queryByText('EARLIER')).toBeNull()
+    expect(getByText(formatListTime(ms))).toBeTruthy()
+    expect(queryByText(formatListTime(startedAt))).toBeNull()
   })
 
   it('keeps two rejected titles as plain rows', async () => {
