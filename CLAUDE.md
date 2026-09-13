@@ -13,6 +13,8 @@ npm run test:e2e:mock
 This checks for a booted iOS simulator, ensures a Release build is installed (building one if needed), starts `e2e/mock-server.js` on ports 7071 and 7072, runs the mock-suite flows, then kills the server.
 The authoritative flow list is the `test:e2e:mock` script in `package.json` — read it there rather than duplicating it here.
 
+CI (`.github/workflows/e2e.yml`) does not run that script as one job. It builds the Release binary once per platform, then fans the same flow list across parallel Maestro shards (`e2e/mock-suite-shards.js`: 3 Android emulators, 2 iOS simulators). A `flows=` dispatch stays on a single shard. Local `npm run test:e2e:mock` is unchanged.
+
 **Prerequisites (one-time):** `brew install maestro` + `npm run ios` to get the app on the sim.
 
 When adding new Maestro flows:

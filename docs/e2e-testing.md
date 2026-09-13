@@ -8,14 +8,14 @@ We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS a
 
 ## Android CI
 
-The `E2E` GitHub Actions workflow defaults to Android and runs on `ubuntu-24.04` with one Android API 35
-Google APIs `x86_64` `pixel_6` emulator and Maestro CLI 2.8.0. It assembles the Release APK *before*
-the emulator boots, caches that APK per checked-out commit SHA, installs it with `adb`, and runs the
-suite through `e2e/run-maestro.js`. A second dispatch of the same commit reuses the cached APK and
-skips the ~20 minute compile — that is the supported way to split a long suite (one-flow warmup,
-then the remaining flows) without paying Gradle twice. The workflow disables Sentry source-map
-upload and uses the committed debug keystore only for this simulator APK, so it does not need
-production Sentry or signing credentials.
+The `E2E` GitHub Actions workflow defaults to Android and runs on `ubuntu-24.04` with Android API 35
+Google APIs `x86_64` `pixel_6` emulators and Maestro CLI 2.8.0. One job assembles the Release APK
+(and caches it per checked-out commit SHA); three parallel emulator jobs download that APK, install
+it with `adb`, and each run a shard of `test:e2e:mock` through `e2e/run-maestro.js`. iOS is the same
+shape on `macos-26`: one `xcodebuild` job, then two simulator shards. A `flows=` dispatch stays on
+one shard. A second dispatch of the same commit reuses the cached binary and skips the compile.
+The workflow disables Sentry source-map upload and uses the committed debug keystore only for this
+simulator APK, so it does not need production Sentry or signing credentials.
 
 The Android emulator reaches the runner-hosted mock server at `10.0.2.2`, while
 local iOS runs use `localhost`. The Android preflight checks emulator readiness
@@ -446,8 +446,8 @@ The HTML report and debug artifacts can be uploaded as CI artifacts for review.
 
 ## Future Improvements
 
-- [ ] Add Android E2E tests
+- [x] Add Android E2E tests — weekly `E2E` workflow, Android default
 - [ ] Expand mock server test coverage
 - [ ] Add visual regression testing (capture flows exist; no pixel-diff runner yet — see `e2e/visual/native-liquid-glass/`)
-- [ ] Integrate with CI/CD pipeline
+- [x] Integrate with CI/CD pipeline — `.github/workflows/e2e.yml`
 - [ ] Add performance testing (startup time, response time)

@@ -46,7 +46,7 @@ uncertain case therefore leaves the message untagged — no reachable `origin/ma
 - `app.config.js` — dynamic Expo config (forwards Sentry org/project from env into the plugin)
 - `android/` — native Android project (tracked; input to `ship-android.sh`)
 - `ios/` — native iOS project (tracked; input to `ship-ios.sh`)
-- `e2e/` — Maestro flows + mock servers (monthly CI e2e job)
+- `e2e/` — Maestro flows + mock servers (weekly CI e2e job)
 - `package.json` / `package-lock.json` — deps + npm scripts; reproducible builds
 
 ### Found by scan — also affects functionality / tests / CI

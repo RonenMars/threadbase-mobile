@@ -51,4 +51,11 @@ describe('e2e.yml Android APK cache', () => {
     expect(setupAt).toBeGreaterThan(-1);
     expect(readOnlyAt).toBeGreaterThan(setupAt);
   });
+
+  it('does not boot an emulator in the APK job', () => {
+    const src = workflowSource();
+    const apkJob = src.slice(src.indexOf('  android-apk:\n'), src.indexOf('  android-maestro:\n'));
+    expect(apkJob).toContain('Assemble Android Release APK');
+    expect(apkJob).not.toContain('android-emulator-runner');
+  });
 });
