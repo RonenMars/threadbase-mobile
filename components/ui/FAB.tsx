@@ -45,7 +45,7 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
       style={[
         styles.fab,
         {
-          bottom: 24 + insets.bottom,
+          bottom: FAB_BOTTOM + insets.bottom,
           backgroundColor: theme.text.accent,
           shadowColor: theme.text.accent,
         },
@@ -62,6 +62,12 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
 })
 
 const FAB_SIZE = 56
+const FAB_BOTTOM = 24
+/**
+ * Bottom padding a scrolling list needs above the safe-area inset so its last
+ * row can scroll clear of the FAB: the button's offset, its height, and a gap.
+ */
+export const FAB_CLEARANCE = FAB_BOTTOM + FAB_SIZE + 16
 
 const styles = StyleSheet.create({
   fab: {

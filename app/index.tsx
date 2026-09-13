@@ -13,7 +13,7 @@ import {
   FlatList,
   RefreshControl,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { useConversations, useConversationSearch } from '@/hooks/useConversations'
@@ -41,7 +41,7 @@ import { isPresentationLive } from '@/lib/sessionPresentation'
 import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import { FAB } from '@/components/ui/FAB'
+import { FAB, FAB_CLEARANCE } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
@@ -714,6 +714,11 @@ const MergedClassicList = React.memo(function MergedClassicList({
   const { direction } = useAppDirection()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const searchStyles = makeSearchStyles(theme, direction)
+  const insets = useSafeAreaInsets()
+  const mergedContent = useMemo(
+    () => [styles.mergedContent, { paddingBottom: FAB_CLEARANCE + insets.bottom }],
+    [styles.mergedContent, insets.bottom],
+  )
   const { t } = useTranslation('sessions')
   const router = useRouter()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
@@ -936,7 +941,7 @@ const MergedClassicList = React.memo(function MergedClassicList({
           return renderConvCard(item.item as MultiConversation)
         }}
         {...LIST_WINDOW}
-        contentContainerStyle={styles.mergedContent}
+        contentContainerStyle={mergedContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} />
         }
