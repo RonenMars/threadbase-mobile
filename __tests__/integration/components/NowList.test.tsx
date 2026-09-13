@@ -3,7 +3,10 @@ import { StyleSheet, Text } from 'react-native'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { fireEvent } from '@testing-library/react-native'
 import { renderWithI18n } from '@/test-utils/render'
+import { useQuietTailStore } from '@/stores/quietTail'
+import { useServersStore } from '@/stores/servers'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -95,17 +98,59 @@ describe('NowList', () => {
     expect(queryByText('NEEDS YOU · 2')).toBeNull()
   })
 
-  it('folds three or more rejected-title rows into one grouped row', async () => {
-    const noise = ['hi', 'hey', 'Ahoy'].map((name, i) =>
-      asConv(conversation({ id: `n${i}`, sessionName: name, title: name }), NOW - 1000 * (i + 1)),
+  it('keeps up to five quiet rows inline, in time order, as one-line rows', async () => {
+    const quiet = ['hi', 'hey', 'Ahoy', 'yo', 'git pull'].map((name, i) =>
+      asConv(conversation({ id: `n${i}`, sessionName: name, title: name, branch: 'main' }), NOW - 1000 * (i + 1)),
     )
     const real = asConv(conversation({ id: 'real', sessionName: 'Fix the resume collision copy' }), NOW - 500)
-    const { getByText, queryByTestId, getByTestId } = await renderList([real, ...noise])
+    const { getByText, getAllByText, queryByTestId, getByTestId } = await renderList([real, ...quiet])
 
-    expect(getByText('3 one-line sessions')).toBeTruthy()
-    expect(getByText('GROUPED')).toBeTruthy()
+    expect(queryByTestId('quiet-tail')).toBeNull()
+    expect(getByTestId('conversation-row-real')).toBeTruthy()
+    for (let i = 0; i < 5; i += 1) expect(getByTestId(`conversation-row-n${i}`)).toBeTruthy()
+    // A greeting falls to the identity; a command keeps its own words with the identity beside it.
+    expect(getAllByText('tb-mobile · main')).toHaveLength(4)
+    // The identity is a nested Text inside the label, so the row's text reads as one string.
+    expect(getByText(/^git pull/)).toBeTruthy()
+  })
+
+  it('gathers six or more quiet rows into one tail at the end of their group', async () => {
+    const quiet = ['hi', 'hey', 'Ahoy', 'yo', 'sup', 'hello'].map((name, i) =>
+      asConv(conversation({ id: `n${i}`, sessionName: name, title: name }), NOW - 1000 * (i + 1)),
+    )
+    const real = asConv(conversation({ id: 'real', sessionName: 'Fix the resume collision copy' }), NOW - 3500)
+    const { getByText, getByTestId, queryByTestId } = await renderList([...quiet, real])
+
+    expect(getByText('6 quiet sessions · nothing was asked')).toBeTruthy()
     expect(getByTestId('conversation-row-real')).toBeTruthy()
     expect(queryByTestId('conversation-row-n0')).toBeNull()
+    const data = getByTestId('now-list-scroll').props.data as { kind: string }[]
+    expect(data[data.length - 1].kind).toBe('quietTail')
+
+    fireEvent.press(getByTestId('quiet-tail'))
+    expect(useQuietTailStore.getState().entries.map((e) => e.item.item.id)).toEqual(['n0', 'n1', 'n2', 'n3', 'n4', 'n5'])
+  })
+
+  it('keeps Needs you above every server group when two servers are active', async () => {
+    useServersStore.setState({
+      activeServerIds: ['server-1', 'server-2'],
+      servers: {
+        'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+        'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+    try {
+      const waiting = session({ id: 'w', serverId: 'server-2', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', sessionName: 'Why sessions open in terminal view' })
+      const older1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
+      const older2 = asConv(conversation({ id: 'c2', serverId: 'server-2', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 1000)
+      const { getByTestId } = await renderList([older2, older1, asItem(waiting, NOW - 9000)])
+      const keys = (getByTestId('now-list-scroll').props.data as { key: string }[]).map((f) => f.key)
+      expect(keys.indexOf('eyebrow-needsYou')).toBeLessThan(keys.indexOf('server-server-1'))
+      expect(keys.indexOf('server-server-1')).toBeLessThan(keys.indexOf('server-server-2'))
+      expect(keys.indexOf('session:server-2::w')).toBeLessThan(keys.indexOf('server-server-1'))
+    } finally {
+      useServersStore.setState({ activeServerIds: [], servers: {} })
+    }
   })
 
   it('drops the sections in Recent order but keeps live rows as cards', async () => {
@@ -142,10 +187,10 @@ describe('NowList', () => {
     expect(list.props.scrollIndicatorInsets).toEqual({ top: 120 })
   })
 
-  it('keeps two rejected titles as plain rows', async () => {
+  it('keeps two rejected titles as plain quiet rows', async () => {
     const items = ['hi', 'hey'].map((name, i) => asConv(conversation({ id: `n${i}`, sessionName: name, title: name })))
-    const { queryByText, getByTestId } = await renderList(items)
-    expect(queryByText('GROUPED')).toBeNull()
+    const { queryByTestId, getByTestId } = await renderList(items)
+    expect(queryByTestId('quiet-tail')).toBeNull()
     expect(getByTestId('conversation-row-n0')).toBeTruthy()
   })
 })

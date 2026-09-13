@@ -150,22 +150,35 @@ describe('resolveDisplayTitle', () => {
     ).toEqual({ title: 'The login flow fails because the token expires.', source: 'assistant' })
   })
 
+  it('keeps a short command as the title, as typed, on the quiet rung', () => {
+    expect(resolveDisplayTitle({ firstMessage: 'git pull', projectName: 'app', branch: 'main' })).toEqual({
+      title: 'git pull',
+      source: 'command',
+    })
+  })
+
+  it('prefers the command over the assistant sentence', () => {
+    expect(
+      resolveDisplayTitle({ firstMessage: 'git pull', firstAssistantMessage: 'Already up to date.' }),
+    ).toEqual({ title: 'git pull', subtitle: 'Already up to date.', source: 'command' })
+  })
+
   it('falls back to project and branch when there is no usable text', () => {
     expect(resolveDisplayTitle({ firstMessage: 'yo', projectName: 'app', branch: 'main' })).toEqual({
       title: 'app · main',
-      source: 'project',
+      source: 'untitled',
     })
   })
 
   it('omits the branch part when the branch is missing', () => {
     expect(resolveDisplayTitle({ firstMessage: 'yo', projectName: 'app' })).toEqual({
       title: 'app',
-      source: 'project',
+      source: 'untitled',
     })
   })
 
-  it('returns an empty project title when nothing at all is known', () => {
-    expect(resolveDisplayTitle({})).toEqual({ title: '', source: 'project' })
+  it('returns an empty identity title when nothing at all is known', () => {
+    expect(resolveDisplayTitle({})).toEqual({ title: '', source: 'untitled' })
   })
 
   it('omits the subtitle when the assistant echoes the title', () => {

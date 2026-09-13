@@ -162,13 +162,15 @@
   },
   "row": {
     "waitingFor": "waiting {{elapsed}}",
-    "groupedOneLine_one": "{{count}} one-line session",
-    "groupedOneLine_other": "{{count}} one-line sessions",
-    "groupedPill": "GROUPED",
+    "quietTail_one": "{{count}} quiet session · nothing was asked",
+    "quietTail_other": "{{count}} quiet sessions · nothing was asked",
     "open": "Open"
   },
   "layout": {
     "now": "Now",
     "projects": "Projects"
+  },
+  "quiet": {
+    "screenTitle": "Quiet sessions"
   }
 }

@@ -186,17 +186,19 @@
   },
   "row": {
     "waitingFor": "في الانتظار منذ {{elapsed}}",
-    "groupedOneLine_zero": "لا توجد جلسات من سطر واحد",
-    "groupedOneLine_one": "جلسة واحدة من سطر واحد",
-    "groupedOneLine_two": "جلستان من سطر واحد",
-    "groupedOneLine_few": "{{count}} جلسات من سطر واحد",
-    "groupedOneLine_many": "{{count}} جلسة من سطر واحد",
-    "groupedOneLine_other": "{{count}} جلسة من سطر واحد",
-    "groupedPill": "مجمّعة",
+    "quietTail_zero": "لا توجد جلسات هادئة · لم يُطلب شيء",
+    "quietTail_one": "جلسة هادئة واحدة · لم يُطلب شيء",
+    "quietTail_two": "جلستان هادئتان · لم يُطلب شيء",
+    "quietTail_few": "{{count}} جلسات هادئة · لم يُطلب شيء",
+    "quietTail_many": "{{count}} جلسة هادئة · لم يُطلب شيء",
+    "quietTail_other": "{{count}} جلسة هادئة · لم يُطلب شيء",
     "open": "فتح"
   },
   "layout": {
     "now": "الآن",
     "projects": "المشاريع"
+  },
+  "quiet": {
+    "screenTitle": "الجلسات الهادئة"
   }
 }

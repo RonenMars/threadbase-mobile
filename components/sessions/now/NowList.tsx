@@ -22,6 +22,7 @@ import { conversationHref } from '@/lib/conversationHref'
 import { deriveSessionPresentation, type SessionTier } from '@/lib/sessionPresentation'
 import { useNavLockStore } from '@/stores/navLock'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { useQuietTailStore } from '@/stores/quietTail'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
@@ -29,8 +30,8 @@ import type { MultiConversation, MultiSession } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { EarlierRow } from './EarlierRow'
 import { dominantProvider as findDominantProvider } from '@/lib/providerDominance'
-import { GroupedNoiseRow } from './GroupedNoiseRow'
 import { NeedsYouCard } from './NeedsYouCard'
+import { QuietTailRow } from './QuietTailRow'
 import { SectionEyebrow, type SectionTone } from './SectionEyebrow'
 import { WorkingCard } from './WorkingCard'
 import { mergedItemMatchesQuery, type MergedItem } from './mergedItems'
@@ -62,37 +63,30 @@ type FlatItem =
   | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number }
   | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
-  | { kind: 'grouped'; key: string; members: Entry[] }
+  | { kind: 'quietTail'; key: string; entries: Entry[] }
 
-const NOISE_GROUP_MIN = 3
+/** More than ~5 quiet rows in one time group gather into a tail row. */
+const QUIET_TAIL_MIN = 6
 
 function entryKey(e: Entry): string {
   return `${e.item.kind}:${e.item.item.serverId}::${e.item.item.id}`
 }
 
+function toRow(entry: Entry): FlatItem {
+  return { kind: 'row', key: entryKey(entry), entry, isFirst: false }
+}
+
 /**
- * Fold ≥3 rejected-title rows in one bucket into a single grouped row at the
- * position of the first; expanding lists them back inline. Display-layer only.
+ * Quiet rows (a command or only an identity for a title) stay inline in time
+ * order as light one-line rows. Once a group holds QUIET_TAIL_MIN of them they
+ * leave the group and one tail row sits at its end: never mid-list, never
+ * above real work. Display-layer only.
  */
-function withNoiseGrouped(bucket: Entry[], groupKey: string, expanded: boolean): FlatItem[] {
-  const noise = bucket.filter((e) => e.title.noise)
-  if (noise.length < NOISE_GROUP_MIN) {
-    return bucket.map((e) => ({ kind: 'row', key: entryKey(e), entry: e, isFirst: false }))
-  }
-  const out: FlatItem[] = []
-  let inserted = false
-  for (const e of bucket) {
-    if (!e.title.noise) {
-      out.push({ kind: 'row', key: entryKey(e), entry: e, isFirst: false })
-      continue
-    }
-    if (!inserted) {
-      out.push({ kind: 'grouped', key: groupKey, members: noise })
-      if (expanded) out.push(...noise.map((n) => ({ kind: 'row' as const, key: entryKey(n), entry: n, isFirst: false })))
-      inserted = true
-    }
-  }
-  return out
+function withQuietTail(bucket: Entry[], bucketKey: string): FlatItem[] {
+  const quiet = bucket.filter((e) => e.title.rung !== 'intent')
+  if (quiet.length < QUIET_TAIL_MIN) return bucket.map(toRow)
+  const loud = bucket.filter((e) => e.title.rung === 'intent')
+  return [...loud.map(toRow), { kind: 'quietTail', key: `quiet-${bucketKey}`, entries: quiet }]
 }
 
 /**
@@ -127,7 +121,7 @@ export const NowList = React.memo(function NowList({
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => new Set())
+  const setQuietTail = useQuietTailStore((s) => s.set)
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
   const multiServer = activeServerIds.length > 1
 
@@ -152,7 +146,7 @@ export const NowList = React.memo(function NowList({
       const projectOf = (e: Entry) =>
         e.item.kind === 'session' ? e.item.item.projectName : (e.item.item.projectPath.split('/').filter(Boolean).pop() ?? '')
       const byProject = (a: Entry, b: Entry) => projectOf(a).localeCompare(projectOf(b)) || byTime(a, b)
-      const flat = withNoiseGrouped([...entries].sort(order === 'projectName' ? byProject : byTime), 'grouped-all', expandedGroups.has('grouped-all'))
+      const flat = withQuietTail([...entries].sort(order === 'projectName' ? byProject : byTime), 'all')
       const first = flat.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
       if (first && first.kind === 'row') first.isFirst = true
       return flat
@@ -178,34 +172,30 @@ export const NowList = React.memo(function NowList({
         const bucket = earlier.filter((e) => e.item.item.serverId === id)
         out.push({ kind: 'serverHeader', key: `server-${id}`, serverId: id, serverLabel: servers[id]?.label ?? id, totalCount: bucket.length })
         if (collapsible && collapsedServers.includes(id)) continue
-        out.push(...withNoiseGrouped(bucket, `grouped-${id}`, expandedGroups.has(`grouped-${id}`)))
+        out.push(...withQuietTail(bucket, id))
       }
     } else {
       const today = earlier.filter((e) => isToday(new Date(e.item.ms).toISOString()))
       const older = earlier.filter((e) => !isToday(new Date(e.item.ms).toISOString()))
       if (today.length > 0) {
         out.push({ kind: 'eyebrow', key: 'eyebrow-today', tone: 'muted', label: t('live.headerEarlierToday'), count: today.length })
-        out.push(...withNoiseGrouped(today, 'grouped-today', expandedGroups.has('grouped-today')))
+        out.push(...withQuietTail(today, 'today'))
       }
       if (older.length > 0) {
         out.push({ kind: 'eyebrow', key: 'eyebrow-older', tone: 'muted', label: t('live.headerEarlier'), count: older.length })
-        out.push(...withNoiseGrouped(older, 'grouped-older', expandedGroups.has('grouped-older')))
+        out.push(...withQuietTail(older, 'older'))
       }
     }
 
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, expandedGroups, t])
+  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, t])
 
-  const toggleGroup = useCallback((key: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }, [])
+  const openQuietTail = useCallback((tail: Entry[]) => {
+    setQuietTail(tail.map((e) => ({ item: e.item, title: e.title.title })))
+    router.push('/quiet-sessions')
+  }, [setQuietTail, router])
 
   const highlight = searchQuery.trim() || undefined
 
@@ -225,14 +215,8 @@ export const NowList = React.memo(function NowList({
             isRefreshing={isBackgroundRefreshing}
           />
         )
-      case 'grouped':
-        return (
-          <GroupedNoiseRow
-            titles={item.members.map((m) => m.title.title)}
-            expanded={expandedGroups.has(item.key)}
-            onToggle={() => toggleGroup(item.key)}
-          />
-        )
+      case 'quietTail':
+        return <QuietTailRow count={item.entries.length} onPress={() => openQuietTail(item.entries)} />
       case 'row': {
         // A live tier is a card wherever it sits; everything else is a two-line row.
         if (item.entry.tier === 'needsYou' || item.entry.tier === 'working') {
@@ -252,6 +236,7 @@ export const NowList = React.memo(function NowList({
           <EarlierRow
             item={item.entry.item}
             title={item.entry.title.title}
+            quiet={item.entry.title.rung !== 'intent'}
             isFirst={item.isFirst}
             highlight={highlight}
             dominantProvider={dominantProvider}
@@ -260,7 +245,7 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, expandedGroups, toggleGroup, highlight, dominantProvider])
+  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, openQuietTail, highlight, dominantProvider])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">

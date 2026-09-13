@@ -168,14 +168,16 @@
   },
   "row": {
     "waitingFor": "ממתין {{elapsed}}",
-    "groupedOneLine_one": "סשן אחד בשורה אחת",
-    "groupedOneLine_two": "שני סשנים בשורה אחת",
-    "groupedOneLine_other": "{{count}} סשנים בשורה אחת",
-    "groupedPill": "מקובץ",
+    "quietTail_one": "סשן שקט אחד · לא נשאל דבר",
+    "quietTail_two": "שני סשנים שקטים · לא נשאל דבר",
+    "quietTail_other": "{{count}} סשנים שקטים · לא נשאל דבר",
     "open": "פתח"
   },
   "layout": {
     "now": "עכשיו",
     "projects": "פרויקטים"
+  },
+  "quiet": {
+    "screenTitle": "סשנים שקטים"
   }
 }
