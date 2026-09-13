@@ -62,10 +62,6 @@
     "seeAll_few": "Показать {{count}} беседы",
     "seeAll_many": "Показать все {{count}} бесед",
     "seeAll_other": "Показать все {{count}} бесед",
-    "msgs_one": "{{count}} сообщение",
-    "msgs_few": "{{count}} сообщения",
-    "msgs_many": "{{count}} сообщений",
-    "msgs_other": "{{count}} сообщений",
     "activityLive_one": "Активных: {{count}}",
     "activityLive_few": "Активных: {{count}}",
     "activityLive_many": "Активных: {{count}}",
@@ -95,7 +91,17 @@
     "headerIdle_one": "БЕЗ АКТИВНОСТИ · {{count}}",
     "headerIdle_few": "БЕЗ АКТИВНОСТИ · {{count}}",
     "headerIdle_many": "БЕЗ АКТИВНОСТИ · {{count}}",
-    "headerIdle_other": "БЕЗ АКТИВНОСТИ · {{count}}"
+    "headerIdle_other": "БЕЗ АКТИВНОСТИ · {{count}}",
+    "headerNeedsYou_one": "ЖДЁТ ВАС · {{count}}",
+    "headerNeedsYou_few": "ЖДЁТ ВАС · {{count}}",
+    "headerNeedsYou_many": "ЖДЁТ ВАС · {{count}}",
+    "headerNeedsYou_other": "ЖДЁТ ВАС · {{count}}",
+    "headerWorking_one": "РАБОТАЕТ · {{count}}",
+    "headerWorking_few": "РАБОТАЕТ · {{count}}",
+    "headerWorking_many": "РАБОТАЕТ · {{count}}",
+    "headerWorking_other": "РАБОТАЕТ · {{count}}",
+    "headerEarlierToday": "РАНЕЕ СЕГОДНЯ",
+    "headerEarlier": "РАНЕЕ"
   },
   "preview": {
     "liveUnavailable": "Предпросмотр активной сессии недоступен — откройте сессию, чтобы увидеть терминал в реальном времени.",
@@ -112,7 +118,8 @@
     "addToFavorites": "Добавить в избранное"
   },
   "fab": {
-    "noServerHint": "Добавьте сервер в Настройках, чтобы начать"
+    "noServerHint": "Добавьте сервер в Настройках, чтобы начать",
+    "newSession": "Новая сессия"
   },
   "noServer": {
     "title": "Подключите ваш первый сервер",
@@ -173,6 +180,12 @@
     "unknownPath": "(неизвестно)"
   },
   "row": {
-    "waitingFor": "ждёт {{elapsed}}"
+    "waitingFor": "ждёт {{elapsed}}",
+    "groupedOneLine_one": "{{count}} однострочная сессия",
+    "groupedOneLine_few": "{{count}} однострочные сессии",
+    "groupedOneLine_many": "{{count}} однострочных сессий",
+    "groupedOneLine_other": "{{count}} однострочных сессий",
+    "groupedPill": "СГРУППИРОВАНО",
+    "open": "Открыть"
   }
 }

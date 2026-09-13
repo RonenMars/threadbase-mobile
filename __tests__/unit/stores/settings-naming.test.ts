@@ -6,7 +6,6 @@ beforeEach(() => {
   ;(AsyncStorage.getItem as jest.Mock).mockClear()
   useSettingsStore.setState({
     autoNameFromMessage: true,
-    aiGeneratedNames: false,
   } as any)
 })
 
@@ -15,17 +14,8 @@ describe('SettingsStore – session naming flags', () => {
     expect(useSettingsStore.getState().autoNameFromMessage).toBe(true)
   })
 
-  it('aiGeneratedNames defaults to false', () => {
-    expect(useSettingsStore.getState().aiGeneratedNames).toBe(false)
-  })
-
   it('setAutoNameFromMessage updates flag', () => {
     useSettingsStore.getState().setAutoNameFromMessage(false)
     expect(useSettingsStore.getState().autoNameFromMessage).toBe(false)
-  })
-
-  it('setAiGeneratedNames updates flag', () => {
-    useSettingsStore.getState().setAiGeneratedNames(true)
-    expect(useSettingsStore.getState().aiGeneratedNames).toBe(true)
   })
 })

@@ -24,11 +24,9 @@ const ASYNC_KEY_SETTINGS = 'threadbase_settings'
 const DEFAULT_LOCALE = resolveSupportedLocale(getLocales())
 
 export type RowPreviewMode = 'first' | 'last' | 'auto' | 'off'
-export type RowDensity = 'comfortable' | 'compact'
 export type RowPathDisplay = 'smart' | 'full' | 'last-segment'
 export type RowServerIndicator = 'auto' | 'always' | 'never'
 export type RowServerChipVariant = 'label' | 'letter' | 'symbol'
-export type RowTitleSource = 'title' | 'first' | 'last'
 export type RowPreviewModalCount = 5 | 10 | 20
 
 interface SettingsStore {
@@ -58,9 +56,7 @@ interface SettingsStore {
    * suggestion was shown (spec §14: max 2 per rolling 30-day window). */
   postFeedbackDiagnosticsSuggestionImpressions: number[]
   // Conversation row settings (Conversation list redesign §13).
-  rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
-  rowDensity: RowDensity
   rowPathDisplay: RowPathDisplay
   rowServerIndicator: RowServerIndicator
   rowServerChipVariant: RowServerChipVariant
@@ -81,17 +77,13 @@ interface SettingsStore {
   setCrashReportingNoticeDismissed: (v: boolean) => void
   /** Appends now() to the impression history (spec §14 frequency tracking). */
   recordPostFeedbackDiagnosticsSuggestionImpression: () => void
-  setRowTitleSource: (v: RowTitleSource) => void
   setRowPreviewMode: (v: RowPreviewMode) => void
-  setRowDensity: (v: RowDensity) => void
   setRowPathDisplay: (v: RowPathDisplay) => void
   setRowServerIndicator: (v: RowServerIndicator) => void
   setRowServerChipVariant: (v: RowServerChipVariant) => void
   setRowPreviewModalCount: (v: RowPreviewModalCount) => void
   autoNameFromMessage: boolean
-  aiGeneratedNames: boolean
   setAutoNameFromMessage: (v: boolean) => void
-  setAiGeneratedNames: (v: boolean) => void
   sessionView: 'chat' | 'terminal'
   setSessionView: (v: 'chat' | 'terminal') => void
   hydrate: () => Promise<void>
@@ -124,15 +116,12 @@ interface PersistedSettings {
   crashReportingNoticeDismissed: boolean
   onboardingDiagnosticsExperimentVariant: 'treatment' | 'control' | null
   postFeedbackDiagnosticsSuggestionImpressions: number[]
-  rowTitleSource: RowTitleSource
   rowPreviewMode: RowPreviewMode
-  rowDensity: RowDensity
   rowPathDisplay: RowPathDisplay
   rowServerIndicator: RowServerIndicator
   rowServerChipVariant: RowServerChipVariant
   rowPreviewModalCount: RowPreviewModalCount
   autoNameFromMessage: boolean
-  aiGeneratedNames: boolean
   sessionView: 'chat' | 'terminal'
 }
 
@@ -154,13 +143,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   onboardingDiagnosticsExperimentVariant: null,
   postFeedbackDiagnosticsSuggestionImpressions: [],
   autoNameFromMessage: true,
-  aiGeneratedNames: false,
   sessionView: 'terminal',
 
   // Conversation row defaults (locked in plan §13).
-  rowTitleSource: 'title',
   rowPreviewMode: 'auto',
-  rowDensity: 'comfortable',
   rowPathDisplay: 'smart',
   rowServerIndicator: 'auto',
   rowServerChipVariant: 'label',
@@ -193,11 +179,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       ],
     })),
   setAutoNameFromMessage: (autoNameFromMessage) => set({ autoNameFromMessage }),
-  setAiGeneratedNames: (aiGeneratedNames) => set({ aiGeneratedNames }),
   setSessionView: (sessionView) => set({ sessionView }),
-  setRowTitleSource: (rowTitleSource) => set({ rowTitleSource }),
   setRowPreviewMode: (rowPreviewMode) => set({ rowPreviewMode }),
-  setRowDensity: (rowDensity) => set({ rowDensity }),
   setRowPathDisplay: (rowPathDisplay) => set({ rowPathDisplay }),
   setRowServerIndicator: (rowServerIndicator) => set({ rowServerIndicator }),
   setRowServerChipVariant: (rowServerChipVariant) => set({ rowServerChipVariant }),
@@ -249,11 +232,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           parsed.postFeedbackDiagnosticsSuggestionImpressions ??
           state.postFeedbackDiagnosticsSuggestionImpressions,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
-        aiGeneratedNames: parsed.aiGeneratedNames ?? state.aiGeneratedNames,
         sessionView: parsed.sessionView === 'chat' ? 'chat' : state.sessionView,
-        rowTitleSource: parsed.rowTitleSource ?? state.rowTitleSource,
         rowPreviewMode: parsed.rowPreviewMode ?? state.rowPreviewMode,
-        rowDensity: parsed.rowDensity ?? state.rowDensity,
         rowPathDisplay: parsed.rowPathDisplay ?? state.rowPathDisplay,
         rowServerIndicator: parsed.rowServerIndicator ?? state.rowServerIndicator,
         rowServerChipVariant: parsed.rowServerChipVariant ?? state.rowServerChipVariant,
@@ -283,11 +263,8 @@ export function persistSettingsNow(): Promise<void> {
     onboardingDiagnosticsExperimentVariant: state.onboardingDiagnosticsExperimentVariant,
     postFeedbackDiagnosticsSuggestionImpressions: state.postFeedbackDiagnosticsSuggestionImpressions,
     autoNameFromMessage: state.autoNameFromMessage,
-    aiGeneratedNames: state.aiGeneratedNames,
     sessionView: state.sessionView,
-    rowTitleSource: state.rowTitleSource,
     rowPreviewMode: state.rowPreviewMode,
-    rowDensity: state.rowDensity,
     rowPathDisplay: state.rowPathDisplay,
     rowServerIndicator: state.rowServerIndicator,
     rowServerChipVariant: state.rowServerChipVariant,
