@@ -41,15 +41,34 @@ appId: com.ronenmars.threadbase
 
 - runFlow:
     when:
+      visible:
+        id: "error-sheet-retry-session-detail"
+    commands:
+      - tapOn:
+          id: "error-sheet-retry-session-detail"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
       visible: ".*Close.*"
     commands:
-      - tapOn: ".*Close.*"
+      - tapOn:
+          id: "error-sheet-close"
       - waitForAnimationToEnd
 
 - extendedWaitUntil:
     visible:
       id: "session-detail-screen"
     timeout: 12000
+
+- extendedWaitUntil:
+    notVisible:
+      id: "issues-indicator"
+    timeout: 15000
+    optional: true
+
+- assertNotVisible:
+    id: "issues-indicator"
 
 - extendedWaitUntil:
     visible:
@@ -83,6 +102,9 @@ appId: com.ronenmars.threadbase
       id: "question-card"
     timeout: 8000
 
+- assertNotVisible:
+    id: "issues-indicator"
+
 - takeScreenshot: e2e/_artifacts/screenshots/hero-approval-card
 
 # Answer it so the next gate isn't stacked behind an unanswered one.
@@ -100,5 +122,8 @@ appId: com.ronenmars.threadbase
     visible:
       id: "question-card"
     timeout: 8000
+
+- assertNotVisible:
+    id: "issues-indicator"
 
 - takeScreenshot: e2e/_artifacts/screenshots/card-approve
