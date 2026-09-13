@@ -1,8 +1,13 @@
 import React from 'react'
-import { act, render, screen } from '@testing-library/react-native'
+import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
 import { createWrapper } from '@/test-utils'
 import type { Message } from '@/types/api'
+
+const mockPin = { stickToEnd: jest.fn(), releasePin: jest.fn() }
+jest.mock('@/hooks/useInitialScrollToEnd', () => ({
+  useInitialScrollToEnd: () => mockPin,
+}))
 
 jest.mock('@/components/conversation/MessageItem', () => ({
   MessageItem: ({ message }: { message: Message }) => {
@@ -45,6 +50,16 @@ describe('ConversationHistoryList first-load pin', () => {
       list.props.onContentSizeChange?.(400, 4000)
       list.props.onScrollBeginDrag?.({ nativeEvent: {} })
     })
+  })
+
+  it('releases the pin when the Top button scrolls up, so a re-measured row cannot snap back', async () => {
+    mockPin.releasePin.mockClear()
+    await render(
+      <ConversationHistoryList messages={messages} lastMessageId="m2" />,
+      { wrapper: createWrapper() },
+    )
+    fireEvent.press(screen.getByLabelText('Scroll to top'))
+    expect(mockPin.releasePin).toHaveBeenCalledTimes(1)
   })
 
   it('does not pin when auto-anchor is disabled for search', async () => {

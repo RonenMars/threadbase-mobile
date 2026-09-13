@@ -232,8 +232,12 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     }, [showTopVal])
 
     const scrollToTop = useCallback(() => {
+      // A programmatic scroll is not a drag, so release the pin here as well:
+      // rows measured on the way up change the content size, and the pin would
+      // answer each change with scrollToEnd and snap the reader back to the tail.
+      releasePin()
       listRef.current?.scrollToOffset({ offset: 0, animated: true })
-    }, [])
+    }, [releasePin])
 
     const scrollToBottom = useCallback(() => {
       listRef.current?.scrollToEnd({ animated: true })
