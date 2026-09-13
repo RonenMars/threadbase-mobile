@@ -47,15 +47,34 @@ appId: com.ronenmars.threadbase
 
 - runFlow:
     when:
+      visible:
+        id: "error-sheet-retry-session-detail"
+    commands:
+      - tapOn:
+          id: "error-sheet-retry-session-detail"
+      - waitForAnimationToEnd
+
+- runFlow:
+    when:
       visible: ".*Close.*"
     commands:
-      - tapOn: ".*Close.*"
+      - tapOn:
+          id: "error-sheet-close"
       - waitForAnimationToEnd
 
 - extendedWaitUntil:
     visible:
       id: "external-session-banner"
     timeout: 8000
+
+- extendedWaitUntil:
+    notVisible:
+      id: "issues-indicator"
+    timeout: 15000
+    optional: true
+
+- assertNotVisible:
+    id: "issues-indicator"
 
 - assertVisible:
     id: "external-session-take-over"
