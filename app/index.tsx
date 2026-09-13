@@ -61,9 +61,11 @@ const EMPTY_CONVERSATIONS: MultiConversation[] = []
 
 type ClassicTab = 'sessions' | 'history'
 
+// A server may send a timestamp this build cannot parse; NaN would reach
+// `toISOString()` in the Now list and throw, so it degrades to 0 like conversations do.
 function lastActivityMs(s: MultiSession): number {
-  if (s.completedAt) return Date.parse(s.completedAt)
-  return Date.parse(s.startedAt) + (s.elapsedMs ?? 0)
+  const ms = s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0)
+  return Number.isFinite(ms) ? ms : 0
 }
 
 function SessionNamesSyncer({ serverId }: { serverId: string }) {
