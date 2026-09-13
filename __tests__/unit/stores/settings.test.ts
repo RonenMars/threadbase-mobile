@@ -141,6 +141,20 @@ describe('SettingsStore – colorScheme', () => {
     await useSettingsStore.getState().hydrate()
     expect(useSettingsStore.getState().colorScheme).toBe('dark')
   })
+
+  it.each([
+    ['tree', 'projects'],
+    ['hub', 'projects'],
+    ['classic', 'now'],
+    ['projects', 'projects'],
+    ['now', 'now'],
+    [undefined, 'now'],
+  ])('migrates a persisted sessionsLayout of %s to %s', async (stored, expected) => {
+    const raw = JSON.stringify({ sessionsLayout: stored, notifications: DEFAULT_NOTIFICATIONS })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(raw)
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().sessionsLayout).toBe(expected)
+  })
 })
 
 describe('SettingsStore – completedSessionFadeMs', () => {

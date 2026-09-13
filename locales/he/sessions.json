@@ -54,16 +54,13 @@
     "dismiss": "סגור",
     "cancelConfirm": "האם אתם בטוחים?",
     "confirmYes": "כן",
-    "confirmNo": "לא",
-    "noBranch": "ללא git"
+    "confirmNo": "לא"
   },
   "hub": {
+    "browsePath": "עיון בנתיב",
     "seeAll_one": "ראה את כל השיחה",
     "seeAll_two": "ראה את שתי השיחות",
     "seeAll_other": "ראה את כל {{count}} השיחות",
-    "msgs_one": "הודעה אחת",
-    "msgs_two": "שתי הודעות",
-    "msgs_other": "{{count}} הודעות",
     "activityLive_one": "אחד פעיל",
     "activityLive_two": "שניים פעילים",
     "activityLive_other": "{{count}} פעילים",
@@ -84,12 +81,14 @@
     "done": "הושלם"
   },
   "live": {
-    "headerLive_one": "חי · {{count}}",
-    "headerLive_two": "חי · {{count}}",
-    "headerLive_other": "חי · {{count}}",
-    "headerIdle_one": "סרק · {{count}}",
-    "headerIdle_two": "סרק · {{count}}",
-    "headerIdle_other": "סרק · {{count}}"
+    "headerNeedsYou_one": "צריך אותך · {{count}}",
+    "headerNeedsYou_two": "צריך אותך · {{count}}",
+    "headerNeedsYou_other": "צריך אותך · {{count}}",
+    "headerWorking_one": "עובד · {{count}}",
+    "headerWorking_two": "עובד · {{count}}",
+    "headerWorking_other": "עובד · {{count}}",
+    "headerEarlierToday": "מוקדם יותר היום",
+    "headerEarlier": "מוקדם יותר"
   },
   "preview": {
     "liveUnavailable": "תצוגה מקדימה של סשן חי אינה זמינה — פתח את הסשן כדי לראות את הטרמינל החי.",
@@ -106,7 +105,8 @@
     "addToFavorites": "הוסף למועדפים"
   },
   "fab": {
-    "noServerHint": "הוסף שרת בהגדרות כדי להתחיל"
+    "noServerHint": "הוסף שרת בהגדרות כדי להתחיל",
+    "newSession": "סשן חדש"
   },
   "noServer": {
     "title": "התחבר לשרת הראשון שלך",
@@ -134,8 +134,11 @@
     "unavailablePath": "לא זמין",
     "unavailableWorktree": "אין worktree",
     "stale": "לא עדכני",
-    "livePill": "LIVE",
-    "externalPill": "EXTERNAL"
+    "needsYou": "צריך אותך",
+    "working": "עובד",
+    "resumable": "ניתן לחידוש",
+    "cantResume": "לא ניתן לחידוש",
+    "observed": "בצפייה"
   },
   "phase": {
     "thinking": "חושב",
@@ -162,5 +165,17 @@
   },
   "tree": {
     "unknownPath": "(לא ידוע)"
+  },
+  "row": {
+    "waitingFor": "ממתין {{elapsed}}",
+    "groupedOneLine_one": "סשן אחד בשורה אחת",
+    "groupedOneLine_two": "שני סשנים בשורה אחת",
+    "groupedOneLine_other": "{{count}} סשנים בשורה אחת",
+    "groupedPill": "מקובץ",
+    "open": "פתח"
+  },
+  "layout": {
+    "now": "עכשיו",
+    "projects": "פרויקטים"
   }
 }

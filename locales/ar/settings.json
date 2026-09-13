@@ -48,11 +48,7 @@
   "appearance": {
     "theme": "السمة",
     "dark": "داكن",
-    "light": "فاتح",
-    "layout": "التخطيط",
-    "layoutTree": "شجرة",
-    "layoutHub": "محور",
-    "layoutClassic": "كلاسيكي"
+    "light": "فاتح"
   },
   "notifications": {
     "whenAddingServer": "عند إضافة خادم جديد",
@@ -104,9 +100,7 @@
   "sessionNaming": {
     "title": "تسمية السيشن",
     "autoNameFromMessage": "تسمية تلقائية من أول رسالة",
-    "aiGeneratedNames": "أسماء سيشن مُولّدة بالذكاء الاصطناعي",
-    "autoNameNote": "عيّن اسم السيشن من أول كلمات رسالتك الأولى. بلا ذكاء اصطناعي، وبلا توكنات.",
-    "aiGeneratedNote": "استخدم نموذج ذكاء اصطناعي لإنشاء اسم ذي معنى. يستهلك توكنات من مفتاح API المُهيّأ لديك."
+    "autoNameNote": "عيّن اسم السيشن من أول كلمات رسالتك الأولى. بلا ذكاء اصطناعي، وبلا توكنات."
   },
   "language": {
     "english": "English",
@@ -116,12 +110,9 @@
   },
   "conversationRows": {
     "title": "صفوف المحادثة",
-    "density": "الكثافة",
     "pathDisplay": "عرض المسار",
     "serverIndicator": "مؤشر الخادم",
     "serverChipStyle": "نمط رقاقة الخادم",
-    "comfortable": "مريحة",
-    "compact": "مدمجة",
     "smart": "ذكية",
     "full": "كامل",
     "lastSegment": "الأخير",

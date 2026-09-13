@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
+import { getAgentPhaseLabel } from '@/components/sessions/agentPhaseLabel'
 import type { AgentPhase } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -34,21 +34,6 @@ interface Props {
   /** Server-derived agent phase, already gated on `presentation.live`. */
   subStatus?: AgentPhase | null
   onSessionQuit?: () => void
-}
-
-function getAgentPhaseLabel(phase: AgentPhase, t: TFunction<'sessions'>): string {
-  switch (phase) {
-    case 'thinking':
-      return t('phase.thinking')
-    case 'streaming':
-      return t('phase.streaming')
-    case 'hooks':
-      return t('phase.hooks')
-    case 'acting':
-      return t('phase.acting')
-    case 'working':
-      return t('phase.working')
-  }
 }
 
 export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus, onSessionQuit }: Props) {

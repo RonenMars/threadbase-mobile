@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/threadbase-design-system-b841e42d-5143-4b62-b148-350537f4b972/colors_and_type.css">
+<script src="_ds/threadbase-design-system-b841e42d-5143-4b62-b148-350537f4b972/_ds_bundle.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#07090d;font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;color:#e6edf3}
+a{color:#58a6ff;text-decoration:none}
+a:hover{color:#79c0ff}
+@keyframes tbPulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes tbSweep{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+</style>
+</helmet>
+
+<section style="padding:40px 44px 36px;border-bottom:1px solid rgba(255,255,255,.07)" id="t5"><div style="display:flex;align-items:baseline;gap:10px;margin:0 0 22px"><a href="#t5" style="font:600 10px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:#58a6ff;color:#0d1117;border-radius:4px">5</a><span style="font:600 13px/1.2 system-ui,sans-serif;color:#e6edf3">Decisions locked · Projects audited against the API · edge states</span></div><div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start"><div style="flex:none;width:500px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:24px 26px"><div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#d29922;margin-bottom:14px">LOCKED</div><div style="font:400 13px/1.65 system-ui;color:#adbac7;text-wrap:pretty"><p style="margin:0 0 12px"><strong style="color:#e6edf3">State colour — <a href="#3b">3b</a>-A.</strong> Green <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">status.running</code> = a live process mid-turn; amber <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">status.waiting</code> = you are the blocker. Rosé Pine and Rosé Pine Dawn need an explicit green for <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">status.running</code>, or Working lands on their blue-teal.</p><p style="margin:0 0 12px"><strong style="color:#e6edf3">Provider — <a href="#3c">3c</a>-T3, with the real marks.</strong> <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">claudecode</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">codex</code> and <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">cursor</code> are copied from <strong style="color:#e6edf3">lobe-icons</strong> (MIT; licence copied in alongside them) into <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">packages/static-svg/icons/</code>. They render <strong style="color:#e6edf3">monochrome at <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">currentColor</code></strong>, 13px in <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#8b949e</code>, and <strong style="color:#e6edf3">only on rows whose provider differs from the screen's dominant one</strong> — see the Codex row inside the open card in <a href="#5a">5a</a> and the Cursor row in <a href="#5b">5b</a>. Colour versions exist (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">claudecode-color</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">claude-color</code>) for the session detail header if you want them; not in the list, where colour belongs to state alone.</p><p style="margin:0 0 12px"><strong style="color:#e6edf3">Forked / duplicate rows — out.</strong> Not designed, not present in any screen here.</p><div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e;margin:18px 0 10px">MY CALLS ON THE REST</div><p style="margin:0 0 12px"><strong style="color:#e6edf3">Projects got the audit Now got</strong> — <a href="#5a">5a</a>. One finding matters: <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">ProjectHubCard</code> derives "N today" from <em>loaded</em> conversations, so a <strong style="color:#e6edf3">collapsed card cannot know it</strong> — the code says exactly that in a comment. Today's Hub prints "16 today" on collapsed cards anyway (screens 4 and 8), so that number is either wrong or is quietly counting sessions only. In <a href="#5a">5a</a> a closed card shows <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">N live · last <time></code> and the today count appears on expand, when it becomes true.</p><p style="margin:0 0 12px"><strong style="color:#e6edf3">Multi-machine is multi-server</strong>, and it already exists: <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">ServerHeaderRow</code> plus each server's assigned <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">color</code>. A second laptop is a collapsible group header with a 3px identity rail — no new concept — and <em>Needs you</em> still sorts above every group.</p><p style="margin:0"><strong style="color:#e6edf3">Edge states reuse your copy</strong> — <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">list.empty</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">list.serverOffline</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">list.serverWarming</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">list.serverNeedsUpgrade</code> straight from <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">locales/en/sessions.json</code>. I wrote no new strings. <a href="#2b">2b</a> keeps its material: turn 4 says sheets stay glass, so only its backdrop tint changes.</p></div></div><div style="flex:none;display:flex;flex-direction:column;gap:9px" id="5a"><div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#5a" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">5a</a>Projects — audited. Replaces <a href="#1c">1c</a>.</div><div style="position:relative;width:390px;height:844px;background:#0d1117;border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none"><div style="position:absolute;top:0;left:0;right:0;height:150px;background:radial-gradient(120% 100% at 50% 0%, rgba(88,166,255,.10) 0%, rgba(13,17,23,0) 70%);pointer-events:none"></div><div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;padding:138px 10px 0"><div style="display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:9px 10px;font:400 12px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;margin-bottom:12px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span><span>filter projects or paths…</span></div><div style="display:flex;align-items:center;gap:8px;padding:6px 4px 10px"><span style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1.5px;color:#d29922">ACTIVE · 1</span><div style="flex:1;height:1px;background:#d29922;opacity:.28"></div></div><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;background:#161b22;border:1px solid rgba(210,153,34,.4);border-radius:12px;overflow:hidden"><div style="width:3px;background:#d29922"></div><div style="flex:1"><div style="padding:12px;display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div style="font:500 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">~/dev/ai-tools</div><div style="display:flex;align-items:baseline;gap:7px"><span style="font:600 17px/1.2 system-ui;color:#ffffff">tb-mobile</span></div><div style="font:400 11px/1 system-ui;color:#8b949e"><span style="color:#d29922">1 needs you</span> · 17 today · last now</div></div><span style="flex:none;font:500 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">319</span><span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m6 9.5 6 6 6-6"></path></svg></span></div><div style="border-top:1px solid #30363d;padding:4px 12px 10px;display:flex;flex-direction:column;gap:1px"><div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid rgba(88,166,255,.09)"><span style="width:7px;height:7px;border-radius:4px;background:#d29922;flex:none;animation:tbPulse 1.6s ease-out infinite"></span><div style="flex:1;min-width:0"><div style="font:600 13px/1.2 system-ui;color:#ffffff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Why sessions open in terminal after resume</div><div style="font:400 10.5px/1.3 system-ui;color:#d29922">Needs you · waiting 2m</div></div></div><div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid rgba(88,166,255,.09)"><span style="width:7px;height:7px;border-radius:4px;background:#30363d;flex:none"></span><div style="flex:1;min-width:0"><div style="font:600 13px/1.2 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">There is a bug when typing mid-message</div><div style="font:400 10.5px/1.3 'JetBrains Mono',Menlo,monospace;color:#8b949e">18:53 · main · 548 msgs</div></div></div><div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid rgba(88,166,255,.09)"><span style="width:7px;height:7px;border-radius:4px;background:#30363d;flex:none"></span><div style="flex:1;min-width:0"><div style="font:600 13px/1.2 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Scan all worktrees, check which are stale</div><div style="font:400 10.5px/1.3 'JetBrains Mono',Menlo,monospace;color:#8b949e">12:51 · main · 4 msgs</div></div><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:5px;background:#21262d;border:1px solid #30363d"><span role="img" aria-label="Codex" style="display:inline-flex;flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" style="display:block;color:#8b949e"><title>Codex</title><path clip-rule="evenodd" d="M8.086.457a6.105 6.105 0 013.046-.415c1.333.153 2.521.72 3.564 1.7a.117.117 0 00.107.029c1.408-.346 2.762-.224 4.061.366l.063.03.154.076c1.357.703 2.33 1.77 2.918 3.198.278.679.418 1.388.421 2.126a5.655 5.655 0 01-.18 1.631.167.167 0 00.04.155 5.982 5.982 0 011.578 2.891c.385 1.901-.01 3.615-1.183 5.14l-.182.22a6.063 6.063 0 01-2.934 1.851.162.162 0 00-.108.102c-.255.736-.511 1.364-.987 1.992-1.199 1.582-2.962 2.462-4.948 2.451-1.583-.008-2.986-.587-4.21-1.736a.145.145 0 00-.14-.032c-.518.167-1.04.191-1.604.185a5.924 5.924 0 01-2.595-.622 6.058 6.058 0 01-2.146-1.781c-.203-.269-.404-.522-.551-.821a7.74 7.74 0 01-.495-1.283 6.11 6.11 0 01-.017-3.064.166.166 0 00.008-.074.115.115 0 00-.037-.064 5.958 5.958 0 01-1.38-2.202 5.196 5.196 0 01-.333-1.589 6.915 6.915 0 01.188-2.132c.45-1.484 1.309-2.648 2.577-3.493.282-.188.55-.334.802-.438.286-.12.573-.22.861-.304a.129.129 0 00.087-.087A6.016 6.016 0 015.635 2.31C6.315 1.464 7.132.846 8.086.457zm-.804 7.85a.848.848 0 00-1.473.842l1.694 2.965-1.688 2.848a.849.849 0 001.46.864l1.94-3.272a.849.849 0 00.007-.854l-1.94-3.393zm5.446 6.24a.849.849 0 000 1.695h4.848a.849.849 0 000-1.696h-4.848z"></path></svg></span></span></div><div style="display:flex;align-items:center;gap:14px;padding:11px 0 2px"><span style="font:600 12px/1 system-ui;color:#58a6ff">All 319 conversations →</span><span style="display:flex;align-items:center;gap:4px;font:500 12px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">browse path <span style="flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span></span></div></div></div></div></div><div style="display:flex;align-items:center;gap:8px;padding:6px 4px 10px"><span style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1.5px;color:#8b949e">RECENT</span><div style="flex:1;height:1px;background:#8b949e;opacity:.28"></div><span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">12</span></div><div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;background:#161b22;border:1px solid rgba(88,166,255,.18);border-radius:12px;overflow:hidden"><div style="width:3px;background:#30363d"></div><div style="flex:1"><div style="padding:12px;display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div style="font:500 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">~/dev/ai-tools</div><div style="display:flex;align-items:baseline;gap:7px"><span style="font:600 17px/1.2 system-ui;color:#ffffff">tb-streamer</span></div><div style="font:400 11px/1 system-ui;color:#8b949e">last 21:52</div></div><span style="flex:none;font:500 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">253</span><span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span></div></div></div><div style="display:flex;background:#161b22;border:1px solid rgba(88,166,255,.18);border-radius:12px;overflow:hidden"><div style="width:3px;background:#30363d"></div><div style="flex:1"><div style="padding:12px;display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div style="font:500 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">~/dev/ai-tools/tb-mobile-worktrees</div><div style="display:flex;align-items:baseline;gap:7px"><span style="font:600 17px/1.2 system-ui;color:#ffffff">int-2026-09-12</span><span style="font:600 9px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;border:1px solid #30363d;border-radius:999px;padding:3px 6px">WORKTREE</span></div><div style="font:400 11px/1 system-ui;color:#8b949e">last 21:31</div></div><span style="flex:none;font:500 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">1</span><span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span></div></div></div></div><div style="padding:14px 4px 4px;display:flex;align-items:center;gap:8px"><span style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1.5px;color:#8b949e">QUIET · 24</span><div style="flex:1;height:1px;background:#30363d"></div><span style="font:400 11px/1 system-ui;color:#58a6ff">Show</span></div><div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 4px"><span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">dotfiles 43</span><span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">tb-scanner 12</span><span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">port 4</span><span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">cv 8</span></div></div><div style="position:absolute;top:0;left:0;right:0;z-index:2;background:rgba(22,27,34,.62);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border-bottom:1px solid rgba(88,166,255,.12)"><div style="display:flex;align-items:center;justify-content:space-between;padding:14px 12px 6px;font:600 12px/1 system-ui;color:#ffffff"><span>22:01</span><span style="display:flex;align-items:center;gap:6px;color:#8b949e"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block"><path d="M3 18v-3M9 18v-7M15 18v-11M21 18v-15"></path></svg><span style="font:600 11px/1 system-ui">47</span></span></div><div style="display:flex;align-items:center;gap:8px;padding:6px 12px 4px"><img src="assets/icon.png" alt="Threadbase" style="width:22px;height:22px;border-radius:5px;flex:none"><div style="font:600 17px/1 system-ui;color:#ffffff">Threadbase</div><div style="margin-left:auto;display:flex;align-items:center;gap:6px"><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><span style="flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><path d="M21 5h-7M9 5H3M21 12h-4M12 12H3M21 19h-9M7 19H3"></path><circle cx="11.5" cy="5" r="2"></circle><circle cx="14.5" cy="12" r="2"></circle><circle cx="9.5" cy="19" r="2"></circle></svg></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span></div></div><div style="display:flex;margin:6px 12px 10px;background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.18);border-radius:10px;overflow:hidden"><div style="flex:1;padding:8px 0;text-align:center;font:500 13px/1.2 system-ui;color:#8b949e">Now</div><div style="flex:1;padding:8px 0;text-align:center;background:rgba(88,166,255,.14);font:600 13px/1.2 system-ui;color:#ffffff">Projects</div></div></div><div style="position:absolute;right:20px;bottom:26px;width:160px;height:52px;border-radius:26px;background:radial-gradient(60% 120% at 50% 60%, rgba(88,166,255,.55), rgba(13,17,23,0) 75%);filter:blur(6px);pointer-events:none"></div><div style="position:absolute;right:20px;bottom:28px;display:flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:22px;background:#58a6ff;font:600 14px/1 system-ui;color:#0d1117">+ &nbsp;New session</div></div></div><div style="flex:none;width:414px;display:flex;flex-direction:column;gap:12px" id="5b"><div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#5b" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">5b</a>Edge states — existing copy, no new strings</div><div style="background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid #30363d;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e">TWO MACHINES · SERVER GROUPS</div><div style="padding:10px 10px 12px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;align-items:center;gap:8px;padding:6px 4px 10px"><span style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1.5px;color:#d29922">NEEDS YOU · 1</span><div style="flex:1;height:1px;background:#d29922;opacity:.28"></div></div><div style="display:flex;background:#161b22;border:1px solid rgba(210,153,34,.45);border-radius:12px;overflow:hidden"><div style="width:3px;background:#d29922"></div><div style="flex:1;padding:10px 11px;display:flex;flex-direction:column;gap:5px"><div style="font:600 13.5px/1.25 system-ui;color:#ffffff">Why sessions open in terminal after resume</div><div style="display:flex;align-items:center;gap:6px;font:400 11px/1 system-ui;color:#8b949e"><span style="display:inline-flex;align-items:center;gap:5px;font:600 10px/1 system-ui;color:#58a6ff;border:1px solid rgba(88,166,255,.4);border-radius:999px;padding:3px 6px"><span style="width:6px;height:6px;border-radius:3px;background:#58a6ff"></span>MacBook Pro</span><span style="font-family:'JetBrains Mono',Menlo,monospace">ai-tools/tb-mobile</span></div></div></div><div style="display:flex;align-items:center;gap:8px;padding:6px 2px 2px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m6 9.5 6 6 6-6"></path></svg></span><span style="display:inline-flex;align-items:center;gap:5px;font:600 11px/1 system-ui;color:#a371f7"><span style="width:7px;height:7px;border-radius:4px;background:#a371f7"></span>studio-linux</span><div style="flex:1;height:1px;background:#30363d"></div><span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">6</span></div><div style="display:flex;background:#161b22;border:1px solid rgba(88,166,255,.18);border-radius:12px;overflow:hidden"><div style="width:3px;background:#a371f7"></div><div style="flex:1;padding:10px 11px;display:flex;align-items:center;gap:8px"><div style="flex:1;min-width:0"><div style="font:600 13.5px/1.25 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Nightly eval sweep, 200 prompts</div><div style="font:400 10.5px/1.3 'JetBrains Mono',Menlo,monospace;color:#8b949e">03:12 · main · 812 msgs</div></div><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:5px;background:#21262d;border:1px solid #30363d"><span role="img" aria-label="Cursor" style="display:inline-flex;flex:none"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" style="display:block;color:#8b949e"><title>Cursor</title><path clip-rule="evenodd" d="M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z"></path></svg></span></span></div></div><div style="font:400 11px/1.5 system-ui;color:#8b949e;padding:8px 2px 0">Server identity is a rail colour and a chip, never a state colour. <em>Needs you</em> outranks machine — the amber row sits above both groups.</div></div></div><div style="background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid #30363d;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e">NOTHING RUNNING · list.empty</div><div style="padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center"><div style="width:44px;height:44px;border-radius:12px;background:#161b22;border:1px solid #30363d;display:flex;align-items:center;justify-content:center"><span role="img" aria-label="Claude Code" style="display:inline-flex;flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" fill-rule="evenodd" style="display:block;color:#30363d"><title>Claude Code</title><path clip-rule="evenodd" d="M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z"></path></svg></span></div><div style="font:600 15px/1.3 system-ui;color:#e6edf3">No sessions</div><div style="font:400 12px/1.5 system-ui;color:#8b949e">Start a Claude Code or Codex<br>session to see it here</div><div style="margin-top:6px;display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:18px;background:#58a6ff;font:600 13px/1 system-ui;color:#0d1117">+ &nbsp;New session</div></div></div><div style="background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid #30363d;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e">ONE HOST DOWN · list.serverOffline</div><div style="padding:10px"><div style="display:flex;gap:9px;background:#161b22;border:1px solid rgba(248,81,73,.35);border-radius:10px;padding:10px 11px"><span style="width:8px;height:8px;border-radius:4px;background:#f85149;flex:none;margin-top:3px"></span><div style="flex:1"><div style="font:600 13px/1.3 system-ui;color:#e6edf3">Server unreachable</div><div style="font:400 11px/1.45 system-ui;color:#8b949e">Showing other servers. Retry when this host is back.</div></div><span style="flex:none;align-self:center;font:600 12px/1 system-ui;color:#58a6ff">Retry</span></div><div style="font:400 11px/1.5 system-ui;color:#8b949e;padding:8px 2px 0">Scoped to the dead host: the list keeps rendering every other machine underneath. One banner, never a blocking screen.</div></div></div><div style="background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid #30363d;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e">STILL INDEXING · list.serverWarming</div><div style="padding:10px"><div style="display:flex;gap:9px;background:#161b22;border:1px solid rgba(210,153,34,.35);border-radius:10px;padding:10px 11px"><span style="width:8px;height:8px;border-radius:4px;background:#d29922;flex:none;margin-top:3px;animation:tbPulse 1.6s ease-out infinite"></span><div style="flex:1"><div style="font:600 13px/1.3 system-ui;color:#e6edf3">Server is warming up</div><div style="font:400 11px/1.45 system-ui;color:#8b949e">History will appear when indexing finishes.</div></div></div><div style="margin-top:8px;display:flex;flex-direction:column;gap:6px"><div style="height:46px;border-radius:10px;background:#161b22;border:1px solid #30363d;position:relative;overflow:hidden"><span style="position:absolute;top:0;left:0;width:34%;height:1px;background:#58a6ff;animation:tbSweep 1.6s linear infinite"></span></div><div style="height:46px;border-radius:10px;background:#161b22;border:1px solid #30363d;opacity:.6"></div></div><div style="font:400 11px/1.5 system-ui;color:#8b949e;padding:8px 2px 0">Live sessions still show — they do not depend on the index. Only history is skeletoned, so the amber block above stays usable.</div></div></div><div style="background:#0d1117;border:1px solid #30363d;border-radius:12px;overflow:hidden"><div style="padding:9px 12px;border-bottom:1px solid #30363d;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e">SERVER TOO OLD · list.serverNeedsUpgrade</div><div style="padding:10px"><div style="display:flex;gap:9px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:10px 11px"><span style="width:8px;height:8px;border-radius:4px;background:#8b949e;flex:none;margin-top:3px"></span><div style="flex:1"><div style="font:600 13px/1.3 system-ui;color:#e6edf3">Server needs an update</div><div style="font:400 11px/1.45 system-ui;color:#8b949e">studio-linux runs a version that can't list projects. Update the Threadbase server to browse its history here.</div></div></div><div style="font:400 11px/1.5 system-ui;color:#8b949e;padding:8px 2px 0">This is the <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">unsupportedServerIds</code> path from <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">useProjectSummaries</code> — Projects degrades to a note for that host while Now keeps working, exactly as CLAUDE.md's "degrade, don't break" rule requires.</div></div></div></div></div><p style="margin:26px 0 0;font:400 12.5px/1.6 system-ui;color:rgba(255,255,255,.5)">Try next: "hand this to Claude Code as an implementation brief" · "prototype <a href="#4a">4a</a> → session tap → back" · "restyle <a href="#2b">2b</a> on turn 4's canvas"</p></section>
+
+<section style="padding:40px 44px 36px;border-bottom:1px solid rgba(255,255,255,.07)" id="t4">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 22px">
+<a href="#t4" style="font:600 10px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:#58a6ff;color:#0d1117;border-radius:4px">4</a>
+<span style="font:600 13px/1.2 system-ui,sans-serif;color:#e6edf3">Glass vs. contrast — the decision, and the onboarding palette carried into the list</span>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+
+<div style="flex:none;width:560px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:24px 26px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#d29922;margin-bottom:14px">THE DECISION</div>
+<div style="font:600 20px/1.3 system-ui;color:#e6edf3;margin-bottom:14px;text-wrap:pretty">Glass belongs to the chrome, not to the canvas. Keep both.</div>
+<div style="font:400 13px/1.65 system-ui;color:#adbac7;text-wrap:pretty">
+<p style="margin:0 0 12px">These two aren't in tension — they're two different <em>layers</em> that the list screens currently merge. In your onboarding, the canvas is flat near-black and every element sits on it at full strength. In the list screens, the blue wash is painted <strong style="color:#e6edf3">behind the content</strong>, so a row's legibility depends on how far down the screen it happens to be.</p>
+<p style="margin:0 0 12px">Measured on your own tokens: <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">text.secondary</code> <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#7d8590</code> scores <strong style="color:#e6edf3">5.0:1</strong> against <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#0d1117</code> at the top of the list and <strong style="color:#f85149">3.3:1</strong> against the <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#1d3550</code> the wash reaches at the bottom. Same component, same colour, failing or passing by scroll position. That is the actual bug — not glass.</p>
+<p style="margin:0 0 14px">And it's what Liquid Glass is <em>for</em>: Apple's material is a property of floating navigation and controls, with opaque content passing underneath. Applying it to the page background is the one use it isn't designed for. So: <strong style="color:#e6edf3">flat near-black canvas (your onboarding's), opaque content cards, and glass reserved for the header, the Filter sheet, and the action pill.</strong> Contrast becomes constant, and the glass gets <em>more</em> visible because things now move under it.</p>
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e;margin:18px 0 10px">SURFACE RULES</div>
+<div style="display:flex;flex-direction:column;gap:8px;font:400 12.5px/1.5 system-ui">
+<div style="display:flex;gap:10px;align-items:center"><span style="flex:none;width:34px;height:34px;border-radius:8px;background:#0d1117;border:1px solid #30363d"></span><span style="color:#adbac7"><strong style="color:#e6edf3">Canvas <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.primary #0d1117</code></strong> — the token you already ship, just flat: no gradient, no wash. That alone is the contrast fix.</span></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="flex:none;width:34px;height:34px;border-radius:8px;background:#161b22;border:1px solid rgba(88,166,255,.18)"></span><span style="color:#adbac7"><strong style="color:#e6edf3">Content card <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.secondary #161b22</code></strong>, 1px blue-tinted hairline — opaque, never translucent. Using <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.secondary</code> rather than <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.card</code> keeps cards close to the canvas while still separating; secondary text lands at 5.5:1 here, at every scroll position. No new tokens in any of this.</span></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="flex:none;width:34px;height:34px;border-radius:8px;background:rgba(88,166,255,.10);border:1px solid rgba(88,166,255,.22);backdrop-filter:blur(6px)"></span><span style="color:#adbac7"><strong style="color:#e6edf3">Glass chrome</strong> — header, Filter sheet, action pill. Apple's native <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">GlassView glassEffectStyle="regular"</code> on iOS 26+, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">BlurView intensity 40</code> elsewhere — your existing <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">GlassView</code>, unchanged. (The CSS here only approximates it.)</span></div>
+<div style="display:flex;gap:10px;align-items:center"><span style="flex:none;width:34px;height:34px;border-radius:8px;background:radial-gradient(circle at 50% 120%, rgba(88,166,255,.5), rgba(13,17,23,0) 70%);border:1px solid #30363d"></span><span style="color:#adbac7"><strong style="color:#e6edf3">Glow</strong> — only under the primary CTA and behind the brand mark, exactly as onboarding uses it. Never behind body text.</span></div>
+</div>
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e;margin:20px 0 10px">THE NON-APPLE PATH</div>
+<p style="margin:0 0 12px">On Android, and on iOS under <em>Reduce Transparency</em>, the three glass surfaces swap to opaque <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#0d1117</code> with the same hairline. <strong style="color:#e6edf3">No layout, type or spacing changes</strong> — glass is one fill, so it degrades to a colour rather than to a different design. Your <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">GlassView</code> already does all three branches — native material, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">BlurView</code>, and an opaque <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.secondary</code> under Reduce Transparency. The one change this proposal needs is upstream of it: <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">Card</code> routes to <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">GlassCard</code> on glass themes, so <em>every content card</em> is currently a material layer. Cards go opaque; the header, sheet and pill keep the material. (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">GlassFill</code> is already inert — it returns <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">null</code> unless <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">material</code> is passed, and nothing passes it.)</p>
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e;margin:20px 0 10px">IF YOU WANT ONBOARDING'S BLACKER CANVAS</div><p style="margin:0 0 12px">Onboarding reads darker than <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#0d1117</code> — closer to <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#08090c</code>. Going there is a deliberate re-ramp of <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.*</code> across all fifteen themes, with the same cost I argue against for accents in <a href="#3b">3b</a> — and it buys roughly 0.3:1. The gradient removal buys 1.7:1. Do the free one first; treat the darker ramp as a separate, later call.</p>
+<p style="margin:0">Mono eyebrows (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">&gt; 01 / LANGUAGE</code> becomes <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">NEEDS YOU · 1</code>), blue-tinted card hairlines, the glow under the filled CTA — all three are in <a href="#4a">4a</a>. One more thing they settle for free: onboarding already uses <strong style="color:#3fb950">green for "connected / live"</strong> ("HANDSHAKE COMPLETE", "Thread is live."). That is the product telling you green already means <em>alive</em> — which is the argument for <a href="#3b">3b</a>-A that I didn't have yesterday.</p>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="4a">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#4a" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">4a</a>Now, on the onboarding canvas with glass chrome</div>
+<div style="position:relative;width:390px;height:844px;background:#0d1117;border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+
+<div style="position:absolute;top:0;left:0;right:0;height:150px;background:radial-gradient(120% 100% at 50% 0%, rgba(88,166,255,.10) 0%, rgba(13,17,23,0) 70%);pointer-events:none"></div>
+
+<div style="position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;padding:150px 10px 0">
+<div aria-hidden="true" style="position:absolute;top:95px;left:10px;right:10px;display:flex;gap:8px;pointer-events:none">
+<span style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:42px;border-radius:10px;background:rgba(210,153,34,.16);border:1px solid #d29922;font:600 14px/1 system-ui;color:#d29922"><span style="width:7px;height:7px;border-radius:4px;background:#d29922"></span>Only what needs me</span>
+<span style="flex:none;display:flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:10px;background:#21262d;border:1px solid #30363d;font:600 14px/1 system-ui;color:#adbac7">Everything</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px;padding:6px 4px 10px">
+<span style="width:8px;height:8px;border-radius:4px;background:#d29922;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1.5px;color:#d29922">NEEDS YOU · 1</span>
+<div style="flex:1;height:1px;background:#d29922;opacity:.28"></div>
+</div>
+
+<div style="display:flex;background:#161b22;border:1px solid rgba(210,153,34,.5);border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#d29922"></div>
+<div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;align-items:flex-start;gap:8px">
+<div style="flex:1;font:600 15px/1.25 system-ui;color:#ffffff;text-wrap:pretty">Why sessions open in terminal view after resume</div>
+<span style="flex:none;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CC</span>
+</div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#d29922"><span>Needs you</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">waiting 2m</span></div>
+<div style="font:400 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#adbac7;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Do you want to proceed? 1. Yes 2. No</div>
+<div style="display:flex;align-items:center;gap:8px;font:400 11px/1 system-ui;color:#8b949e"><span style="font-family:'JetBrains Mono',Menlo,monospace">ai-tools/tb-mobile</span><span style="opacity:.45">·</span><span style="font-family:'JetBrains Mono',Menlo,monospace">main</span><span style="margin-left:auto;color:#58a6ff;font-weight:600">Open →</span></div>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:16px 4px 10px">
+<span style="width:8px;height:8px;border-radius:4px;background:#3fb950;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1.5px;color:#3fb950">WORKING · 2</span>
+<div style="flex:1;height:1px;background:#3fb950;opacity:.28"></div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;background:#161b22;border:1px solid rgba(88,166,255,.18);border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#3fb950"></div>
+<div style="flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;font:600 14px/1.25 system-ui;color:#ffffff">Merge all green dependabot PRs, rebase between each</div><span style="flex:none;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CX</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#3fb950"><span>Working</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">Replying</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400;color:#8b949e">4m</span></div>
+<div style="height:2px;background:#0d1117;border-radius:1px;overflow:hidden;position:relative"><div style="position:absolute;top:0;left:0;width:34%;height:2px;background:#3fb950;border-radius:1px;animation:tbSweep 1.6s linear infinite"></div></div>
+</div>
+</div>
+<div style="display:flex;background:#161b22;border:1px solid rgba(88,166,255,.18);border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#3fb950"></div>
+<div style="flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;font:600 14px/1.25 system-ui;color:#ffffff">Scan all worktrees, report which are stale</div><span style="flex:none;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CC</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#3fb950"><span>Working</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">Acting</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400;color:#8b949e">18s</span></div>
+<div style="height:2px;background:#0d1117;border-radius:1px;overflow:hidden;position:relative"><div style="position:absolute;top:0;left:0;width:34%;height:2px;background:#3fb950;border-radius:1px;animation:tbSweep 1.6s linear infinite"></div></div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:18px 4px 10px">
+<span style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1.5px;color:#8b949e">EARLIER TODAY</span>
+<div style="flex:1;height:1px;background:#30363d"></div>
+<span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">17</span>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:1px">
+<div style="display:flex;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid rgba(88,166,255,.09)">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:600 13.5px/1.25 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Report slow streamer requests from release builds</div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Found three stalls over 9s, all in the replay path.</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font:500 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">14:12</span><span style="font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:3px 5px;border-radius:4px">CC</span></div>
+</div>
+<div style="display:flex;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid rgba(88,166,255,.09);opacity:.72">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="display:flex;align-items:center;gap:6px"><span style="font:500 13.5px/1.25 system-ui;color:#adbac7">4 one-line sessions</span><span style="font:600 9px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;border:1px solid #30363d;padding:3px 5px;border-radius:999px">GROUPED</span></div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">hi · hey · Ahoy · Hello there</div>
+</div>
+<span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span>
+</div>
+<div style="display:flex;gap:10px;align-items:center;padding:11px 4px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:600 13.5px/1.25 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">int-2026-09-12 · tb-streamer worktree</div>
+<div style="font:400 11px/1.35 system-ui;color:#f85149">Worktree gone — can't resume</div>
+</div>
+<span style="flex:none;font:500 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">5 Sep</span>
+</div>
+</div>
+</div>
+
+<div style="position:absolute;top:0;left:0;right:0;z-index:2;background:rgba(22,27,34,.62);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border-bottom:1px solid rgba(88,166,255,.12)">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 12px 6px;font:600 12px/1 system-ui;color:#ffffff"><span>22:01</span><span style="display:flex;align-items:center;gap:6px;color:#8b949e"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block"><path d="M3 18v-3M9 18v-7M15 18v-11M21 18v-15"></path></svg><span style="font:600 11px/1 system-ui">47</span></span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:6px 12px 4px">
+<img src="assets/icon.png" alt="Threadbase" style="width:22px;height:22px;border-radius:5px;flex:none">
+<div style="font:600 17px/1 system-ui;color:#ffffff">Threadbase</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+<span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span>
+<span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><path d="M21 5h-7M9 5H3M21 12h-4M12 12H3M21 19h-9M7 19H3"></path><circle cx="11.5" cy="5" r="2"></circle><circle cx="14.5" cy="12" r="2"></circle><circle cx="9.5" cy="19" r="2"></circle></svg></span>
+<span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
+</div>
+</div>
+<div style="display:flex;margin:6px 12px 10px;background:rgba(88,166,255,.07);border:1px solid rgba(88,166,255,.18);border-radius:10px;overflow:hidden">
+<div style="flex:1;padding:8px 0;text-align:center;background:rgba(88,166,255,.14);font:600 13px/1.2 system-ui;color:#ffffff">Now</div>
+<div style="flex:1;padding:8px 0;text-align:center;font:500 13px/1.2 system-ui;color:#8b949e">Projects</div>
+</div>
+</div>
+
+<div style="position:absolute;right:20px;bottom:26px;width:160px;height:52px;border-radius:26px;background:radial-gradient(60% 120% at 50% 60%, rgba(88,166,255,.55), rgba(13,17,23,0) 75%);filter:blur(6px);pointer-events:none"></div>
+<div style="position:absolute;right:20px;bottom:28px;display:flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:22px;background:#58a6ff;font:600 14px/1 system-ui;color:#0d1117">+ &nbsp;New session</div>
+</div>
+</div>
+
+<div style="flex:none;width:400px;display:flex;flex-direction:column;gap:12px;font:400 12.5px/1.55 system-ui;color:#adbac7">
+<div style="background:#10151c;border:1px solid #30363d;border-radius:12px;padding:20px 22px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#8b949e;margin-bottom:12px">WHAT TO LOOK AT IN 4a</div>
+<div style="display:flex;flex-direction:column;gap:11px">
+<div><strong style="color:#e6edf3">The header is the glass.</strong> The <a href="#2b">2b</a> preset pair is caught mid-scroll under it — crisp below the edge, diffused above. It is the right thing to put there: a control that legitimately sits above the first section, carries no state colour, and costs nothing if the top third of it is unreadable. That reveal is the entire point of the material, and today's build never shows it because the blur is on the background instead. Note what is <em>not</em> in the band: section eyebrows and any other label clear the header entirely, because a semantic string read through glass is a string you have made harder to read for decoration.</div>
+<div><strong style="color:#e6edf3">Rows sit on flat <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.primary</code>.</strong> Scroll to the bottom and nothing shifts: the last row has the same 5.5:1 secondary text as the first. Compare with the earlier screenshots, where the same grey drifts from 5.0:1 to 3.3:1 on the way down.</div>
+<div><strong style="color:#e6edf3">Eyebrows went mono.</strong> <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">NEEDS YOU · 1</code> in JetBrains Mono with 1.5px tracking — the same device as onboarding's <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">&gt; 01 / LANGUAGE</code> and <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">HANDSHAKE COMPLETE</code>. It is the cheapest way to make the list feel like it came from the same app as the onboarding.</div>
+<div><strong style="color:#e6edf3">Titles are pure white.</strong> Onboarding's headlines are <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#ffffff</code>, not <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#e6edf3</code>. On live cards I've matched that — it costs nothing and buys the dominance you're after.</div>
+<div><strong style="color:#e6edf3">One glow, under the CTA.</strong> Same treatment as <em>Continue</em> / <em>Enter Threadbase</em>. Nowhere else.</div>
+</div>
+</div>
+<div style="background:#10151c;border:1px solid rgba(248,81,73,.3);border-radius:12px;padding:20px 22px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#f85149;margin-bottom:10px">ONE CAVEAT WORTH YOUR CALL</div>
+<div>Blurred chrome over a scrolling list costs GPU on older devices, and Expo's <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">expo-blur</code> / <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">expo-glass-effect</code> over a <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">FlashList</code> is the classic place it shows up as dropped frames. The header is one small surface so it should be fine — but if you see jank, the fallback is the same opaque <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#0d1117</code> chrome as the Android path, and nothing else changes. Worth measuring on the oldest device you support before locking it in.</div>
+</div>
+</div>
+
+</div>
+
+<p style="margin:26px 0 0;font:400 12.5px/1.6 system-ui;color:rgba(255,255,255,.5)">Try next: "apply <a href="#4a">4a</a>'s canvas and glass rules to <a href="#1c">1c</a> and <a href="#2b">2b</a>" · "show the Android/reduce-transparency variant side by side" · "push the onboarding display type further into the list headers"</p>
+</section>
+
+<section style="padding:40px 44px 36px;border-bottom:1px solid rgba(255,255,255,.07)" id="t3">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 22px">
+<a href="#t3" style="font:600 10px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:#58a6ff;color:#0d1117;border-radius:4px">3</a>
+<span style="font:600 13px/1.2 system-ui,sans-serif;color:#e6edf3">Your canvas comments applied — capability-honest rows, a colour decision, and badge options</span>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="3a">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#3a" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">3a</a>Now, rebuilt on fields you actually have. Replaces <a href="#1b">1b</a>.</div>
+<div style="position:relative;width:390px;height:844px;background:linear-gradient(180deg,#0d1117 0%,#0d1117 55%,#111c2b 100%);border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px;font:600 12px/1 system-ui;color:#e6edf3"><span>22:01</span><span style="display:flex;align-items:center;gap:6px;color:#8b949e"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block"><path d="M3 18v-3M9 18v-7M15 18v-11M21 18v-15"></path></svg><span style="font:600 11px/1 system-ui">47</span></span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:10px 12px 6px">
+<img src="assets/icon.png" alt="Threadbase" style="width:22px;height:22px;border-radius:5px;flex:none">
+<div style="font:600 17px/1 system-ui;color:#e6edf3">Threadbase</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+<span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span>
+<span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><path d="M21 5h-7M9 5H3M21 12h-4M12 12H3M21 19h-9M7 19H3"></path><circle cx="11.5" cy="5" r="2"></circle><circle cx="14.5" cy="12" r="2"></circle><circle cx="9.5" cy="19" r="2"></circle></svg></span>
+<span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:block;color:#8b949e"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
+</div>
+</div>
+
+<div style="display:flex;margin:6px 12px 10px;background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="flex:1;padding:8px 0;text-align:center;background:#21262d;font:600 13px/1.2 system-ui;color:#e6edf3">Now</div>
+<div style="flex:1;padding:8px 0;text-align:center;font:500 13px/1.2 system-ui;color:#8b949e">Projects</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:4px 14px 8px">
+<span style="width:8px;height:8px;border-radius:4px;background:#d29922;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#d29922">NEEDS YOU · 1</span>
+<div style="flex:1;height:1px;background:#d29922;opacity:.3"></div>
+</div>
+
+<div style="padding:0 10px 2px">
+<div style="display:flex;background:#1b232e;border:1px solid rgba(210,153,34,.45);border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#d29922"></div>
+<div style="flex:1;padding:12px 12px 11px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;align-items:flex-start;gap:8px">
+<div style="flex:1;font:600 15px/1.25 system-ui;color:#e6edf3;text-wrap:pretty">Why sessions open in terminal view after resume</div>
+<span style="flex:none;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CC</span>
+</div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#d29922"><span>Needs you</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">waiting 2m</span></div>
+<div style="font:400 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#adbac7;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Do you want to proceed? 1. Yes 2. No</div>
+<div style="display:flex;align-items:center;gap:8px;font:400 11px/1 system-ui;color:#8b949e"><span style="font-family:'JetBrains Mono',Menlo,monospace">ai-tools/tb-mobile</span><span style="opacity:.45">·</span><span style="font-family:'JetBrains Mono',Menlo,monospace">main</span><span style="margin-left:auto;color:#58a6ff;font-weight:600">Open →</span></div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:14px 14px 8px">
+<span style="width:8px;height:8px;border-radius:4px;background:#3fb950;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#3fb950">WORKING · 2</span>
+<div style="flex:1;height:1px;background:#3fb950;opacity:.3"></div>
+</div>
+
+<div style="padding:0 10px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#3fb950"></div>
+<div style="flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;font:600 14px/1.25 system-ui;color:#e6edf3">Merge all green dependabot PRs, rebase between each</div><span style="flex:none;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#161b22;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CX</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#3fb950"><span>Working</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">Replying</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400;color:#8b949e">4m</span></div>
+<div style="height:2px;background:#161b22;border-radius:1px;overflow:hidden;position:relative"><div style="position:absolute;top:0;left:0;width:34%;height:2px;background:#3fb950;border-radius:1px;animation:tbSweep 1.6s linear infinite"></div></div>
+</div>
+</div>
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#3fb950"></div>
+<div style="flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;font:600 14px/1.25 system-ui;color:#e6edf3">Scan all worktrees, report which are stale</div><span style="flex:none;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#161b22;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CC</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#3fb950"><span>Working</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">Acting</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400;color:#8b949e">18s</span><span style="margin-left:auto;font-weight:400;color:#8b949e;font-family:'JetBrains Mono',Menlo,monospace">tb-streamer</span></div>
+<div style="height:2px;background:#161b22;border-radius:1px;overflow:hidden;position:relative"><div style="position:absolute;top:0;left:0;width:34%;height:2px;background:#3fb950;border-radius:1px;animation:tbSweep 1.6s linear infinite"></div></div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:16px 14px 8px">
+<span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">EARLIER TODAY</span>
+<div style="flex:1;height:1px;background:#30363d"></div>
+<span style="font:400 11px/1 system-ui;color:#8b949e">17</span>
+</div>
+
+<div style="padding:0 10px 96px;display:flex;flex-direction:column;gap:1px">
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(88,166,255,.08)">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:600 13.5px/1.25 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Report slow streamer requests from release builds</div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Found three stalls over 9s, all in the replay path.</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">14:12</span><span style="font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:3px 5px;border-radius:4px">CC</span></div>
+</div>
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(88,166,255,.08)">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:600 13.5px/1.25 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Screenshot → what does the bluedot mean?</div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">It marks a tab whose agent is mid-turn in iTerm2.</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">11:04</span><span style="font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:3px 5px;border-radius:4px">CX</span></div>
+</div>
+<sc-if value="{{ groupNoise }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(88,166,255,.08);opacity:.72">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="display:flex;align-items:center;gap:6px"><span style="font:500 13.5px/1.25 system-ui;color:#adbac7">4 one-line sessions</span><span style="font:600 9px/1 system-ui;letter-spacing:.3px;color:#8b949e;border:1px solid #30363d;padding:3px 5px;border-radius:999px">GROUPED</span></div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">hi · hey · Ahoy · Hello there</div>
+</div>
+<span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span>
+</div>
+</sc-if>
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:600 13.5px/1.25 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">int-2026-09-12 · tb-streamer worktree</div>
+<div style="font:400 11px/1.35 system-ui;color:#f85149">Worktree gone — can't resume</div>
+</div>
+<span style="flex:none;font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">5 Sep</span>
+</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(180deg,rgba(13,17,23,0) 0%,rgba(13,17,23,.9) 60%)"></div>
+<div style="position:absolute;right:20px;bottom:28px;display:flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:22px;background:#58a6ff;font:600 14px/1 system-ui;color:#0d1117">+ &nbsp;New session</div>
+</div>
+</div>
+
+<div style="flex:none;width:440px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:18px" id="3b">
+<div style="display:flex;align-items:baseline;gap:8px"><a href="#3b" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">3b</a><span style="font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)">State colour — pick one</span></div>
+
+<div style="font:400 12.5px/1.6 system-ui;color:#adbac7;text-wrap:pretty">You're right that amber reads as <em>waiting / warning</em> — that's exactly what "Needs you" is, so amber keeps that slot. The open question is what <em>Working</em> gets. The constraint on "other colours": <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">constants/theme.ts</code> defines five status tokens (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">running, waiting, failed, completed, idle</code>) across <strong style="color:#e6edf3">fifteen</strong> shipped themes. A genuinely new hue means fifteen new values that have to stay legible in Solarized Light and Tokyo Night alike. So all three options below reuse tokens you already ship.</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="border:1px solid #58a6ff;border-radius:10px;padding:14px;background:#161b22">
+<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px"><span style="font:600 12px/1 system-ui;color:#e6edf3">A — Green runs, amber asks</span><span style="font:600 9px/1 system-ui;letter-spacing:.5px;color:#58a6ff;border:1px solid #58a6ff;border-radius:999px;padding:3px 6px">SHOWN IN 3a · MY PICK</span></div>
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#3fb950;background:rgba(63,185,80,.14);border-radius:999px;padding:6px 10px"><span style="width:7px;height:7px;border-radius:4px;background:#3fb950"></span>Working</span>
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#d29922;background:rgba(210,153,34,.16);border-radius:999px;padding:6px 10px"><span style="width:7px;height:7px;border-radius:4px;background:#d29922"></span>Needs you</span>
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#8b949e;background:#21262d;border-radius:999px;padding:6px 10px"><span style="width:7px;height:7px;border-radius:4px;background:#484f58"></span>Resumable</span>
+</div>
+<div style="font:400 12px/1.55 system-ui;color:#8b949e;text-wrap:pretty">Almost free — <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">status.running</code> is already green in 13 of the 15 themes, and the Filter &amp; Sort shelf already paints <em>Running</em> green, so adopting it makes the filter and the list agree for the first time. <strong style="color:#adbac7">Two themes need an override:</strong> Rosé Pine (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#31748f</code>) and Rosé Pine Dawn (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#286983</code>) map running to a blue-teal, which would land Working next to the accent — exactly the collision option B is criticised for. Solarized's <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#859900</code> is a yellow-green and reads fine. The rule that keeps green from becoming decoration: <strong style="color:#adbac7">green only ever means a live process is mid-turn</strong> — never "success", never "done".</div>
+</div>
+
+<div style="border:1px solid #30363d;border-radius:10px;padding:14px;background:#161b22">
+<div style="font:600 12px/1 system-ui;color:#e6edf3;margin-bottom:10px">B — Blue runs, observed goes monochrome</div>
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#58a6ff;background:rgba(88,166,255,.14);border-radius:999px;padding:6px 10px"><span style="width:7px;height:7px;border-radius:4px;background:#58a6ff"></span>Working</span>
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#d29922;background:rgba(210,153,34,.16);border-radius:999px;padding:6px 10px"><span style="width:7px;height:7px;border-radius:4px;background:#d29922"></span>Needs you</span>
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:5px 10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:block;color:#8b949e"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"></path></svg>Observed</span>
+</div>
+<div style="font:400 12px/1.55 system-ui;color:#8b949e;text-wrap:pretty">Uses <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">status.completed</code> blue for Working and demotes <em>Observed</em> to a lock glyph — read-only is a capability, and a glyph says it better than a hue. Cooler and calmer than A. The cost: blue is also your link/button colour, so a blue state marker competes with every interactive element on the row.</div>
+</div>
+
+<div style="border:1px solid #30363d;border-radius:10px;padding:14px;background:#161b22">
+<div style="font:600 12px/1 system-ui;color:#e6edf3;margin-bottom:10px">C — One accent, two motions</div>
+<div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#0d1117;background:#d29922;border-radius:999px;padding:6px 10px">Needs you</span>
+<span style="display:inline-flex;align-items:center;gap:6px;font:600 11px/1 system-ui;color:#d29922;background:rgba(210,153,34,.14);border-radius:999px;padding:6px 10px">Working</span>
+<span style="flex:1;height:2px;background:#161b22;border-radius:1px;overflow:hidden;position:relative;border:1px solid #30363d"><span style="position:absolute;top:0;left:0;width:34%;height:100%;background:#d29922;animation:tbSweep 1.6s linear infinite"></span></span>
+</div>
+<div style="font:400 12px/1.55 system-ui;color:#8b949e;text-wrap:pretty">The most brand-pure reading of "one accent per surface": amber for both, separated by <strong style="color:#adbac7">weight and motion</strong> — Needs you is a solid filled chip that pulses; Working is a tint with a travelling sweep. Survives colour-blindness and greyscale, and it's the only option where the list never shows two accents at once. The cost: at a glance the two live states look related, which is either the point or the problem.</div>
+</div>
+</div>
+</div>
+
+<div style="flex:none;width:440px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:18px" id="3c">
+<div style="display:flex;align-items:baseline;gap:8px"><a href="#3c" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">3c</a><span style="font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)">Provider badge — three treatments</span></div>
+
+<div style="font:400 12.5px/1.6 system-ui;color:#adbac7;text-wrap:pretty">No provider logos exist in the repo (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">assets/</code> holds only the app icon) and I won't draw third-party marks from memory — drop SVGs in and any of these takes them. Until then, two-letter monograms in mono: <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">CC</code> Claude Code, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">CX</code> Codex, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">CU</code> Cursor. Single letters collide — Claude and Codex are both C.</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="border:1px solid #58a6ff;border-radius:10px;padding:14px;background:#161b22">
+<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px"><span style="font:600 12px/1 system-ui;color:#e6edf3">T1 — Monochrome monogram</span><span style="font:600 9px/1 system-ui;letter-spacing:.5px;color:#58a6ff;border:1px solid #58a6ff;border-radius:999px;padding:3px 6px">SHOWN IN 3a · MY PICK</span></div>
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<span style="font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CC</span>
+<span style="font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CX</span>
+<span style="font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#8b949e;background:#21262d;border:1px solid #30363d;padding:4px 5px;border-radius:4px">CU</span>
+</div>
+<div style="font:400 12px/1.55 system-ui;color:#8b949e;text-wrap:pretty">Half the width of today's word badges and fully greyscale, so <strong style="color:#adbac7">every colour on the row belongs to state</strong>. This is the option that actually fixes your complaint: the problem isn't that purple is wrong for Codex, it's that provider is an identity axis competing for the same colour channel as liveness. Provider is also almost never the thing you're scanning for — and when it is, it's a filter.</div>
+</div>
+
+<div style="border:1px solid #30363d;border-radius:10px;padding:14px;background:#161b22">
+<div style="font:600 12px/1 system-ui;color:#e6edf3;margin-bottom:10px">T2 — Brand tint, edge only</div>
+<div style="display:flex;gap:8px;margin-bottom:10px">
+<span style="display:inline-flex;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#adbac7;background:#21262d;border:1px solid #30363d;border-left:3px solid #E8622A;padding:4px 5px 4px 4px;border-radius:4px">CC</span>
+<span style="display:inline-flex;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#adbac7;background:#21262d;border:1px solid #30363d;border-left:3px solid #a78bdb;padding:4px 5px 4px 4px;border-radius:4px">CX</span>
+<span style="display:inline-flex;font:600 10px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:.5px;color:#adbac7;background:#21262d;border:1px solid #30363d;border-left:3px solid #58a6ff;padding:4px 5px 4px 4px;border-radius:4px">CU</span>
+</div>
+<div style="font:400 12px/1.55 system-ui;color:#8b949e;text-wrap:pretty">Keeps a trace of brand identity without tinting text (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">brand.codex</code> #7B5EA7 is ~3.0:1 at 10px — it fails as text, which is part of why it looks cheap today). Colour lives on a 3px edge, well under the 12%-tint threshold where it would start competing. Cursor takes blue, which collides with your accent — swap if you adopt option B.</div>
+</div>
+
+<div style="border:1px solid #30363d;border-radius:10px;padding:14px;background:#161b22">
+<div style="font:600 12px/1 system-ui;color:#e6edf3;margin-bottom:10px">T3 — Conditional: only when mixed</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+<div style="display:flex;align-items:center;gap:8px;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:8px 10px"><span style="flex:1;font:600 12px/1 system-ui;color:#e6edf3">Fix the resume-collision copy</span><span style="font:500 11px/1 system-ui;color:#8b949e">12:31</span></div>
+<div style="display:flex;align-items:center;gap:8px;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:8px 10px"><span style="flex:1;font:600 12px/1 system-ui;color:#e6edf3">Scan all worktrees</span><span style="font:600 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;padding:3px 5px;border-radius:4px">CX</span><span style="font:500 11px/1 system-ui;color:#8b949e">12:51</span></div>
+</div>
+<div style="font:400 12px/1.55 system-ui;color:#8b949e;text-wrap:pretty">Badge only when a row differs from the screen's dominant provider — the same logic <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">ConversationListItem</code> already uses for the server chip (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">showServer: 'auto'</code> hides it below two servers). On a screen where most rows share one provider — which is what your Classic and Hub screenshots look like — this removes the majority of badges and makes the minority rows genuinely visible. Worth measuring against a real week of your data before committing; I have not counted it, and the numbers on <a href="#2b">2b</a>'s chips are mock values, not a census. Cost: the badge's absence carries meaning, which is harder to learn.</div>
+</div>
+</div>
+</div>
+
+<div style="flex:none;width:440px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:22px 24px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#d29922;margin-bottom:12px">WHAT I CUT, BECAUSE THE DATA ISN'T THERE</div>
+<div style="font:400 12.5px/1.6 system-ui;color:#adbac7;text-wrap:pretty">
+<p style="margin:0 0 12px"><strong style="color:#e6edf3">The answer affordance is gone.</strong> <a href="#1b">1b</a> had "Answer →" and a parsed question, which implied a Q&amp;A UI the list doesn't have. <a href="#3a">3a</a> shows <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">session.lastOutput</code> verbatim in a mono block — the same string <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">SessionCard</code> already renders on line 3 — and the action is "Open →". No parsing, no claim that the prompt was understood. It still answers the triage question ("what is it stuck on?") because the tail of the terminal usually <em>is</em> the question.</p>
+<p style="margin:0 0 12px"><strong style="color:#e6edf3">The progress bar is now an indeterminate sweep.</strong> There is no percentage anywhere in the API, and inventing one would be a lie the user could catch. What you <em>do</em> have is <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">subStatus: AgentPhase</code> — <em>thinking / streaming / hooks / acting / working</em>, already gated on <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">live</code> in <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">deriveSessionPresentation</code>, with locale strings already written (<em>Thinking, Replying, Running hooks, Acting, Working</em>). <a href="#3a">3a</a> prints the phase word and lets a 2px sweep carry "still moving" — the same indeterminate treatment as your shipped <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">KnightRiderScanner</code>. Every other field on these rows (<code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">elapsedMs</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">promptCount</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">branch</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">projectPath</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">provider</code>) is on <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">MultiSession</code> today.</p>
+<p style="margin:0"><strong style="color:#e6edf3">Kept:</strong> the grouped one-line row, since you liked it. It needs no new data — just a display-layer rule over titles you already have.</p>
+</div>
+</div>
+
+</div>
+
+<p style="margin:26px 0 0;font:400 12.5px/1.6 system-ui;color:rgba(255,255,255,.5)">Try next: "go with <a href="#3b">3b</a>-C and <a href="#3c">3c</a>-T3" · "apply the chosen colour to <a href="#2b">2b</a>'s filter chips too" · "build <a href="#3a">3a</a> as a tappable prototype" · "what else in <a href="#1c">1c</a> assumes data we don't have?"</p>
+</section>
+
+<section style="padding:40px 44px 36px;border-bottom:1px solid rgba(255,255,255,.07)" id="t2">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 22px">
+<a href="#t2" style="font:600 10px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:#58a6ff;color:#0d1117;border-radius:4px">2</a>
+<span style="font:600 13px/1.2 system-ui,sans-serif;color:#e6edf3">Filter &amp; Sort shelf — annotated, then rebuilt. Supersedes <a href="#1e">1e</a>.</span>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="2a">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#2a" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">2a</a>Today's shelf, annotated</div>
+<div style="display:flex;gap:18px;align-items:flex-start">
+<div style="position:relative;width:390px;height:844px;background:#080b10;border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,#0d1117 0%,#0d1117 55%,#111c2b 100%);opacity:.55"></div>
+<div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px;font:600 12px/1 system-ui;color:rgba(230,237,243,.35)"><span>22:30</span><span>44</span></div>
+<div style="position:relative;display:flex;align-items:center;gap:8px;padding:6px 12px 6px;opacity:.35"><img src="assets/icon.png" alt="Threadbase" style="width:22px;height:22px;border-radius:5px;flex:none"><div style="font:600 17px/1 system-ui;color:#e6edf3">Threadbase</div></div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:570px;background:#161b22;border-radius:24px 24px 0 0;overflow:hidden">
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:40px;height:4px;border-radius:2px;background:#30363d"></div></div>
+<div style="padding:12px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:center;justify-content:space-between"><span style="font:600 17px/1 system-ui;color:#e6edf3">Filter &amp; Sort</span><span style="display:flex;align-items:center;gap:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block;flex:none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block;flex:none"><path d="M18 6 6 18M6 6l12 12"></path></svg></span></div>
+<div><div style="display:flex;align-items:center;gap:7px;margin-bottom:8px"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">1</span><span style="font:600 15px/1 system-ui;color:#e6edf3">View</span></div><div style="display:flex;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block;flex:none"><circle cx="12" cy="7" r="5"></circle><path d="M12 12v9M12 16l-3.5-2.5M12 18l3.5-2.5"></path></svg>Tree</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block;flex:none"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg>Hub</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #58a6ff;background:#0d1117;font:500 15px/1 system-ui;color:#e6edf3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#e6edf3;display:block;flex:none"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>Classic</span></div></div>
+<div><div style="display:flex;align-items:center;gap:7px;margin-bottom:8px"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">2</span><span style="font:600 15px/1 system-ui;color:#e6edf3">Sort by</span></div><div style="display:flex;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #58a6ff;background:#0d1117;font:500 15px/1 system-ui;color:#e6edf3">Last message</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590">Project name</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590">Created date</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590">Status</span></div></div>
+<div><div style="display:flex;align-items:center;gap:7px;margin-bottom:8px"><span style="font:600 15px/1 system-ui;color:#e6edf3">Order</span></div><div style="display:flex;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #58a6ff;background:#0d1117;font:500 15px/1 system-ui;color:#e6edf3"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#e6edf3;display:block;flex:none"><path d="M12 4v16M6 14l6 6 6-6"></path></svg>Newest first</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block;flex:none"><path d="M12 20V4M6 10l6-6 6 6"></path></svg>Oldest first</span></div></div>
+<div><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font:600 15px/1 system-ui;color:#e6edf3">Status</span><span style="display:flex;gap:8px"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">3</span><span style="display:inline-flex;align-items:center;min-height:32px;box-sizing:border-box;padding:4px 8px;border-radius:6px;border:1px solid #30363d;background:#21262d;font:500 11px/1 system-ui;color:#7d8590">All</span><span style="display:inline-flex;align-items:center;min-height:32px;box-sizing:border-box;padding:4px 8px;border-radius:6px;border:1px solid #30363d;background:#21262d;font:500 11px/1 system-ui;color:#7d8590">None</span></span></div><div style="display:flex;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #58a6ff;background:#0d1117;font:500 15px/1 system-ui;color:#e6edf3"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">5</span><span style="width:8px;height:8px;border-radius:4px;background:#3fb950;flex:none"></span>Running</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #58a6ff;background:#0d1117;font:500 15px/1 system-ui;color:#e6edf3"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">4</span><span style="width:8px;height:8px;border-radius:4px;background:#d29922;flex:none"></span>Active</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #58a6ff;background:#0d1117;font:500 15px/1 system-ui;color:#e6edf3"><span style="width:8px;height:8px;border-radius:4px;background:#7d8590;flex:none"></span>Idle</span></div></div>
+<div><div style="display:flex;align-items:center;gap:7px;margin-bottom:8px"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">6</span><span style="font:600 15px/1 system-ui;color:#e6edf3">Provider</span></div><div style="display:flex;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #58a6ff;background:#0d1117;font:500 15px/1 system-ui;color:#e6edf3">All</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590"><span style="width:8px;height:8px;border-radius:4px;background:#E8622A;flex:none"></span>Claude</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590"><span style="width:8px;height:8px;border-radius:4px;background:#7B5EA7;flex:none"></span>Codex</span><span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;box-sizing:border-box;padding:4px 12px;border-radius:999px;border:1px solid #30363d;background:#21262d;font:500 15px/1 system-ui;color:#7d8590"><span style="width:8px;height:8px;border-radius:4px;background:#58a6ff;flex:none"></span>Cursor</span></div></div>
+<div style="border-top:1px solid #30363d;padding-top:8px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:7px;opacity:.35"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">7</span><span style="font:500 15px/1 system-ui;color:#7d8590">Reset to defaults</span></div>
+</div>
+<div style="position:absolute;left:50%;transform:translateX(-50%);bottom:6px;display:flex;align-items:center;gap:7px"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">8</span><div style="width:138px;height:5px;border-radius:3px;background:#8b949e"></div></div>
+</div>
+</div>
+
+<div style="width:380px;display:flex;flex-direction:column;gap:12px;font:400 12.5px/1.55 system-ui;color:#adbac7">
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">1</span><span><strong style="color:#e6edf3">Navigation is hiding in a filter sheet.</strong> Tree / Hub / Classic is the app's primary structure, two taps deep, under a title that says "Filter &amp; Sort". A user who lands in Tree by accident has no way to guess where the switch went. Worse, the sheet reshapes itself around the choice: <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">FilterSortSheet.tsx</code> gates Sort&nbsp;by and Order on <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">sessionsLayout !== 'tree'</code>, so tapping <em>Tree</em> makes two whole sections vanish under your finger. This is the strongest argument for <a href="#1b">1b</a>/<a href="#1c">1c</a>: with two views that have distinct jobs, the switch is a segmented control on the list and this section disappears.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">2</span><span><strong style="color:#e6edf3">"Sort by: Status" has no stated order.</strong> Running before Idle? Alphabetical by label? With 15 labels in <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">sessionPresentation.ts</code> and 3 here, no user can predict the result — and it is redundant once the list is state-ordered by default.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">3</span><span><strong style="color:#e6edf3">Two selection models, adjacent.</strong> Status is multi-select with separate <em>All</em> / <em>None</em> buttons that read as disabled (see #7). Provider is a radio with an <em>All</em> pill <em>inside</em> the row. Same sheet, same visual language, different mechanics.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">4</span><span><strong style="color:#e6edf3">A fourth status vocabulary.</strong> The sheet says <em>Running / Active / Idle</em>. The rows say <em>Resumed / Was waiting / History</em>. The locale file defines <em>Running / Waiting / Idle</em>. The code has 15. "Active" exists nowhere else in the product — and it is amber, which in a row means <em>waiting on you</em>. A filter the user cannot map onto the list is a filter they will not trust.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">5</span><span><strong style="color:#e6edf3">Green and amber both mean "good".</strong> Green <em>Running</em> next to amber <em>Active</em> gives the list two competing "this one is alive" colours. Pick one (amber, per the brand's live/now rule) and retire the other from the list surface.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">6</span><span><strong style="color:#e6edf3">The dot means two different things.</strong> An 8px <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">chipDot</code> is the state marker on the Status row and, four rows later, the identity marker for Claude / Codex / Cursor. One shape, two axes. Providers already have a badge treatment in the list — reuse it here instead. (Note: <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">FilterSortSheet.tsx</code> on <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">main</code> ships only All / Claude / Codex — the Cursor chip in your screenshot is ahead of the branch I read.)</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">7</span><span><strong style="color:#e6edf3">No count and no apply.</strong> Nothing tells you what your five taps left behind, so tapping <em>None</em> on Status dumps you onto an empty list with the sheet already dismissed — and the only way out is the sheet you just closed. The footer reads dead because <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">resetButtonDisabled</code> drops it to 0.35 opacity while at defaults, which is logically right but leaves the sheet with no primary action at all. The genuine contrast miss is one row up: the <em>All</em> / <em>None</em> buttons are <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">font.xs</code> (11px) in <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">text.secondary</code> on <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">bg.card</code> — about 4.0:1, under AA at that size.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">8</span><span><strong style="color:#e6edf3">The sheet runs under the home indicator.</strong> No bottom safe-area inset, so the last interactive row shares space with the system gesture bar.</span></div>
+</div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="2b">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#2b" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">2b</a>Rebuilt — one vocabulary, one selection model, live count</div>
+<div style="position:relative;width:390px;height:844px;background:#080b10;border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,#0d1117 0%,#0d1117 55%,#111c2b 100%);opacity:.5"></div>
+<div style="position:absolute;inset:0;background:rgba(4,7,11,.72)"></div>
+<div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px;font:600 12px/1 system-ui;color:rgba(230,237,243,.3)"><span>22:30</span><span>44</span></div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;background:#161b22;border-top:1px solid #30363d;border-radius:20px 20px 0 0;display:flex;flex-direction:column;max-height:660px">
+<div style="padding:10px 0 0"><div style="width:36px;height:4px;border-radius:2px;background:#484f58;margin:0 auto 14px"></div></div>
+<div style="padding:0 18px 16px;display:flex;align-items:center;gap:12px"><span style="font:600 20px/1 system-ui;color:#e6edf3">Filter &amp; sort</span><span style="margin-left:auto;width:30px;height:30px;border-radius:15px;background:#21262d;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" style="display:block;color:#8b949e"><path d="M18 6 6 18M6 6l12 12"></path></svg></span></div>
+
+<div style="padding:0 18px 18px;display:flex;gap:8px">
+<span style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;height:42px;border-radius:10px;background:rgba(210,153,34,.16);border:1px solid #d29922;font:600 14px/1 system-ui;color:#d29922"><span style="width:7px;height:7px;border-radius:4px;background:#d29922;animation:tbPulse 1.6s ease-out infinite"></span>Only what needs me</span>
+<span style="flex:none;display:flex;align-items:center;justify-content:center;height:42px;padding:0 18px;border-radius:10px;background:#21262d;border:1px solid #30363d;font:600 14px/1 system-ui;color:#adbac7">Everything</span>
+</div>
+
+<div style="padding:0 18px 8px;font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">SHOW</div>
+<div style="padding:0 18px 16px;display:flex;flex-wrap:wrap;gap:8px">
+<span style="display:inline-flex;align-items:center;gap:7px;font:600 13px/1 system-ui;color:#e6edf3;background:rgba(88,166,255,.14);border:1px solid #58a6ff;border-radius:999px;padding:9px 13px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;color:#58a6ff"><path d="m5 13 4 4L19 7"></path></svg><span style="width:6px;height:6px;border-radius:3px;background:#d29922"></span>Needs you<span style="color:#8b949e;font-weight:500;font-variant-numeric:tabular-nums">1</span></span>
+<span style="display:inline-flex;align-items:center;gap:7px;font:600 13px/1 system-ui;color:#e6edf3;background:rgba(88,166,255,.14);border:1px solid #58a6ff;border-radius:999px;padding:9px 13px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;color:#58a6ff"><path d="m5 13 4 4L19 7"></path></svg><span style="width:6px;height:6px;border-radius:3px;background:#d29922"></span>Working<span style="color:#8b949e;font-weight:500;font-variant-numeric:tabular-nums">2</span></span>
+<span style="display:inline-flex;align-items:center;gap:7px;font:600 13px/1 system-ui;color:#e6edf3;background:rgba(88,166,255,.14);border:1px solid #58a6ff;border-radius:999px;padding:9px 13px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;color:#58a6ff"><path d="m5 13 4 4L19 7"></path></svg><span style="width:6px;height:6px;border-radius:3px;background:#484f58"></span>Resumable<span style="color:#8b949e;font-weight:500;font-variant-numeric:tabular-nums">41</span></span>
+<span style="display:inline-flex;align-items:center;gap:7px;font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px"><span style="width:6px;height:6px;border-radius:3px;background:#f85149"></span>Can't resume<span style="font-variant-numeric:tabular-nums">3</span></span>
+<span style="display:inline-flex;align-items:center;gap:7px;font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px"><span style="width:6px;height:6px;border-radius:3px;background:#58a6ff"></span>Observed<span style="font-variant-numeric:tabular-nums">2</span></span>
+</div>
+
+<div style="padding:0 18px 8px;font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">AGENT</div>
+<div style="padding:0 18px 16px;display:flex;flex-wrap:wrap;gap:8px">
+<span style="display:inline-flex;align-items:center;gap:7px;font:600 13px/1 system-ui;color:#e6edf3;background:rgba(88,166,255,.14);border:1px solid #58a6ff;border-radius:999px;padding:9px 13px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;color:#58a6ff"><path d="m5 13 4 4L19 7"></path></svg>Claude<span style="color:#E8622A;font-weight:700;font-variant-numeric:tabular-nums">38</span></span>
+<span style="display:inline-flex;align-items:center;gap:7px;font:600 13px/1 system-ui;color:#e6edf3;background:rgba(88,166,255,.14);border:1px solid #58a6ff;border-radius:999px;padding:9px 13px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block;color:#58a6ff"><path d="m5 13 4 4L19 7"></path></svg>Codex<span style="color:#a78bdb;font-weight:700;font-variant-numeric:tabular-nums">11</span></span>
+<span style="display:inline-flex;align-items:center;gap:7px;font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">Cursor<span style="font-variant-numeric:tabular-nums">2</span></span>
+</div>
+
+<div style="padding:0 18px 8px;font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">ACTIVE WITHIN</div>
+<div style="padding:0 18px 16px;display:flex;gap:8px">
+<span style="font:600 13px/1 system-ui;color:#e6edf3;background:rgba(88,166,255,.14);border:1px solid #58a6ff;border-radius:999px;padding:9px 15px">Any time</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 15px">Today</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 15px">7 days</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 15px">30 days</span>
+</div>
+
+<div style="padding:0 18px 8px;font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">ORDER</div>
+<div style="margin:0 18px 10px;display:flex;background:#0d1117;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="flex:1;padding:10px 0;text-align:center;background:#21262d;font:600 13px/1 system-ui;color:#e6edf3">State, then recent</div>
+<div style="flex:1;padding:10px 0;text-align:center;font:500 13px/1 system-ui;color:#8b949e">Recent</div>
+<div style="flex:1;padding:10px 0;text-align:center;font:500 13px/1 system-ui;color:#8b949e">Project</div>
+</div>
+<div style="padding:0 18px 16px;display:flex;align-items:center;gap:10px">
+<span style="font:400 12px/1 system-ui;color:#8b949e">Within each group</span>
+<span style="margin-left:auto;display:flex;background:#0d1117;border:1px solid #30363d;border-radius:8px;overflow:hidden"><span style="padding:7px 12px;background:#21262d;font:600 12px/1 system-ui;color:#e6edf3">Newest</span><span style="padding:7px 12px;font:500 12px/1 system-ui;color:#8b949e">Oldest</span></span>
+</div>
+
+<div style="border-top:1px solid #30363d;padding:14px 18px 12px;display:flex;align-items:center;gap:10px;background:#161b22">
+<span style="flex:none;font:600 13px/1 system-ui;color:#58a6ff;padding:13px 14px;border-radius:10px;border:1px solid #30363d">Reset</span>
+<span style="flex:1;display:flex;align-items:center;justify-content:center;height:46px;border-radius:10px;background:#58a6ff;font:600 15px/1 system-ui;color:#0d1117">Show 44 sessions</span>
+</div>
+<div style="height:30px;display:flex;align-items:center;justify-content:center"><div style="width:138px;height:5px;border-radius:3px;background:#484f58"></div></div>
+</div>
+</div>
+</div>
+
+<div style="flex:none;width:420px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:16px">
+<div>
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#d29922;margin-bottom:10px">WHAT CHANGED, AND WHY</div>
+<div style="font:400 12.5px/1.6 system-ui;color:#adbac7;text-wrap:pretty">
+<p style="margin:0 0 10px"><strong style="color:#e6edf3">View is gone.</strong> It moves to the <em>Now / Projects</em> segmented control at the top of the list (<a href="#1b">1b</a>). A sheet titled "Filter &amp; sort" should contain filters and sorts.</p>
+<p style="margin:0 0 10px"><strong style="color:#e6edf3">One vocabulary, five words</strong> — the same five as <a href="#1d">1d</a> and the same five the rows print. Each chip carries its live count, so the filter doubles as the answer to "what have I got?". Green is retired; amber is the only "alive" colour.</p>
+<p style="margin:0 0 10px"><strong style="color:#e6edf3">One selection model.</strong> Every chip is multi-select and shows a check when on. No <em>All</em> / <em>None</em> buttons pretending to be disabled — the two presets at the top do that job in the user's language: <em>Only what needs me</em> (your #1 job) and <em>Everything</em>.</p>
+<p style="margin:0 0 10px"><strong style="color:#e6edf3">Dots only ever mean state.</strong> Agent chips carry the provider's colour on the <em>count</em>, matching the badge treatment already in the rows. <em>Cursor</em> gets a chip — it exists in your data and was missing from my first pass.</p>
+<p style="margin:0 0 10px"><strong style="color:#e6edf3">Sort collapses 4+2 to 3+1.</strong> <em>State, then recent</em> is the default and the only one most users need; <em>Created date</em> and <em>Sort by status</em> go. The direction toggle is scoped and relabelled ("Within each group") so it reads as a modifier, not a fifth sort.</p>
+<p style="margin:0"><strong style="color:#e6edf3">A live count and a real footer.</strong> "Show 44 sessions" updates as you tap; at zero it disables and reads "No sessions match — loosen a filter", so an empty list is impossible to walk into. <em>Reset</em> is a peer control at full contrast, and the sheet ends above the home indicator.</p>
+</div>
+</div>
+<div style="border-top:1px solid #30363d;padding-top:14px;font:400 12px/1.6 system-ui;color:#8b949e">Codex purple is lightened to <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#a78bdb</code> for the count text only — brand <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#7B5EA7</code> is ~3.0:1 on this surface and fails as text at 13px. The badge fill keeps the brand value.</div>
+</div>
+
+</div>
+
+<p style="margin:26px 0 0;font:400 12.5px/1.6 system-ui;color:rgba(255,255,255,.5)">Try next: "build <a href="#2b">2b</a> as a working prototype with real chip toggling and a live count" · "show me <a href="#2b">2b</a> with View kept in, as a fallback if we can't drop Tree" · "what does <a href="#1b">1b</a> look like filtered to <em>Only what needs me</em>?"</p>
+</section>
+
+<section style="padding:40px 44px 36px;border-bottom:1px solid rgba(255,255,255,.07)" id="t1">
+<div style="display:flex;align-items:baseline;gap:10px;margin:0 0 22px">
+<a href="#t1" style="font:600 10px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:#58a6ff;color:#0d1117;border-radius:4px">1</a>
+<span style="font:600 13px/1.2 system-ui,sans-serif;color:#e6edf3">Session list — recommendation, critique and redesign</span>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start">
+
+<div style="flex:none;width:560px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:24px 26px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#d29922;margin-bottom:14px">MY CALL</div>
+<div style="font:600 20px/1.3 system-ui;color:#e6edf3;margin-bottom:14px;text-wrap:pretty">Ship two views, not three. Kill the LIVE widget as a widget.</div>
+<div style="font:400 13px/1.65 system-ui;color:#adbac7;text-wrap:pretty">
+<p style="margin:0 0 12px"><strong style="color:#e6edf3">Now</strong> — the default. One flat list, ordered by state, not by clock. A pinned <em>Needs&nbsp;you</em> block, then <em>Working</em>, then everything recent. This absorbs Classic <em>and</em> the LIVE widget: the widget existed only because Classic rows carried no live signal. Give the rows the signal and the widget has no job.</p>
+<p style="margin:0 0 12px"><strong style="color:#e6edf3">Projects</strong> — grouped by repo. Hub's card model survives; Tree collapses into it as a <em>path drill</em> reachable in one tap from a project card, plus a path search field. Tree's only unique job is "I know where it lives on disk" — that is a navigation affordance, not a top-level view worth a third tab.</p>
+<p style="margin:0 0 14px">Three interchangeable views over identical data is a decision you pushed onto the user at the moment they are least able to make it — cold, on a phone, looking for one running agent. Two views with different <em>jobs</em> (triage vs. navigate) is a real choice; three with different <em>shapes</em> is not.</p>
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#7d8590;margin:18px 0 10px">FIX ORDER — HIGHEST IMPACT FIRST</div>
+<ol style="margin:0;padding-left:20px;font:400 12.5px/1.6 system-ui;color:#adbac7">
+<li style="margin-bottom:6px"><strong style="color:#e6edf3">Make LIVE mean alive.</strong> One gate: <code style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11.5px;color:#79c0ff">processLiveness === 'alive'</code> or <code style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11.5px;color:#79c0ff">lifecycle ∈ {attached, detached}</code>. A 183-hour row can never enter. You said the streamer is honest here — so this is a one-day client fix with the single largest trust payoff in the app.</li>
+<li style="margin-bottom:6px"><strong style="color:#e6edf3">Collapse 15 status labels to 2 tiers + 1 sentence.</strong> Amber = you or the agent is mid-turn. Everything else is neutral text. No two greys ever mean different things.</li>
+<li style="margin-bottom:6px"><strong style="color:#e6edf3">Stop shipping raw first messages as titles.</strong> Clean, or fall back to identity. Never leak a <code style="font-family:'JetBrains Mono',Menlo,monospace;font-size:11.5px;color:#79c0ff">/var/folders/…</code> clipboard path into a title.</li>
+<li style="margin-bottom:6px"><strong style="color:#e6edf3">One time system per row.</strong> Clock for history, elapsed only while live. Today rows carry both and neither wins.</li>
+<li style="margin-bottom:6px"><strong style="color:#e6edf3">Sink the zero-content rows.</strong> "0 prompts · 0 msgs · 160h" is a full-height row carrying no information a user can act on.</li>
+<li style="margin-bottom:6px"><strong style="color:#e6edf3">Merge Tree into Projects</strong> and delete the third tab.</li>
+<li><strong style="color:#e6edf3">Give the list 96px of bottom padding</strong> and hide the FAB on scroll-down. It occludes a real row in 13 of your 14 screenshots.</li>
+</ol>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="1a">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#1a" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">1a</a>Today, annotated — Classic + LIVE widget</div>
+<div style="display:flex;gap:18px;align-items:flex-start">
+
+<div style="position:relative;width:390px;height:844px;background:linear-gradient(180deg,#0d1117 0%,#0d1117 40%,#15263d 100%);border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px;font:600 12px/1 system-ui;color:#e6edf3"><span>22:01</span><span style="display:flex;align-items:center;gap:6px;color:#7d8590"><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M3 18v-3M9 18v-7M15 18v-11M21 18v-15"></path></svg></span><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M2.5 8.5a15 15 0 0 1 19 0"></path><path d="M6 12a10 10 0 0 1 12 0"></path><path d="M9.5 15.5a5 5 0 0 1 5 0"></path><path d="M12 19h.01"></path></svg></span><span style="font:600 11px/1 system-ui">47</span></span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:10px 12px 8px">
+<img src="assets/icon.png" alt="Threadbase" style="width:22px;height:22px;border-radius:5px;flex:none">
+<div style="font:600 17px/1 system-ui;color:#e6edf3">Threadbase</div>
+<span style="display:flex;align-items:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
+<div style="margin-left:auto;display:flex;align-items:center;gap:6px"><span style="width:34px;height:34px;border:1px solid #30363d;border-radius:17px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M6 8a6 6 0 0 1 12 0c0 7 2.5 8.5 2.5 8.5H3.5S6 15 6 8"></path><path d="M10.3 20.5a1.94 1.94 0 0 0 3.4 0"></path></svg></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M21 5h-7M9 5H3M21 12h-4M12 12H3M21 19h-9M7 19H3"></path><circle cx="11.5" cy="5" r="2"></circle><circle cx="14.5" cy="12" r="2"></circle><circle cx="9.5" cy="19" r="2"></circle></svg></span></div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:12px 12px 8px">
+<span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">1</span><span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#d29922">⌄ LIVE · 10</span>
+<div style="flex:1;height:1px;background:#d29922;opacity:.35"></div>
+</div>
+
+<div style="padding:0 8px;display:flex;flex-direction:column;gap:8px">
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="width:3px;background:#d29922"></div>
+<div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:6px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><span style="font:600 15px/1 system-ui;color:#e6edf3;flex:1">why-sessions-created</span><span style="font:500 11px/1 system-ui;color:#7d8590">21:38</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#7d8590"><span style="width:7px;height:7px;border-radius:4px;background:#d29922;animation:tbPulse 1.6s ease-out infinite"></span><span style="color:#d29922">Resumed</span><span style="opacity:.5">·</span><span>22m 24s</span><span style="opacity:.5">·</span><span>2 prompts</span></div>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.55"></div>
+<div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:6px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><span style="font:600 15px/1 system-ui;color:#e6edf3;flex:1">look-for-the-real-pr</span><span style="font:500 11px/1 system-ui;color:#7d8590">21:35</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#7d8590"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">2</span><span style="width:7px;height:7px;border-radius:4px;background:#7d8590"></span><span>Was waiting</span><span style="opacity:.5">·</span><span>11h 54m</span><span style="opacity:.5">·</span><span>3 prompts</span></div>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.55"></div>
+<div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:6px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">3</span><span style="font:600 15px/1 system-ui;color:#e6edf3;flex:1">hey</span><span style="font:500 11px/1 system-ui;color:#7d8590">21:35</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#7d8590"><span style="width:7px;height:7px;border-radius:4px;background:#7d8590"></span><span>Was waiting</span><span style="opacity:.5">·</span><span>45m 29s</span><span style="opacity:.5">·</span><span>1 prompt</span></div>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.55"></div>
+<div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:6px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">4</span><span style="font:600 15px/1 system-ui;color:#e6edf3;flex:1">tb-mobile</span><span style="font:500 11px/1 system-ui;color:#7d8590">13:50</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#7d8590"><span style="width:7px;height:7px;border-radius:4px;background:#7d8590"></span><span>Was waiting</span><span style="opacity:.5">·</span><span>160h 35m</span><span style="opacity:.5">·</span><span>0 prompts</span></div>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.55"></div>
+<div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:6px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><span style="font:600 15px/1 system-ui;color:#e6edf3;flex:1">hi</span><span style="font:500 11px/1 system-ui;color:#7d8590">Tue 20:25</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#7d8590"><span style="width:7px;height:7px;border-radius:4px;background:#7d8590"></span><span>Was waiting</span><span style="opacity:.5">·</span><span>47h 51m</span><span style="opacity:.5">·</span><span>0 prompts</span></div>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.55"></div>
+<div style="flex:1;padding:12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:6px"><span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">5</span><span style="font:600 15px/1 system-ui;color:#e6edf3;flex:1">does-the-currently-r</span><span style="font:500 11px/1 system-ui;color:#7d8590">5 Sep 6:49</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#7d8590"><span style="display:inline-flex;align-items:center;justify-content:center;flex:none;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">6</span><span style="width:7px;height:7px;border-radius:4px;background:#7d8590"></span><span>History</span><span style="opacity:.5">·</span><span>183h 11m</span><span style="opacity:.5">·</span><span>0 prompts</span></div>
+</div>
+</div>
+
+<div style="background:#21262d;border:1px solid #30363d;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:center;gap:6px"><span style="flex:none"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#7d8590;display:block"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"></path></svg></span><span style="font:600 15px/1.15 system-ui;color:#e6edf3;flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">&lt;image name=[Image #1] path="/var/f…</span><span style="font:700 9px/1 system-ui;letter-spacing:.3px;color:#7B5EA7;background:rgba(123,94,167,.2);padding:3px 5px;border-radius:4px">Codex</span></div>
+<div style="font:400 11px/1.45 system-ui;color:#7d8590"><span style="display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;min-width:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui;vertical-align:middle;margin-right:5px">7</span>&lt;image name=[Image #1] path="/var/folders/9r/ c18379_13_q6tl6x_k9bhyqh0000gn/T/codex-clipboard-Dzg2cv.pn…</div>
+<div style="font:400 11px/1 system-ui;color:#7d8590">25 msgs</div>
+</div>
+
+</div>
+
+<div style="position:absolute;right:20px;bottom:24px;width:56px;height:56px;border-radius:28px;background:#58a6ff;border:1px solid rgba(88,166,255,.35);box-shadow:0 0 22px rgba(88,166,255,.55);display:flex;align-items:center;justify-content:center;font:300 26px/1 system-ui;color:#0d1117">+<span style="position:absolute;top:-7px;left:-7px;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:9px;background:#f85149;color:#0d1117;font:700 10px/1 system-ui">8</span></div>
+
+
+</div>
+
+<sc-if value="{{ showAnnotations }}" hint-placeholder-val="{{ true }}">
+<div style="width:380px;display:flex;flex-direction:column;gap:12px;font:400 12.5px/1.55 system-ui;color:#adbac7">
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">1</span><span><strong style="color:#e6edf3">The count is a lie.</strong> "LIVE · 10" over a block whose members include a 183h-idle history row. The header is the only thing a triaging user reads, and it is the least true thing on screen. <em>Screens 1, 11.</em></span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">2</span><span><strong style="color:#e6edf3">Two meanings, one grey.</strong> "Was waiting" and "History" ship in the same <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">#7d8590</code> with the same static dot. Only "Resumed" gets amber — so the palette encodes <em>one</em> of three states and the user must read words at 11px to get the rest.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">3</span><span><strong style="color:#e6edf3">"hey" is a row.</strong> Four near-duplicate greeting sessions ("hi", "hey", "Ahoy", "Hello there" — screens 1, 13) each occupy a 64px row with the same visual weight as a 548-message debugging thread.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">4</span><span><strong style="color:#e6edf3">Zero-content rows.</strong> "0 prompts · 160h 35m" — a session with no messages, ranked into the live block. Screen 6 shows the Hub equivalent: a row whose entire title is <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">no git · 145h 30m</code>. That is a debug string, not a title.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">5</span><span><strong style="color:#e6edf3">Titles truncated by character budget, not by width.</strong> "does-the-currently-r", "look-for-the-real-pr", "scan-and-describe-th", "check-why-the-backgr" all cut at 20 chars mid-word while 90px of row sits empty to the right of them.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">6</span><span><strong style="color:#e6edf3">Two time systems per row.</strong> A clock stamp on the right ("5 Sep 6:49") and an elapsed duration in the middle ("183h 11m"). They answer the same question in different units, and 183h is a number no one converts.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">7</span><span><strong style="color:#e6edf3">The snippet echoes the title.</strong> Screens 2 and 3: every card repeats its own title verbatim as the preview line, so ~40% of the list's vertical space carries zero marginal information. The worst case (screen 3) prints a clipboard path twice.</span></div>
+<div style="display:flex;gap:10px"><span style="flex:none;width:20px;height:20px;border-radius:10px;background:#f85149;color:#0d1117;font:700 10px/20px system-ui;text-align:center">8</span><span><strong style="color:#e6edf3">The FAB eats a row.</strong> In 13 of 14 screenshots it covers a timestamp or a provider badge (screen 8 loses "Codex", screen 11 loses "Sun 20:30"). Also: the list has no bottom inset for it.</span></div>
+<div style="margin-top:4px;padding-top:12px;border-top:1px solid #30363d;color:#7d8590;font-size:12px">Beyond the phone: <strong style="color:#adbac7">duplicate rows</strong> — screen 2 lists "# Implement <code style="font-family:'JetBrains Mono',Menlo,monospace">ws</code> v1" twice (211 and 72 msgs) with identical titles and previews; a fork or a resume is being rendered as two peers with nothing to tell them apart. <strong style="color:#adbac7">Ambiguous identity</strong> — screens 4/5 show "tb-mobile" three times and "int-2026-09-12" twice, disambiguated only by a muted parent line that is itself left-truncated.</div>
+</div>
+</sc-if>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="1b">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#1b" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">1b</a>Now — the default view (replaces Classic + LIVE widget)</div>
+<div style="position:relative;width:390px;height:844px;background:linear-gradient(180deg,#0d1117 0%,#0d1117 55%,#111c2b 100%);border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px;font:600 12px/1 system-ui;color:#e6edf3"><span>22:01</span><span style="display:flex;align-items:center;gap:6px;color:#8b949e"><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M3 18v-3M9 18v-7M15 18v-11M21 18v-15"></path></svg></span><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M2.5 8.5a15 15 0 0 1 19 0"></path><path d="M6 12a10 10 0 0 1 12 0"></path><path d="M9.5 15.5a5 5 0 0 1 5 0"></path><path d="M12 19h.01"></path></svg></span><span style="font:600 11px/1 system-ui">47</span></span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:10px 12px 6px">
+<img src="assets/icon.png" alt="Threadbase" style="width:22px;height:22px;border-radius:5px;flex:none">
+<div style="font:600 17px/1 system-ui;color:#e6edf3">Threadbase</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:6px"><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M21 5h-7M9 5H3M21 12h-4M12 12H3M21 19h-9M7 19H3"></path><circle cx="11.5" cy="5" r="2"></circle><circle cx="14.5" cy="12" r="2"></circle><circle cx="9.5" cy="19" r="2"></circle></svg></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span></div>
+</div>
+
+<div style="display:flex;margin:6px 12px 10px;background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="flex:1;padding:8px 0;text-align:center;background:#21262d;font:600 13px/1.2 system-ui;color:#e6edf3">Now</div>
+<div style="flex:1;padding:8px 0;text-align:center;font:500 13px/1.2 system-ui;color:#8b949e">Projects</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:4px 14px 8px">
+<span style="width:7px;height:7px;border-radius:4px;background:#d29922;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#d29922">NEEDS YOU · 1</span>
+<div style="flex:1;height:1px;background:#d29922;opacity:.3"></div>
+</div>
+
+<div style="padding:0 10px 2px">
+<div style="display:flex;background:#1b232e;border:1px solid rgba(210,153,34,.45);border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#d29922"></div>
+<div style="flex:1;padding:12px 12px 11px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;align-items:flex-start;gap:8px">
+<div style="flex:1;font:600 15px/1.25 system-ui;color:#e6edf3;text-wrap:pretty">Why sessions open in terminal view after resume</div>
+<span style="flex:none;font:700 9px/1 system-ui;letter-spacing:.3px;color:#E8622A;background:rgba(232,98,42,.2);padding:3px 5px;border-radius:4px">Claude</span>
+</div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#d29922"><span>Needs you</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400;color:#d29922">asked 2m ago</span></div>
+<div style="font:400 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#adbac7;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:7px 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Bash(npm run ios) — approve? (y/n)</div>
+<div style="display:flex;align-items:center;gap:8px;font:400 11px/1 system-ui;color:#8b949e"><span style="font-family:'JetBrains Mono',Menlo,monospace">ai-tools/tb-mobile</span><span style="opacity:.45">·</span><span style="font-family:'JetBrains Mono',Menlo,monospace">main</span><span style="margin-left:auto;color:#58a6ff;font-weight:600">Answer →</span></div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:14px 14px 8px">
+<span style="width:7px;height:7px;border-radius:4px;background:#d29922;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#d29922">WORKING · 2</span>
+<div style="flex:1;height:1px;background:#d29922;opacity:.3"></div>
+</div>
+
+<div style="padding:0 10px;display:flex;flex-direction:column;gap:7px">
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#d29922;opacity:.85"></div>
+<div style="flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;font:600 14px/1.25 system-ui;color:#e6edf3">Merge all green dependabot PRs, rebase between each</div><span style="flex:none;font:700 9px/1 system-ui;letter-spacing:.3px;color:#7B5EA7;background:rgba(123,94,167,.2);padding:3px 5px;border-radius:4px">Codex</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#d29922"><span>Working</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">4m in</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400;font-family:'JetBrains Mono',Menlo,monospace;color:#adbac7">running tests 12/48</span></div>
+<div style="height:2px;background:#30363d;border-radius:1px;overflow:hidden"><div style="width:30%;height:2px;background:#d29922"></div></div>
+</div>
+</div>
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#d29922;opacity:.85"></div>
+<div style="flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:flex-start;gap:8px"><div style="flex:1;font:600 14px/1.25 system-ui;color:#e6edf3">Scan all worktrees, report which are stale</div><span style="flex:none;font:700 9px/1 system-ui;letter-spacing:.3px;color:#E8622A;background:rgba(232,98,42,.2);padding:3px 5px;border-radius:4px">Claude</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:600 12px/1 system-ui;color:#d29922"><span>Working</span><span style="opacity:.45;font-weight:400">·</span><span style="font-weight:400">18s in</span><span style="margin-left:auto;font-weight:400;color:#8b949e;font-family:'JetBrains Mono',Menlo,monospace">tb-streamer</span></div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;align-items:center;gap:8px;padding:16px 14px 8px">
+<span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">EARLIER TODAY</span>
+<div style="flex:1;height:1px;background:#30363d"></div>
+<span style="font:400 11px/1 system-ui;color:#8b949e">17</span>
+</div>
+
+<div style="padding:0 10px 96px;display:flex;flex-direction:column;gap:1px">
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(88,166,255,.08)">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:600 13.5px/1.25 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Report slow streamer requests from release builds</div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Found three stalls over 9s, all in the replay path.</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">14:12</span><span style="font:700 9px/1 system-ui;color:#E8622A;background:rgba(232,98,42,.2);padding:3px 5px;border-radius:4px">Claude</span></div>
+</div>
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(88,166,255,.08)">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="display:flex;align-items:center;gap:6px"><span style="font:600 13.5px/1.25 system-ui;color:#e6edf3">Screenshot → what does the bluedot mean?</span></div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">It marks a tab whose agent is mid-turn in iTerm2.</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">11:04</span><span style="font:700 9px/1 system-ui;color:#7B5EA7;background:rgba(123,94,167,.2);padding:3px 5px;border-radius:4px">Codex</span></div>
+</div>
+<sc-if value="{{ groupNoise }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(88,166,255,.08);opacity:.72">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="display:flex;align-items:center;gap:6px"><span style="font:500 13.5px/1.25 system-ui;color:#adbac7">4 one-line sessions</span><span style="font:600 9px/1 system-ui;letter-spacing:.3px;color:#8b949e;border:1px solid #30363d;padding:3px 5px;border-radius:999px">GROUPED</span></div>
+<div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">hi · hey · Ahoy · Hello there</div>
+</div>
+<span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span>
+</div>
+</sc-if>
+<div style="display:flex;gap:10px;align-items:center;padding:10px 4px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="display:flex;align-items:center;gap:6px"><span style="font:600 13.5px/1.25 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">int-2026-09-12 · tb-streamer worktree</span></div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1.35 system-ui;color:#f85149"><span>Worktree gone — can't resume</span></div>
+</div>
+<span style="flex:none;font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">5 Sep</span>
+</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(180deg,rgba(13,17,23,0) 0%,rgba(13,17,23,.9) 60%)"></div>
+<div style="position:absolute;right:20px;bottom:28px;display:flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:22px;background:#58a6ff;font:600 14px/1 system-ui;color:#0d1117">+ &nbsp;New session</div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="1c">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#1c" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">1c</a>Projects — Hub and Tree merged (card list → path drill)</div>
+<div style="display:flex;gap:18px;align-items:flex-start">
+
+<div style="position:relative;width:390px;height:844px;background:linear-gradient(180deg,#0d1117 0%,#0d1117 55%,#111c2b 100%);border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px;font:600 12px/1 system-ui;color:#e6edf3"><span>22:01</span><span style="display:flex;align-items:center;gap:6px;color:#8b949e"><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M3 18v-3M9 18v-7M15 18v-11M21 18v-15"></path></svg></span><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M2.5 8.5a15 15 0 0 1 19 0"></path><path d="M6 12a10 10 0 0 1 12 0"></path><path d="M9.5 15.5a5 5 0 0 1 5 0"></path><path d="M12 19h.01"></path></svg></span><span style="font:600 11px/1 system-ui">47</span></span></div>
+<div style="display:flex;align-items:center;gap:8px;padding:10px 12px 6px">
+<img src="assets/icon.png" alt="Threadbase" style="width:22px;height:22px;border-radius:5px;flex:none">
+<div style="font:600 17px/1 system-ui;color:#e6edf3">Threadbase</div>
+<div style="margin-left:auto;display:flex;align-items:center;gap:6px"><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M21 5h-7M9 5H3M21 12h-4M12 12H3M21 19h-9M7 19H3"></path><circle cx="11.5" cy="5" r="2"></circle><circle cx="14.5" cy="12" r="2"></circle><circle cx="9.5" cy="19" r="2"></circle></svg></span><span style="width:30px;height:30px;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span></div>
+</div>
+<div style="display:flex;margin:6px 12px 10px;background:#161b22;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="flex:1;padding:8px 0;text-align:center;font:500 13px/1.2 system-ui;color:#8b949e">Now</div>
+<div style="flex:1;padding:8px 0;text-align:center;background:#21262d;font:600 13px/1.2 system-ui;color:#e6edf3">Projects</div>
+</div>
+
+<div style="margin:0 12px 10px;display:flex;align-items:center;gap:8px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px 10px;font:400 12px/1 system-ui;color:#8b949e">
+<span style="flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><circle cx="11" cy="11" r="7"></circle><path d="m20.5 20.5-4.2-4.2"></path></svg></span><span style="font-family:'JetBrains Mono',Menlo,monospace">filter projects or paths…</span>
+<span style="margin-left:auto;font:600 10px/1 system-ui;color:#58a6ff;border:1px solid rgba(88,166,255,.35);border-radius:999px;padding:3px 7px">Ronens-MacBook-Pro</span>
+</div>
+
+<div style="padding:0 10px;display:flex;flex-direction:column;gap:8px">
+
+<div style="display:flex;background:#1b232e;border:1px solid rgba(210,153,34,.4);border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#d29922"></div>
+<div style="flex:1">
+<div style="padding:12px;display:flex;align-items:center;gap:10px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:500 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">~/dev/ai-tools</div>
+<div style="font:600 17px/1.2 system-ui;color:#e6edf3">tb-mobile</div>
+<div style="display:flex;align-items:center;gap:6px;font:400 11px/1 system-ui;color:#d29922"><span style="width:6px;height:6px;border-radius:3px;background:#d29922;animation:tbPulse 1.6s ease-out infinite"></span><span>1 needs you</span><span style="color:#8b949e;opacity:.6">·</span><span style="color:#8b949e">17 today</span></div>
+</div>
+<span style="flex:none;font:500 11px/1 system-ui;color:#8b949e">319</span>
+<span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m6 9.5 6 6 6-6"></path></svg></span>
+</div>
+<div style="border-top:1px solid #30363d;padding:4px 12px 10px;display:flex;flex-direction:column;gap:1px">
+<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid rgba(88,166,255,.08)">
+<span style="width:6px;height:6px;border-radius:3px;background:#d29922;flex:none;animation:tbPulse 1.6s ease-out infinite"></span>
+<div style="flex:1;min-width:0"><div style="font:600 13px/1.2 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Why sessions open in terminal after resume</div><div style="font:400 10.5px/1.3 system-ui;color:#d29922">Needs you · asked 2m ago</div></div>
+<span style="font:700 9px/1 system-ui;color:#E8622A;background:rgba(232,98,42,.2);padding:3px 5px;border-radius:4px;flex:none">Claude</span>
+</div>
+<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid rgba(88,166,255,.08)">
+<span style="width:6px;height:6px;border-radius:3px;background:#30363d;flex:none"></span>
+<div style="flex:1;min-width:0"><div style="font:500 13px/1.2 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">There is a bug when typing mid-message</div><div style="font:400 10.5px/1.3 system-ui;color:#8b949e">18:53 · main · 548 msgs</div></div>
+</div>
+<div style="display:flex;align-items:center;gap:9px;padding:9px 0">
+<span style="width:6px;height:6px;border-radius:3px;background:#30363d;flex:none"></span>
+<div style="flex:1;min-width:0"><div style="font:500 13px/1.2 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Report slow streamer requests</div><div style="font:400 10.5px/1.3 system-ui;color:#8b949e">14:12 · main · 275 msgs</div></div>
+</div>
+<div style="display:flex;align-items:center;gap:14px;padding:10px 0 2px">
+<span style="font:600 12px/1 system-ui;color:#58a6ff">All 319 conversations →</span>
+<span style="font:500 12px/1 system-ui;color:#8b949e;font-family:'JetBrains Mono',Menlo,monospace">browse path ›</span>
+</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.5"></div>
+<div style="flex:1;padding:12px;display:flex;align-items:center;gap:10px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:500 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">~/dev/ai-tools</div>
+<div style="font:600 17px/1.2 system-ui;color:#e6edf3">tb-streamer</div>
+<div style="font:400 11px/1 system-ui;color:#8b949e">2 today · last 21:52</div>
+</div>
+<span style="flex:none;font:500 11px/1 system-ui;color:#8b949e">253</span>
+<span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.5"></div>
+<div style="flex:1;padding:12px;display:flex;align-items:center;gap:10px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:500 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">~/dev/ai-tools/tb-mobile-worktrees</div>
+<div style="display:flex;align-items:baseline;gap:7px"><span style="font:600 17px/1.2 system-ui;color:#e6edf3">int-2026-09-12</span><span style="font:600 9px/1 system-ui;letter-spacing:.3px;color:#58a6ff;border:1px solid rgba(88,166,255,.35);border-radius:999px;padding:3px 6px">WORKTREE</span></div>
+<div style="font:400 11px/1 system-ui;color:#8b949e">1 today · last 21:31</div>
+</div>
+<span style="flex:none;font:500 11px/1 system-ui;color:#8b949e">1</span>
+<span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span>
+</div>
+</div>
+
+<div style="display:flex;background:#21262d;border:1px solid #30363d;border-radius:12px;overflow:hidden">
+<div style="width:3px;background:#58a6ff;opacity:.5"></div>
+<div style="flex:1;padding:12px;display:flex;align-items:center;gap:10px">
+<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+<div style="font:500 10px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e">~/dev/ai-tools</div>
+<div style="font:600 17px/1.2 system-ui;color:#e6edf3">threadbase-electron</div>
+<div style="font:400 11px/1 system-ui;color:#8b949e">last 20:25</div>
+</div>
+<span style="flex:none;font:500 11px/1 system-ui;color:#8b949e">3</span>
+<span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span>
+</div>
+</div>
+
+<div style="padding:12px 6px 4px;display:flex;align-items:center;gap:8px">
+<span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">QUIET · 24 PROJECTS</span>
+<div style="flex:1;height:1px;background:#30363d"></div>
+<span style="font:400 11px/1 system-ui;color:#58a6ff">Show</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;padding:2px 6px">
+<span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">dotfiles 43</span>
+<span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">tb-scanner 12</span>
+<span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">port 4</span>
+<span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">tb-menu 1</span>
+<span style="font:400 11px/1 'JetBrains Mono',Menlo,monospace;color:#8b949e;background:#161b22;border:1px solid #30363d;border-radius:999px;padding:5px 9px">cv 8</span>
+</div>
+</div>
+
+<div style="position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(180deg,rgba(13,17,23,0) 0%,rgba(13,17,23,.9) 60%)"></div>
+<div style="position:absolute;right:20px;bottom:28px;display:flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:22px;background:#58a6ff;font:600 14px/1 system-ui;color:#0d1117">+ &nbsp;New session</div>
+</div>
+
+<div style="position:relative;width:390px;height:844px;background:linear-gradient(180deg,#0d1117 0%,#0d1117 55%,#111c2b 100%);border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 12px 8px;font:600 12px/1 system-ui;color:#e6edf3"><span>22:02</span><span style="display:flex;align-items:center;gap:6px;color:#8b949e"><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M3 18v-3M9 18v-7M15 18v-11M21 18v-15"></path></svg></span><span style="display:block"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="M2.5 8.5a15 15 0 0 1 19 0"></path><path d="M6 12a10 10 0 0 1 12 0"></path><path d="M9.5 15.5a5 5 0 0 1 5 0"></path><path d="M12 19h.01"></path></svg></span><span style="font:600 11px/1 system-ui">46</span></span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 12px 10px;border-bottom:1px solid #30363d">
+<span style="flex:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#58a6ff;display:block"><path d="m14.5 18-6-6 6-6"></path></svg></span>
+<div style="flex:1;min-width:0"><div style="font:500 10px/1.3 'JetBrains Mono',Menlo,monospace;color:#8b949e">Ronens-MacBook-Pro · ~/dev</div><div style="font:600 17px/1.2 system-ui;color:#e6edf3;font-family:'JetBrains Mono',Menlo,monospace">ai-tools</div></div>
+<span style="font:400 11px/1 system-ui;color:#8b949e">851 conv</span>
+</div>
+<div style="padding:8px 12px 6px;font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">FOLDERS</div>
+<div style="padding:0 6px">
+<div style="display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid rgba(88,166,255,.08)"><div style="width:6px;height:6px;border-radius:3px;background:#d29922;flex:none;animation:tbPulse 1.6s ease-out infinite"></div><div style="flex:1;font:500 13px/1.2 'JetBrains Mono',Menlo,monospace;color:#e6edf3">tb-mobile</div><span style="font:600 11px/1 system-ui;color:#58a6ff;background:rgba(88,166,255,.12);border-radius:999px;padding:2px 7px">319</span><span style="font:400 11px/1 system-ui;color:#8b949e;min-width:44px;text-align:right;font-variant-numeric:tabular-nums">now</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid rgba(88,166,255,.08)"><div style="width:6px;height:6px;border-radius:3px;background:#30363d;flex:none"></div><div style="flex:1;font:500 13px/1.2 'JetBrains Mono',Menlo,monospace;color:#e6edf3">tb-streamer</div><span style="font:600 11px/1 system-ui;color:#58a6ff;background:rgba(88,166,255,.12);border-radius:999px;padding:2px 7px">253</span><span style="font:400 11px/1 system-ui;color:#8b949e;min-width:44px;text-align:right;font-variant-numeric:tabular-nums">21:52</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid rgba(88,166,255,.08)"><div style="width:6px;height:6px;border-radius:3px;background:#30363d;flex:none"></div><div style="flex:1;font:500 13px/1.2 'JetBrains Mono',Menlo,monospace;color:#e6edf3">threadbase-electron</div><span style="font:600 11px/1 system-ui;color:#58a6ff;background:rgba(88,166,255,.12);border-radius:999px;padding:2px 7px">3</span><span style="font:400 11px/1 system-ui;color:#8b949e;min-width:44px;text-align:right;font-variant-numeric:tabular-nums">20:25</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid rgba(88,166,255,.08)"><div style="width:6px;height:6px;border-radius:3px;background:#30363d;flex:none"></div><div style="flex:1;font:500 13px/1.2 'JetBrains Mono',Menlo,monospace;color:#e6edf3">tb-scanner</div><span style="font:600 11px/1 system-ui;color:#58a6ff;background:rgba(88,166,255,.12);border-radius:999px;padding:2px 7px">12</span><span style="font:400 11px/1 system-ui;color:#8b949e;min-width:44px;text-align:right;font-variant-numeric:tabular-nums">14:12</span></div>
+<div style="display:flex;align-items:center;gap:10px;padding:11px 8px;border-bottom:1px solid rgba(88,166,255,.08);opacity:.6"><div style="width:6px;height:6px;border-radius:3px;background:#30363d;flex:none"></div><div style="flex:1;font:500 13px/1.2 'JetBrains Mono',Menlo,monospace;color:#8b949e">_archived</div><span style="font:600 11px/1 system-ui;color:#8b949e;background:rgba(255,255,255,.06);border-radius:999px;padding:2px 7px">3</span><span style="font:400 11px/1 system-ui;color:#8b949e;min-width:44px;text-align:right;font-variant-numeric:tabular-nums">4 Jul</span></div>
+</div>
+<div style="padding:16px 12px 6px;display:flex;align-items:center;gap:8px"><span style="font:600 11px/1 system-ui;letter-spacing:1px;color:#8b949e">HERE · 6 CONVERSATIONS</span><div style="flex:1;height:1px;background:#30363d"></div></div>
+<div style="padding:0 6px 96px;display:flex;flex-direction:column">
+<div style="display:flex;gap:10px;align-items:center;padding:10px 8px;border-bottom:1px solid rgba(88,166,255,.08)"><div style="flex:1;min-width:0"><div style="font:600 13px/1.25 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Scan and describe the projects in this folder</div><div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Enough signal now — here's the picture of ~/dev/ai-tools.</div></div><span style="font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">9:38</span></div>
+<div style="display:flex;gap:10px;align-items:center;padding:10px 8px;border-bottom:1px solid rgba(88,166,255,.08)"><div style="flex:1;min-width:0"><div style="font:600 13px/1.25 system-ui;color:#e6edf3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">Re-scan open PRs and PR-less branches</div><div style="font:400 11px/1.35 system-ui;color:#8b949e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">No action needed — the mobile scan's report has it.</div></div><span style="font:500 11px/1 system-ui;color:#8b949e;font-variant-numeric:tabular-nums">20 Aug</span></div>
+<div style="display:flex;gap:10px;align-items:center;padding:10px 8px;border-bottom:1px solid rgba(88,166,255,.08);opacity:.72"><div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font:500 13px/1.25 system-ui;color:#adbac7">3 one-line sessions</span><span style="font:600 9px/1 system-ui;color:#8b949e;border:1px solid #30363d;padding:3px 5px;border-radius:999px">GROUPED</span></div><div style="font:400 11px/1.35 system-ui;color:#8b949e">Hello there · Hi · Ahoy</div></div><span style="flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#8b949e;display:block"><path d="m9.5 18 6-6-6-6"></path></svg></span></div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(180deg,rgba(13,17,23,0) 0%,rgba(13,17,23,.9) 60%)"></div>
+<div style="position:absolute;right:20px;bottom:28px;display:flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:22px;background:#58a6ff;font:600 14px/1 system-ui;color:#0d1117">+ &nbsp;Start here</div>
+</div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="1d">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#1d" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">1d</a>The state system + title pipeline (spec)</div>
+<div style="width:600px;background:#10151c;border:1px solid #30363d;border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:20px">
+
+<div>
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#7d8590;margin-bottom:12px">ONE STATE SYSTEM — 2 VISUAL TIERS, 5 WORDS</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;gap:12px;background:#1b232e;border:1px solid rgba(210,153,34,.4);border-radius:8px;padding:10px 12px">
+<span style="width:8px;height:8px;border-radius:4px;background:#d29922;flex:none;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 13px/1 system-ui;color:#d29922;width:92px;flex:none">Needs you</span>
+<span style="flex:1;font:400 12px/1.45 system-ui;color:#adbac7">Live process, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">waiting_input</code>. Amber, pulsing, solid card border. The <em>only</em> state that earns a whole card and an action button.</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:10px 12px">
+<span style="width:8px;height:8px;border-radius:4px;background:#d29922;opacity:.85;flex:none;animation:tbPulse 1.6s ease-out infinite"></span>
+<span style="font:600 13px/1 system-ui;color:#d29922;width:92px;flex:none">Working</span>
+<span style="flex:1;font:400 12px/1.45 system-ui;color:#adbac7">Live process, <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">running</code>. Amber text, hairline progress bar, elapsed in seconds/minutes. Never a raw hour count.</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:10px 12px">
+<span style="width:8px;height:8px;border-radius:4px;background:#30363d;flex:none"></span>
+<span style="font:600 13px/1 system-ui;color:#adbac7;width:92px;flex:none">Resumable</span>
+<span style="flex:1;font:400 12px/1.45 system-ui;color:#adbac7">No process; resume is possible. Neutral. Absorbs today's <em>Was waiting</em>, <em>Interrupted</em>, <em>On hold</em>, <em>Idle</em>, <em>History</em> — five labels whose difference no user has ever acted on.</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:10px 12px">
+<span style="width:8px;height:8px;border-radius:4px;background:#f85149;flex:none"></span>
+<span style="font:600 13px/1 system-ui;color:#f85149;width:92px;flex:none">Can't resume</span>
+<span style="flex:1;font:400 12px/1.45 system-ui;color:#adbac7">Red, and it says <em>why</em> in the same line: "Worktree gone", "Path moved", "Failed". Today these render as neutral rows that fail on tap.</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;background:#21262d;border:1px solid #30363d;border-radius:8px;padding:10px 12px;opacity:.8">
+<span style="width:8px;height:8px;border-radius:4px;background:#58a6ff;flex:none"></span>
+<span style="font:600 13px/1 system-ui;color:#58a6ff;width:92px;flex:none">Observed</span>
+<span style="flex:1;font:400 12px/1.45 system-ui;color:#adbac7">External process the streamer can watch but not drive. Blue, read-only, and it is the <em>only</em> other colour on the list — because "I can't type into this" is the one distinction that changes what you can do.</span>
+</div>
+</div>
+<div style="margin-top:12px;font:400 12px/1.6 system-ui;color:#7d8590;text-wrap:pretty">Where it lives: <strong style="color:#adbac7">one 3px left rail</strong> (state colour) + <strong style="color:#adbac7">one dot + one word</strong> at the head of line 2. Never in the title, never on the right edge, never a second badge. Green is retired from the list entirely — <code style="font-family:'JetBrains Mono',Menlo,monospace;color:#79c0ff">status.running</code> green and amber "waiting" competing as two "good" colours is why the current rows read as decoration.</div>
+</div>
+
+<div style="border-top:1px solid #30363d;padding-top:18px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#7d8590;margin-bottom:12px">TITLE PIPELINE — CLIENT-SIDE, NO SUMMARIZER</div>
+<div style="display:flex;flex-direction:column;gap:7px;font:400 12.5px/1.5 system-ui;color:#adbac7">
+<div style="display:flex;gap:10px"><span style="font:600 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#58a6ff;flex:none;width:14px">1</span><span><strong style="color:#e6edf3">Strip.</strong> Leading <code style="font-family:'JetBrains Mono',Menlo,monospace">#</code>/<code style="font-family:'JetBrains Mono',Menlo,monospace">##</code>, code fences, <code style="font-family:'JetBrains Mono',Menlo,monospace">&lt;image …&gt;</code> / <code style="font-family:'JetBrains Mono',Menlo,monospace">[Image #1]</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace">&lt;user_action&gt;</code>, injected-context tags, JSON blobs, <code style="font-family:'JetBrains Mono',Menlo,monospace">ls -la</code> output, absolute paths → basename, URLs → host. Collapse whitespace to one line.</span></div>
+<div style="display:flex;gap:10px"><span style="font:600 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#58a6ff;flex:none;width:14px">2</span><span><strong style="color:#e6edf3">Score.</strong> Reject if &lt;3 words, or matches a greeting list, or is &gt;60% non-alphanumeric, or survives step 1 as a bare path/hash.</span></div>
+<div style="display:flex;gap:10px"><span style="font:600 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#58a6ff;flex:none;width:14px">3</span><span><strong style="color:#e6edf3">Fall back, in order:</strong> user rename → first assistant sentence → <code style="font-family:'JetBrains Mono',Menlo,monospace">project · branch</code> + relative time. A rejected title never becomes a blank row and never becomes "no git · 145h 30m".</span></div>
+<div style="display:flex;gap:10px"><span style="font:600 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#58a6ff;flex:none;width:14px">4</span><span><strong style="color:#e6edf3">Subtitle is the answer, not the echo.</strong> First assistant sentence, clipped at a sentence boundary. If it would repeat the title, drop the line — the row shrinks instead of padding.</span></div>
+<div style="display:flex;gap:10px"><span style="font:600 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#58a6ff;flex:none;width:14px">5</span><span><strong style="color:#e6edf3">Sentence-case the first word only.</strong> Typos survive (they're the user's words) but "check ther relevants…" stops looking like a system string.</span></div>
+<div style="display:flex;gap:10px"><span style="font:600 11px/1.4 'JetBrains Mono',Menlo,monospace;color:#58a6ff;flex:none;width:14px">6</span><span><strong style="color:#e6edf3">Truncate by width, two lines max on cards, one on list rows</strong> — CSS-equivalent ellipsis, not a 20-character slice. Long-press → <em>Rename</em> writes to the existing <code style="font-family:'JetBrains Mono',Menlo,monospace">sessionNames</code> store and wins forever.</span></div>
+</div>
+</div>
+
+<div style="border-top:1px solid #30363d;padding-top:18px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#7d8590;margin-bottom:12px">ADAPTIVE DENSITY — ONE ROW SHAPE PER STATE</div>
+<div style="font:400 12.5px/1.6 system-ui;color:#adbac7"><strong style="color:#e6edf3">Needs you:</strong> card, 4 lines (title, state, live output, project + action). <strong style="color:#e6edf3">Working:</strong> card, 3 lines + progress hairline. <strong style="color:#e6edf3">Resumable:</strong> list row, 2 lines, no card, hairline divider. <strong style="color:#e6edf3">Grouped noise / can't resume:</strong> 1 line. Vertical space becomes a ranking signal instead of a constant.</div>
+</div>
+
+<div style="border-top:1px solid #30363d;padding-top:18px">
+<div style="font:600 11px/1 'JetBrains Mono',Menlo,monospace;letter-spacing:1px;color:#7d8590;margin-bottom:12px">WHERE THE THREE VIEWS ACTUALLY DIFFERED</div>
+<div style="font:400 12.5px/1.6 system-ui;color:#adbac7;text-wrap:pretty">Genuinely different information across your 14 screenshots: <strong style="color:#e6edf3">filesystem position</strong> (Tree only), <strong style="color:#e6edf3">per-project rollups</strong> (Hub only: "1 live · 17 today"), <strong style="color:#e6edf3">message counts</strong> (all three, three different notations: <code style="font-family:'JetBrains Mono',Menlo,monospace">132 msgs</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace">46/1137</code>, <code style="font-family:'JetBrains Mono',Menlo,monospace">1 · 319</code>). Everything else was the same fact in a different costume — liveness told three ways (amber rail + "Resumed" in Classic, amber <code style="font-family:'JetBrains Mono',Menlo,monospace">LIVE</code> pill in Hub, coloured dot in Tree), provider told two ways (badge / nothing), time told four ways. Position and rollups survive as <em>affordances inside Projects</em>. The costumes go.</div>
+</div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:9px" id="1e">
+<div style="display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui;color:rgba(255,255,255,.55)"><a href="#1e" style="font:600 10.5px 'JetBrains Mono',Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#e6edf3;border-radius:5px">1e</a>Filter &amp; sort — first pass (pending your screenshot)</div>
+<div style="position:relative;width:390px;height:844px;background:#080b10;border:1px solid #30363d;border-radius:26px;overflow:hidden;flex:none">
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,#0d1117 0%,#0d1117 55%,#111c2b 100%);opacity:.5"></div>
+<div style="position:absolute;inset:0;background:rgba(4,7,11,.72)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#161b22;border-top:1px solid #30363d;border-radius:20px 20px 0 0;padding:10px 0 26px">
+<div style="width:36px;height:4px;border-radius:2px;background:#484f58;margin:0 auto 14px"></div>
+<div style="padding:0 18px 14px;display:flex;align-items:baseline;gap:8px"><span style="font:600 20px/1 system-ui;color:#e6edf3">Filter &amp; sort</span><span style="margin-left:auto;font:500 13px/1 system-ui;color:#58a6ff">Reset</span></div>
+
+<div style="padding:0 18px 6px;font:600 11px/1 system-ui;letter-spacing:1px;color:#7d8590">SHOW</div>
+<div style="padding:8px 18px 16px;display:flex;flex-wrap:wrap;gap:8px">
+<span style="display:flex;align-items:center;gap:6px;font:600 13px/1 system-ui;color:#0d1117;background:#d29922;border-radius:999px;padding:9px 13px"><span style="width:6px;height:6px;border-radius:3px;background:#0d1117"></span>Needs you 1</span>
+<span style="display:flex;align-items:center;gap:6px;font:600 13px/1 system-ui;color:#d29922;background:rgba(210,153,34,.16);border:1px solid rgba(210,153,34,.5);border-radius:999px;padding:9px 13px"><span style="width:6px;height:6px;border-radius:3px;background:#d29922"></span>Working 2</span>
+<span style="font:500 13px/1 system-ui;color:#adbac7;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">Resumable 41</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">Can't resume 3</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">Observed 2</span>
+</div>
+
+<div style="padding:0 18px 6px;font:600 11px/1 system-ui;letter-spacing:1px;color:#7d8590">SORT</div>
+<div style="margin:8px 18px 16px;display:flex;background:#0d1117;border:1px solid #30363d;border-radius:10px;overflow:hidden">
+<div style="flex:1;padding:10px 0;text-align:center;background:#21262d;font:600 13px/1 system-ui;color:#e6edf3">State, then time</div>
+<div style="flex:1;padding:10px 0;text-align:center;font:500 13px/1 system-ui;color:#8b949e">Newest</div>
+<div style="flex:1;padding:10px 0;text-align:center;font:500 13px/1 system-ui;color:#8b949e">Busiest</div>
+</div>
+
+<div style="padding:0 18px 6px;font:600 11px/1 system-ui;letter-spacing:1px;color:#7d8590">AGENT</div>
+<div style="padding:8px 18px 16px;display:flex;gap:8px">
+<span style="font:600 13px/1 system-ui;color:#e6edf3;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">All</span>
+<span style="font:600 13px/1 system-ui;color:#E8622A;background:rgba(232,98,42,.16);border:1px solid rgba(232,98,42,.45);border-radius:999px;padding:9px 13px">Claude 38</span>
+<span style="font:600 13px/1 system-ui;color:#7B5EA7;background:rgba(123,94,167,.16);border:1px solid rgba(123,94,167,.45);border-radius:999px;padding:9px 13px">Codex 11</span>
+</div>
+
+<div style="padding:0 18px 6px;font:600 11px/1 system-ui;letter-spacing:1px;color:#7d8590">WHEN</div>
+<div style="padding:8px 18px 18px;display:flex;gap:8px">
+<span style="font:600 13px/1 system-ui;color:#e6edf3;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">Any</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">Today</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">7d</span>
+<span style="font:500 13px/1 system-ui;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:999px;padding:9px 13px">30d</span>
+</div>
+
+<div style="margin:0 18px;display:flex;align-items:center;gap:10px;background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:12px">
+<div style="flex:1"><div style="font:600 13px/1.2 system-ui;color:#e6edf3">Group one-line sessions</div><div style="font:400 11px/1.3 system-ui;color:#7d8590">"hi", "hey", "Ahoy" collapse into one row</div></div>
+<div style="width:44px;height:26px;border-radius:13px;background:#58a6ff;position:relative;flex:none"><div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:10px;background:#0d1117"></div></div>
+</div>
+
+<div style="margin:16px 18px 0;padding:13px;border-radius:10px;background:#58a6ff;text-align:center;font:600 15px/1 system-ui;color:#0d1117">Show 44 results</div>
+</div>
+</div>
+</div>
+
+</div>
+
+<p style="margin:26px 0 0;font:400 12.5px/1.6 system-ui;color:rgba(255,255,255,.5)">Try next: "send me the Sort &amp; Filter screenshot and rework <a href="#1e">1e</a> against it" · "make <a href="#1b">1b</a> the only view — show me Projects as a filter instead of a tab" · "I want <a href="#1c">1c</a> without the quiet-projects chips" · "prototype the <a href="#1b">1b</a> → session tap flow"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showAnnotations&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Review&quot;},&quot;groupNoise&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      showAnnotations: this.props.showAnnotations ?? true,
+      groupNoise: this.props.groupNoise ?? true,
+    }
+  }
+}
+</script>
+</body>
+</html>
