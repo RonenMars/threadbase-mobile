@@ -28,5 +28,7 @@ test('builds a generic simulator slice and installs it on the booted sim', () =>
   expect(bootSimulator).toContain('echo "IOS_UDID=$DEVICE" >> "$GITHUB_ENV"');
   expect(buildApp).toContain("-destination 'generic/platform=iOS Simulator'");
   expect(buildApp).not.toMatch(/name=iPhone/);
+  expect(buildApp).toContain('tar -C "$(dirname "$APP_PATH")" -czf e2e-ios-app.tgz Threadbase.app');
+  expect(installApp).toContain('tar -xzf e2e-ios-app.tgz');
   expect(installApp).toContain('xcrun simctl install booted');
 });

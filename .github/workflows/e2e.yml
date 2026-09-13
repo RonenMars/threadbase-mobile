@@ -388,13 +388,17 @@ jobs:
             echo '::error::xcodebuild succeeded but Threadbase.app was not under build/ios-ci.'
             exit 1
           fi
+          # upload-artifact flattens a directory, so downloading Threadbase.app
+          # produced Info.plist at the destination root and simctl never saw a
+          # bundle (run 34785370547). A tarball keeps the directory name.
+          tar -C "$(dirname "$APP_PATH")" -czf e2e-ios-app.tgz Threadbase.app
           echo "Built $APP_PATH" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload iOS Release app
         uses: actions/upload-artifact@v6
         with:
           name: e2e-ios-app
-          path: build/ios-ci/Build/Products/Release-iphonesimulator/Threadbase.app
+          path: e2e-ios-app.tgz
           if-no-files-found: error
           retention-days: 1
 
@@ -428,7 +432,6 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           name: e2e-ios-app
-          path: build/ios-ci/Build/Products/Release-iphonesimulator
 
       - name: Install Maestro CLI
         run: |
@@ -453,9 +456,12 @@ jobs:
       - name: Install iOS app
         run: |
           set -euo pipefail
-          APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
-          if [ -z "$APP_PATH" ]; then
-            echo '::error::Downloaded Threadbase.app was not found.'
+          mkdir -p build/ios-ci/Build/Products/Release-iphonesimulator
+          tar -xzf e2e-ios-app.tgz -C build/ios-ci/Build/Products/Release-iphonesimulator
+          APP_PATH=build/ios-ci/Build/Products/Release-iphonesimulator/Threadbase.app
+          if [ ! -d "$APP_PATH" ]; then
+            echo '::error::Extracted Threadbase.app was not found.'
+            ls -la e2e-ios-app.tgz build/ios-ci/Build/Products/Release-iphonesimulator >&2 || true
             exit 1
           fi
           xcrun simctl install booted "$APP_PATH"
@@ -500,7 +506,9 @@ jobs:
 
       - name: Capture iOS simulator screenshot on failure
         if: ${{ failure() }}
-        run: xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
+        run: |
+          mkdir -p e2e/_artifacts/fallback
+          xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
 
       - name: Copy Maestro session dir on failure
         if: failure()
