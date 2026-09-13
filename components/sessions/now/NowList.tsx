@@ -29,6 +29,7 @@ import { useViewPrefsStore } from '@/stores/viewPrefs'
 import type { MultiConversation, MultiSession } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { EarlierRow } from './EarlierRow'
+import { dominantProvider as findDominantProvider } from '@/lib/providerDominance'
 import { GroupedNoiseRow } from './GroupedNoiseRow'
 import { NeedsYouCard } from './NeedsYouCard'
 import { SectionEyebrow, type SectionTone } from './SectionEyebrow'
@@ -142,6 +143,8 @@ export const NowList = React.memo(function NowList({
     })
   }, [items, searchQuery, conversationsFromServer, names, nameOrigins])
 
+  const dominantProvider = useMemo(() => findDominantProvider(entries.map((e) => e.item.item.provider)), [entries])
+
   const flatData = useMemo((): FlatItem[] => {
     const sign = sortDirection === 'asc' ? -1 : 1
     const byTime = (a: Entry, b: Entry) => sign * (b.item.ms - a.item.ms)
@@ -251,12 +254,13 @@ export const NowList = React.memo(function NowList({
             title={item.entry.title.title}
             isFirst={item.isFirst}
             highlight={highlight}
+            dominantProvider={dominantProvider}
             onLongPressConversation={setActiveConv}
           />
         )
       }
     }
-  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, expandedGroups, toggleGroup, highlight])
+  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, expandedGroups, toggleGroup, highlight, dominantProvider])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">

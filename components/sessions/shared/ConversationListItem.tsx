@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
-import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
-import { brand, font, spacing, type Theme } from '@/constants/theme'
-import { providerLabelKey, type ProviderName } from '@/constants/providers'
+import { font, spacing, type Theme } from '@/constants/theme'
+import type { ProviderName } from '@/constants/providers'
+import { showsProviderMark } from '@/lib/providerDominance'
+import { ProviderMark } from './ProviderMark'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
@@ -85,6 +86,8 @@ export interface ConversationListItemProps {
 
   /** Source provider — omitted when unknown. */
   provider?: ProviderName
+  /** The screen's majority provider; a mark renders only on rows that differ from it. */
+  dominantProvider?: ProviderName
 
   onPress?: () => void
   onLongPress?: () => void
@@ -111,7 +114,6 @@ function shouldShowServer(
 
 export function ConversationListItem(props: ConversationListItemProps) {
   const theme = useTheme()
-  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const {
     title,
@@ -143,6 +145,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     showCount = true,
     showBranch = true,
     provider,
+    dominantProvider,
     onPress,
     onLongPress,
     onServerPress,
@@ -287,7 +290,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
         ) : null}
       </View>
 
-      {/* Trailing meta column: time + server chip + provider badge. */}
+      {/* Trailing meta column: time + server chip + provider mark when non-dominant. */}
       {!isChip ? (
         <View style={styles.tail}>
           {timeText ? (
@@ -309,30 +312,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
               onLongPress={onServerLongPress}
             />
           ) : null}
-          {provider != null ? (
-            <View
-              style={
-                providerLabelKey(provider) === 'codex'
-                  ? styles.codexBadge
-                  : providerLabelKey(provider) === 'cursor'
-                    ? styles.cursorBadge
-                    : styles.claudeBadge
-              }
-              testID="provider-badge"
-            >
-              <Text
-                style={
-                  providerLabelKey(provider) === 'codex'
-                    ? styles.codexBadgeText
-                    : providerLabelKey(provider) === 'cursor'
-                      ? styles.cursorBadgeText
-                      : styles.claudeBadgeText
-                }
-              >
-                {t(`provider.${providerLabelKey(provider)}`)}
-              </Text>
-            </View>
-          ) : null}
+          {provider != null && showsProviderMark(provider, dominantProvider) ? <ProviderMark provider={provider} /> : null}
         </View>
       ) : null}
     </Wrapper>
@@ -425,42 +405,6 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.xs,
       fontWeight: '500',
-    },
-    codexBadge: {
-      paddingHorizontal: 5,
-      paddingVertical: 2,
-      borderRadius: 4,
-      backgroundColor: `${brand.codex}20`,
-    },
-    codexBadgeText: {
-      color: brand.codex,
-      fontSize: font.xs - 2,
-      fontWeight: '700',
-      letterSpacing: 0.3,
-    },
-    claudeBadge: {
-      paddingHorizontal: 5,
-      paddingVertical: 2,
-      borderRadius: 4,
-      backgroundColor: `${brand.claude}20`,
-    },
-    claudeBadgeText: {
-      color: brand.claude,
-      fontSize: font.xs - 2,
-      fontWeight: '700',
-      letterSpacing: 0.3,
-    },
-    cursorBadge: {
-      paddingHorizontal: 5,
-      paddingVertical: 2,
-      borderRadius: 4,
-      backgroundColor: `${brand.cursor}20`,
-    },
-    cursorBadgeText: {
-      color: brand.cursor,
-      fontSize: font.xs - 2,
-      fontWeight: '700',
-      letterSpacing: 0.3,
     },
   })
 }
