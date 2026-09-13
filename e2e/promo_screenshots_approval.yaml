@@ -29,6 +29,23 @@ appId: com.ronenmars.threadbase
     env:
       DEEPLINK: "threadbase:///session/session-abc123"
 
+# Deep-linking a PTY session can also raise the "Session details failed to
+# load" sheet (same native Modal as promo_screenshots_take_over.yaml). While
+# it is up, iOS isolates the accessibility tree to the sheet, so
+# session-detail-screen reports not-visible even though the session chrome
+# is on screen. Dismiss it before asserting the destination.
+- extendedWaitUntil:
+    visible: ".*Close.*"
+    timeout: 25000
+    optional: true
+
+- runFlow:
+    when:
+      visible: ".*Close.*"
+    commands:
+      - tapOn: ".*Close.*"
+      - waitForAnimationToEnd
+
 - extendedWaitUntil:
     visible:
       id: "session-detail-screen"

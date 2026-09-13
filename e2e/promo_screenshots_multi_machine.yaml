@@ -10,6 +10,9 @@
 # server's root row.
 #
 # Requires: mock server on BOTH ports — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Seed the mock token onto the booted simulator pasteboard before the flow
+# (the API Key field is filled via server-form-paste-key, not inputText):
+#   printf 'mock-key-123' | xcrun simctl pbcopy <udid>
 # Usage: node scripts/record-simulator-flow.js e2e/promo_screenshots_multi_machine.yaml
 
 appId: com.ronenmars.threadbase
@@ -42,7 +45,7 @@ appId: com.ronenmars.threadbase
 
 - runFlow:
     when:
-      notVisible: "http://localhost:7072"
+      notVisible: ".*localhost:7072.*"
     commands:
       - tapOn: ".*Add Server"
 
@@ -56,23 +59,19 @@ appId: com.ronenmars.threadbase
 
       - inputText: "localhost:7072"
 
+      # Modal title — full-string "Add Server", not ".*Add Server". Tapping it
+      # dismisses the URL keyboard so later taps hit the form, not the keys
+      # (a leftover keyboard typed a stray "y" into the host and swallowed Save).
       - tapOn: "Add Server"
 
       - waitForAnimationToEnd
 
-      # Typing into the key field directly is unreliable here on this
-      # simulator: neither `tapOn: id: server-edit-key-input` (stale
-      # pre-scroll coordinates once the URL field's keyboard closes and the
-      # layout reflows — promo_04_multi_machine.yaml's scroll+tap pattern)
-      # nor tapping the placeholder text focuses it — both leave the field
-      # empty and Save a no-op. The clipboard-paste button next to the field
-      # (server-form-paste-key) sidesteps text-field focus entirely; the
-      # runner seeds the simulator pasteboard with the token first.
+      # The paste-key button fills API Key without focusing the text field.
+      # Seed the mock token onto the simulator pasteboard first:
+      #   printf 'mock-key-123' | xcrun simctl pbcopy <udid>
       - tapOn:
           id: "server-form-paste-key"
 
-      # iOS gates cross-app clipboard reads behind a system permission sheet
-      # the first time an app pastes.
       - extendedWaitUntil:
           visible: "Allow Paste"
           timeout: 3000
@@ -133,7 +132,7 @@ appId: com.ronenmars.threadbase
           timeout: 3000
 
 - extendedWaitUntil:
-    visible: "http://localhost:7072"
+    visible: ".*localhost:7072.*"
     timeout: 15000
 
 # --- Switch to the Tree layout, back to the hub -----------------------------
