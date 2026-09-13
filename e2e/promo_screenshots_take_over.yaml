@@ -1,0 +1,66 @@
+# Maestro promo — landing-page screenshot: take over an external session
+# Requested by @marketing-owner for the threadbase.sh landing refresh (PR #97),
+# composited with card-start-or-take-over.png's existing start-a-session
+# picker shot to build the final card.
+#
+# Not a test. Deep-links into a session the mock server stubs with
+# ownership: 'external' (e2e/mock-server.js + fixtures/session-external.json)
+# so components/sessions/ExternalSessionBanner.tsx renders — the real UI
+# shown when the streamer discovered a CLI it doesn't own.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node scripts/record-simulator-flow.js e2e/promo_screenshots_take_over.yaml
+#        (or: node e2e/run-maestro.js test e2e/promo_screenshots_take_over.yaml)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-external"
+
+# This session's screen also fires an unrelated "Session details failed to
+# load" sheet (something else 404s for a fixture that only exists via the
+# mock's session-external special case — not investigated further since it
+# doesn't affect the banner). It renders as a native Modal, which on iOS
+# isolates the accessibility tree to its own content: everything behind it,
+# including the already-rendered banner, reports not-visible to Maestro even
+# though it's plainly on screen. Dismiss it before asserting on the banner,
+# not after.
+# The failed request retries with backoff before the sheet surfaces — a 12s
+# window missed it once (WARNED, then the sheet appeared moments later and
+# ate the accessibility tree anyway). Generous on purpose.
+#
+# ".*Close.*", not "Close": iOS likely merges this sheet's contents into one
+# (or few) accessibility element(s) the way ServersStatusModal does elsewhere
+# in this repo — a bare "Close" full-string match found nothing even while
+# the button was plainly on screen in the failure screenshot.
+- extendedWaitUntil:
+    visible: ".*Close.*"
+    timeout: 25000
+    optional: true
+
+- runFlow:
+    when:
+      visible: ".*Close.*"
+    commands:
+      - tapOn: ".*Close.*"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: "external-session-banner"
+    timeout: 8000
+
+- assertVisible:
+    id: "external-session-take-over"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: e2e/_artifacts/screenshots/_raw-take-over-banner

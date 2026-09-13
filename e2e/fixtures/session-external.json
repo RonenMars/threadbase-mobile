@@ -1,0 +1,16 @@
+{
+  "id": "session-external",
+  "status": "running",
+  "ptyAttached": true,
+  "lifecycle": "attached",
+  "projectPath": "/home/user/my-project",
+  "projectName": "my-project",
+  "branch": "main",
+  "lastOutput": "Waiting for input",
+  "elapsedMs": 30000,
+  "promptCount": 4,
+  "startedAt": "2026-05-01T10:00:00.000Z",
+  "ownership": "external",
+  "pid": 41213,
+  "processLiveness": "alive"
+}

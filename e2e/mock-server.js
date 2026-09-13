@@ -314,6 +314,11 @@ async function handleRequest(req, res) {
     if (sessionMatch[1] === 'session-first-run') {
       return json(res, 200, readFixture('session-first-run.json'))
     }
+    // ownership: 'external' — a CLI the streamer discovered but does not own,
+    // for ExternalSessionBanner (used by the marketing take-over screenshot).
+    if (sessionMatch[1] === 'session-external') {
+      return json(res, 200, readFixture('session-external.json'))
+    }
     return json(res, 200, readFixture('session-detail.json'))
   }
 
@@ -418,6 +423,33 @@ async function handleRequest(req, res) {
   // not exercise directory navigation.
   if (method === 'GET' && p === '/api/browse') {
     return json(res, 200, { directories: [] })
+  }
+
+  // Stub paired devices — two active devices with distinct capabilities, so
+  // app/paired-devices.tsx has more than one card to render (used by the
+  // multi-machine promo screenshot).
+  if (method === 'GET' && p === '/api/devices') {
+    return json(res, 200, {
+      available: true,
+      devices: [
+        {
+          deviceId: 'device-macbook-pro',
+          name: 'MacBook Pro',
+          capabilities: ['history:read', 'session:control', 'notifications'],
+          createdAt: Date.parse('2026-06-02T09:00:00Z'),
+          lastSeenAt: Date.parse('2026-09-06T18:30:00Z'),
+          revokedAt: null,
+        },
+        {
+          deviceId: 'device-ipad-pro',
+          name: 'iPad Pro',
+          capabilities: ['history:read', 'fs:browse'],
+          createdAt: Date.parse('2026-07-14T14:00:00Z'),
+          lastSeenAt: Date.parse('2026-09-05T08:15:00Z'),
+          revokedAt: null,
+        },
+      ],
+    })
   }
 
   // Prompt submission. The app POSTs here from the composer; a real streamer

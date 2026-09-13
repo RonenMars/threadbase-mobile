@@ -1,0 +1,164 @@
+# Maestro promo — landing-page screenshot: multi-machine tree
+# Requested by @marketing-owner for the threadbase.sh landing refresh (PR #97).
+# Superseded card-multi-machine.png from the Paired Devices screen — the
+# actual ask is the servers TREE view: 2 servers, one collapsed, one expanded.
+#
+# Not a test. Pairs a second server (mock also listens on :7072, same as
+# e2e/promo_04_multi_machine.yaml — see that file's header for why this goes
+# through Settings → + Add Server rather than the hub's Servers Status modal),
+# gives it a readable label, switches to the Tree layout, then collapses one
+# server's root row.
+#
+# Requires: mock server on BOTH ports — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Seed the mock token onto the booted simulator pasteboard before the flow
+# (the API Key field is filled via server-form-paste-key, not inputText):
+#   printf 'mock-key-123' | xcrun simctl pbcopy <udid>
+# Usage: node scripts/record-simulator-flow.js e2e/promo_screenshots_multi_machine.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# --- Pair the second machine (skipped if already paired) --------------------
+- tapOn:
+    id: "hub-settings-btn"
+
+- extendedWaitUntil:
+    visible: ".*Add Server"
+    timeout: 8000
+    optional: true
+
+- runFlow:
+    when:
+      notVisible: ".*Add Server"
+    commands:
+      - tapOn:
+          id: "hub-settings-btn"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible: ".*Add Server"
+    timeout: 8000
+
+- runFlow:
+    when:
+      notVisible: ".*localhost:7072.*"
+    commands:
+      - tapOn: ".*Add Server"
+
+      - extendedWaitUntil:
+          visible:
+            id: "server-edit-url-input"
+          timeout: 8000
+
+      - tapOn:
+          id: "server-edit-url-input"
+
+      - inputText: "localhost:7072"
+
+      # Modal title — full-string "Add Server", not ".*Add Server". Tapping it
+      # dismisses the URL keyboard so later taps hit the form, not the keys
+      # (a leftover keyboard typed a stray "y" into the host and swallowed Save).
+      - tapOn: "Add Server"
+
+      - waitForAnimationToEnd
+
+      # The paste-key button fills API Key without focusing the text field.
+      # Seed the mock token onto the simulator pasteboard first:
+      #   printf 'mock-key-123' | xcrun simctl pbcopy <udid>
+      - tapOn:
+          id: "server-form-paste-key"
+
+      - extendedWaitUntil:
+          visible: "Allow Paste"
+          timeout: 3000
+          optional: true
+
+      - runFlow:
+          when:
+            visible: "Allow Paste"
+          commands:
+            - tapOn: "Allow Paste"
+
+      - waitForAnimationToEnd
+
+      - runFlow:
+          when:
+            visible:
+              id: "server-edit-url-input"
+          commands:
+            - tapOn: "Save"
+            - waitForAnimationToEnd
+
+      - extendedWaitUntil:
+          visible: "Not Now"
+          timeout: 3000
+          optional: true
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+            - waitForAnimationToEnd
+
+      - extendedWaitUntil:
+          visible:
+            id: "pair-confirm-add-btn"
+          timeout: 10000
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+            - waitForAnimationToEnd
+
+      - tapOn:
+          id: "pair-confirm-add-btn"
+
+      - waitForAnimationToEnd
+
+      - runFlow:
+          when:
+            visible: "Not Now"
+          commands:
+            - tapOn: "Not Now"
+
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+- extendedWaitUntil:
+    visible: ".*localhost:7072.*"
+    timeout: 15000
+
+# --- Switch to the Tree layout, back to the hub -----------------------------
+- tapOn: "Tree"
+
+- waitForAnimationToEnd
+
+- tapOn:
+    id: "header-back"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Collapse the first server's root row. It carries no testID and its label is
+# the server's generated id (random per pairing, so not a stable text match)
+# — but it always renders directly below the LIVE sessions header, at a fixed
+# position regardless of that label, so a point tap is the reliable target.
+- tapOn:
+    point: "50%, 19%"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: e2e/_artifacts/screenshots/card-multi-machine
