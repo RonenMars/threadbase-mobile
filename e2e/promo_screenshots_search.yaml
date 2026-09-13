@@ -1,0 +1,45 @@
+# Maestro promo — landing-page screenshot: full-text search
+# Requested by @marketing-owner for the threadbase.sh landing refresh (PR #97).
+#
+# Not a test. Mirrors the first steps of e2e/06_search_anchor.yaml (kept
+# separate rather than editing that test's screenshot names, since it's a
+# real regression test): search "wombat" against
+# e2e/fixtures/conv-search-anchor.json and screenshot the results list with
+# its matched snippet.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node scripts/record-simulator-flow.js e2e/promo_screenshots_search.yaml
+#        (or: node e2e/run-maestro.js test e2e/promo_screenshots_search.yaml)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+- tapOn:
+    id: "header-search-btn"
+
+- tapOn:
+    id: "hub-search-input"
+
+- inputText: "wombat"
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-search-anchor"
+    timeout: 8000
+
+# Dismiss the keyboard for the shot — do not use Maestro's hideKeyboard (fails
+# on iOS 26.x, see tb-mobile CLAUDE.md). Tapping blank space below the result
+# blurs the input the same way a real user tapping outside it would.
+- tapOn:
+    point: "50%, 45%"
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: e2e/_artifacts/screenshots/card-search

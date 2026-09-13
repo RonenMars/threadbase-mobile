@@ -1,0 +1,40 @@
+# Maestro promo — landing-page screenshot: start a session
+# Requested by @marketing-owner for the threadbase.sh landing refresh (PR #97).
+#
+# Not a test. Taps the hub's new-session FAB, which opens the browse screen
+# with its project-picker + provider-picker — the "start a new session"
+# half of card-start-or-take-over.png. The "take over one started in the
+# terminal" half is components/sessions/ExternalSessionBanner.tsx, captured
+# separately by e2e/promo_screenshots_take_over.yaml.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node scripts/record-simulator-flow.js e2e/promo_screenshots_start.yaml
+#        (or: node e2e/run-maestro.js test e2e/promo_screenshots_start.yaml)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- assertVisible:
+    id: "fab-new-session"
+
+- tapOn:
+    id: "fab-new-session"
+
+- extendedWaitUntil:
+    visible:
+      id: "browse-screen"
+    timeout: 8000
+
+- extendedWaitUntil:
+    visible:
+      id: "start-provider-claude-code"
+    timeout: 8000
+
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- takeScreenshot: e2e/_artifacts/screenshots/card-start-or-take-over
