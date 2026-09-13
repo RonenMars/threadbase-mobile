@@ -9,6 +9,7 @@ import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { useNavLockStore } from '@/stores/navLock'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
+import type { ProviderName } from '@/constants/providers'
 import type { MultiConversation, MultiSession } from '@/types/api'
 import type { MergedItem } from './mergedItems'
 
@@ -17,15 +18,17 @@ interface Props {
   title: string
   isFirst?: boolean
   highlight?: string
+  dominantProvider?: ProviderName
   onLongPressConversation?: (conv: MultiConversation) => void
 }
 
-function SessionEarlierRow({ session, title, isFirst, highlight, previewMode }: {
+function SessionEarlierRow({ session, title, isFirst, highlight, previewMode, dominantProvider }: {
   session: MultiSession
   title: string
   isFirst?: boolean
   highlight?: string
   previewMode: MessagePreviewMode
+  dominantProvider?: ProviderName
 }) {
   const { handlePress, handleLongPress } = useSessionRowActions(session)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
@@ -42,6 +45,7 @@ function SessionEarlierRow({ session, title, isFirst, highlight, previewMode }: 
       serverColor={serverColor}
       activeServerCount={activeServerCount}
       provider={session.provider}
+      dominantProvider={dominantProvider}
       density="compact"
       leading="none"
       showBranch={false}
@@ -54,11 +58,12 @@ function SessionEarlierRow({ session, title, isFirst, highlight, previewMode }: 
   )
 }
 
-function ConversationEarlierRow({ conv, title, highlight, previewMode, onLongPress }: {
+function ConversationEarlierRow({ conv, title, highlight, previewMode, dominantProvider, onLongPress }: {
   conv: MultiConversation
   title: string
   highlight?: string
   previewMode: MessagePreviewMode
+  dominantProvider?: ProviderName
   onLongPress?: (conv: MultiConversation) => void
 }) {
   const router = useRouter()
@@ -83,6 +88,7 @@ function ConversationEarlierRow({ conv, title, highlight, previewMode, onLongPre
       serverColor={serverColor}
       activeServerCount={activeServerCount}
       provider={conv.provider}
+      dominantProvider={dominantProvider}
       density="compact"
       leading="none"
       showBranch={false}
@@ -96,7 +102,7 @@ function ConversationEarlierRow({ conv, title, highlight, previewMode, onLongPre
 }
 
 /** A history row in the Now list: title, one subtitle line, clock stamp. Two lines, no card. */
-export function EarlierRow({ item, title, isFirst, highlight, onLongPressConversation }: Props) {
+export function EarlierRow({ item, title, isFirst, highlight, dominantProvider, onLongPressConversation }: Props) {
   const rowPreviewMode = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewMode === 'off' ? 'none' : rowPreviewMode
   if (item.kind === 'session') {
@@ -107,6 +113,7 @@ export function EarlierRow({ item, title, isFirst, highlight, onLongPressConvers
         isFirst={isFirst}
         highlight={highlight}
         previewMode={previewMode}
+        dominantProvider={dominantProvider}
       />
     )
   }
@@ -116,6 +123,7 @@ export function EarlierRow({ item, title, isFirst, highlight, onLongPressConvers
       title={title}
       highlight={highlight}
       previewMode={previewMode}
+      dominantProvider={dominantProvider}
       onLongPress={onLongPressConversation}
     />
   )
