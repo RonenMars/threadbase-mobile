@@ -2,7 +2,7 @@ import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Platform, Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
+import { AccessibilityInfo, Platform, Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
 import { useBiometricLock } from '@/hooks/useBiometricLock'
 import {
   Stack,
@@ -38,6 +38,8 @@ import {
   reconcile as reconcileLiveActivity,
 } from '@/services/live-activity'
 import { SplashAnimation } from '@/components/SplashAnimation'
+import { markIntroSeen, resolveIntroVariant, type IntroVariant } from '@/services/intro-splash'
+import { currentIntroVersion } from '@/services/intro-version'
 import { goBackOrHub } from '@/lib/goBackOrHub'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
@@ -545,6 +547,7 @@ function ThemedStatusBar() {
 function RootLayout() {
   const router = useRouter()
   const [splashDone, setSplashDone] = useState(!!g.__splashShown)
+  const [introVariant, setIntroVariant] = useState<IntroVariant | null>(null)
 
   // Initialize/tear down crash reporting in lockstep with the consent setting.
   // Runs here (rather than in AuthGate, several layers deeper) so Sentry.init()
@@ -556,11 +559,23 @@ function RootLayout() {
   // and performance tracing is disabled anyway (tracesSampleRate: 0).
   useCrashReportingSync()
 
+  // The native splash stays up while we read whether this version already
+  // played the intro, so a returning launch never flashes the full animation.
   useEffect(() => {
-    SplashScreen.hideAsync()
+    if (splashDone) {
+      SplashScreen.hideAsync()
+      return
+    }
+    AccessibilityInfo.isReduceMotionEnabled()
+      .catch(() => false)
+      .then((reduceMotion) => resolveIntroVariant(currentIntroVersion(), reduceMotion))
+      .then(setIntroVariant)
+      .finally(() => SplashScreen.hideAsync())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function handleSplashComplete() {
+    if (introVariant === 'full') void markIntroSeen(currentIntroVersion())
     g.__splashShown = true
     setSplashDone(true)
   }
@@ -573,7 +588,7 @@ function RootLayout() {
       <DirectionRoot>
         <KeyboardProvider>
         <SafeAreaProvider>
-          {!splashDone && <SplashAnimation onComplete={handleSplashComplete} />}
+          {!splashDone && <SplashAnimation variant={introVariant ?? 'hold'} onComplete={handleSplashComplete} />}
           <PersistQueryClientProvider
             client={queryClient}
             persistOptions={{
