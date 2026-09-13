@@ -259,7 +259,7 @@ Each is independently shippable, conventional-commit titled, and small enough to
 1. `fix(sessions): gate the live block on process liveness` — the `processLiveness`/`lifecycle` gate. No visual redesign. Highest trust payoff in the app.
 2. `fix(sessions): add bottom inset so the FAB stops covering rows` — ≥96px list padding; hide the FAB on scroll-down. Also fixes `ProjectHubCard`'s chevron, which animates `0 → 180deg` so "open" points left instead of down.
 3. `feat(sessions): collapse session states to five labels and two colours` — `sessionPresentation` tiers + one badge component; delete per-view liveness treatments.
-4. `feat(sessions): derive display titles from raw first messages` — `lib/displayTitle.ts` + unit tests + grouped-noise rows.
+4. `feat(sessions): derive display titles from raw first messages` — `lib/displayTitle.ts` + unit tests. Shipped as two consumers per audit correction 1: the composer stores the cleaned first line instead of a 20-char slug, and every row repairs stored names at render (`components/sessions/shared/rowTitle.ts`; a name with store origin `manual` always wins, anything else is cleaned). The first-message preview is dropped when it only echoes the title. **Grouped-noise rows move to PR 6** — they are a list-layout concern and PR 6 replaces every list they would sit in.
 5. `fix(theme): keep glass on chrome and content cards opaque` — `Card`/`GlassCard` routing, flat canvas.
 6. `feat(sessions): state-ordered Now list` — new default view; retires Classic and `LiveSessionsHeader` as a widget.
 7. `feat(sessions): provider marks on non-dominant rows` — lobe-icons + dominance rule; removes the word badges.

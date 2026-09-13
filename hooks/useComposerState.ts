@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
 import { useRenameSession } from '@/hooks/useSessionName'
+import { cleanFirstMessage, isRejectedTitle } from '@/lib/displayTitle'
 import {
   pickFromCamera,
   pickFromLibraryMulti,
@@ -132,8 +133,10 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     const payload = buildPayload(text)
     if (!payload) return
     if (autoNameFromMessage && !getName(serverId, sessionId)) {
-      const autoName = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 20)
-      if (autoName) renameSession.mutate({ sessionId, name: autoName, origin: 'auto' })
+      // The stored name is the user's words on one line; a greeting or a bare
+      // path stores nothing and the row falls back to project · branch.
+      const autoName = cleanFirstMessage(text)
+      if (!isRejectedTitle(autoName)) renameSession.mutate({ sessionId, name: autoName, origin: 'auto' })
     }
     return sendAndReset(payload, text || payload)
   }

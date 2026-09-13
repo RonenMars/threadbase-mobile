@@ -16,6 +16,8 @@ import { SessionCard } from '@/components/sessions/SessionCard'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { useConversationSearch } from '@/hooks/useConversations'
 import { useServersStore } from '@/stores/servers'
+import { useSessionNamesStore } from '@/stores/sessionNames'
+import { conversationRowTitle, sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { useNavLockStore } from '@/stores/navLock'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
@@ -80,6 +82,8 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
 
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const servers = useServersStore((s) => s.servers)
+  const getName = useSessionNamesStore((s) => s.getName)
+  const getNameOrigin = useSessionNamesStore((s) => s.getOrigin)
 
   const renderSearchItem = useCallback(
     ({ item }: { item: MultiConversation | MultiSession }) => {
@@ -91,7 +95,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
         return (
           <ConversationListItem
             testID={`session-row-${s.id}`}
-            title={s.projectName}
+            title={sessionRowTitle(s, { name: getName(s.serverId, s.id), origin: getNameOrigin(s.serverId, s.id) })}
             path={s.projectPath}
             timestamp={s.completedAt ?? s.startedAt}
             branch={s.branch}
@@ -115,7 +119,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
       return (
         <ConversationListItem
           testID={`conversation-row-${c.id}`}
-          title={c.title}
+          title={conversationRowTitle(c, { name: getName(c.serverId, c.id), origin: getNameOrigin(c.serverId, c.id) })}
           path={c.projectPath}
           timestamp={c.lastMessage?.timestamp ?? c.lastActivity}
           messageCount={c.messageCount}
@@ -139,7 +143,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
         />
       )
     },
-    [router, servers, activeServerCount, debouncedQuery],
+    [router, servers, activeServerCount, debouncedQuery, getName, getNameOrigin],
   )
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set())
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
