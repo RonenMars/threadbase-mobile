@@ -149,7 +149,10 @@ appId: com.ronenmars.threadbase
             id: "Return"
           timeout: 5000
 
-# The diagnostics opt-in is on by default; its preview toggle is present.
+# The diagnostics opt-in defaults to unchecked (spec §11) — check it to
+# reveal the preview toggle.
+- tapOn:
+    id: "feedback-include-diagnostics"
 - assertVisible:
     id: "feedback-diagnostics-toggle"
 
