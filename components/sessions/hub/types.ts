@@ -29,6 +29,8 @@ export interface ProjectHubCardProps {
   isOpen: boolean
   onToggle: (projectId: string) => void
   forceServerChip?: boolean
+  /** Opens the path drill (the Tree successor) at this project's directory. */
+  onBrowsePath?: (group: import('./useProjectGroups').ProjectGroup) => void
 }
 
 export interface SessionRowProps {

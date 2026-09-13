@@ -183,3 +183,13 @@ export function activeSessionColor(node: TreeNode): string | null {
 export function hasLiveSession(node: TreeNode): boolean {
   return node.sessions.some(isPresentationLive)
 }
+
+/** The node a summary landed on, by the server's own project_path; falls back to the reassembled path. */
+export function findProjectNode(node: TreeNode, projectPath: string): TreeNode | null {
+  if (node.projectPath === projectPath || (node.fullPath !== '' && node.fullPath === projectPath)) return node
+  for (const child of node.children.values()) {
+    const found = findProjectNode(child, projectPath)
+    if (found) return found
+  }
+  return null
+}

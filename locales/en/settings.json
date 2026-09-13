@@ -48,11 +48,7 @@
   "appearance": {
     "theme": "Theme",
     "dark": "Dark",
-    "light": "Light",
-    "layout": "Layout",
-    "layoutTree": "Tree",
-    "layoutHub": "Hub",
-    "layoutClassic": "Classic"
+    "light": "Light"
   },
   "notifications": {
     "whenAddingServer": "When Adding A New Server",

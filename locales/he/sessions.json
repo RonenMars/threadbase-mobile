@@ -57,6 +57,7 @@
     "confirmNo": "לא"
   },
   "hub": {
+    "browsePath": "עיון בנתיב",
     "seeAll_one": "ראה את כל השיחה",
     "seeAll_two": "ראה את שתי השיחות",
     "seeAll_other": "ראה את כל {{count}} השיחות",
@@ -80,12 +81,6 @@
     "done": "הושלם"
   },
   "live": {
-    "headerLive_one": "חי · {{count}}",
-    "headerLive_two": "חי · {{count}}",
-    "headerLive_other": "חי · {{count}}",
-    "headerIdle_one": "סרק · {{count}}",
-    "headerIdle_two": "סרק · {{count}}",
-    "headerIdle_other": "סרק · {{count}}",
     "headerNeedsYou_one": "צריך אותך · {{count}}",
     "headerNeedsYou_two": "צריך אותך · {{count}}",
     "headerNeedsYou_other": "צריך אותך · {{count}}",
@@ -178,5 +173,9 @@
     "groupedOneLine_other": "{{count}} סשנים בשורה אחת",
     "groupedPill": "מקובץ",
     "open": "פתח"
+  },
+  "layout": {
+    "now": "עכשיו",
+    "projects": "פרויקטים"
   }
 }

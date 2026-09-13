@@ -1,20 +1,7 @@
 import { render } from '@testing-library/react-native'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
-import { ServerRootRow } from '@/components/sessions/tree/ServerRootRow'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
-import type { TreeNode } from '@/components/sessions/tree/types'
-
-const node: TreeNode = {
-  name: 'root',
-  fullPath: '/',
-  children: new Map(),
-  sessions: [],
-  conversationCount: 0,
-  conversationActivityMs: 0,
-  totalCount: 0,
-  directCount: 0,
-}
 
 describe('ServerHeaderRow refresh spinner', () => {
   it('shows the scanner when isRefreshing', async () => {
@@ -37,35 +24,6 @@ describe('ServerHeaderRow refresh spinner', () => {
     )
     expect(queryByTestId('server-header-refreshing-s1')).toBeNull()
     expect(queryByText('Showing cached data')).toBeNull()
-  })
-})
-
-describe('ServerRootRow refresh spinner', () => {
-  it('shows the scanner when isRefreshing', async () => {
-    const { getByTestId } = await render(
-      <ServerRootRow node={node} serverLabel="Server 1" collapsible isExpanded onToggle={jest.fn()} onSelectLeaf={jest.fn()} isRefreshing />,
-    )
-    expect(getByTestId('server-root-refreshing')).toBeTruthy()
-  })
-
-  it('hides the scanner when not refreshing', async () => {
-    const { queryByTestId } = await render(
-      <ServerRootRow node={node} serverLabel="Server 1" collapsible={false} isExpanded={false} onToggle={jest.fn()} onSelectLeaf={jest.fn()} />,
-    )
-    expect(queryByTestId('server-root-refreshing')).toBeNull()
-  })
-
-  it('shows the scanner in both multi-server and single-server modes', async () => {
-    const multi = await render(
-      <ServerRootRow node={node} serverLabel="Server 1" collapsible isExpanded onToggle={jest.fn()} onSelectLeaf={jest.fn()} isRefreshing />,
-    )
-    expect(multi.getByTestId('server-root-refreshing')).toBeTruthy()
-
-    const single = await render(
-      <ServerRootRow node={node} serverLabel="Server 1" collapsible={false} isExpanded={false} onToggle={jest.fn()} onSelectLeaf={jest.fn()} isRefreshing />,
-    )
-    expect(single.getByTestId('server-root-refreshing')).toBeTruthy()
-    expect(single.queryByText('Showing cached data')).toBeNull()
   })
 })
 

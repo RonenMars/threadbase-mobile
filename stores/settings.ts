@@ -125,6 +125,12 @@ interface PersistedSettings {
   sessionView: 'chat' | 'terminal'
 }
 
+// Tree and Hub folded into Projects; Classic became Now. A persisted value
+// from before that split still has to land on a view that exists.
+function coerceSessionsLayout(value: string | undefined): SessionsLayout {
+  return value === 'projects' || value === 'hub' || value === 'tree' ? 'projects' : 'now'
+}
+
 export const useSettingsStore = create<SettingsStore>((set) => ({
   colorScheme: 'dark',
   completedSessionFadeMs: 60000,
@@ -133,7 +139,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
   sessionLeaveAction: 'ask',
-  sessionsLayout: 'classic',
+  sessionsLayout: 'now',
   mergeChats: true,
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
@@ -203,7 +209,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         sessionLeaveAction: coerceSessionLeaveAction(
           parsed.sessionLeaveAction ?? state.sessionLeaveAction,
         ),
-        sessionsLayout: parsed.sessionsLayout ?? state.sessionsLayout,
+        sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
         mergeChats: parsed.mergeChats ?? state.mergeChats,
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,

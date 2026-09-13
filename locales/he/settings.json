@@ -48,11 +48,7 @@
   "appearance": {
     "theme": "ערכת נושא",
     "dark": "כהה",
-    "light": "בהיר",
-    "layout": "פריסה",
-    "layoutTree": "עץ",
-    "layoutHub": "מרכז",
-    "layoutClassic": "קלאסי"
+    "light": "בהיר"
   },
   "notifications": {
     "whenAddingServer": "בעת הוספת שרת חדש",

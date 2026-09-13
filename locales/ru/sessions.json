@@ -58,6 +58,7 @@
     "confirmNo": "Нет"
   },
   "hub": {
+    "browsePath": "Обзор пути",
     "seeAll_one": "Показать {{count}} беседу",
     "seeAll_few": "Показать {{count}} беседы",
     "seeAll_many": "Показать все {{count}} бесед",
@@ -84,14 +85,6 @@
     "done": "Готово"
   },
   "live": {
-    "headerLive_one": "ОНЛАЙН · {{count}}",
-    "headerLive_few": "ОНЛАЙН · {{count}}",
-    "headerLive_many": "ОНЛАЙН · {{count}}",
-    "headerLive_other": "ОНЛАЙН · {{count}}",
-    "headerIdle_one": "БЕЗ АКТИВНОСТИ · {{count}}",
-    "headerIdle_few": "БЕЗ АКТИВНОСТИ · {{count}}",
-    "headerIdle_many": "БЕЗ АКТИВНОСТИ · {{count}}",
-    "headerIdle_other": "БЕЗ АКТИВНОСТИ · {{count}}",
     "headerNeedsYou_one": "ЖДЁТ ВАС · {{count}}",
     "headerNeedsYou_few": "ЖДЁТ ВАС · {{count}}",
     "headerNeedsYou_many": "ЖДЁТ ВАС · {{count}}",
@@ -187,5 +180,9 @@
     "groupedOneLine_other": "{{count}} однострочных сессий",
     "groupedPill": "СГРУППИРОВАНО",
     "open": "Открыть"
+  },
+  "layout": {
+    "now": "Сейчас",
+    "projects": "Проекты"
   }
 }

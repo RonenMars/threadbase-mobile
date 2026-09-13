@@ -195,15 +195,6 @@ appId: com.ronenmars.threadbase
     visible: "http://localhost:7072"
     timeout: 15000
 
-# --- Switch to the Tree layout ---------------------------------------------
-# Tree is the only layout that shows the machine hierarchy (server root rows).
-# The layout buttons carry no testID — matched by their visible label.
-- tapOn: "Tree"
-
-- waitForAnimationToEnd
-
-- takeScreenshot: e2e/_artifacts/screenshots/promo-04-01-layout-tree
-
 # The stack header's own back control (app/_layout.tsx). Maestro's `back` does
 # not pop this screen on iOS.
 - tapOn:
@@ -213,6 +204,15 @@ appId: com.ronenmars.threadbase
     visible:
       id: "hub-screen"
     timeout: 8000
+
+# --- Switch to the Projects layout -----------------------------------------
+# Projects groups by server, so it is the layout that shows both machines.
+- tapOn:
+    id: "layout-projects"
+
+- waitForAnimationToEnd
+
+- takeScreenshot: e2e/_artifacts/screenshots/promo-04-01-layout-projects
 
 # --- 0–7s · Sessions Hub, Tree layout, two machines ------------------------
 - waitForAnimationToEnd:

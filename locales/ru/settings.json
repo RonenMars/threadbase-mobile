@@ -48,11 +48,7 @@
   "appearance": {
     "theme": "Тема",
     "dark": "Тёмная",
-    "light": "Светлая",
-    "layout": "Макет",
-    "layoutTree": "Дерево",
-    "layoutHub": "Центр",
-    "layoutClassic": "Классический"
+    "light": "Светлая"
   },
   "notifications": {
     "whenAddingServer": "При добавлении нового сервера",
