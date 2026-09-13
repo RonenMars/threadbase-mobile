@@ -9,7 +9,9 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
 import { isPresentationLive } from '@/lib/sessionPresentation'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
+import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { DrillRow } from './DrillRow'
 import { makeStyles } from './DrillView.styles'
 import type { TreeNode, DrillItem } from './types'
@@ -23,6 +25,8 @@ interface Props {
 export function DrillView({ node, serverId, onBack }: Props) {
   const { t } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
+  const insets = useSafeAreaInsets()
+  const listContent = [styles.drillList, { paddingBottom: FAB_CLEARANCE + insets.bottom }]
   const router = useRouter()
   const mergeChats = useSettingsStore((s) => s.mergeChats)
   const getSessionName = useSessionNamesStore((s) => s.getName)
@@ -119,7 +123,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
           data={allItems}
           keyExtractor={(item) => item.key}
           renderItem={({ item }) => <DrillRow item={item} />}
-          contentContainerStyle={styles.drillList}
+          contentContainerStyle={listContent}
           onEndReached={handleEndReached}
           onEndReachedThreshold={0.5}
           ListFooterComponent={listFooter}
@@ -146,7 +150,7 @@ export function DrillView({ node, serverId, onBack }: Props) {
         renderSectionHeader={({ section }) => (
           <Text style={styles.sectionHeader}>{section.title}</Text>
         )}
-        contentContainerStyle={styles.drillList}
+        contentContainerStyle={listContent}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
         ListFooterComponent={listFooter}

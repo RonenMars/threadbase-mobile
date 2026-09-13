@@ -48,7 +48,8 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   }, [isOpen, onToggle, group.projectId])
 
   const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 180])}deg` }],
+    // CaretRight: 90° points down for "open"; 180° pointed left.
+    transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 90])}deg` }],
   }))
 
   // Expand-to-load: a closed card knows its conversation count from the

@@ -1,11 +1,12 @@
 import { StyleSheet } from 'react-native'
 import { spacing } from '@/constants/theme'
+import { FAB_CLEARANCE } from '@/components/ui/FAB'
 
 export function makeStyles(bottomInset: number = 0) {
   return StyleSheet.create({
     content: {
       padding: spacing.sm,
-      paddingBottom: spacing.sm + bottomInset,
+      paddingBottom: FAB_CLEARANCE + bottomInset,
       flexGrow: 1,
     },
     emptyContent: {
