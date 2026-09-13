@@ -311,6 +311,8 @@ async function handleRequest(req, res) {
     for (const session of sessions) {
       names[session.id] = session.projectName || session.id
     }
+    const extra = JSON.parse(readFixture('session-external.json'))
+    names[extra.id] = extra.projectName || extra.id
     return json(res, 200, names)
   }
 
