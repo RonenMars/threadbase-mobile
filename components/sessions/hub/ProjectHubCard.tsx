@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
+import { isPresentationLive } from '@/lib/sessionPresentation'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { isToday } from './hubUtils'
 import { SessionRow } from './SessionRow'
@@ -16,7 +17,7 @@ import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { makeStyles } from './ProjectHubCard.styles'
 import type { ProjectHubCardProps } from './types'
-import type { MultiSession, MultiConversation } from '@/types/api'
+import type { MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
@@ -78,9 +79,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   // but are all idle (still a thread, just quiet); no spine when only
   // conversations are present (history-only project).
   const liveStatus = useMemo(() => {
-    const hasLive = group.sessions.some(
-      (s: MultiSession) => s.status === 'running' || s.status === 'waiting_input',
-    )
+    const hasLive = group.sessions.some(isPresentationLive)
     if (hasLive) return { color: theme.status.waiting, opacity: 1 }
     if (group.sessions.length > 0) return { color: theme.text.accent, opacity: 0.55 }
     return null
@@ -95,9 +94,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   )
 
   const activitySummary = useMemo(() => {
-    const liveCount = group.sessions.filter(
-      (s) => s.status === 'running' || s.status === 'waiting_input',
-    ).length
+    const liveCount = group.sessions.filter(isPresentationLive).length
     const todayCount = todaySessionCount + todayConvCount
     const lastActivity = group.latestActivityMs > 0
       ? formatListTime(group.latestActivityMs, {

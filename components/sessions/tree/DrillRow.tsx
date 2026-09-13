@@ -24,7 +24,6 @@ function rowTestIDFromKey(key: string): string {
 }
 
 export function DrillRow({ item }: Props) {
-  const isLive = item.status === 'running' || item.status === 'waiting_input'
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => (item.serverId ? s.servers[item.serverId]?.color : undefined))
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
@@ -40,7 +39,7 @@ export function DrillRow({ item }: Props) {
       lastMessage={item.lastMessage}
       lastOutput={item.lastOutput}
       branch={item.branch}
-      live={isLive}
+      live={item.live ?? false}
       serverLabel={item.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}

@@ -26,6 +26,7 @@ import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
 import { useTextDirectionStyle } from '@/lib/rtl'
 import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
+import { isPresentationLive } from '@/lib/sessionPresentation'
 import {
   collidingProjectPaths,
   shouldForceServerChip,
@@ -161,7 +162,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       const forceServerChip = shouldForceServerChip(item.projectPath, collidingPaths)
       if (isSession) {
         const externalAlive = isExternalAlive(item)
-        const isLive = externalAlive || item.status === 'running' || item.status === 'waiting_input'
+        const isLive = isPresentationLive(item)
         return (
           <ConversationListItem
             testID={`session-row-${item.id}`}

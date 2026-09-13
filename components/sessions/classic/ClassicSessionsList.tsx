@@ -9,10 +9,11 @@ import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
+import { isPresentationLive } from '@/lib/sessionPresentation'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { makeStyles } from './ClassicSessionsList.styles'
 import { makeStyles as makeSearchStyles } from '../SearchStyles'
-import type { MultiSession, SessionStatus } from '@/types/api'
+import type { MultiSession } from '@/types/api'
 
 interface Props {
   sessions: MultiSession[]
@@ -20,8 +21,6 @@ interface Props {
   onRefresh: () => void
   searchOpen?: boolean
 }
-
-const LIVE_STATUSES: SessionStatus[] = ['running', 'waiting_input']
 
 const SESSIONS_COLLAPSE_THRESHOLD = 3
 
@@ -60,10 +59,12 @@ export const ClassicSessionsList = memo(function ClassicSessionsList({ sessions,
 
   const rows = useMemo<Row[]>(() => {
     if (filteredSessions.length === 0) return []
-    const live = filteredSessions.filter((s) => LIVE_STATUSES.includes(s.status))
-    const idle = filteredSessions.filter((s) => !LIVE_STATUSES.includes(s.status))
+    const live = filteredSessions.filter(isPresentationLive)
+    const idle = filteredSessions.filter((s) => !isPresentationLive(s))
     const collapsible = filteredSessions.length > SESSIONS_COLLAPSE_THRESHOLD
-    const header: Row = { kind: 'liveHeader', id: 'live-header', count: filteredSessions.length, hasLive: live.length > 0, collapsed: sessionsCollapsed, collapsible }
+    const hasLive = live.length > 0
+    // LIVE · N counts the live rows; IDLE · N counts the whole block.
+    const header: Row = { kind: 'liveHeader', id: 'live-header', count: hasLive ? live.length : filteredSessions.length, hasLive, collapsed: sessionsCollapsed, collapsible }
     if (collapsible && sessionsCollapsed) return [header]
     return [
       header,

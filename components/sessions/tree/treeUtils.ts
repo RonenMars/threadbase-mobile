@@ -1,4 +1,5 @@
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { isPresentationLive } from '@/lib/sessionPresentation'
 import type { MultiSession } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { TreeNode, FlatNode } from './types'
@@ -177,5 +178,5 @@ export function activeSessionColor(node: TreeNode): string | null {
  * dot should pulse.
  */
 export function hasLiveSession(node: TreeNode): boolean {
-  return node.sessions.some((s) => s.status === 'running' || s.status === 'waiting_input')
+  return node.sessions.some(isPresentationLive)
 }

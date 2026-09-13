@@ -11,6 +11,7 @@ import { ServerRootRow } from './ServerRootRow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveSessionsHeader } from '@/components/sessions/LiveSessionsHeader'
+import { isPresentationLive } from '@/lib/sessionPresentation'
 import { SessionCard } from '@/components/sessions/SessionCard'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { useConversationSearch } from '@/hooks/useConversations'
@@ -86,7 +87,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
       const serverColor = item.serverId ? servers[item.serverId]?.color : undefined
       if (isSession) {
         const s = item as MultiSession
-        const isLive = s.status === 'running' || s.status === 'waiting_input'
+        const isLive = isPresentationLive(s)
         return (
           <ConversationListItem
             testID={`session-row-${s.id}`}
@@ -269,14 +270,13 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({ sessions,
   // to keep hook order stable.
   const liveSessionsBlock = useMemo(() => {
     if (sessions.length === 0) return null
-    const hasLive = sessions.some(
-      (s) => s.status === 'running' || s.status === 'waiting_input',
-    )
+    const liveCount = sessions.filter(isPresentationLive).length
+    const hasLive = liveCount > 0
     const collapsible = sessions.length > SESSIONS_COLLAPSE_THRESHOLD
     return (
       <View style={{ marginBottom: 4 }}>
         <LiveSessionsHeader
-          count={sessions.length}
+          count={hasLive ? liveCount : sessions.length}
           hasLive={hasLive}
           collapsed={sessionsCollapsed}
           onToggle={collapsible ? () => setSessionsCollapsed(!sessionsCollapsed) : undefined}
