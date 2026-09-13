@@ -9,6 +9,7 @@ import {
 } from '@/lib/sessionFilters'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import type { MultiConversation, MultiSession } from '@/types/api'
+import type { ProviderName } from '@/constants/providers'
 
 const NOW = Date.parse('2026-09-13T12:00:00.000Z')
 const HOUR = 3_600_000
@@ -69,6 +70,13 @@ describe('applyListFilters', () => {
   it('filters by agent, reading an unknown provider as Claude', () => {
     expect(applyListFilters(items, { ...DEFAULT_FILTERS, providers: ['claude-code'] }, NOW).map((i) => i.item.id)).toEqual(['r', 'h'])
     expect(applyListFilters(items, { ...DEFAULT_FILTERS, providers: ['codex-cli'] }, NOW).map((i) => i.item.id)).toEqual(['w', 'old'])
+  })
+
+  it('keeps a row whose provider this build has never heard of', () => {
+    // The wire is untrusted: a newer streamer can send a provider name that is not in ProviderName.
+    const newer = session({ id: 'n', provider: 'gemini-cli' as ProviderName }, NOW - HOUR)
+    expect(applyListFilters([newer], DEFAULT_FILTERS, NOW).map((i) => i.item.id)).toEqual(['n'])
+    expect(countByProvider([newer])).toEqual({ 'claude-code': 1, 'codex-cli': 0, 'cursor-cli': 0 })
   })
 
   it('applies the recency window to every row', () => {

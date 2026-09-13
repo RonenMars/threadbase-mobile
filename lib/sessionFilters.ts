@@ -1,4 +1,4 @@
-import { PROVIDER_NAMES, type ProviderName } from '@/constants/providers'
+import { PROVIDER_NAMES, isProviderName, type ProviderName } from '@/constants/providers'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { deriveSessionPresentation, type SessionTier } from '@/lib/sessionPresentation'
 
@@ -28,7 +28,8 @@ export function itemTier(item: MergedItem): SessionTier {
 
 /** Unknown providers read as Claude, matching `providerLabelKey`. */
 export function itemProvider(item: MergedItem): ProviderName {
-  return item.item.provider ?? 'claude-code'
+  const provider = item.item.provider
+  return provider && isProviderName(provider) ? provider : 'claude-code'
 }
 
 function startOfToday(now: number): number {
