@@ -17,10 +17,19 @@ describe('sessionRowTitle', () => {
     ).toBe('Fix')
   })
 
-  it('repairs a stored 20-char auto slug instead of showing it', () => {
-    expect(sessionRowTitle(session, { name: 'does-the-currently-r', origin: 'auto' })).toBe(
-      'tb-mobile · main',
-    )
+  it('drops a stored 20-char auto slug and lets the server name speak', () => {
+    expect(
+      sessionRowTitle(
+        { ...session, sessionName: 'does the currently running session resume' },
+        { name: 'does-the-currently-r', origin: 'auto' },
+      ),
+    ).toBe('Does the currently running session resume')
+    expect(sessionRowTitle(session, { name: 'does-the-currently-r', origin: 'auto' })).toBe('tb-mobile · main')
+  })
+
+  it('shows a server-merged name verbatim, even a two-word one', () => {
+    expect(sessionRowTitle(session, { name: 'Auth fix', origin: 'auto' })).toBe('Auth fix')
+    expect(sessionRowTitle(session, { name: 'refactor /api/auth handler', origin: 'auto' })).toBe('refactor /api/auth handler')
   })
 
   it('cleans the server session name when nothing is stored', () => {

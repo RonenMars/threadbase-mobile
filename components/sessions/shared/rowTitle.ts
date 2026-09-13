@@ -1,5 +1,5 @@
 import { resolveDisplayTitle } from '@/lib/displayTitle'
-import type { NameOrigin } from '@/stores/sessionNames'
+import { sessionKey, type NameOrigin } from '@/stores/sessionNames'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
 export interface StoredName {
@@ -7,28 +7,43 @@ export interface StoredName {
   origin?: NameOrigin
 }
 
+/** Reads from the store's maps, so a list that selects them re-renders on rename. */
+export function storedNameFor(
+  names: Record<string, string>,
+  origins: Record<string, NameOrigin>,
+  serverId: string,
+  sessionId: string,
+): StoredName {
+  const key = sessionKey(serverId, sessionId)
+  return { name: names[key], origin: origins[key] }
+}
+
 function basename(path: string | null | undefined): string | undefined {
   return path?.split('/').filter(Boolean).pop()
 }
 
 /**
- * A name the user typed always wins. Anything else in the store — an auto slug
- * this app saved before the pipeline existed, or a name merged from the server
- * — is a first message to be cleaned at render, never re-PATCHed.
+ * Auto slugs saved before the pipeline existed (`does-the-currently-r`) are
+ * lossy, so they are dropped and the server's own first line speaks instead.
+ * Every other stored name is shown as typed: a manual rename, or a name merged
+ * from the server, which carries no origin and may be a rename made elsewhere.
  */
-function split(stored: StoredName): { customName?: string; storedMessage?: string } {
+const LEGACY_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
+function split(stored: StoredName): { customName?: string } {
   if (!stored.name) return {}
-  return stored.origin === 'manual' ? { customName: stored.name } : { storedMessage: stored.name }
+  if (stored.origin !== 'manual' && stored.name.length <= 20 && LEGACY_SLUG.test(stored.name)) return {}
+  return { customName: stored.name }
 }
 
 export function sessionRowTitle(
   session: Pick<MultiSession, 'sessionName' | 'projectName' | 'projectPath' | 'branch'>,
   stored: StoredName,
 ): string {
-  const { customName, storedMessage } = split(stored)
+  const { customName } = split(stored)
   const { title } = resolveDisplayTitle({
     customName,
-    firstMessage: storedMessage ?? session.sessionName,
+    firstMessage: session.sessionName,
     projectName: session.projectName || basename(session.projectPath),
     branch: session.branch,
   })
@@ -39,10 +54,10 @@ export function conversationRowTitle(
   conv: Pick<MultiConversation, 'title' | 'sessionName' | 'projectPath' | 'branch' | 'firstMessage'>,
   stored: StoredName,
 ): string {
-  const { customName, storedMessage } = split(stored)
+  const { customName } = split(stored)
   const { title } = resolveDisplayTitle({
     customName,
-    firstMessage: storedMessage ?? conv.sessionName ?? conv.firstMessage?.text,
+    firstMessage: conv.sessionName ?? conv.firstMessage?.text,
     projectName: basename(conv.projectPath),
     branch: conv.branch,
   })
