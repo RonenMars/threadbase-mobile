@@ -48,11 +48,7 @@
   "appearance": {
     "theme": "السمة",
     "dark": "داكن",
-    "light": "فاتح",
-    "layout": "التخطيط",
-    "layoutTree": "شجرة",
-    "layoutHub": "محور",
-    "layoutClassic": "كلاسيكي"
+    "light": "فاتح"
   },
   "notifications": {
     "whenAddingServer": "عند إضافة خادم جديد",

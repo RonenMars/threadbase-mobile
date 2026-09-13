@@ -257,8 +257,6 @@ export default function SettingsScreen() {
     setAddServerAction,
     sessionLeaveAction,
     setSessionLeaveAction,
-    sessionsLayout,
-    setSessionsLayout,
     mergeChats,
     setMergeChats,
     showProviderVersionWarning,
@@ -510,38 +508,6 @@ await refreshServerInfo(serverId)
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
-          </View>
-          <View style={s.row}>
-            <Text style={s.rowLabel}>{t('appearance.layout')}</Text>
-            <View style={[s.segmentedControl, isGlass && s.segmentedControlGlass]}>
-              <TouchableOpacity
-                style={[s.segmentBtn, sessionsLayout === 'tree' && s.segmentBtnActive]}
-                onPress={() => setSessionsLayout('tree')}
-                testID="settings-layout-tree"
-              >
-                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, sessionsLayout === 'tree' && s.segmentBtnTextActive]}>
-                  {t('appearance.layoutTree')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.segmentBtn, sessionsLayout === 'hub' && s.segmentBtnActive]}
-                onPress={() => setSessionsLayout('hub')}
-                testID="settings-layout-hub"
-              >
-                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, sessionsLayout === 'hub' && s.segmentBtnTextActive]}>
-                  {t('appearance.layoutHub')}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.segmentBtn, sessionsLayout === 'classic' && s.segmentBtnActive]}
-                onPress={() => setSessionsLayout('classic')}
-                testID="settings-layout-classic"
-              >
-                <Text style={[s.segmentBtnText, isGlass && s.segmentBtnTextGlass, sessionsLayout === 'classic' && s.segmentBtnTextActive]}>
-                  {t('appearance.layoutClassic')}
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
           <View style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.border }}>

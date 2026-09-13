@@ -25,7 +25,6 @@ import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { ConversationList } from '@/components/conversation/ConversationList'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
-import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
@@ -82,6 +81,7 @@ export default function ProjectsHub() {
   const { t } = useTranslation(['sessions', 'shared', 'settings', 'servers'])
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
+  const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
   const mergeChats = useSettingsStore((s) => (s as any).mergeChats ?? false)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -229,7 +229,7 @@ export default function ProjectsHub() {
   // ADR 0001 step 2: the grouped views (tree, hub) render their structure from
   // /api/projects/summary and fetch a project's conversations only when it is
   // opened.
-  const isGroupedLayout = sessionsLayout === 'tree' || sessionsLayout === 'hub'
+  const isGroupedLayout = sessionsLayout === 'projects'
 
   const {
     summaries,
@@ -284,7 +284,7 @@ export default function ProjectsHub() {
   // notice overlays the list: centered banner in Hub/Tree, caption under the
   // header fallback spinner in Classic. Multi-server is covered by the chips.
   const showSyncNotice = isBackgroundRefreshing && activeServerIds.length <= 1
-  const syncNoticeVariant = sessionsLayout === 'tree' || sessionsLayout === 'hub' ? 'banner' : 'caption'
+  const syncNoticeVariant = sessionsLayout === 'projects' ? 'banner' : 'caption'
   const allServersFailed =
     activeServerIds.length > 0 &&
     sessionsDone &&
@@ -427,10 +427,9 @@ export default function ProjectsHub() {
 
         {/* Right: actions */}
         <View style={styles.headerRight}>
-          {/* Background-refetch fallback spinner — only for the two
-              view/server-count combos with no server-name row to anchor it
-              (single-server Hub and Classic; Tree always has ServerRootRow) */}
-          {isBackgroundRefreshing && activeServerIds.length <= 1 && sessionsLayout !== 'tree' ? (
+          {/* Background-refetch fallback spinner — only with a single server,
+              where no server-name row exists to anchor it */}
+          {isBackgroundRefreshing && activeServerIds.length <= 1 ? (
             <ActivityIndicator size="small" color={theme.text.secondary} testID="header-background-refreshing" />
           ) : null}
           <Pressable
@@ -477,6 +476,28 @@ export default function ProjectsHub() {
 
       <ToastViewport id="home" />
 
+      {/* Now | Projects */}
+      <View style={styles.segmentRow} accessibilityRole="tablist">
+        <TouchableOpacity
+          style={[styles.segmentTab, sessionsLayout === 'now' && styles.segmentTabActive]}
+          onPress={() => setSessionsLayout('now')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: sessionsLayout === 'now' }}
+          testID="layout-now"
+        >
+          <Text style={[styles.segmentText, sessionsLayout === 'now' && styles.segmentTextActive]}>{t('layout.now')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentTab, sessionsLayout === 'projects' && styles.segmentTabActive]}
+          onPress={() => setSessionsLayout('projects')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: sessionsLayout === 'projects' }}
+          testID="layout-projects"
+        >
+          <Text style={[styles.segmentText, sessionsLayout === 'projects' && styles.segmentTextActive]}>{t('layout.projects')}</Text>
+        </TouchableOpacity>
+      </View>
+
       <CacheAlertBanner onPress={() => {
         const lowSeverityId = displayedServerIds.find((id) => cacheAlert[id]?.severity === 'low')
         if (lowSeverityId) setCacheAlertModalServerId(lowSeverityId)
@@ -513,17 +534,7 @@ export default function ProjectsHub() {
             onPress: () => retryFailed(),
           }}
         />
-      ) : sessionsLayout === 'tree' ? (
-        <TreeSessionsList
-          sessions={filteredSessions}
-          summaries={summaries}
-          unsupportedServerIds={unsupportedServerIds}
-          refreshing={manualRefreshing}
-          onRefresh={handleRefresh}
-          searchOpen={searchOpen}
-          isBackgroundRefreshing={isBackgroundRefreshing}
-        />
-      ) : sessionsLayout === 'hub' ? (
+      ) : sessionsLayout === 'projects' ? (
         <ProjectHubList
           sessions={filteredSessions}
           summaries={summaries}

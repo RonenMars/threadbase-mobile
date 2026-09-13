@@ -56,6 +56,7 @@
     "confirmNo": "No"
   },
   "hub": {
+    "browsePath": "Browse path",
     "seeAll_one": "See all {{count}} conversation",
     "seeAll_other": "See all {{count}} conversations",
     "activityLive_one": "{{count}} live",
@@ -76,10 +77,6 @@
     "done": "Done"
   },
   "live": {
-    "headerLive_one": "LIVE · {{count}}",
-    "headerLive_other": "LIVE · {{count}}",
-    "headerIdle_one": "IDLE · {{count}}",
-    "headerIdle_other": "IDLE · {{count}}",
     "headerNeedsYou_one": "NEEDS YOU · {{count}}",
     "headerNeedsYou_other": "NEEDS YOU · {{count}}",
     "headerWorking_one": "WORKING · {{count}}",
@@ -169,5 +166,9 @@
     "groupedOneLine_other": "{{count}} one-line sessions",
     "groupedPill": "GROUPED",
     "open": "Open"
+  },
+  "layout": {
+    "now": "Now",
+    "projects": "Projects"
   }
 }

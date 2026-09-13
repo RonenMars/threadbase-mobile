@@ -29,7 +29,6 @@ const ROOT = path.join(__dirname, '..', '..', '..');
 
 const SEARCH_RESULT_LISTS = [
   'components/sessions/now/NowList.tsx',
-  'components/sessions/tree/TreeSessionsList.tsx',
   'components/sessions/hub/ProjectHubList.tsx',
 ];
 
