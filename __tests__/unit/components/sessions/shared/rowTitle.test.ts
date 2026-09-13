@@ -1,4 +1,4 @@
-import { conversationRowTitle, sessionRowTitle } from '@/components/sessions/shared/rowTitle'
+import { conversationRowTitle, resolveSessionRowTitle, sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 
 const session = {
   sessionName: undefined,
@@ -42,6 +42,13 @@ describe('sessionRowTitle', () => {
     expect(sessionRowTitle({ ...session, sessionName: 'hey', branch: undefined }, {})).toBe(
       'tb-mobile',
     )
+  })
+
+  it('reports the ladder rung so a list can weight the row', () => {
+    expect(resolveSessionRowTitle({ ...session, sessionName: 'rebase and merge PR 903' }, {}).rung).toBe('intent')
+    expect(resolveSessionRowTitle({ ...session, sessionName: 'git pull' }, {}).rung).toBe('command')
+    expect(resolveSessionRowTitle({ ...session, sessionName: 'hey' }, {}).rung).toBe('untitled')
+    expect(resolveSessionRowTitle(session, { name: 'Fix', origin: 'manual' }).rung).toBe('intent')
   })
 
   it('never renders blank when the project name is empty', () => {

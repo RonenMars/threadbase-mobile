@@ -15,8 +15,12 @@ export interface DisplayTitle {
   title: string
   /** First assistant sentence; omitted when it would repeat the title or when there is none. */
   subtitle?: string
-  /** Which step produced the title, for tests and the grouped-noise rows. */
-  source: 'rename' | 'message' | 'assistant' | 'project'
+  /**
+   * Which rung of the ladder produced the title. `command` (the work itself,
+   * e.g. "git pull") and `untitled` (identity: project · branch) are the quiet
+   * rungs; a list may render those lighter but never hides them.
+   */
+  source: 'rename' | 'message' | 'assistant' | 'command' | 'untitled'
 }
 
 const SUBTITLE_MAX_CHARS = 140
@@ -125,15 +129,19 @@ export function cleanFirstMessage(raw: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-/** Step 3 of the title pipeline: true when a cleaned first message says nothing worth a title. */
-export function isRejectedTitle(cleaned: string): boolean {
+/** True when a cleaned message carries no words of its own: empty, a greeting, a path, an id, or punctuation. */
+function isNoise(cleaned: string): boolean {
   const text = cleaned.trim()
   if (text === '') return true
   if (GREETINGS.has(text.toLowerCase())) return true
   if (BARE_PATH.test(text) || HEX_ID.test(text)) return true
-  if (text.split(' ').length < 3) return true
   const nonAlnum = text.match(NON_ALNUM)?.length ?? 0
   return nonAlnum / text.length > 0.6
+}
+
+/** Step 3 of the title pipeline: true when a cleaned first message says nothing worth a title. */
+export function isRejectedTitle(cleaned: string): boolean {
+  return isNoise(cleaned) || cleaned.trim().split(' ').length < 3
 }
 
 function firstSentence(text: string): string {
@@ -161,13 +169,17 @@ function resolveTitle(input: DisplayTitleInput): Pick<DisplayTitle, 'title' | 's
   const cleaned = cleanFirstMessage(input.firstMessage ?? '')
   if (!isRejectedTitle(cleaned)) return { title: cleaned, source: 'message' }
 
+  // The work itself: a session that only ran a command is its command, shown
+  // as typed rather than sentence-cased.
+  if (!isNoise(cleaned)) return { title: stripMessageNoise(input.firstMessage ?? ''), source: 'command' }
+
   const assistant = firstSentence(input.firstAssistantMessage ?? '')
   if (assistant) return { title: assistant, source: 'assistant' }
 
-  // Relative time is a render concern. With no project name either, the title is left empty
-  // so the caller can substitute its own translated placeholder.
+  // Identity, never a path. With no project name either, the title is left empty
+  // so the caller can substitute its own fallback.
   const parts = [input.projectName?.trim(), input.branch?.trim()].filter((part) => part)
-  return { title: parts.join(' · '), source: 'project' }
+  return { title: parts.join(' · '), source: 'untitled' }
 }
 
 export function resolveDisplayTitle(input: DisplayTitleInput): DisplayTitle {

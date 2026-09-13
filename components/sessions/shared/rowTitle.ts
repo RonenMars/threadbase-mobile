@@ -1,4 +1,4 @@
-import { resolveDisplayTitle } from '@/lib/displayTitle'
+import { resolveDisplayTitle, type DisplayTitle } from '@/lib/displayTitle'
 import { sessionKey, type NameOrigin } from '@/stores/sessionNames'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -36,10 +36,16 @@ function split(stored: StoredName): { customName?: string } {
   return { customName: stored.name }
 }
 
+/** `intent` is a title the user or assistant wrote; the other two are the quiet rungs of the ladder. */
+export type TitleRung = 'intent' | 'command' | 'untitled'
+
 export interface RowTitle {
   title: string
-  /** The pipeline rejected every message and fell back to project · branch: a noise row. */
-  noise: boolean
+  rung: TitleRung
+}
+
+function rungOf(source: DisplayTitle['source']): TitleRung {
+  return source === 'command' || source === 'untitled' ? source : 'intent'
 }
 
 export function resolveSessionRowTitle(
@@ -53,7 +59,7 @@ export function resolveSessionRowTitle(
     projectName: session.projectName || basename(session.projectPath),
     branch: session.branch,
   })
-  return { title: title || session.projectName || session.projectPath, noise: source === 'project' }
+  return { title: title || session.projectName || session.projectPath, rung: rungOf(source) }
 }
 
 export function resolveConversationRowTitle(
@@ -67,7 +73,7 @@ export function resolveConversationRowTitle(
     projectName: basename(conv.projectPath),
     branch: conv.branch,
   })
-  return { title: title || conv.title, noise: source === 'project' }
+  return { title: title || conv.title, rung: rungOf(source) }
 }
 
 export function sessionRowTitle(

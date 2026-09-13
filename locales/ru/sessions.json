@@ -174,15 +174,17 @@
   },
   "row": {
     "waitingFor": "ждёт {{elapsed}}",
-    "groupedOneLine_one": "{{count}} однострочная сессия",
-    "groupedOneLine_few": "{{count}} однострочные сессии",
-    "groupedOneLine_many": "{{count}} однострочных сессий",
-    "groupedOneLine_other": "{{count}} однострочных сессий",
-    "groupedPill": "СГРУППИРОВАНО",
+    "quietTail_one": "{{count}} тихая сессия · ничего не спрашивали",
+    "quietTail_few": "{{count}} тихие сессии · ничего не спрашивали",
+    "quietTail_many": "{{count}} тихих сессий · ничего не спрашивали",
+    "quietTail_other": "{{count}} тихих сессий · ничего не спрашивали",
     "open": "Открыть"
   },
   "layout": {
     "now": "Сейчас",
     "projects": "Проекты"
+  },
+  "quiet": {
+    "screenTitle": "Тихие сессии"
   }
 }
