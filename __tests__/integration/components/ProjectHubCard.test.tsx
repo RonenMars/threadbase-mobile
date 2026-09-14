@@ -73,10 +73,10 @@ const group: ProjectGroup = {
   earliestStartMs: Date.parse(session.startedAt),
 }
 
-function renderCard() {
+function renderCard(isOpen = true, cardGroup: ProjectGroup = group) {
   return render(
     <ThemeProvider>
-      <ProjectHubCard group={group} isOpen onToggle={() => {}} />
+      <ProjectHubCard group={cardGroup} isOpen={isOpen} onToggle={() => {}} />
     </ThemeProvider>,
   )
 }
@@ -114,6 +114,19 @@ describe('ProjectHubCard', () => {
       errorSpy.mockRestore()
       expect(duplicateKeyWarning).toBeUndefined()
     }
+  })
+
+  const todayGroup: ProjectGroup = { ...group, sessions: [{ ...session, startedAt: new Date().toISOString() }] }
+
+  it('omits the today count while the card is closed', async () => {
+    const { getByText, queryByText } = await renderCard(false, todayGroup)
+    expect(getByText(/1 live · last/)).toBeTruthy()
+    expect(queryByText(/today/)).toBeNull()
+  })
+
+  it('prints the today count once the card is open', async () => {
+    const { getByText } = await renderCard(true, todayGroup)
+    expect(getByText(/1 live · 1 today · last/)).toBeTruthy()
   })
 
   it('localizes the unmerged home-card section labels', async () => {

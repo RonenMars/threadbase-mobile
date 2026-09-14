@@ -7,6 +7,8 @@ import { CaretRight } from 'phosphor-react-native'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { isPresentationLive } from '@/lib/sessionPresentation'
+import { colorForToken } from '@/components/sessions/SessionStatusBadge'
+import { projectRailToken } from './projectTiers'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { isToday } from './hubUtils'
@@ -78,16 +80,9 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   // — the closed header shows "N live · last <time>" without a today count.
   const todayConvCount = conversations.filter((c) => isToday(c.lastActivity)).length
 
-  // Derive the project's lifecycle colour the same way SessionCard does.
-  // Amber spine when any session is live; blue spine when sessions exist
-  // but are all idle (still a thread, just quiet); no spine when only
-  // conversations are present (history-only project).
-  const liveStatus = useMemo(() => {
-    const hasLive = group.sessions.some(isPresentationLive)
-    if (hasLive) return { color: theme.status.waiting, opacity: 1 }
-    if (group.sessions.length > 0) return { color: theme.text.accent, opacity: 0.55 }
-    return null
-  }, [group.sessions, theme.status.waiting, theme.text.accent])
+  // Colour belongs to state alone: the rail is the most urgent live session's
+  // colour, and a project with nothing live has no rail.
+  const railToken = useMemo(() => projectRailToken(group), [group])
 
   // Header content — smart path display + activity summary.
   // `projectName` is just the trailing segment derived from the path, so the
@@ -97,9 +92,11 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     [group.projectPath],
   )
 
+  // A closed card cannot know "N today": the conversations it would count are
+  // fetched on expand, so the piece appears only once it is true.
   const activitySummary = useMemo(() => {
     const liveCount = group.sessions.filter(isPresentationLive).length
-    const todayCount = todaySessionCount + todayConvCount
+    const todayCount = isOpen ? todaySessionCount + todayConvCount : 0
     const lastActivity = group.latestActivityMs > 0
       ? formatListTime(group.latestActivityMs, {
           locale: i18n.language,
@@ -114,18 +111,13 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     if (todayCount > 0) pieces.push(t('hub.activityToday', { total: todayCount }))
     if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')
-  }, [group.sessions, group.latestActivityMs, todaySessionCount, todayConvCount, i18n.language, t])
+  }, [group.sessions, group.latestActivityMs, isOpen, todaySessionCount, todayConvCount, i18n.language, t])
 
   return (
     <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
       <View style={styles.spineRow}>
-        {liveStatus ? (
-          <View
-            style={[
-              styles.spine,
-              { backgroundColor: liveStatus.color, opacity: liveStatus.opacity },
-            ]}
-          />
+        {railToken ? (
+          <View style={[styles.spine, { backgroundColor: colorForToken(theme, railToken) }]} />
         ) : (
           <View style={styles.spinePlaceholder} />
         )}
