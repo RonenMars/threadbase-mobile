@@ -6,13 +6,16 @@ import { type Theme, font, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { wsManager } from '@/services/ws-client'
+import { wsPermanentErrorMessage } from '@/components/servers/wsPermanentErrorMessage'
 
 function errorForServer(
   serverId: string,
   connectionError: string | null,
   fetchError: string | undefined,
+  lastError: string | null,
 ): string | null {
-  return connectionError ?? fetchError ?? null
+  return lastError ?? connectionError ?? fetchError ?? null
 }
 
 /**
@@ -36,7 +39,12 @@ export function ServerErrorBanner() {
     .map((id) => {
       const server = servers[id]
       if (!server || server.isConnected) return null
-      const msg = errorForServer(id, server.connectionError ?? null, fetchStatuses[id]?.error)
+      const msg = errorForServer(
+        id,
+        server.connectionError ?? null,
+        fetchStatuses[id]?.error,
+        wsPermanentErrorMessage(wsManager.lastError(id), t),
+      )
       if (!msg) return null
       return { label: server.label ?? server.url, error: msg }
     })

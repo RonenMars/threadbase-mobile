@@ -16,7 +16,11 @@ import { useRouter } from 'expo-router'
 import { Cloud, DotsThreeVertical, Trash, PencilSimple, ArrowsClockwise } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { wsManager } from '@/services/ws-client'
+import { wsManager, type WsPermanentError } from '@/services/ws-client'
+import {
+  wsPermanentErrorMessage,
+  wsPermanentErrorStatusLabel,
+} from '@/components/servers/wsPermanentErrorMessage'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore, type ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
 import { ServerEditModal } from '@/components/servers/ServerEditModal'
@@ -65,6 +69,7 @@ function StatusRow({
   label,
   url,
   status,
+  lastError,
   fetchStatus,
   isRefreshing,
   isMenuOpen,
@@ -76,6 +81,7 @@ function StatusRow({
   label: string
   url: string
   status: WSStatus
+  lastError: WsPermanentError | null
   fetchStatus?: ServerFetchStatusEntry
   isRefreshing: boolean
   isMenuOpen: boolean
@@ -114,20 +120,22 @@ function StatusRow({
   }, [isRefreshing, animValue])
 
   const fetchFailed = fetchStatus?.status === 'error'
+  const lastErrorText = wsPermanentErrorMessage(lastError, t)
 
   const isConnected = status === 'connected'
   const isConnecting = status === 'connecting'
 
-  const healthy = isConnected && !fetchFailed
+  const healthy = isConnected && !fetchFailed && lastError === null
   const dotColor = healthy
     ? theme.status.running
-    : isConnecting && !fetchFailed
+    : isConnecting && !fetchFailed && lastError === null
       ? theme.status.waiting
       : theme.status.failed
 
   let statusLabel: string
   if (fetchFailed && !isConnected) statusLabel = t('status.unreachable')
   else if (fetchFailed) statusLabel = t('status.fetchFailed')
+  else if (lastError) statusLabel = wsPermanentErrorStatusLabel(lastError, t)
   else if (isConnected) statusLabel = t('status.connected')
   else if (isConnecting) statusLabel = t('status.connecting')
   else statusLabel = t('status.disconnected')
@@ -143,7 +151,7 @@ function StatusRow({
       >
         <Text style={[styles.serverLabel, ltrContentStyle]} numberOfLines={1}>{label}</Text>
         <Text style={[styles.serverUrl, ltrContentStyle]} numberOfLines={1}>{url}</Text>
-        {fetchFailed && fetchStatus?.error ? (
+        {((fetchFailed && fetchStatus?.error) || lastErrorText) ? (
           isRefreshing
             ? <View style={[styles.skeletonBar, { width: '80%', marginTop: 2, height: errorHeight ?? 14 }]} />
             : (
@@ -155,7 +163,7 @@ function StatusRow({
                 numberOfLines={2}
                 onLayout={(e) => setErrorHeight(e.nativeEvent.layout.height)}
               >
-                {fetchStatus.error}
+                {fetchStatus?.error ?? lastErrorText}
               </Text>
             )
         ) : null}
@@ -351,13 +359,14 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
                       label={server.label || safeHostname(server.url)}
                       url={server.url}
                       status={statuses[id] ?? 'disconnected'}
+                      lastError={wsManager.lastError(id)}
                       fetchStatus={fetchStatuses[id]}
                       isRefreshing={refreshingIds.has(id)}
                       isMenuOpen={openMenuId === id}
                       onRefresh={() => handleRefresh(id)}
                       onOpenMenu={() => setOpenMenuId(id)}
                       onViewError={
-                        server.connectionError || fetchStatuses[id]?.error
+                        server.connectionError || fetchStatuses[id]?.error || wsManager.lastError(id)
                           ? () => setErrorServerId(id)
                           : undefined
                       }

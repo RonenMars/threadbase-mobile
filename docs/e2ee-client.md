@@ -35,7 +35,7 @@ Missing either refuses encrypted pairing as `e2ee-web-unsupported`.
 
 **The streamer must accept a WebSocket ticket as a subprotocol.**
 A browser cannot set `X-TB-Ticket`, so a sealed socket is opened as `new WebSocket(url, ['threadbase-e2ee-v1', 'tb-ticket.<ticket>'])` and the server selects `threadbase-e2ee-v1`.
-After `open` the client checks `socket.protocol === 'threadbase-e2ee-v1'`; anything else closes the socket as a permanent failure — no ticket retry, no reconnect, no `?key=` redial.
+After `open` the client checks `socket.protocol === 'threadbase-e2ee-v1'`; anything else closes the socket as a permanent failure — no ticket retry, no reconnect, no `?key=` redial — and the server row shows an encryption-mismatch error rather than a bare "disconnected".
 `/api/info` needs a credential and pairing is what mints it, so the web build checks the server only **after** the encrypted exchange succeeds: `exchangeToken` reads `GET /api/info` through the sealed REST path and requires `e2ee.wsTicketSubprotocol === true` (`serverAcceptsBrowserSealedSocket` in `types/api.ts` is the only reader) before it returns — so before any caller stores the server or dials a socket.
 Absent, false, not a boolean, an unparseable body, or a failed request refuses as `e2ee-web-server-unsupported`.
 A failed request is the expected answer from an older streamer, whose CORS policy blocks the `X-TB-*` headers.
