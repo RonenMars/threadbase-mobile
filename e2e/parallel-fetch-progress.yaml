@@ -3,7 +3,7 @@
 # Verifies that:
 #   1. The sessions loading overlay appears on hub load and then disappears.
 #   2. The first page of conversations is visible in the merged hub list
-#      (mergeChats is enabled by default — no separate History tab needed).
+#      (sessions and history are one merged list; there is no History tab).
 #   3. Scrolling the merged list fetches the NEXT page, i.e. lazy pagination is
 #      actually wired to onEndReached.
 #

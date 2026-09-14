@@ -23,7 +23,6 @@ import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useFetchSessionNames } from '@/hooks/useSessionName'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
-import { ConversationList } from '@/components/conversation/ConversationList'
 import { NowList } from '@/components/sessions/now/NowList'
 import { ChromeBackdrop } from '@/components/sessions/shared/ChromeBackdrop'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
@@ -40,7 +39,7 @@ import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, BellRinging, Lightning, Books, Gear } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, BellRinging, Gear } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
@@ -69,8 +68,6 @@ const EMPTY_CONVERSATIONS: MultiConversation[] = []
 // the segmented control); onLayout replaces it before anything scrolls.
 const CHROME_ESTIMATE = 120
 
-type ClassicTab = 'sessions' | 'history'
-
 // A server may send a timestamp this build cannot parse; NaN would reach
 // `toISOString()` in the Now list and throw, so it degrades to 0 like conversations do.
 function lastActivityMs(s: MultiSession): number {
@@ -95,7 +92,6 @@ export default function ProjectsHub() {
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
-  const mergeChats = useSettingsStore((s) => (s as any).mergeChats ?? false)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -184,8 +180,6 @@ export default function ProjectsHub() {
     !isDefaultFilters(filters) ||
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
-  // Classic tab
-  const [classicTab, setClassicTab] = useState<ClassicTab>('sessions')
   const [classicConvSearch, setClassicConvSearch] = useState('')
   const [debouncedConvSearch] = useDebounce(classicConvSearch, 300)
   const { data: convSearchData } = useConversationSearch(debouncedConvSearch)
@@ -252,12 +246,9 @@ export default function ProjectsHub() {
   } = useProjectSummaries(refreshEpoch, { enabled: isGroupedLayout })
 
   // ADR 0001 step 2 complete: every classic surface that shows conversations now
-  // reads the infinite `useConversations`, so the eager full-drain is gone. Both
-  // classic conversation surfaces share this one query — the merged list and the
-  // History tab — so switching between them reuses pages already fetched instead
-  // of restarting the walk.
+  // reads the infinite `useConversations`, so the eager full-drain is gone.
   // See docs/adr/0001-hub-data-layer-lazy-pagination.md.
-  const needsClassicConversations = !isGroupedLayout && (mergeChats || classicTab === 'history')
+  const needsClassicConversations = !isGroupedLayout
   // One agent selected narrows the paged query server-side; any other mix is
   // filtered here, where the rows already are.
   const convPages = useConversations(
@@ -342,13 +333,9 @@ export default function ProjectsHub() {
   }, [visibleSessions, paginatedConversations, debouncedConvSearch, convSearchData])
 
   const filteredItems = useMemo(() => applyListFilters(mergedClassicItems, filters), [mergedClassicItems, filters])
-  const sessionOnlyItems = useMemo(
-    () => filteredItems.filter((it) => it.kind === 'session'),
-    [filteredItems],
-  )
   const tierCounts = useMemo(() => countByTier(mergedClassicItems), [mergedClassicItems])
   const providerCounts = useMemo(() => countByProvider(mergedClassicItems), [mergedClassicItems])
-  const resultCount = mergeChats || classicTab === 'sessions' ? (mergeChats ? filteredItems.length : sessionOnlyItems.length) : filteredItems.length
+  const resultCount = filteredItems.length
 
   // FAB
   // When the user is drilled into a directory in TreeView, the drill store
@@ -601,74 +588,19 @@ export default function ProjectsHub() {
         />
       ) : (
         <View style={styles.classicContainer}>
-          {mergeChats ? (
-            <NowList
-              items={filteredItems}
-              order={sortBy}
-              direction={sortOrder}
-              refreshing={manualRefreshing}
-              onRefresh={handleRefresh}
-              onEndReached={loadMoreConversations}
-              searchQuery={classicConvSearch}
-              conversationsFromServer={Boolean(debouncedConvSearch)}
-              isBackgroundRefreshing={isBackgroundRefreshing}
-              topInset={chromeHeight}
-              ListHeaderComponent={listHeader}
-            />
-          ) : (
-            <View style={[styles.classicContainer, { paddingTop: chromeHeight }]}>
-              {listHeader}
-              {/* Segmented control */}
-              <View style={styles.segmentRow}>
-                <TouchableOpacity
-                  style={[styles.segmentTab, classicTab === 'sessions' && styles.segmentTabActive]}
-                  onPress={() => setClassicTab('sessions')}
-                >
-                  <Lightning size={13} color={classicTab === 'sessions' ? theme.text.primary : theme.text.secondary} />
-                  <Text style={[styles.segmentText, classicTab === 'sessions' && styles.segmentTextActive]}>
-                    {t('header.title')}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.segmentTab, classicTab === 'history' && styles.segmentTabActive]}
-                  onPress={() => setClassicTab('history')}
-                  testID="hub-history-tab"
-                >
-                  <Books size={13} color={classicTab === 'history' ? theme.text.primary : theme.text.secondary} />
-                  <Text style={[styles.segmentText, classicTab === 'history' && styles.segmentTextActive]}>
-                    {t('header.history')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {classicTab === 'sessions' ? (
-                <NowList
-                  items={sessionOnlyItems}
-                  order={sortBy}
-                  direction={sortOrder}
-                  refreshing={manualRefreshing}
-                  onRefresh={handleRefresh}
-                  searchQuery={classicConvSearch}
-                  conversationsFromServer={false}
-                  isBackgroundRefreshing={isBackgroundRefreshing}
-                />
-              ) : (
-                /* Classic history — ADR 0001 prototype: infinite pagination */
-                <ConversationList
-                  conversations={debouncedConvSearch ? (convSearchData?.conversations ?? []) : paginatedConversations}
-                  onRefresh={handleRefresh}
-                  refreshing={manualRefreshing}
-                  onEndReached={loadMoreConversations}
-                  searchQuery={classicConvSearch}
-                  onSearchChange={setClassicConvSearch}
-                  searchOpen={false}
-                  isLoadingInitial={convPages.isLoading}
-                  isFetchingNextPage={convPages.isFetchingNextPage}
-                  loadingProgress={null}
-                />
-              )}
-            </View>
-          )}
+          <NowList
+            items={filteredItems}
+            order={sortBy}
+            direction={sortOrder}
+            refreshing={manualRefreshing}
+            onRefresh={handleRefresh}
+            onEndReached={loadMoreConversations}
+            searchQuery={classicConvSearch}
+            conversationsFromServer={Boolean(debouncedConvSearch)}
+            isBackgroundRefreshing={isBackgroundRefreshing}
+            topInset={chromeHeight}
+            ListHeaderComponent={listHeader}
+          />
         </View>
       )}
       </View>

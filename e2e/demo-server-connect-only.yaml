@@ -297,7 +297,7 @@ appId: ${APP_BUNDLE_ID}
       id: "fab-new-session"
     timeout: 15000
 
-# With classic layout and mergeChats=false, we should be on Sessions tab by default
+# The hub opens on the Now list
 # Verify sessions are visible in the list
 # The session we created should be there at the top (most recent)
 

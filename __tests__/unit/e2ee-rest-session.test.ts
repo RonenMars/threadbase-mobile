@@ -118,6 +118,63 @@ describe('REST session lifecycle', () => {
     expect(await acquireRestContext(args)).toBe(second)
   })
 
+  it('keeps the live context when the replacement open is refused', async () => {
+    const first = makeRestContext(1_000_000_000)
+    const second = makeRestContext(1_000_000_000)
+    const opens: (() => Promise<TransportContext>)[] = [
+      async () => first,
+      async () => {
+        throw new Error('429: the server is busy')
+      },
+      async () => second,
+    ]
+    _setRestOpenForTests(() => {
+      const open = opens.shift()
+      if (!open) throw new Error('unexpected extra open')
+      return open()
+    })
+    _setRestNowForTests(() => 0)
+    expect(await acquireRestContext(args)).toBe(first)
+
+    _markRestForegroundForTests()
+    await expect(acquireRestContext(args)).rejects.toThrow(/429/)
+    // The refused open must not have cost the context that was still working.
+    expect(() => first.send.seal(new Uint8Array(0), new Uint8Array(32))).not.toThrow()
+
+    _setRestNowForTests(() => REST_DRAIN_MS + 1)
+    expect(await acquireRestContext(args)).toBe(second)
+    expect(() => first.send.seal(new Uint8Array(0), new Uint8Array(32))).not.toThrow()
+  })
+
+  it('joins a slow rollover instead of taking a context the drain could destroy', async () => {
+    const first = makeRestContext(1_000_000_000)
+    const second = makeRestContext(1_000_000_000)
+    let release: (ctx: TransportContext) => void = () => {}
+    const opens: (() => Promise<TransportContext>)[] = [
+      async () => first,
+      () =>
+        new Promise<TransportContext>((resolve) => {
+          release = resolve
+        }),
+    ]
+    _setRestOpenForTests(() => {
+      const open = opens.shift()
+      if (!open) throw new Error('unexpected extra open')
+      return open()
+    })
+    _setRestNowForTests(() => 0)
+    expect(await acquireRestContext(args)).toBe(first)
+
+    _markRestForegroundForTests()
+    const slow = acquireRestContext(args)
+    _setRestNowForTests(() => REST_DRAIN_MS + 1)
+    const late = acquireRestContext(args)
+    release(second)
+    expect(await slow).toBe(second)
+    expect(await late).toBe(second)
+    expect(() => first.send.seal(new Uint8Array(0), new Uint8Array(32))).not.toThrow()
+  })
+
   it('rolls over when the app returns to the foreground', async () => {
     const first = makeRestContext(1_000_000_000)
     const second = makeRestContext(1_000_000_000)

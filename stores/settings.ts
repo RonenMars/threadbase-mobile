@@ -38,7 +38,6 @@ interface SettingsStore {
   addServerAction: AddServerAction
   sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
-  mergeChats: boolean
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
   locale: SupportedLocale
@@ -69,7 +68,6 @@ interface SettingsStore {
   setAddServerAction: (v: AddServerAction) => void
   setSessionLeaveAction: (v: SessionLeaveAction) => void
   setSessionsLayout: (v: SessionsLayout) => void
-  setMergeChats: (v: boolean) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
@@ -108,7 +106,6 @@ interface PersistedSettings {
   addServerAction: AddServerAction
   sessionLeaveAction: SessionLeaveAction
   sessionsLayout: SessionsLayout
-  mergeChats: boolean
   showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
@@ -140,7 +137,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   addServerAction: 'ask',
   sessionLeaveAction: 'ask',
   sessionsLayout: 'now',
-  mergeChats: true,
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
@@ -169,7 +165,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setAddServerAction: (addServerAction) => set({ addServerAction }),
   setSessionLeaveAction: (sessionLeaveAction) => set({ sessionLeaveAction }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
-  setMergeChats: (mergeChats) => set({ mergeChats }),
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
   setLocale: (locale) => set({ locale }),
@@ -210,7 +205,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           parsed.sessionLeaveAction ?? state.sessionLeaveAction,
         ),
         sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
-        mergeChats: parsed.mergeChats ?? state.mergeChats,
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
         locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
@@ -260,7 +254,6 @@ export function persistSettingsNow(): Promise<void> {
     addServerAction: state.addServerAction,
     sessionLeaveAction: state.sessionLeaveAction,
     sessionsLayout: state.sessionsLayout,
-    mergeChats: state.mergeChats,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
     biometricLock: state.biometricLock,

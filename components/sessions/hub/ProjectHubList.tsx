@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { FlatList, View, Text, SectionList, RefreshControl } from 'react-native'
+import { FlatList, View, Text, TextInput, SectionList, RefreshControl } from 'react-native'
+import { MagnifyingGlass } from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -16,6 +17,9 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { conversationRowTitle, sessionRowTitle, storedNameFor } from '@/components/sessions/shared/rowTitle'
 import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
+import { QuietProjectChips } from './QuietProjectChips'
+import { matchesProjectFilter, splitProjectTiers } from './projectTiers'
+import { SectionEyebrow, type SectionTone } from '@/components/sessions/now/SectionEyebrow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { spacing } from '@/constants/theme'
@@ -79,7 +83,25 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
-  const groups = useProjectGroups(sessions, summaries, sortBy, sortOrder)
+  const allGroups = useProjectGroups(sessions, summaries, sortBy, sortOrder)
+  // The path filter narrows cards by name or path; it is separate from the
+  // chrome's search, which goes to the server for conversations.
+  const [filterQuery, setFilterQuery] = useState('')
+  const groups = useMemo(
+    () => allGroups.filter((group) => matchesProjectFilter(group, filterQuery)),
+    [allGroups, filterQuery],
+  )
+  // The QUIET tier stays folded into chips until shown; keyed per server so a
+  // second machine's tail unfolds on its own.
+  const [quietOpen, setQuietOpen] = useState<Set<string>>(() => new Set())
+  const toggleQuiet = useCallback((scope: string) => {
+    setQuietOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(scope)) next.delete(scope)
+      else next.add(scope)
+      return next
+    })
+  }, [])
 
   // Conversations live behind per-group queries now, so there is no local array
   // to filter — search goes to the server's /api/search, as classic does.
@@ -112,6 +134,13 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       else next.add(projectId)
       return next
     })
+  }, [])
+
+  // A chip tap unfolds its tier and opens that card, so the tap lands where the
+  // reader expects instead of on a row of chips that just rearranged.
+  const openQuietProject = useCallback((scope: string, group: ProjectGroup) => {
+    setQuietOpen((prev) => new Set(prev).add(scope))
+    setOpenIds((prev) => new Set(prev).add(group.projectId))
   }, [])
 
   const handleConversationPress = useCallback(
@@ -248,11 +277,44 @@ export const ProjectHubList = React.memo(function ProjectHubList({
 
   type HubFlatItem =
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
+    | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number; action?: { label: string; onPress: () => void; testID?: string } }
     | { kind: 'group'; group: ProjectGroup }
+    | { kind: 'quietChips'; key: string; scope: string; groups: ProjectGroup[] }
     | { kind: 'serverEmpty'; serverId: string }
     | { kind: 'serverUnsupported'; serverId: string; serverLabel: string }
 
   const hubFlatData = useMemo((): HubFlatItem[] => {
+    // ACTIVE (a live session), RECENT (activity inside the window), QUIET (the
+    // long tail). Quiet folds into chips only while there is something above it
+    // to be quiet next to; a list that is all tail shows its cards.
+    const tiered = (scoped: ProjectGroup[], scope: string): HubFlatItem[] => {
+      const { active, recent, quiet } = splitProjectTiers(scoped)
+      const out: HubFlatItem[] = []
+      if (active.length > 0) {
+        out.push({ kind: 'eyebrow', key: `${scope}-active`, tone: 'needsYou', label: `${t('hub.tierActive')} · ${active.length}` })
+        out.push(...active.map((g) => ({ kind: 'group' as const, group: g })))
+      }
+      if (recent.length > 0) {
+        out.push({ kind: 'eyebrow', key: `${scope}-recent`, tone: 'muted', label: t('hub.tierRecent'), count: recent.length })
+        out.push(...recent.map((g) => ({ kind: 'group' as const, group: g })))
+      }
+      if (quiet.length > 0) {
+        const foldable = active.length + recent.length > 0
+        const folded = foldable && !quietOpen.has(scope)
+        out.push({
+          kind: 'eyebrow',
+          key: `${scope}-quiet`,
+          tone: 'muted',
+          label: `${t('hub.tierQuiet')} · ${quiet.length}`,
+          action: foldable
+            ? { label: folded ? t('hub.showQuiet') : t('hub.hideQuiet'), onPress: () => toggleQuiet(scope), testID: `hub-quiet-toggle-${scope}` }
+            : undefined,
+        })
+        if (folded) out.push({ kind: 'quietChips', key: `${scope}-quiet-chips`, scope, groups: quiet })
+        else out.push(...quiet.map((g) => ({ kind: 'group' as const, group: g })))
+      }
+      return out
+    }
     // Collapse only applies with more than one visible server; with a single
     // one a stale collapsed flag would hide its groups with no way to expand
     // (the header isn't collapsible below).
@@ -269,15 +331,15 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           const expanded = !collapseApplies || !collapsedServers.includes(sg.serverId)
           const body: HubFlatItem[] =
             sg.totalCount > 0
-              ? sg.groups.map((g) => ({ kind: 'group' as const, group: g }))
+              ? tiered(sg.groups, sg.serverId)
               : [{ kind: 'serverEmpty' as const, serverId: sg.serverId }]
           return [
             { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
             ...(expanded ? body : []),
           ]
         }), ...unsupportedRows]
-      : [...groups.map((g) => ({ kind: 'group' as const, group: g })), ...unsupportedRows]
-  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers])
+      : [...tiered(groups, 'all'), ...unsupportedRows]
+  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, quietOpen, toggleQuiet, t])
 
   if (drill && !searchOpen) {
     return <DrillView node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} topInset={topInset} />
@@ -314,13 +376,21 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       ) : (
         <FlatList
           data={hubFlatData}
+          keyboardShouldPersistTaps="handled"
           keyExtractor={(item) => {
             if (item.kind === 'header') return `header-${item.serverId}`
+            if (item.kind === 'eyebrow' || item.kind === 'quietChips') return item.key
             if (item.kind === 'serverEmpty') return `empty-${item.serverId}`
             if (item.kind === 'serverUnsupported') return `unsupported-${item.serverId}`
             return `project:${item.group.serverId}::${item.group.projectId}`
           }}
           renderItem={({ item }) => {
+            if (item.kind === 'eyebrow') {
+              return <SectionEyebrow label={item.label} tone={item.tone} count={item.count} action={item.action} />
+            }
+            if (item.kind === 'quietChips') {
+              return <QuietProjectChips groups={item.groups} onPress={(group) => openQuietProject(item.scope, group)} />
+            }
             if (item.kind === 'serverUnsupported') {
               return (
                 <View style={styles.serverEmpty} testID={`server-unsupported-${item.serverId}`}>
@@ -379,7 +449,24 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           {...inset.props}
           ListHeaderComponent={
             // The header is full-bleed; undo the card gutter around it.
-            ListHeaderComponent ? <View style={{ marginHorizontal: -spacing.sm, paddingTop: spacing.xs }}>{ListHeaderComponent}</View> : null
+            <View style={{ marginHorizontal: -spacing.sm, paddingTop: spacing.xs }}>
+              {ListHeaderComponent}
+              <View style={styles.filterField}>
+                <MagnifyingGlass size={14} color={theme.text.secondary} />
+                <TextInput
+                  testID="hub-project-filter"
+                  style={styles.filterInput}
+                  value={filterQuery}
+                  onChangeText={setFilterQuery}
+                  placeholder={t('hub.filterPlaceholder')}
+                  placeholderTextColor={theme.text.secondary}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  clearButtonMode="while-editing"
+                  returnKeyType="search"
+                />
+              </View>
+            </View>
           }
           refreshControl={
             <RefreshControl

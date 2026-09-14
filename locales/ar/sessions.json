@@ -1,7 +1,5 @@
 {
   "header": {
-    "title": "السيشنات",
-    "history": "السجل",
     "serverStatus": "حالة الخادم"
   },
   "search": {
@@ -76,7 +74,13 @@
     "activityToday": "{{total}} اليوم",
     "activityLast": "الأخير: {{time}}",
     "timeNow": "الآن",
-    "timeYesterday": "أمس"
+    "timeYesterday": "أمس",
+    "tierActive": "نشطة",
+    "tierRecent": "حديثة",
+    "tierQuiet": "هادئة",
+    "showQuiet": "إظهار",
+    "hideQuiet": "إخفاء",
+    "filterPlaceholder": "تصفية المشاريع أو المسارات…"
   },
   "loading": {
     "title": "جارٍ تحميل السيشنات",

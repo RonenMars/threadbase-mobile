@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { MONO_FONT } from '@/constants/mono'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -12,6 +12,8 @@ interface Props {
   tone: SectionTone
   /** Trailing count for muted sections; live sections carry it in the label. */
   count?: number
+  /** Trailing link, e.g. the QUIET tier's Show / Hide. */
+  action?: { label: string; onPress: () => void; testID?: string }
 }
 
 /**
@@ -19,7 +21,7 @@ interface Props {
  * live tiers, plain secondary text for history. Same device as onboarding's
  * `> 01 / LANGUAGE`, on the existing mono stack rather than a new font.
  */
-export function SectionEyebrow({ label, tone, count }: Props) {
+export function SectionEyebrow({ label, tone, count, action }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const color =
@@ -32,6 +34,11 @@ export function SectionEyebrow({ label, tone, count }: Props) {
       <Text style={[styles.label, { color }]}>{label}</Text>
       <View style={[styles.rule, live ? { backgroundColor: color, opacity: 0.28 } : styles.ruleMuted]} />
       {count != null ? <Text style={styles.count}>{count}</Text> : null}
+      {action ? (
+        <Pressable onPress={action.onPress} hitSlop={12} accessibilityRole="button" testID={action.testID}>
+          <Text style={styles.action}>{action.label}</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -59,6 +66,11 @@ function makeStyles(theme: Theme) {
       fontSize: font.xs,
       color: theme.text.secondary,
       fontVariant: ['tabular-nums'],
+    },
+    action: {
+      fontSize: font.xs,
+      fontWeight: '600',
+      color: theme.text.accent,
     },
   })
 }

@@ -5,13 +5,15 @@ A minimal smoke-test suite for the Threadbase app, driven by [Maestro](https://m
 ## Android CI
 
 The scheduled `E2E` GitHub Actions workflow, and manual runs with the default
-`platform=android`, run the mock suite on Ubuntu using one Android **API 35** Google APIs `x86_64` emulator
-(`pixel_6`) and Maestro CLI **2.8.0**. It builds `:app:assembleRelease`, signs
-that simulator-only APK with the repository debug key, installs it with `adb`,
-and sets `E2E_MOCK_SERVER_URL=http://10.0.2.2:7071` so the emulator can reach
-the runner-hosted mock server. Sentry source-map upload is disabled for this
-build; production deploy workflows and their signing/Sentry configuration are
-separate and unchanged.
+`platform=android`, run the mock suite on Ubuntu using Android **API 35** Google APIs `x86_64`
+(`pixel_6`) emulators and Maestro CLI **2.8.0**. One job assembles
+`:app:assembleRelease` (signed with the repository debug key, cached per commit
+SHA) and uploads that APK; three parallel emulator jobs install it with `adb`
+and each run a shard of the mock suite. `E2E_MOCK_SERVER_URL=http://10.0.2.2:7071`
+so the emulator can reach the runner-hosted mock server. Sentry source-map
+upload is disabled for this build; production deploy workflows and their
+signing/Sentry configuration are separate and unchanged. A `flows=` dispatch
+collapses to a single emulator.
 
 Use the normal dispatch inputs to select the code and, optionally, a subset of
 flows. The full mock-suite flow list remains `test:e2e:mock` in `package.json`.

@@ -1,7 +1,5 @@
 {
   "header": {
-    "title": "Sessions",
-    "history": "History",
     "serverStatus": "Server status"
   },
   "search": {
@@ -64,7 +62,13 @@
     "activityToday": "{{total}} today",
     "activityLast": "last {{time}}",
     "timeNow": "now",
-    "timeYesterday": "Yesterday"
+    "timeYesterday": "Yesterday",
+    "tierActive": "ACTIVE",
+    "tierRecent": "RECENT",
+    "tierQuiet": "QUIET",
+    "showQuiet": "Show",
+    "hideQuiet": "Hide",
+    "filterPlaceholder": "Filter projects or paths…"
   },
   "loading": {
     "title": "Loading sessions",

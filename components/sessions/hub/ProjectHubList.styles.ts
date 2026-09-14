@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { font, spacing, type Theme } from '@/constants/theme'
+import { MONO_FONT } from '@/constants/mono'
 
 export function makeStyles(theme: Theme, bottomInset: number = 0) {
   return StyleSheet.create({
@@ -10,6 +11,27 @@ export function makeStyles(theme: Theme, bottomInset: number = 0) {
   listContent: {
     padding: spacing.sm,
     paddingBottom: FAB_CLEARANCE + bottomInset,
+  },
+  filterField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+    minHeight: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.border,
+    backgroundColor: theme.bg.secondary,
+  },
+  filterInput: {
+    flex: 1,
+    fontFamily: MONO_FONT,
+    color: theme.text.primary,
+    fontSize: font.sm,
+    paddingVertical: spacing.sm,
   },
   emptyListContent: {
     flexGrow: 1,
