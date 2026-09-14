@@ -1,7 +1,4 @@
 {
-  "header": {
-    "serverStatus": "Состояние сервера"
-  },
   "search": {
     "placeholder": "Поиск сессий и бесед…",
     "accessibilityLabel": "Поиск"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { useLoadingStateStore, type QueryCategory, type QueryError } from '@/stores/loading-state'
@@ -7,7 +7,6 @@ import { useServersStore } from '@/stores/servers'
 import { useErrorSheetStore } from '@/stores/errorSheet'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { ErrorRecoverySheet } from '@/components/ui/ErrorRecoverySheet'
-import { IssuesIndicator } from '@/components/ui/IssuesIndicator'
 import { queryClient } from '@/services/query-client'
 import { classifyError } from '@/services/error-policy'
 import { useAlertListSync } from '@/hooks/useAlertSync'
@@ -76,7 +75,6 @@ export function ErrorBanner() {
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set())
   const [retryingAll, setRetryingAll] = useState(false)
   const sheetOpen = useErrorSheetStore((s) => s.open)
-  const openSheet = useErrorSheetStore((s) => s.openSheet)
   const closeSheet = useErrorSheetStore((s) => s.closeSheet)
 
   const sheetErrors = useMemo(
@@ -199,13 +197,6 @@ export function ErrorBanner() {
 
   useAlertListSync(entries)
 
-  // Auto-open the moment a new batch of sheet-worthy failures appears; stays
-  // closed (only the compact indicator shows) once the user has minimized it,
-  // until it empties out and a fresh batch arrives.
-  useEffect(() => {
-    if (items.length > 0) openSheet()
-  }, [items.length > 0, openSheet]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const title = t('errorBanner.listTitle')
   const retryAllLabel = items.length > 1
     ? (retryingAll ? t('errorBanner.retryAllRetrying', { count: items.length }) : t('button.retryAll'))
@@ -224,11 +215,8 @@ export function ErrorBanner() {
       }
     : undefined
 
-  // Closing the sheet minimizes it — the errors themselves stay live, and the
-  // compact IssuesIndicator keeps reminding the user until they're resolved.
-  // There is deliberately no "dismiss and never show again": every error
-  // shown here is still failing, and a major/critical failure should not be
-  // silenceable the way the old single-shot sticky-dismiss allowed.
+  // Closing the sheet is a minimize, not a dismiss: the errors stay live so
+  // the header status pill can reopen the same sheet.
   const handleClose = () => closeSheet()
 
   return (
@@ -242,7 +230,6 @@ export function ErrorBanner() {
         onRetryAll={handleRetryAll}
         onClose={handleClose}
       />
-      <IssuesIndicator count={!sheetOpen ? items.length : 0} onPress={openSheet} />
       <ServerErrorModal
         visible={errorServerId !== null}
         server={errorServerId ? servers[errorServerId] ?? null : null}

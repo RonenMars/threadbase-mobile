@@ -12,7 +12,9 @@ import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { alertAppearance } from '@/lib/alertAppearance'
+import { getAlertLevelLabel } from '@/lib/alertLabels'
 import { useAlertStore } from '@/stores/alerts'
 import type { AlertEntry } from '@/types/alerts'
 import { alertFingerprint } from '@/types/alerts'
@@ -20,6 +22,7 @@ import { alertFingerprint } from '@/types/alerts'
 const DISMISS_DURATION = 220
 const DOWN_MAX = 40
 const DOWN_THRESHOLD = 20
+const TARGET = 44
 
 type Props = {
   toast: AlertEntry
@@ -30,15 +33,29 @@ export function Toast({ toast }: Props) {
   const openDetails = useAlertStore((s) => s.openDetails)
   const stickyDismiss = useAlertStore((s) => s.stickyDismiss)
   const theme = useTheme()
+  const reduceMotion = useReduceMotion()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const appearance = alertAppearance(toast.level, theme)
   const Icon = appearance.Icon
   const closeLabel = t('button.close')
   const hasDetails = Boolean(toast.details || toast.message)
   const showClose = toast.hideCloseButton !== true
+  const levelLabel = getAlertLevelLabel(toast.level, t)
+  const accessibilityLabel = `${levelLabel}. ${toast.title}`
+  const liveRegion = toast.level === 'critical' || toast.level === 'error'
+    ? 'assertive' as const
+    : 'polite' as const
+  const titleColor = toast.level === 'info'
+    ? theme.text.secondary
+    : theme.text.primary
+  const bodyRole = toast.onPress || hasDetails ? 'button' as const : undefined
 
   const translateY = useSharedValue(0)
   const opacity = useSharedValue(1)
+  const reduceMotionValue = useSharedValue(reduceMotion ? 1 : 0)
+  useEffect(() => {
+    reduceMotionValue.value = reduceMotion ? 1 : 0
+  }, [reduceMotion, reduceMotionValue])
 
   const resetAnimation = useCallback(() => {
     // eslint-disable-next-line react-hooks/immutability
@@ -68,6 +85,9 @@ export function Toast({ toast }: Props) {
     .activeOffsetY([-8, 8])
     .onUpdate((e) => {
       'worklet'
+      if (reduceMotionValue.value) {
+        return
+      }
       if (e.translationY < 0) {
         // eslint-disable-next-line react-hooks/immutability
         translateY.value = e.translationY
@@ -82,9 +102,12 @@ export function Toast({ toast }: Props) {
     })
     .onEnd((e) => {
       'worklet'
-      if (e.translationY < -40 || e.translationY >= DOWN_THRESHOLD) {
-        // eslint-disable-next-line react-hooks/immutability
-        translateY.value = withTiming(-80, { duration: DISMISS_DURATION, easing: Easing.out(Easing.quad) })
+      const shouldDismiss = e.translationY < -40 || e.translationY >= DOWN_THRESHOLD
+      if (shouldDismiss) {
+        if (!reduceMotionValue.value) {
+          // eslint-disable-next-line react-hooks/immutability
+          translateY.value = withTiming(-80, { duration: DISMISS_DURATION, easing: Easing.out(Easing.quad) })
+        }
         // eslint-disable-next-line react-hooks/immutability
         opacity.value = withTiming(0, { duration: DISMISS_DURATION }, (finished) => {
           if (finished) runOnJS(handleClose)()
@@ -102,7 +125,7 @@ export function Toast({ toast }: Props) {
   [handleClose])
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
+    transform: [{ translateY: reduceMotionValue.value ? 0 : translateY.value }],
     opacity: opacity.value,
   }))
 
@@ -114,20 +137,18 @@ export function Toast({ toast }: Props) {
     if (hasDetails) openDetails(toast.id)
   }
 
-  const titleColor = toast.level === 'info'
-    ? theme.text.secondary
-    : theme.text.primary
-  const bodyRole = toast.onPress || hasDetails ? 'button' as const : undefined
-
   return (
     <View style={styles.clip}>
       <GestureDetector gesture={pan}>
-        <Animated.View style={[styles.banner, animatedStyle]}>
+        <Animated.View
+          style={[styles.banner, animatedStyle]}
+          accessibilityLiveRegion={liveRegion}
+        >
           <TouchableOpacity
             style={styles.body}
             onPress={handleBodyPress}
             accessibilityRole={bodyRole}
-            accessibilityLabel={toast.title}
+            accessibilityLabel={accessibilityLabel}
             disabled={!bodyRole}
             activeOpacity={bodyRole ? 0.7 : 1}
             testID={toast.testID ?? `toast-${toast.id}`}
@@ -135,16 +156,20 @@ export function Toast({ toast }: Props) {
             {toast.icon ?? (
               <Icon size={16} color={appearance.accent} weight={appearance.iconWeight} />
             )}
-            <Text style={[styles.title, { color: titleColor }]} numberOfLines={2}>
-              {toast.title}
-            </Text>
+            <View style={styles.copy}>
+              <Text style={[styles.title, { color: titleColor }]}>
+                {toast.title}
+              </Text>
+              {toast.message ? (
+                <Text style={styles.message}>{toast.message}</Text>
+              ) : null}
+            </View>
           </TouchableOpacity>
           {toast.buttonText ? (
             <TouchableOpacity
               style={[styles.actionBtn, actionBorder(theme, appearance.accent, toast.buttonVariant)]}
               onPress={() => toast.buttonAction?.()}
               activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
               accessibilityRole="button"
               accessibilityLabel={toast.buttonText}
               testID={`toast-action-${toast.id}`}
@@ -159,10 +184,10 @@ export function Toast({ toast }: Props) {
               onPress={handleClose}
               accessibilityRole="button"
               accessibilityLabel={closeLabel}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={styles.closeBtn}
               testID={`toast-close-${toast.id}`}
             >
-              <X size={14} color={theme.text.secondary} />
+              <X size={16} color={theme.text.secondary} />
             </TouchableOpacity>
           ) : null}
         </Animated.View>
@@ -192,7 +217,7 @@ function makeStyles(theme: Theme) {
       alignItems: 'center',
       gap: spacing.sm,
       paddingVertical: spacing.sm,
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: spacing.md,
       backgroundColor: theme.bg.secondary,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.border,
@@ -200,24 +225,42 @@ function makeStyles(theme: Theme) {
     body: {
       flex: 1,
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       gap: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    copy: {
+      flex: 1,
+      gap: 2,
     },
     title: {
-      flex: 1,
       fontSize: font.base,
       fontWeight: '500',
+      lineHeight: 20,
+    },
+    message: {
+      fontSize: font.sm,
+      fontWeight: '400',
       lineHeight: 18,
+      color: theme.text.secondary,
     },
     actionBtn: {
+      minHeight: TARGET,
+      justifyContent: 'center',
       borderWidth: 1,
       borderRadius: radius.sm,
-      paddingVertical: 3,
-      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
     },
     actionText: {
-      fontSize: font.xs,
+      fontSize: font.sm,
       fontWeight: '600',
+    },
+    closeBtn: {
+      width: TARGET,
+      height: TARGET,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
   })
 }

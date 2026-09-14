@@ -39,7 +39,7 @@ import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, BellRinging, Gear } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, Gear } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
@@ -53,6 +53,9 @@ import { ServerOfflineBanner } from '@/components/sessions/banners/ServerOffline
 import { ServerWarmingBanner } from '@/components/sessions/banners/ServerWarmingBanner'
 import { ServerUnsupportedBanner } from '@/components/sessions/banners/ServerUnsupportedBanner'
 import { ToastViewport } from '@/components/ui/ToastViewport'
+import { HomeStatusPill } from '@/components/alerts/StatusPill'
+import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
+import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { brand, font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation } from '@/types/api'
@@ -127,24 +130,7 @@ export default function ProjectsHub() {
     return unsub
   }, [activeServerIds])
 
-  const healthyCount = useMemo(() => {
-    let n = 0
-    for (const id of activeServerIds) {
-      const wsOk = wsManager.status(id) === 'connected'
-      const fetchOk = (fetchStatuses[id]?.status ?? 'ok') === 'ok'
-      if (wsOk && fetchOk) n++
-    }
-    return n
-    // wsConnectedCount is the trigger for ws status changes — without it,
-    // useMemo won't recompute when ws flips connected/disconnected.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeServerIds, fetchStatuses, wsConnectedCount])
-
   const cacheAlert = useServersStore((s) => s.cacheAlert)
-
-  const serverCount = activeServerIds.length
-  const allConnected = healthyCount === serverCount && serverCount > 0
-  const someConnected = healthyCount > 0
 
   // Header controls
   const [searchOpen, setSearchOpen] = useState(false)
@@ -155,6 +141,7 @@ export default function ProjectsHub() {
   const [fabNoServerToast, setFabNoServerToast] = useState(false)
   const [manualCacheAlertServerId, setManualCacheAlertServerId] = useState<string | null>(null)
   const [cacheAlertToast, setCacheAlertToast] = useState<string | null>(null)
+  const openStatusSurface = useOpenStatusSurface(() => setStatusModalOpen(true))
 
   // Auto-open for a pending high-severity alert (derived, not stateful); the
   // low-severity banner can also open the modal manually via setCacheAlertModalServerId.
@@ -434,18 +421,7 @@ export default function ProjectsHub() {
           {isBackgroundRefreshing && activeServerIds.length <= 1 ? (
             <ActivityIndicator size="small" color={theme.text.secondary} testID="header-background-refreshing" />
           ) : null}
-          <Pressable
-            onPress={() => setStatusModalOpen(true)}
-            hitSlop={8}
-            style={({ pressed }) => [styles.headerButton, styles.headerStatusButton, { opacity: pressed ? 0.5 : 1 }]}
-            accessibilityLabel={t('header.serverStatus')}
-            testID="header-server-status-btn"
-          >
-            <BellRinging size={20} color={theme.text.secondary} />
-            {!allConnected ? (
-              <View style={[styles.notifDot, { backgroundColor: someConnected ? theme.status.waiting : theme.status.failed }]} />
-            ) : null}
-          </Pressable>
+          <HomeStatusPill onPress={openStatusSurface} />
           <Pressable
             onPress={() => setSearchOpen((v) => !v)}
             hitSlop={8}
@@ -532,7 +508,7 @@ export default function ProjectsHub() {
         fetchStatuses={fetchStatuses}
         wsConnectedCount={wsConnectedCount}
         onViewDetails={() => setStatusModalOpen(true)}
-        onRetryFailed={() => retryFailed()}
+        onRetryFailed={(serverId) => retryFailed([serverId])}
         isRetrying={isRetryingFailedServers}
       />
 
@@ -608,6 +584,7 @@ export default function ProjectsHub() {
       {chrome}
       {/* Status overlays sit just below the chrome and never move the rows. */}
       <View style={[styles.belowChrome, { top: chromeHeight }]} pointerEvents="box-none">
+        <HomeStatusStrip onPress={openStatusSurface} />
         <ToastViewport id="home" />
         <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
       </View>
@@ -721,29 +698,12 @@ function makeStyles(theme: Theme) {
     alignItems: 'center',
     gap: spacing.xs,
   },
-  notifDot: {
-    position: 'absolute',
-    top: 5,
-    end: 5,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: theme.bg.primary,
-  },
   headerButton: {
     width: 32,
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 8,
-  },
-  headerStatusButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.border,
   },
   headerButtonActive: {
     backgroundColor: 'rgba(88,166,255,0.12)',
