@@ -8,9 +8,14 @@ name: E2E
 #   * Manual dispatch — run it against any branch, tag, commit SHA, or open PR
 #     number. Defaults to `main`.
 #
-# The Android Release build is still expensive enough that this is never wired
-# to `pull_request`: per-commit E2E would cost more than it catches. Dispatch it
+# The Release build is still expensive enough that this is never wired to
+# `pull_request`: per-commit E2E would cost more than it catches. Dispatch it
 # by hand when a change actually touches a flow.
+#
+# Default full-suite shape: one build job per platform, then parallel Maestro
+# shards that reuse that binary. Android is three emulator VMs after one APK
+# job; iOS is two simulator VMs after one xcodebuild. A `flows` input collapses
+# to a single shard so a one-flow rerun does not pay three emulators.
 #
 #   gh workflow run E2E                       # main, whole mock suite
 #   gh workflow run E2E -f ref=572            # PR #572's head
@@ -20,12 +25,9 @@ name: E2E
 #   gh workflow run E2E -f flows=e2e/codex_parity.yaml            # one flow
 #   gh workflow run E2E -f ref=572 -f flows="e2e/a.yaml e2e/b.yaml"
 #
-# Narrowing `flows` used to skip no setup — the Release build was the expensive
-# part and ran inside the emulator step every time. The APK is now cached per
-# checked-out SHA, and assembleRelease runs *before* the emulator boots. A
-# second dispatch of the same commit (a one-flow warmup, then the rest) reuses
-# that APK and only pays emulator boot + Maestro. The first dispatch of a new
-# SHA still compiles.
+# The APK / iOS .app is cached per checked-out SHA (and uploaded as an artifact
+# to the shards in the same run). A second dispatch of the same commit reuses
+# that binary and only pays emulator/simulator boot + Maestro.
 #
 # Two independent selectors, easy to confuse:
 #
@@ -37,11 +39,8 @@ name: E2E
 #
 #   gh workflow run E2E --ref my/branch -f ref=my/branch   # this file AND the code from my/branch
 #
-# Both dispatches of a warmup-then-rest split must use the same `--ref`:
-# Actions cache is scoped to that branch, and `--ref` also selects this file.
-#
-#   gh workflow run E2E --ref my/branch -f ref=my/branch -f flows=e2e/launch.yaml
-#   gh workflow run E2E --ref my/branch -f ref=my/branch -f flows="e2e/a.yaml e2e/b.yaml"
+# Actions cache is scoped to the workflow's branch (`--ref`), so a warmup and a
+# later dispatch of the same commit must use the same `--ref`.
 #
 # `workflow_dispatch` must exist on the default branch for the trigger to be
 # offered at all; once it is, any branch's version can be run.
@@ -72,22 +71,23 @@ on:
     - cron: '0 0 * * 0'
 
 concurrency:
-  # One E2E at a time per target — two runs would fight over the same emulator.
+  # One E2E workflow run at a time per target. Matrix shards in a single run
+  # are separate VMs and do not share an emulator; two *dispatches* of the
+  # same ref still serialize so a warmup and a full suite cannot clobber
+  # each other's cache writes.
   group: e2e-${{ inputs.ref || 'schedule' }}
   cancel-in-progress: false
 
 jobs:
-  e2e-maestro:
-    name: E2E maestro (${{ matrix.platform }})
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: ${{ github.event_name == 'schedule' && fromJSON('["android", "ios"]') || fromJSON(format('["{0}"]', inputs.platform)) }}
-    runs-on: ${{ matrix.platform == 'ios' && 'macos-26' || 'ubuntu-24.04' }}
-    # 75m was enough when the iOS Release cache was warm (~39m build + ~19m
-    # Maestro). A cold DerivedData miss (run 32161343357) spent ~57m on the
-    # build and was cancelled at 75m with the suite still running.
-    timeout-minutes: 120
+  resolve:
+    name: Resolve E2E target
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.resolve.outputs.ref }}
+      android: ${{ steps.plan.outputs.android }}
+      ios: ${{ steps.plan.outputs.ios }}
+      android-shards: ${{ steps.plan.outputs.android-shards }}
+      ios-shards: ${{ steps.plan.outputs.ios-shards }}
     steps:
       # `ref` is the one piece of attacker-controllable input in this workflow,
       # so it is validated here and never interpolated into a `run:` script —
@@ -118,6 +118,24 @@ jobs:
         with:
           ref: ${{ steps.resolve.outputs.ref }}
 
+      - name: Plan shards
+        id: plan
+        env:
+          INPUT_PLATFORM: ${{ inputs.platform }}
+          INPUT_FLOWS: ${{ inputs.flows }}
+        run: node e2e/mock-suite-shards.js
+
+  android-apk:
+    name: Android APK
+    needs: resolve
+    if: ${{ needs.resolve.outputs.android == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
       # github.sha is the commit that *triggered* the workflow (`--ref`), which
       # is the workflow file's branch and is not always the code under test
       # (`-f ref=`). The APK cache must follow the checked-out tree.
@@ -127,25 +145,22 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: ${{ matrix.platform == 'ios' && '22' || '24.15.0' }}
+          node-version: '24.15.0'
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
       - uses: actions/setup-java@v5
-        if: ${{ matrix.platform == 'android' }}
         with:
           distribution: temurin
           java-version: '17'
 
       - uses: android-actions/setup-android@v4
-        if: ${{ matrix.platform == 'android' }}
 
       # cache-read-only defaults to true off `main`, which would make a feature-
       # branch warmup unable to seed the next dispatch on that same branch.
       - uses: gradle/actions/setup-gradle@v5
-        if: ${{ matrix.platform == 'android' }}
         with:
           cache-read-only: false
 
@@ -155,17 +170,16 @@ jobs:
       # the same `--ref` (typically the branch under test).
       - name: Cache Android Release APK
         id: apk-cache
-        if: ${{ matrix.platform == 'android' }}
         uses: actions/cache@v5
         with:
           path: android/app/build/outputs/apk/release/app-release.apk
           key: e2e-android-apk-v1-${{ runner.os }}-x86_64-${{ steps.head.outputs.sha }}
 
-      # Assemble before the emulator boots so a 20-minute compile does not hold
+      # Assemble before any emulator boots so a 20-minute compile does not hold
       # a live emulator idle. That idle window is what made later Maestro flows
       # die with `device offline`. A cache hit skips this step entirely.
       - name: Assemble Android Release APK
-        if: ${{ matrix.platform == 'android' && steps.apk-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.apk-cache.outputs.cache-hit != 'true' }}
         env:
           REACT_NATIVE_ARCHITECTURES: x86_64
           TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
@@ -177,10 +191,47 @@ jobs:
         run: ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}"
 
       - name: Note APK cache hit
-        if: ${{ matrix.platform == 'android' && steps.apk-cache.outputs.cache-hit == 'true' }}
+        if: ${{ steps.apk-cache.outputs.cache-hit == 'true' }}
         env:
           TEST_SHA: ${{ steps.head.outputs.sha }}
         run: echo "Reusing cached Release APK for $TEST_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Android Release APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-android-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  android-maestro:
+    name: E2E maestro (android ${{ matrix.shard }}/${{ matrix.total }})
+    needs: [resolve, android-apk]
+    if: ${{ needs.resolve.outputs.android == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.resolve.outputs.android-shards) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.15.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download Android Release APK
+        uses: actions/download-artifact@v6
+        with:
+          name: e2e-android-apk
+          path: android/app/build/outputs/apk/release
 
       - name: Install Maestro CLI
         run: |
@@ -203,7 +254,6 @@ jobs:
       # post-boot unlock ran, before any of the script below executed. With KVM
       # the boot is ~1 minute and those calls land on a settled system.
       - name: Enable KVM
-        if: ${{ matrix.platform == 'android' }}
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
@@ -213,10 +263,9 @@ jobs:
       # and Google APIs x86_64 image, then waits for the one requested emulator
       # to finish booting before it runs the script below.
       - name: Install APK and run Maestro on Android API 35
-        if: ${{ matrix.platform == 'android' }}
         uses: reactivecircus/android-emulator-runner@v2
         env:
-          FLOWS: ${{ inputs.flows }}
+          FLOWS: ${{ matrix.flows }}
           E2E_PLATFORM: android
           E2E_ANDROID_API_LEVEL: '35'
           E2E_MOCK_SERVER_URL: http://10.0.2.2:7071
@@ -242,14 +291,50 @@ jobs:
           # See the header of e2e/run-android-ci.sh.
           script: bash e2e/run-android-ci.sh
 
+      - name: Copy Maestro session dir on failure
+        if: failure()
+        run: |
+          LATEST=$(ls -dt ~/.maestro/tests/*/ 2>/dev/null | head -1)
+          if [ -n "$LATEST" ]; then
+            mkdir -p e2e/_artifacts/maestro-session
+            cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
+          fi
+
+      - name: Upload Maestro artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: maestro-artifacts-android-${{ matrix.shard }}
+          path: e2e/_artifacts/
+          retention-days: 7
+          if-no-files-found: warn
+
+  ios-build:
+    name: iOS Release build
+    needs: resolve
+    if: ${{ needs.resolve.outputs.ios == 'true' }}
+    runs-on: macos-26
+    # A cold DerivedData miss (run 32161343357) spent ~57m on the compile.
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - uses: ruby/setup-ruby@v1
-        if: ${{ matrix.platform == 'ios' }}
         with:
           ruby-version: '3.3'
           bundler-cache: true
 
       - name: Restore iOS DerivedData cache
-        if: ${{ matrix.platform == 'ios' }}
         uses: actions/cache@v5
         with:
           path: build/ios-ci
@@ -259,23 +344,12 @@ jobs:
             ios-derived-v1-${{ runner.os }}-xcode26.3-
 
       - name: Select Xcode 26
-        if: ${{ matrix.platform == 'ios' }}
         # expo-modules-jsi's Package.swift requires swift-tools 6.2 (Xcode 26)
         # and its Swift sources build only on Xcode 26.4+ (Expo issue #47875), so
         # the iOS job runs on macos-26 and pins the same toolchain as deploy.yml.
         run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
 
-      - name: Boot iOS simulator
-        if: ${{ matrix.platform == 'ios' }}
-        run: |
-          DEVICE=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries | map(select(.key | contains("iOS"))) | sort_by(.key) | reverse | .[0].value | map(select(.name | test("iPhone 1[5-9]"))) | .[0].udid')
-          echo "Booting simulator: $DEVICE"
-          xcrun simctl boot "$DEVICE" || true
-          xcrun simctl bootstatus "$DEVICE" -b
-          echo "IOS_UDID=$DEVICE" >> "$GITHUB_ENV"
-
       - name: Install CocoaPods
-        if: ${{ matrix.platform == 'ios' }}
         # `ios/` is committed, so `expo prebuild` reports "reusing /ios" and skips
         # the CocoaPods step entirely — leaving a CI checkout with no `ios/Pods/`
         # and an xcodebuild that dies on a missing `Pods-Threadbase.release
@@ -297,41 +371,116 @@ jobs:
           APP_ENV: development
         run: ./scripts/check-sentry-env.sh >> "$GITHUB_ENV"
 
-      - name: Build and install iOS app (Release)
-        if: ${{ matrix.platform == 'ios' }}
+      - name: Build iOS app (Release)
         env:
           SENTRY_DISABLE_AUTO_UPLOAD: true
         run: |
+          set -euo pipefail
           xcodebuild \
             -workspace ios/Threadbase.xcworkspace \
             -scheme Threadbase \
             -configuration Release \
-            -destination "platform=iOS Simulator,id=$IOS_UDID" \
+            -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/ios-ci \
             build
           APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo '::error::xcodebuild succeeded but Threadbase.app was not under build/ios-ci.'
+            exit 1
+          fi
+          # upload-artifact flattens a directory, so downloading Threadbase.app
+          # produced Info.plist at the destination root and simctl never saw a
+          # bundle (run 34785370547). A tarball keeps the directory name.
+          tar -C "$(dirname "$APP_PATH")" -czf e2e-ios-app.tgz Threadbase.app
+          echo "Built $APP_PATH" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload iOS Release app
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-ios-app
+          path: e2e-ios-app.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  ios-maestro:
+    name: E2E maestro (ios ${{ matrix.shard }}/${{ matrix.total }})
+    needs: [resolve, ios-build]
+    if: ${{ needs.resolve.outputs.ios == 'true' }}
+    runs-on: macos-26
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.resolve.outputs.ios-shards) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
+
+      - name: Download iOS Release app
+        uses: actions/download-artifact@v6
+        with:
+          name: e2e-ios-app
+
+      - name: Install Maestro CLI
+        run: |
+          MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
+          curl -fsSL "https://get.maestro.mobile.dev" | env MAESTRO_VERSION="$MAESTRO_VERSION" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          INSTALLED_MAESTRO_VERSION=$(MAESTRO_CLI_NO_ANALYTICS=1 "$HOME/.maestro/bin/maestro" --version | tail -n 1)
+          if [ "$INSTALLED_MAESTRO_VERSION" != "$MAESTRO_VERSION" ]; then
+            echo "::error::Expected Maestro $MAESTRO_VERSION, installed $INSTALLED_MAESTRO_VERSION."
+            exit 1
+          fi
+          echo "Maestro $INSTALLED_MAESTRO_VERSION"
+
+      - name: Boot iOS simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries | map(select(.key | contains("iOS"))) | sort_by(.key) | reverse | .[0].value | map(select(.name | test("iPhone 1[5-9]"))) | .[0].udid')
+          echo "Booting simulator: $DEVICE"
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+          echo "IOS_UDID=$DEVICE" >> "$GITHUB_ENV"
+
+      - name: Install iOS app
+        run: |
+          set -euo pipefail
+          mkdir -p build/ios-ci/Build/Products/Release-iphonesimulator
+          tar -xzf e2e-ios-app.tgz -C build/ios-ci/Build/Products/Release-iphonesimulator
+          APP_PATH=build/ios-ci/Build/Products/Release-iphonesimulator/Threadbase.app
+          if [ ! -d "$APP_PATH" ]; then
+            echo '::error::Extracted Threadbase.app was not found.'
+            ls -la e2e-ios-app.tgz build/ios-ci/Build/Products/Release-iphonesimulator >&2 || true
+            exit 1
+          fi
           xcrun simctl install booted "$APP_PATH"
 
       - name: Run Maestro E2E suite on iOS
-        if: ${{ matrix.platform == 'ios' }}
         env:
-          FLOWS: ${{ inputs.flows }}
+          FLOWS: ${{ matrix.flows }}
           # The XCTest driver took about 203 seconds to start in run 33165429413.
           # Leave headroom for macOS runner variance instead of failing at Maestro's
           # default 120-second startup deadline before any app flow starts.
           MAESTRO_DRIVER_STARTUP_TIMEOUT: '300000'
-          # Tells e2e/ensure-release-build.js that the step above already built
-          # and installed the Release app. Without it the script cannot find a
-          # build under `-derivedDataPath build/ios-ci` and rebuilds from
-          # scratch with `expo run:ios`, which never returns.
+          # Tells e2e/ensure-release-build.js that the step above already installed
+          # the Release app. Without it the script cannot find a build under
+          # `-derivedDataPath build/ios-ci` and rebuilds from scratch with
+          # `expo run:ios`, which never returns.
           E2E_PLATFORM: ios
         run: |
           set -euo pipefail
           mkdir -p e2e/_artifacts/debug e2e/_artifacts/fallback
-          if [ -z "$FLOWS" ]; then
-            npm run test:e2e:mock
-            exit 0
-          fi
           for f in $FLOWS; do
             case "$f" in
               e2e/*.yaml) ;;
@@ -355,18 +504,11 @@ jobs:
           kill "$MOCK_PID" 2>/dev/null || true
           exit $STATUS
 
-      # No Android counterpart to the iOS step below: `android-emulator-runner`
-      # kills the emulator when its own step ends, so anything running here has
-      # no device left to photograph. The equivalent capture lives in
-      # `e2e/run-android-ci.sh`'s EXIT trap, which runs inside that step while
-      # the emulator is still up. A duplicate step here did not merely fail —
-      # `adb exec-out screencap -p > file` truncates its target before adb
-      # errors out, so it overwrote the trap's good screenshot with zero bytes.
-      # That is what run 31904637356 uploaded: an empty PNG and nothing else.
-
       - name: Capture iOS simulator screenshot on failure
-        if: ${{ failure() && matrix.platform == 'ios' }}
-        run: xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
+        if: ${{ failure() }}
+        run: |
+          mkdir -p e2e/_artifacts/fallback
+          xcrun simctl io booted screenshot e2e/_artifacts/fallback/sim-at-failure.png || true
 
       - name: Copy Maestro session dir on failure
         if: failure()
@@ -381,10 +523,48 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6
         with:
-          name: maestro-artifacts-${{ matrix.platform }}
+          name: maestro-artifacts-ios-${{ matrix.shard }}
           path: e2e/_artifacts/
           retention-days: 7
           if-no-files-found: warn
+
+  e2e-maestro:
+    name: E2E maestro
+    needs: [resolve, android-apk, android-maestro, ios-build, ios-maestro]
+    if: ${{ always() && !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report shard results
+        env:
+          RESOLVE: ${{ needs.resolve.result }}
+          ANDROID: ${{ needs.resolve.outputs.android }}
+          IOS: ${{ needs.resolve.outputs.ios }}
+          ANDROID_APK: ${{ needs.android-apk.result }}
+          ANDROID_MAESTRO: ${{ needs.android-maestro.result }}
+          IOS_BUILD: ${{ needs.ios-build.result }}
+          IOS_MAESTRO: ${{ needs.ios-maestro.result }}
+        run: |
+          set -euo pipefail
+          if [ "$RESOLVE" != "success" ]; then
+            echo "::error::Failed to resolve E2E target (result=$RESOLVE)."
+            exit 1
+          fi
+          OK=1
+          if [ "$ANDROID" = "true" ]; then
+            if [ "$ANDROID_APK" != "success" ] || [ "$ANDROID_MAESTRO" != "success" ]; then
+              echo "::error::Android E2E failed (apk=$ANDROID_APK, maestro=$ANDROID_MAESTRO)."
+              OK=0
+            fi
+          fi
+          if [ "$IOS" = "true" ]; then
+            if [ "$IOS_BUILD" != "success" ] || [ "$IOS_MAESTRO" != "success" ]; then
+              echo "::error::iOS E2E failed (build=$IOS_BUILD, maestro=$IOS_MAESTRO)."
+              OK=0
+            fi
+          fi
+          if [ "$OK" != "1" ]; then
+            exit 1
+          fi
 
   notify-e2e-failure:
     name: Notify on E2E failure

@@ -20,11 +20,15 @@ function stepScript(name) {
   return match[1].replace(/^          /gm, '');
 }
 
-test('builds for the simulator selected by the boot step', () => {
+test('builds a generic simulator slice and installs it on the booted sim', () => {
   const bootSimulator = stepScript('Boot iOS simulator');
-  const buildApp = stepScript('Build and install iOS app (Release)');
+  const buildApp = stepScript('Build iOS app (Release)');
+  const installApp = stepScript('Install iOS app');
 
   expect(bootSimulator).toContain('echo "IOS_UDID=$DEVICE" >> "$GITHUB_ENV"');
-  expect(buildApp).toContain('-destination "platform=iOS Simulator,id=$IOS_UDID"');
+  expect(buildApp).toContain("-destination 'generic/platform=iOS Simulator'");
   expect(buildApp).not.toMatch(/name=iPhone/);
+  expect(buildApp).toContain('tar -C "$(dirname "$APP_PATH")" -czf e2e-ios-app.tgz Threadbase.app');
+  expect(installApp).toContain('tar -xzf e2e-ios-app.tgz');
+  expect(installApp).toContain('xcrun simctl install booted');
 });
