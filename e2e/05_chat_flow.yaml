@@ -29,7 +29,7 @@ appId: com.ronenmars.threadbase
 # first-session-card → session-abc123: status=running, promptCount=3
 # Fix 3: isWakingUp must be FALSE (promptCount > 0 means not first run)
 #
-# Default hub is classic + mergeChats. The merged list auto-collapses the
+# Default hub is the Now list. The merged list auto-collapses the
 # session block when there are more than 3 sessions (SESSIONS_COLLAPSE_THRESHOLD
 # in app/index.tsx). The mock fixture has 4, so LIVE · 4 is showing and the
 # cards are hidden — run 32004798693 failed here with only conversation rows

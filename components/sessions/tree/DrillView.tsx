@@ -1,10 +1,8 @@
 import React, { useEffect } from 'react'
-import { ActivityIndicator, View, Text, TouchableOpacity, FlatList, SectionList } from 'react-native'
+import { ActivityIndicator, View, Text, TouchableOpacity, FlatList } from 'react-native'
 import { CaretLeft } from 'phosphor-react-native'
 import { useRouter } from 'expo-router'
-import { useTranslation } from 'react-i18next'
 import { useProjectConversations } from '@/hooks/useProjectConversations'
-import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
@@ -26,12 +24,10 @@ interface Props {
 }
 
 export function DrillView({ node, serverId, onBack, topInset = 0 }: Props) {
-  const { t } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
   const insets = useSafeAreaInsets()
   const listContent = [styles.drillList, { paddingBottom: FAB_CLEARANCE + insets.bottom }]
   const router = useRouter()
-  const mergeChats = useSettingsStore((s) => s.mergeChats)
   const getSessionName = useSessionNamesStore((s) => s.getName)
   const getNameOrigin = useSessionNamesStore((s) => s.getOrigin)
   const setCurrentDrill = useTreeDrillStore((s) => s.setCurrent)
@@ -118,42 +114,14 @@ export function DrillView({ node, serverId, onBack, topInset = 0 }: Props) {
       />
     ) : null
 
-  if (mergeChats) {
-    const allItems = [...sessionItems, ...conversationItems]
-    return (
-      <View style={[styles.drill, { paddingTop: topInset }]} testID={`drill-cwd-${node.fullPath}`}>
-        {backRow}
-        <FlatList
-          data={allItems}
-          keyExtractor={(item) => item.key}
-          renderItem={({ item }) => <DrillRow item={item} />}
-          contentContainerStyle={listContent}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={listFooter}
-        />
-      </View>
-    )
-  }
-
-  // The History header appears as soon as the node is known to have
-  // conversations, so the section doesn't pop in after the fetch resolves.
-  const showHistorySection = conversationItems.length > 0 || node.conversationCount > 0
-  const sections = [
-    ...(sessionItems.length > 0 ? [{ title: t('loading.sessionsLabel'), data: sessionItems }] : []),
-    ...(showHistorySection ? [{ title: t('header.history'), data: conversationItems }] : []),
-  ]
-
+  const allItems = [...sessionItems, ...conversationItems]
   return (
     <View style={[styles.drill, { paddingTop: topInset }]} testID={`drill-cwd-${node.fullPath}`}>
       {backRow}
-      <SectionList
-        sections={sections}
+      <FlatList
+        data={allItems}
         keyExtractor={(item) => item.key}
         renderItem={({ item }) => <DrillRow item={item} />}
-        renderSectionHeader={({ section }) => (
-          <Text style={styles.sectionHeader}>{section.title}</Text>
-        )}
         contentContainerStyle={listContent}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}

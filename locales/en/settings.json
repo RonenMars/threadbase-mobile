@@ -18,7 +18,6 @@
   },
   "session": {
     "chatView": "Chat view",
-    "mergeChats": "Merge sessions & history as Chats",
     "chatViewNote": "Show live sessions as chat bubbles instead of RAW terminal output. Beta — may be buggy and not always work.",
     "betaBadge": "Beta",
     "leaveAction": "Action on session leave",

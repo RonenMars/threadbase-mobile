@@ -26,16 +26,6 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     flex: 1,
     ...rtl.ltr,
   },
-  sectionHeader: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    fontSize: font.xs,
-    fontWeight: '600',
-    color: theme.text.secondary,
-    backgroundColor: theme.bg.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   drillList: {
     paddingBottom: FAB_CLEARANCE,
   },
