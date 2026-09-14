@@ -50,4 +50,32 @@ describe('ServerStateMessage localization', () => {
     expect(getByText('לא ניתן להגיע אל localhost. בדקו את החיבור או את כתובת השרת.')).toBeTruthy()
     expect(queryByText("Can't reach localhost. Check your connection or server address.")).toBeNull()
   })
+
+  it('names a protocol mismatch instead of a generic disconnected', async () => {
+    await i18n.changeLanguage('en')
+    jest.spyOn(wsManager, 'lastError').mockReturnValue('e2ee_protocol_mismatch')
+    const { getByText, queryByText } = await renderWithI18n(
+      <>
+        <ServerStateMessage
+          activeServerIds={[server.id]}
+          servers={{ [server.id]: server }}
+          fetchStatuses={{
+            [server.id]: { status: 'ok', lastCheckedAt: Date.now() },
+          }}
+          wsConnectedCount={0}
+          onViewDetails={() => {}}
+          onRetryFailed={() => {}}
+          isRetrying={false}
+        />
+        <ToastViewport id="home" />
+      </>,
+    )
+
+    expect(
+      getByText(
+        'localhost opened a connection that is not encrypted the way this browser requires. Update the streamer, or pair from the Threadbase app for iOS or Android.',
+      ),
+    ).toBeTruthy()
+    expect(queryByText('Disconnected from localhost. Showing cached sessions.')).toBeNull()
+  })
 })

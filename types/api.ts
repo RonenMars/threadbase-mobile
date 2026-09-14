@@ -503,6 +503,8 @@ export interface E2eeCapability {
   required: boolean
   /** Why `enabled` is false; absent when it is true. */
   reason?: string
+  /** Additive: read only through `serverAcceptsBrowserSealedSocket`. */
+  wsTicketSubprotocol?: boolean
 }
 
 /**
@@ -530,6 +532,19 @@ export function serverSpeaksE2ee(info: ServerInfo | null | undefined): boolean {
   const e2ee = info?.e2ee
   if (!e2ee) return false
   return e2ee.supported && e2ee.enabled && e2ee.version === E2EE_CLIENT_VERSION
+}
+
+/**
+ * Whether a browser can open a sealed socket to this server: it reads a
+ * WebSocket ticket from a subprotocol offer, since a browser cannot send
+ * `X-TB-Ticket`.
+ *
+ * **The one place the capability's field path, `e2ee.wsTicketSubprotocol`, is
+ * read.** Strictly `=== true`: absent, `false` or any other value is an older
+ * streamer, and web refuses encrypted pairing against it rather than guessing.
+ */
+export function serverAcceptsBrowserSealedSocket(info: ServerInfo | null | undefined): boolean {
+  return info?.e2ee?.wsTicketSubprotocol === true
 }
 
 /**

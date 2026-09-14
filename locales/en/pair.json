@@ -32,7 +32,8 @@
         "e2ee-malformed": "This app and the server disagreed on the encrypted pairing. Your pairing code is still valid — try scanning it again.",
         "e2ee-version": "This server encrypts pairing in a version this app does not speak. Update the app and the streamer to matching versions.",
         "e2ee-refused": "This server offered an encrypted pairing and then did not finish it. Generate a fresh pairing code on your server and scan it again.",
-        "e2ee-web-unsupported": "Encrypted pairing needs the Threadbase app for iOS or Android. A browser cannot store the key that identifies this device."
+        "e2ee-web-unsupported": "This browser cannot keep an encryption key for this device. Try an up-to-date browser, or use the Threadbase app for iOS or Android.",
+        "e2ee-web-server-unsupported": "This streamer needs an update before a browser can connect to it with encryption. Update the streamer, or pair from the Threadbase app for iOS or Android."
       },
       "alreadyAdded": "This address is already in your list. Delete that server first if you want to add it again."
     }

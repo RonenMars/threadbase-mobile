@@ -16,6 +16,7 @@ import { getDeviceClientId } from './device-id'
 import { isCleartextAllowed } from './cleartext-policy'
 import { clientLog } from '@/lib/clientLog'
 import { OpenError, openContextOnce, type TransportContext } from '@/services/e2ee/context'
+import { openTicketedSocket, ticketedSocketProtocolOk } from '@/services/e2ee/ticketed-socket'
 
 export type WSMessage =
   | { type: 'session_update'; session: Session }
@@ -110,14 +111,6 @@ export interface WsEncryptionConfig {
   requireEncryption?: boolean
 }
 
-type HeaderWebSocketConstructor = {
-  new (
-    uri: string,
-    protocols?: string | string[] | null,
-    options?: { headers: Record<string, string> } | null,
-  ): WebSocket
-}
-
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000, 30000]
 // A TCP/TLS handshake that is black-holed (packets dropped, no RST) can hang
 // for 60s+ before the platform fires onerror. Abandon the attempt sooner so
@@ -140,6 +133,7 @@ export interface ConnectionLogEntry {
     | 'force_reconnect'
     | 'disconnect'
     | 'cleartext_blocked'
+    | 'e2ee_protocol_mismatch'
   attempt?: number
 }
 
@@ -158,6 +152,9 @@ export function getConnectionLog(): readonly ConnectionLogEntry[] {
   return connectionLog
 }
 
+/** Permanent WS failures the UI can name, rather than showing a bare "disconnected". */
+export type WsPermanentError = 'e2ee_protocol_mismatch'
+
 class WSClient {
   private socket: WebSocket | null = null
   private url = ''
@@ -166,6 +163,7 @@ class WSClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private connectTimer: ReturnType<typeof setTimeout> | null = null
   private _status: 'connecting' | 'connected' | 'disconnected' = 'disconnected'
+  private _lastError: WsPermanentError | null = null
   private statusListeners: Set<(s: WSClient['_status']) => void> = new Set()
   private encryption: WsEncryptionConfig = {}
   private context: TransportContext | null = null
@@ -225,6 +223,7 @@ class WSClient {
     const generation = ++this.generation
     this._retireCurrentConnection()
     this._clearConnectTimer()
+    this._lastError = null
 
     this._setStatus('connecting')
     logConnection(this.serverId, 'connect', this.reconnectAttempt)
@@ -261,10 +260,7 @@ class WSClient {
           throw new Error('E2EE: WebSocket context was issued without a ticket')
         }
         this.context = context
-        const HeaderWebSocket = WebSocket as HeaderWebSocketConstructor
-        socket = new HeaderWebSocket(this.url.replace(/\?key=.*$/, ''), null, {
-          headers: { 'X-TB-Ticket': context.ticket },
-        })
+        socket = openTicketedSocket(this.url.replace(/\?key=.*$/, ''), context.ticket)
       } else {
         socket = new WebSocket(this.url)
       }
@@ -286,6 +282,7 @@ class WSClient {
     // events already queued for dispatch. Comparing against `this.socket`
     // (updated synchronously whenever a new connect attempt starts) closes
     // that gap regardless of platform close() timing.
+    let firstFrameVerified = false
     const isCurrent = () =>
       generation === this.generation &&
       this.socket === socket &&
@@ -301,9 +298,28 @@ class WSClient {
     socket.onopen = () => {
       if (!isCurrent()) return
       this._clearConnectTimer()
+      if (context && !ticketedSocketProtocolOk(socket)) {
+        // The server opened the socket without taking the ticket path (web
+        // only). Permanent for this build: no reconnect, no ticket retry, and
+        // never a plaintext or `?key=` redial — the same terminal outcome as a
+        // non-retryable `OpenError` above. Set the error before status so a
+        // status listener can read it and show more than "disconnected".
+        logConnection(this.serverId, 'e2ee_protocol_mismatch')
+        this._lastError = 'e2ee_protocol_mismatch'
+        this._retireCurrentConnection()
+        this._setStatus('disconnected')
+        return
+      }
       logConnection(this.serverId, 'open')
-      this.reconnectAttempt = 0
-      this.ticketUpgradeRetryAvailable = true
+      // A sealed socket is not proven by opening: one that fails its first
+      // frame would otherwise redial at the minimum backoff forever, and each
+      // redial is a handshake against a five-per-minute device limit. It resets
+      // once a frame unseals (below). Plaintext keeps resetting here — a bad
+      // frame never closes it, and a redial costs no handshake.
+      if (!context) {
+        this.reconnectAttempt = 0
+        this.ticketUpgradeRetryAvailable = true
+      }
       this._setStatus('connected')
       // Register this device so the server can unicast session_list back only
       // to the initiating client.
@@ -345,6 +361,11 @@ class WSClient {
       } catch {
         if (context) this._failCurrentConnection(socket, context, false)
         return
+      }
+      if (context && !firstFrameVerified) {
+        firstFrameVerified = true
+        this.reconnectAttempt = 0
+        this.ticketUpgradeRetryAvailable = true
       }
       if (msg.type === 'session_ready') {
         clientLog.info('ws', 'session_ready received', {
@@ -488,6 +509,10 @@ class WSClient {
     return this._status
   }
 
+  lastError(): WsPermanentError | null {
+    return this._lastError
+  }
+
   onStatusChange(listener: (s: WSClient['_status']) => void): () => void {
     this.statusListeners.add(listener)
     return () => this.statusListeners.delete(listener)
@@ -597,6 +622,10 @@ class WSClientManager {
 
   status(serverId: string): 'connecting' | 'connected' | 'disconnected' {
     return this.clients.get(serverId)?.status() ?? 'disconnected'
+  }
+
+  lastError(serverId: string): WsPermanentError | null {
+    return this.clients.get(serverId)?.lastError() ?? null
   }
 
   send(serverId: string, msg: unknown) {
