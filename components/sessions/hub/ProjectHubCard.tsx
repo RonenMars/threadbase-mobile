@@ -4,7 +4,6 @@ import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } f
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
-import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { isPresentationLive } from '@/lib/sessionPresentation'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
@@ -35,7 +34,6 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   const { t, i18n } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
-  const mergeChats = useSettingsStore((s) => s.mergeChats)
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const chevronProgress = useSharedValue(isOpen ? 1 : 0)
@@ -142,7 +140,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
               ) : null}
             </View>
             <Text style={styles.countBadge}>
-              {mergeChats ? sessionCount + convCount : `${sessionCount} · ${convCount}`}
+              {sessionCount + convCount}
             </Text>
             <Animated.View style={chevronStyle}>
               <CaretRight size={16} color={theme.text.secondary} />
@@ -151,93 +149,40 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
 
           {isOpen && (
             <View style={styles.body}>
-          {mergeChats ? (
-            <View style={styles.section}>
-              {[
-                ...group.sessions.map((s) => ({
-                  key: `s-${s.serverId}::${s.id}`,
-                  ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
-                  node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
-                })),
-                ...conversations.map((c) => ({
-                  key: `c-${c.serverId}::${c.id}`,
-                  ms: Date.parse(c.lastActivity) || 0,
-                  node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} forceServerChip={forceServerChip} />,
-                })),
-              ]
-                .sort((a, b) => b.ms - a.ms)
-                .map((item) => item.node)}
-              {isLoading ? (
-                <ActivityIndicator
-                  style={styles.bodySpinner}
-                  size="small"
-                  color={theme.text.secondary}
-                  testID={`hub-conversations-loading-${group.projectPath}`}
-                />
-              ) : null}
-              {convCount > conversations.length ? (
-                <TouchableOpacity
-                  onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
-                  activeOpacity={0.75}
-                  style={styles.seeAllRow}
-                >
-                  <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
-                  <CaretRight size={14} color={theme.text.accent} />
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          ) : (
-            <>
-              {sessionCount > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>
-                    {t('loading.sessionsLabel').toLocaleUpperCase(i18n.language)}
-                  </Text>
-                  {group.sessions.map((session) => (
-                    <SessionRow
-                      key={`${session.serverId}::${session.id}`}
-                      session={session}
-                      forceServerChip={forceServerChip}
-                    />
-                  ))}
-                </View>
-              )}
-
-              {convCount > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>
-                    {t('loading.conversationsLabel').toLocaleUpperCase(i18n.language)}
-                  </Text>
-                  {isLoading ? (
-                    <ActivityIndicator
-                      style={styles.bodySpinner}
-                      size="small"
-                      color={theme.text.secondary}
-                      testID={`hub-conversations-loading-${group.projectPath}`}
-                    />
-                  ) : null}
-                  {conversations.slice(0, 5).map((conv) => (
-                    <ConvRow
-                      key={`${conv.serverId}::${conv.id}`}
-                      conv={conv}
-                      onLongPress={setActiveConv}
-                      forceServerChip={forceServerChip}
-                    />
-                  ))}
-                  {convCount > 5 && (
-                    <TouchableOpacity
-                      onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
-                      activeOpacity={0.75}
-                      style={styles.seeAllRow}
-                    >
-                      <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
-                      <CaretRight size={14} color={theme.text.accent} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-            </>
-          )}
+          <View style={styles.section}>
+            {[
+              ...group.sessions.map((s) => ({
+                key: `s-${s.serverId}::${s.id}`,
+                ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
+                node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
+              })),
+              ...conversations.map((c) => ({
+                key: `c-${c.serverId}::${c.id}`,
+                ms: Date.parse(c.lastActivity) || 0,
+                node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} forceServerChip={forceServerChip} />,
+              })),
+            ]
+              .sort((a, b) => b.ms - a.ms)
+              .map((item) => item.node)}
+            {isLoading ? (
+              <ActivityIndicator
+                style={styles.bodySpinner}
+                size="small"
+                color={theme.text.secondary}
+                testID={`hub-conversations-loading-${group.projectPath}`}
+              />
+            ) : null}
+            {convCount > conversations.length ? (
+              <TouchableOpacity
+                onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
+                activeOpacity={0.75}
+                style={styles.seeAllRow}
+              >
+                <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
+                <CaretRight size={14} color={theme.text.accent} />
+              </TouchableOpacity>
+            ) : null}
+          </View>
               {onBrowsePath ? (
                 <TouchableOpacity
                   onPress={() => onBrowsePath(group)}

@@ -257,8 +257,6 @@ export default function SettingsScreen() {
     setAddServerAction,
     sessionLeaveAction,
     setSessionLeaveAction,
-    mergeChats,
-    setMergeChats,
     showProviderVersionWarning,
     setShowProviderVersionWarning,
     colorScheme,
@@ -532,12 +530,6 @@ await refreshServerInfo(serverId)
             </View>
             <ThemePicker current={colorScheme} tab={themeTab} onChange={setColorScheme} />
           </View>
-          <SettingsRow
-            label={t('session.mergeChats')}
-            value={mergeChats}
-            onValueChange={setMergeChats}
-            testID="settings-merge-chats-toggle"
-          />
         </View>
 
         <SectionHeader title={t('notifications.whenAddingServer')} />

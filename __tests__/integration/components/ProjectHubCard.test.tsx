@@ -2,7 +2,6 @@ import React from 'react'
 import { render } from '@testing-library/react-native'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ProjectHubCard } from '@/components/sessions/hub/ProjectHubCard'
-import { useSettingsStore } from '@/stores/settings'
 import { useServersStore } from '@/stores/servers'
 import type { ProjectGroup } from '@/components/sessions/hub/useProjectGroups'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -84,7 +83,6 @@ function renderCard(isOpen = true, cardGroup: ProjectGroup = group) {
 describe('ProjectHubCard', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en')
-    useSettingsStore.setState({ mergeChats: true })
     useServersStore.setState({
       servers: {
         'srv-1': {
@@ -127,21 +125,5 @@ describe('ProjectHubCard', () => {
   it('prints the today count once the card is open', async () => {
     const { getByText } = await renderCard(true, todayGroup)
     expect(getByText(/1 live · 1 today · last/)).toBeTruthy()
-  })
-
-  it('localizes the unmerged home-card section labels', async () => {
-    useSettingsStore.setState({ mergeChats: false })
-    await i18n.changeLanguage('he')
-
-    const { getByText, queryByText } = await renderCard()
-
-    expect(getByText('סשנים')).toBeTruthy()
-    expect(getByText('שיחות')).toBeTruthy()
-    // Hebrew _one replaces the digit with a word ("אחד פעיל" = "one active"),
-    // matching sessions:card.prompts — see docs on the plural-forms PR.
-    expect(getByText(/אחד פעיל · אחרון:/)).toBeTruthy()
-    expect(queryByText('SESSIONS')).toBeNull()
-    expect(queryByText('CONVERSATIONS')).toBeNull()
-    expect(queryByText(/1 live · last/)).toBeNull()
   })
 })
