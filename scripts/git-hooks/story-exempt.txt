@@ -11,3 +11,5 @@ components/terminal/TerminalRawModeToast.tsx
 components/ui/ErrorRecoverySheet.tsx
 # Screen-sized list composition over stores, router and the quick-access sheet — the pieces (cards, rows, eyebrow) have stories.
 components/sessions/now/NowList.tsx
+# Store-driven host: announcements plus ErrorBanner; no chrome of its own.
+components/alerts/AlertHost.tsx

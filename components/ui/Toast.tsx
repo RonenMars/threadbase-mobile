@@ -13,7 +13,8 @@ import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { alertAppearance } from '@/lib/alertAppearance'
-import { useToastStore, type ToastEntry } from '@/stores/toasts'
+import { useAlertStore } from '@/stores/alerts'
+import type { AlertEntry } from '@/types/alerts'
 import { alertFingerprint } from '@/types/alerts'
 
 const DISMISS_DURATION = 220
@@ -21,16 +22,16 @@ const DOWN_MAX = 40
 const DOWN_THRESHOLD = 20
 
 type Props = {
-  toast: ToastEntry
+  toast: AlertEntry
 }
 
 export function Toast({ toast }: Props) {
   const { t } = useTranslation('common')
-  const openDetails = useToastStore((s) => s.openDetails)
-  const stickyDismiss = useToastStore((s) => s.stickyDismiss)
+  const openDetails = useAlertStore((s) => s.openDetails)
+  const stickyDismiss = useAlertStore((s) => s.stickyDismiss)
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
-  const appearance = alertAppearance(toast.level, theme, toast.accent)
+  const appearance = alertAppearance(toast.level, theme)
   const Icon = appearance.Icon
   const closeLabel = t('button.close')
   const hasDetails = Boolean(toast.details || toast.message)
@@ -113,7 +114,7 @@ export function Toast({ toast }: Props) {
     if (hasDetails) openDetails(toast.id)
   }
 
-  const titleColor = toast.level === 'info' || toast.level === 'debug'
+  const titleColor = toast.level === 'info'
     ? theme.text.secondary
     : theme.text.primary
   const bodyRole = toast.onPress || hasDetails ? 'button' as const : undefined
@@ -170,12 +171,12 @@ export function Toast({ toast }: Props) {
   )
 }
 
-function actionBorder(theme: Theme, accent: string, variant: ToastEntry['buttonVariant']) {
+function actionBorder(theme: Theme, accent: string, variant: AlertEntry['buttonVariant']) {
   if (variant === 'destructive') return { borderColor: theme.text.danger }
   return { borderColor: accent }
 }
 
-function actionText(theme: Theme, accent: string, variant: ToastEntry['buttonVariant']) {
+function actionText(theme: Theme, accent: string, variant: AlertEntry['buttonVariant']) {
   if (variant === 'destructive') return { color: theme.text.danger }
   return { color: accent }
 }

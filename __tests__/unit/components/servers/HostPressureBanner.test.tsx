@@ -2,7 +2,7 @@ import React from 'react'
 import { act, cleanup, fireEvent, waitFor } from '@testing-library/react-native'
 import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ToastViewport } from '@/components/ui/ToastViewport'
-import { useToastStore } from '@/stores/toasts'
+import { useAlertStore } from '@/stores/alerts'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
 import type { HostPressureAlert, ServerConfig } from '@/types/api'
@@ -51,7 +51,7 @@ function renderBanner() {
 
 beforeEach(() => {
   cleanup()
-  useToastStore.getState().reset()
+  useAlertStore.getState().reset()
   useServersStore.setState({
     servers: {},
     activeServerIds: [],
