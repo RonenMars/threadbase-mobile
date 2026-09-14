@@ -12,6 +12,12 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     paddingBottom: spacing.xs,
     gap: spacing.sm,
   },
+  rail: {
+    width: 3,
+    alignSelf: 'stretch',
+    minHeight: 16,
+    borderRadius: 2,
+  },
   label: {
     fontSize: font.xs,
     color: theme.text.secondary,
