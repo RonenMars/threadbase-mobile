@@ -6,11 +6,12 @@ const path = require('path')
 
 // Wall-clock split for CI only. Android Maestro is ~38 min on one emulator;
 // three shards overlap that under separate VMs after one APK job. iOS Maestro
-// is ~19 min once the Release .app exists; two shards, because macos-26 is
-// the expensive half and the build still serializes in front.
+// is duration-weighted across three shards once the Release .app exists.
 const ANDROID_SHARD_COUNT = 3
-const IOS_SHARD_COUNT = 2
+const IOS_SHARD_COUNT = 3
+const DEFAULT_FLOW_DURATION_S = 120
 const FLOW_RE = /\be2e\/[\w.-]+\.yaml\b/g
+const DURATIONS_PATH = path.join(__dirname, 'mock-suite-durations.json')
 
 function parseMockSuiteFlows(script) {
   const seen = new Set()
@@ -37,19 +38,41 @@ function parseFlowsInput(raw) {
   return flows
 }
 
-function splitFlows(flows, shardCount) {
+function durationOf(flow, durations) {
+  const raw = durations == null ? undefined : durations[flow]
+  const value = typeof raw === 'number' ? raw : Number(raw)
+  if (!Number.isFinite(value) || value <= 0) return DEFAULT_FLOW_DURATION_S
+  return value
+}
+
+function splitFlows(flows, shardCount, durations = {}) {
   if (flows.length === 0) {
     throw new Error('No mock-suite flows to shard.')
   }
   const n = Math.min(Math.max(1, shardCount), flows.length)
-  const buckets = Array.from({ length: n }, () => [])
-  flows.forEach((flow, index) => {
-    buckets[index % n].push(flow)
-  })
-  return buckets.map((shardFlows, index) => ({
+  const ranked = flows
+    .map((flow, index) => ({ flow, index, duration: durationOf(flow, durations) }))
+    .sort((left, right) => {
+      if (right.duration !== left.duration) return right.duration - left.duration
+      return left.index - right.index
+    })
+  const buckets = Array.from({ length: n }, () => ({ total: 0, items: [] }))
+  for (const item of ranked) {
+    let best = 0
+    for (let i = 1; i < n; i += 1) {
+      if (buckets[i].total < buckets[best].total) best = i
+    }
+    buckets[best].items.push(item)
+    buckets[best].total += item.duration
+  }
+  return buckets.map((bucket, index) => ({
     shard: String(index + 1),
     total: String(n),
-    flows: shardFlows.join(' '),
+    flows: bucket.items
+      .slice()
+      .sort((left, right) => left.index - right.index)
+      .map((item) => item.flow)
+      .join(' '),
   }))
 }
 
@@ -71,6 +94,7 @@ function planShards({
   mockScript,
   androidShardCount = ANDROID_SHARD_COUNT,
   iosShardCount = IOS_SHARD_COUNT,
+  durationWeights = { android: {}, ios: {} },
 }) {
   const { android, ios } = planPlatforms(eventName, platformInput)
   const requested = parseFlowsInput(flowsInput)
@@ -82,8 +106,10 @@ function planShards({
   return {
     android,
     ios,
-    androidShards: android ? splitFlows(allFlows, shardCountFor(androidShardCount)) : [],
-    iosShards: ios ? splitFlows(allFlows, shardCountFor(iosShardCount)) : [],
+    androidShards: android
+      ? splitFlows(allFlows, shardCountFor(androidShardCount), durationWeights.android)
+      : [],
+    iosShards: ios ? splitFlows(allFlows, shardCountFor(iosShardCount), durationWeights.ios) : [],
     flows: allFlows,
   }
 }
@@ -104,15 +130,52 @@ function shardsForMatrix(shards) {
   return [{ shard: '1', total: '1', flows: 'e2e/launch.yaml' }]
 }
 
+function loadDurationWeights() {
+  const data = JSON.parse(fs.readFileSync(DURATIONS_PATH, 'utf8'))
+  return {
+    android: data.android || {},
+    ios: data.ios || {},
+  }
+}
+
+function shardEstimateSeconds(shard, durations) {
+  return shard.flows
+    .split(' ')
+    .filter(Boolean)
+    .reduce((sum, flow) => sum + durationOf(flow, durations), 0)
+}
+
+function writePlanSummary(plan, durationWeights) {
+  const summary = process.env.GITHUB_STEP_SUMMARY
+  if (!summary) return
+  const lines = []
+  const describe = (label, shards, durations) => {
+    if (shards.length === 0) return
+    lines.push(`## ${label} shards (historical weights)`)
+    for (const shard of shards) {
+      const seconds = shardEstimateSeconds(shard, durations)
+      lines.push(`- shard ${shard.shard}/${shard.total}: ${seconds}s — ${shard.flows}`)
+    }
+  }
+  describe('Android', plan.androidShards, durationWeights.android)
+  describe('iOS', plan.iosShards, durationWeights.ios)
+  if (lines.length > 0) {
+    fs.appendFileSync(summary, `${lines.join('\n')}\n`)
+  }
+}
+
 function main() {
   const repoRoot = path.join(__dirname, '..')
   const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'))
+  const durationWeights = loadDurationWeights()
   const plan = planShards({
     eventName: process.env.GITHUB_EVENT_NAME || '',
     platformInput: process.env.INPUT_PLATFORM || '',
     flowsInput: process.env.INPUT_FLOWS || '',
     mockScript: pkg.scripts['test:e2e:mock'],
+    durationWeights,
   })
+  writePlanSummary(plan, durationWeights)
   const output = process.env.GITHUB_OUTPUT
   if (!output) {
     process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`)
