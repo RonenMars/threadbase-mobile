@@ -1,7 +1,4 @@
 {
-  "header": {
-    "serverStatus": "Server status"
-  },
   "search": {
     "placeholder": "Search sessions & conversations…",
     "accessibilityLabel": "Search"

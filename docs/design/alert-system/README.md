@@ -25,7 +25,7 @@ The hybrid recommended on option 1c's card:
 ## Step sequence
 
 1. `AlertHost` arbiter (`feat/alert-host-arbiter`)
-2. Header status pill
+2. Header status pill (`feat/alert-status-pill`)
 3. Status sheet
 4. Inline-first failures
 5. Critical dialogs

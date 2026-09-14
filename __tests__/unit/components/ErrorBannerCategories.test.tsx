@@ -6,7 +6,7 @@ import { useErrorSheetStore } from '@/stores/errorSheet'
 import { useAlertStore } from '@/stores/alerts'
 import { renderWithI18n } from '@/test-utils/render'
 import { queryClient } from '@/services/query-client'
-import { fireEvent, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, waitFor } from '@testing-library/react-native'
 
 describe('ErrorBanner category rows', () => {
   beforeEach(() => {
@@ -17,10 +17,20 @@ describe('ErrorBanner category rows', () => {
     useServersStore.setState({ servers: {} })
   })
 
+  it('does not auto-open the recovery sheet', async () => {
+    useLoadingStateStore.setState({
+      errors: [{ id: 'messages', category: 'messages', message: 'boom' }],
+    })
+    const { queryByTestId } = await renderWithI18n(<ErrorBanner />)
+    expect(queryByTestId('error-recovery-sheet')).toBeNull()
+    expect(useErrorSheetStore.getState().open).toBe(false)
+  })
+
   it('single error: shows Retry, no Retry all, and a code/raw-message technical row', async () => {
     useLoadingStateStore.setState({
       errors: [{ id: 'messages', category: 'messages', status: 503, message: 'The server is busy; retrying shortly' }],
     })
+    useErrorSheetStore.setState({ open: true })
     const { getByTestId, findByText, queryByText } = await renderWithI18n(<ErrorBanner />)
 
     getByTestId('error-sheet-retry-messages')
@@ -38,6 +48,7 @@ describe('ErrorBanner category rows', () => {
         { id: 'session-detail', category: 'session-detail', message: 'boom too' },
       ],
     })
+    useErrorSheetStore.setState({ open: true })
     const { getByTestId, getByText } = await renderWithI18n(<ErrorBanner />)
 
     getByTestId('error-sheet-row-messages')
@@ -49,6 +60,7 @@ describe('ErrorBanner category rows', () => {
     useLoadingStateStore.setState({
       errors: [{ id: 'messages', category: 'messages', message: 'boom' }],
     })
+    useErrorSheetStore.setState({ open: true })
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined)
     const { getByTestId, queryByTestId } = await renderWithI18n(<ErrorBanner />)
 
@@ -65,6 +77,7 @@ describe('ErrorBanner category rows', () => {
         { id: 'session-detail', category: 'session-detail', message: 'boom too' },
       ],
     })
+    useErrorSheetStore.setState({ open: true })
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined)
     const { getByTestId, queryByTestId } = await renderWithI18n(<ErrorBanner />)
 
@@ -76,18 +89,22 @@ describe('ErrorBanner category rows', () => {
     invalidate.mockRestore()
   })
 
-  it('dismissing the sheet keeps the errors sticky and shows the compact indicator, which reopens it', async () => {
+  it('closing the sheet is a minimize — opening it again shows the same errors', async () => {
     useLoadingStateStore.setState({
       errors: [{ id: 'messages', category: 'messages', message: 'boom' }],
     })
+    useErrorSheetStore.setState({ open: true })
     const { getByTestId, queryByTestId, findByTestId } = await renderWithI18n(<ErrorBanner />)
 
     getByTestId('error-recovery-sheet')
     fireEvent.press(getByTestId('error-sheet-close'))
 
     await waitFor(() => expect(queryByTestId('error-recovery-sheet')).toBeNull())
-    const indicator = await findByTestId('issues-indicator')
-    fireEvent.press(indicator)
+    expect(useLoadingStateStore.getState().errors).toHaveLength(1)
+
+    await act(async () => {
+      useErrorSheetStore.getState().openSheet()
+    })
     await findByTestId('error-recovery-sheet')
   })
 
@@ -95,19 +112,19 @@ describe('ErrorBanner category rows', () => {
     useLoadingStateStore.setState({
       errors: [{ id: 'browse', category: 'browse', message: 'file tree down' }],
     })
+    useErrorSheetStore.setState({ open: true })
     const { queryByTestId } = await renderWithI18n(<ErrorBanner />)
 
     expect(queryByTestId('error-recovery-sheet')).toBeNull()
-    expect(queryByTestId('issues-indicator')).toBeNull()
   })
 
   it('keeps blocking auth failures out of the global recovery sheet', async () => {
     useLoadingStateStore.setState({
       errors: [{ id: 'sessions', category: 'sessions', status: 401, message: 'expired' }],
     })
+    useErrorSheetStore.setState({ open: true })
     const { queryByTestId } = await renderWithI18n(<ErrorBanner />)
 
     expect(queryByTestId('error-recovery-sheet')).toBeNull()
-    expect(queryByTestId('issues-indicator')).toBeNull()
   })
 })

@@ -304,7 +304,7 @@ async function handleRequest(req, res) {
   // Must precede the /api/sessions/:id wildcard. Without this, `names` is
   // served as a session record; useFetchSessionNames' query key starts with
   // `session` so a real 404 here is classified as "Session details failed to
-  // load" and leaves the red issues-indicator over marketing shots.
+  // load" and leaves the red status pill over marketing shots.
   if (method === 'GET' && p === '/api/sessions/names') {
     const sessions = JSON.parse(readFixture('sessions.json'))
     const names = {}

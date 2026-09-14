@@ -1,7 +1,4 @@
 {
-  "header": {
-    "serverStatus": "מצב השרת"
-  },
   "search": {
     "placeholder": "חפש סשנים ושיחות…",
     "accessibilityLabel": "חיפוש"
