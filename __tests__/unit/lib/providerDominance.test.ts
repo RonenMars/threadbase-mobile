@@ -11,20 +11,20 @@ describe('dominantProvider', () => {
 
   it('returns the clear majority', () => {
     expect(
-      dominantProvider(['codex-cli', 'claude-code', 'codex-cli', 'cursor-cli']),
+      dominantProvider(['codex-cli', 'claude-code', 'codex-cli', 'cursor']),
     ).toBe('codex-cli')
   })
 
   it('returns undefined on an exact tie at the top', () => {
     expect(
-      dominantProvider(['claude-code', 'codex-cli', 'cursor-cli', 'codex-cli', 'claude-code']),
+      dominantProvider(['claude-code', 'codex-cli', 'cursor', 'codex-cli', 'claude-code']),
     ).toBeUndefined()
   })
 
   it('ignores undefined rows', () => {
     expect(
-      dominantProvider([undefined, 'cursor-cli', undefined, undefined]),
-    ).toBe('cursor-cli')
+      dominantProvider([undefined, 'cursor', undefined, undefined]),
+    ).toBe('cursor')
     expect(dominantProvider([undefined, undefined])).toBeUndefined()
   })
 })
