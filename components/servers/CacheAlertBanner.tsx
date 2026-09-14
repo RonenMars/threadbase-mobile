@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useToastSync } from '@/hooks/useToastSync'
+import { useAlertSync } from '@/hooks/useAlertSync'
 import { useServersStore } from '@/stores/servers'
-import type { AlertSpec } from '@/types/alerts'
+import { cacheCause, type AlertSpec } from '@/types/alerts'
 
 interface Props {
   onPress: () => void
@@ -24,6 +24,7 @@ export function CacheAlertBanner({ onPress }: Props) {
 
     const serverLabel = servers[alertServerId]?.label || servers[alertServerId]?.url || alertServerId
     return {
+      cause: cacheCause(alertServerId),
       level: 'warning',
       title: t('cacheAlert.bannerTitle', { count: alert.missingCount, server: serverLabel }),
       message: t('cacheAlert.toastMessage'),
@@ -35,6 +36,6 @@ export function CacheAlertBanner({ onPress }: Props) {
     }
   }, [cacheAlert, displayedServerIds, onPress, servers, t])
 
-  useToastSync(TOAST_ID, spec, VIEWPORT)
+  useAlertSync(TOAST_ID, spec, VIEWPORT)
   return null
 }

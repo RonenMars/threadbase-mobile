@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, AccessibilityInfo } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { CaretDown, CaretUp, CaretRight, ArrowsClockwise, Copy, Check, WarningCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -109,15 +109,6 @@ export function ErrorRecoverySheet({ visible, title, items, retryAllLabel, retry
   const s = useMemo(() => styles(theme), [theme])
   const glassBackground = useGlassSheetBackground()
 
-  const announcedRef = React.useRef<string | null>(null)
-  React.useEffect(() => {
-    if (!visible) return
-    const key = `${title}:${items.length}`
-    if (announcedRef.current === key) return
-    announcedRef.current = key
-    AccessibilityInfo.announceForAccessibility(`${title}. ${items.length}`)
-  }, [visible, title, items.length])
-
   const renderBackdrop = useCallback(
     (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
       <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} pressBehavior="close" />
@@ -148,8 +139,7 @@ export function ErrorRecoverySheet({ visible, title, items, retryAllLabel, retry
     >
       {/*
         Nor an accessibilityLabel on <BottomSheet> — it re-labels that same
-        container. The sheet already announces itself explicitly through
-        announceForAccessibility above, and accessibilityLiveRegion is
+        container. AlertHost announces new causes; accessibilityLiveRegion is
         Android-only, so it belongs on the content view where it costs
         nothing on iOS.
       */}
