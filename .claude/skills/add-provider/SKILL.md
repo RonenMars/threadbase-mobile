@@ -1,13 +1,13 @@
 ---
 name: add-provider
-description: Add a new agent CLI start provider in threadbase-mobile (browse chips, health parser, badges, filters, i18n). Use when adding Cursor, Codex, Gemini, Amp, Aider, OpenCode, Goose, ClawCode, Hermes, cursor-cli, start chips, provider badges, or when the user says add a provider. Live PTY and history indexing are other repos — see Companions.
+description: Add a new agent CLI start provider in threadbase-mobile (browse chips, health parser, badges, filters, i18n). Use when adding Cursor, Codex, Gemini, Amp, Aider, OpenCode, Goose, ClawCode, Hermes, cursor, start chips, provider badges, or when the user says add a provider. Live PTY and history indexing are other repos — see Companions.
 ---
 
 # Add a provider (mobile)
 
 This repo is the **phone chips** half. Without it, a streamer that accepts the new `provider` is unused: browse will not send that name.
 
-Scanner, streamer, and mobile each declare `ProviderName`. They are not linked. Use the **same kebab wire name** as the streamer (`aider`, `opencode`, `goose`, `cursor-cli`, …). Product label is separate (`Aider`, `OpenCode`).
+Scanner, streamer, and mobile each declare `ProviderName`. They are not linked. Use the **same kebab wire name** as the streamer (`aider`, `opencode`, `goose`, `cursor`, …). Product label is separate (`Aider`, `OpenCode`). `cursor-cli` is a legacy alias for `cursor`.
 
 ## Companions
 
@@ -31,7 +31,7 @@ Work on a **sibling worktree** from `origin/main` (`git worktree add ../tb-mobil
 | History-only (no CLI, SQLite store, editor chat)? | Still add the name to badges/filters/health if the scanner will emit it. **No** browse start chip until a runner exists. |
 | Fourth+ start chip? | Keep the chip. Wrap the selector (`flexWrap`) rather than hiding providers. Do not collapse into a menu unless the user asked. |
 
-Grep the **current** two-way unions, not only `codex-cli`. After Cursor, leftovers look like `'claude-code' \| 'codex-cli' \| 'cursor-cli'` and `=== 'cursor-cli' ? … : Claude`.
+Grep the **current** two-way unions, not only `codex-cli`. After Cursor, leftovers look like `'claude-code' \| 'codex-cli' \| 'cursor'` and `=== 'cursor' ? … : Claude`. Also accept the legacy alias `cursor-cli`.
 
 ## Iron rules
 
@@ -100,4 +100,4 @@ npx jest --ci --runInBand --testPathPattern 'browse-provider-flow|BrowseRecents|
 
 Live PTY — [streamer skill](https://github.com/RonenMars/threadbase-streamer/blob/HEAD/.claude/skills/add-provider/SKILL.md). History — [scanner skill](https://github.com/RonenMars/threadbase-scanner/blob/HEAD/.claude/skills/add-provider/SKILL.md). Installing the host CLI.
 
-Worked example: `cursor-cli` in PR #1055.
+Worked example: `cursor` chips in PR #1055 (shipped as `cursor-cli`; wire name is now `cursor`). History indexing is scanner + streamer (`cursorRoots`); this repo does not parse transcripts. List items carry `isImportedFromClaude` / `isImportedFromCodex` / `isImportedFromCursor`; `ConversationFilter` can send `include` and those flags on list/count.

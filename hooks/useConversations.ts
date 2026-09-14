@@ -132,6 +132,16 @@ export function useConversations(
           if (filter?.dateTo) params.set('dateTo', filter.dateTo)
           if (filter?.profileId) params.set('profileId', filter.profileId)
           if (filter?.provider) params.set('provider', filter.provider)
+          if (filter?.include) params.set('include', filter.include)
+          if (filter?.isImportedFromClaude !== undefined) {
+            params.set('isImportedFromClaude', filter.isImportedFromClaude ? '1' : '0')
+          }
+          if (filter?.isImportedFromCodex !== undefined) {
+            params.set('isImportedFromCodex', filter.isImportedFromCodex ? '1' : '0')
+          }
+          if (filter?.isImportedFromCursor !== undefined) {
+            params.set('isImportedFromCursor', filter.isImportedFromCursor ? '1' : '0')
+          }
           params.set('limit', String(limit))
           params.set('offset', String(pageParam))
           if (pageParam === 0 && isFreshEpoch) {
