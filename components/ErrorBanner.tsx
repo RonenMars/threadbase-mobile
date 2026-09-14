@@ -10,7 +10,11 @@ import { ErrorRecoverySheet } from '@/components/ui/ErrorRecoverySheet'
 import { IssuesIndicator } from '@/components/ui/IssuesIndicator'
 import { queryClient } from '@/services/query-client'
 import { classifyError } from '@/services/error-policy'
-import type { AlertItem } from '@/types/alerts'
+import { useAlertListSync } from '@/hooks/useAlertSync'
+import type { AlertInput } from '@/stores/alerts'
+import { queryCause, serverCause, type AlertItem } from '@/types/alerts'
+
+const VIEWPORT = 'global'
 
 /** Categories rendered in the global recovery sheet. `browse` is deliberately
  * excluded: the file-tree screen already renders its own failure inline
@@ -166,6 +170,34 @@ export function ErrorBanner() {
 
     return failedServerIds.length > 0 ? serverRows : categoryRows
   }, [failedServerIds, sheetErrors, servers, statuses, retryingIds, t, dismissError])
+
+  const entries = useMemo((): AlertInput[] => {
+    const serverIds = new Set(failedServerIds)
+    return items.map((item): AlertInput => {
+      const cause = serverIds.has(item.id) ? serverCause(item.id) : queryCause(item.id)
+      const base = {
+        id: item.id,
+        viewport: VIEWPORT,
+        cause,
+        level: 'error' as const,
+        title: item.title,
+        message: item.message,
+        timeout: null,
+        onPress: item.onPress,
+      }
+      if (item.buttonText !== undefined && item.buttonAction !== undefined) {
+        return {
+          ...base,
+          buttonText: item.buttonText,
+          buttonAction: item.buttonAction,
+          buttonVariant: item.buttonVariant,
+        }
+      }
+      return base
+    })
+  }, [items, failedServerIds])
+
+  useAlertListSync(entries)
 
   // Auto-open the moment a new batch of sheet-worthy failures appears; stays
   // closed (only the compact indicator shows) once the user has minimized it,

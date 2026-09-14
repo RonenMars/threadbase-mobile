@@ -12,6 +12,14 @@
     "settings": "الإعدادات",
     "moreOptions": "خيارات إضافية"
   },
+  "alert": {
+    "level": {
+      "critical": "حرج",
+      "error": "خطأ",
+      "warning": "تحذير",
+      "info": "معلومات"
+    }
+  },
   "error": {
     "authDeviceRevoked": "لم يعُد هذا الجهاز مُصرّحًا له. أعد إقرانه بالخادم.",
     "authKeyRejected": "رفض الخادم مفتاح API. حدِّث مفتاح API وأعد المحاولة.",
