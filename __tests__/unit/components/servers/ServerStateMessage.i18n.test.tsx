@@ -1,7 +1,7 @@
 import React from 'react'
 import { cleanup } from '@testing-library/react-native'
+import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
-import { ToastViewport } from '@/components/ui/ToastViewport'
 import { wsManager } from '@/services/ws-client'
 import { useAlertStore } from '@/stores/alerts'
 import { renderWithI18n } from '@/test-utils/render'
@@ -43,7 +43,7 @@ describe('ServerStateMessage localization', () => {
           onRetryFailed={() => {}}
           isRetrying={false}
         />
-        <ToastViewport id="home" />
+        <HomeStatusStrip onPress={() => {}} />
       </>,
     )
 
@@ -67,7 +67,7 @@ describe('ServerStateMessage localization', () => {
           onRetryFailed={() => {}}
           isRetrying={false}
         />
-        <ToastViewport id="home" />
+        <HomeStatusStrip onPress={() => {}} />
       </>,
     )
 

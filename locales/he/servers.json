@@ -87,22 +87,11 @@
   },
   "stateMessage": {
     "buildingHistoryNamed": "{{server}} בונה את היסטוריית הסשנים…",
-    "buildingHistory": "בונה את היסטוריית הסשנים…",
     "unreachableNamed": "לא ניתן להגיע אל {{server}}. בדקו את החיבור או את כתובת השרת.",
-    "unreachableAll": "לא ניתן להגיע לאף שרת. בדקו את החיבור או את כתובת השרת.",
     "refreshFailedNamed": "לא ניתן לרענן סשנים מ־{{server}}.",
-    "refreshFailedAll": "לא ניתן לרענן סשנים מאף שרת.",
-    "refreshFailedSome": "לא ניתן לרענן סשנים מחלק מהשרתים.",
     "disconnectedNamed": "החיבור אל {{server}} נותק. מוצגים סשנים מהמטמון.",
-    "disconnectedAll": "החיבור לכל השרתים נותק. מוצגים סשנים מהמטמון.",
-    "disconnectedSome": "החיבור לחלק מהשרתים נותק. מוצגים סשנים מהמטמון.",
     "e2eeProtocolMismatchNamed": "{{server}} פתח חיבור שאינו מוצפן באופן שנדרש בדפדפן הזה. עדכנו את השרת, או בצעו התאמה מאפליקציית Threadbase ל-iOS או ל-Android.",
-    "e2eeProtocolMismatchAll": "השרתים האלה פתחו חיבור שאינו מוצפן באופן שנדרש בדפדפן הזה.",
-    "e2eeProtocolMismatchSome": "חלק מהשרתים פתחו חיבור שאינו מוצפן באופן שנדרש בדפדפן הזה.",
     "connectingNamed": "מתחבר אל {{server}}…",
-    "connectingAll": "מתחבר לשרתים…",
-    "partialUnreachableNamed": "לא ניתן להגיע אל {{server}}. ייתכן שחלק מהסשנים חסרים.",
-    "partialUnreachableSome": "לא ניתן להגיע לחלק מהשרתים. ייתכן שחלק מהסשנים חסרים.",
     "retrying": "מנסה מחדש שרתים שנכשלו…"
   },
   "displayedServers": {
