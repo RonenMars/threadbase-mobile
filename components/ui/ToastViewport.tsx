@@ -1,18 +1,18 @@
 import React from 'react'
 import { AlertDetailsModal } from '@/components/ui/AlertDetailsModal'
 import { Toast } from '@/components/ui/Toast'
-import { useToastStore } from '@/stores/toasts'
+import { useAlertStore } from '@/stores/alerts'
 
 type Props = {
   id: string
 }
 
 export function ToastViewport({ id }: Props) {
-  const toasts = useToastStore((s) => s.toasts)
-  const detailsId = useToastStore((s) => s.detailsId)
-  const closeDetails = useToastStore((s) => s.closeDetails)
-  const visible = toasts.filter((toast) => toast.viewport === id)
-  const detailsToast = visible.find((toast) => toast.id === detailsId)
+  const alerts = useAlertStore((s) => s.alerts)
+  const detailsId = useAlertStore((s) => s.detailsId)
+  const closeDetails = useAlertStore((s) => s.closeDetails)
+  const visible = alerts.filter((alert) => alert.viewport === id)
+  const detailsToast = visible.find((alert) => alert.id === detailsId)
 
   return (
     <>
@@ -25,7 +25,6 @@ export function ToastViewport({ id }: Props) {
           message={detailsToast.message}
           details={detailsToast.details}
           level={detailsToast.level}
-          accent={detailsToast.accent}
           onClose={closeDetails}
         />
       ) : null}

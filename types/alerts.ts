@@ -2,7 +2,41 @@ import type { ReactNode } from 'react'
 
 export const TOAST_DEFAULT_TIMEOUT_MS = 5000
 
-export type AlertLevel = 'debug' | 'info' | 'warning' | 'error' | 'critical' | 'custom'
+export type AlertLevel = 'critical' | 'error' | 'warning' | 'info'
+
+export const ALERT_LEVEL_RANK: Record<AlertLevel, number> = {
+  info: 0,
+  warning: 1,
+  error: 2,
+  critical: 3,
+}
+
+export type AlertCause =
+  | `server:${string}`
+  | `query:${string}`
+  | `host-pressure:${string}`
+  | `cache:${string}`
+  | 'servers:summary'
+  | 'terminal:raw-mode'
+
+export const CAUSE_SERVERS_SUMMARY: AlertCause = 'servers:summary'
+export const CAUSE_TERMINAL_RAW_MODE: AlertCause = 'terminal:raw-mode'
+
+export function serverCause(id: string): AlertCause {
+  return `server:${id}`
+}
+
+export function queryCause(category: string): AlertCause {
+  return `query:${category}`
+}
+
+export function hostPressureCause(id: string): AlertCause {
+  return `host-pressure:${id}`
+}
+
+export function cacheCause(id: string): AlertCause {
+  return `cache:${id}`
+}
 
 export type AlertButtonVariant = 'primary' | 'secondary' | 'destructive'
 
@@ -26,22 +60,30 @@ export type AlertItem = {
 } & AlertButton
 
 export type AlertSpec = {
+  cause: AlertCause
   level: AlertLevel
   title: string
   message: string
   details?: string
-  /** Milliseconds. `null` stays until dismissed. Toasts default to 5000 when omitted. */
+  /** Milliseconds. Honoured for `info` only; other levels ignore it. `null` stays until dismissed. Info defaults to 5000 when omitted. */
   timeout?: number | null
   hideCloseButton?: boolean
   onPress?: () => void
   onClose?: () => void
-  accent?: string
   icon?: ReactNode
   testID?: string
-  /** When set, the banner renders these as an accordion list instead of a single message. */
-  items?: AlertItem[]
 } & AlertButton
+
+export type AlertEntry = AlertSpec & {
+  id: string
+  viewport: string
+  raisedAt: number
+}
 
 export function alertFingerprint(spec: Pick<AlertSpec, 'level' | 'title' | 'message' | 'details'>): string {
   return `${spec.level}\0${spec.title}\0${spec.message}\0${spec.details ?? ''}`
+}
+
+export function announceKey(spec: Pick<AlertSpec, 'cause' | 'level'>): string {
+  return `${spec.cause}\0${spec.level}`
 }
