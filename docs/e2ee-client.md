@@ -11,10 +11,41 @@ Server-side design lives in the streamer repo (`specs/end-to-end-encryption/desi
 | Pairing | `services/e2ee/pair-handshake.ts` | Noise `IKpsk1` over `POST /api/pair/exchange`, keyed by the pair token in the QR |
 | Server pin | server record `serverPublicKey` | Set at pairing. Its presence plus `requireEncryption` is what makes a server sealed |
 | Transport handshake | `services/e2ee/context.ts` | Noise `IK`, psk-less, over `POST /api/e2ee/open`. Returns a `ctxId`, an expiry, and for a socket a one-shot ticket |
-| WebSocket record layer | `services/e2ee/record.ts`, `services/ws-client.ts` | Every frame sealed; the ticket rides in `X-TB-Ticket` on the upgrade, never in the URL |
+| WebSocket record layer | `services/e2ee/record.ts`, `services/ws-client.ts`, `services/e2ee/ticketed-socket(.web).ts` | Every frame sealed; the ticket rides in `X-TB-Ticket` on native and as a subprotocol on web, never in the URL |
+| Device static key | `services/e2ee/device-key.ts` (native), `services/e2ee/device-key.web.ts` (web) | Raw 32 bytes in SecureStore on native; a non-extractable WebCrypto `CryptoKey` in IndexedDB on web |
 | REST envelope | `services/authed-fetch.ts` (`sealedFetch`), `services/e2ee/rest-session.ts` | Body sealed into one frame; `ctxId` and sequence in headers; paths and query stay plaintext by design |
 
 Two context kinds, and they are not interchangeable. A **socket** context dies with its socket — there is no rekey, a new key is a new context. A **REST** context is long-lived per server and rolls over on 24h / 1 GiB / **every foreground**, with the retired one draining for 10 s so in-flight responses still decrypt.
+
+## Web (browser) clients
+
+Encrypted pairing and sealed connections work in a browser under three conditions, and a browser that misses any one of them is refused with a translated message — never paired or connected in plaintext.
+
+**The device key never exists as bytes in JS.**
+`device-key.web.ts` generates the static X25519 key with `crypto.subtle.generateKey({ name: 'X25519' }, false, ['deriveBits'])` and stores the `CryptoKeyPair` object in IndexedDB (database `threadbase-e2ee`, store `device-keys`, keyed by the same `threadbase_e2ee_device_key_<serverId>` name native uses in SecureStore).
+IndexedDB keeps the `CryptoKey` through structured clone, which preserves `extractable: false`, so `exportKey` refuses it; a stored key that is extractable is treated as absent and replaced.
+Static-key Diffie-Hellman runs through `crypto.subtle.deriveBits({ name: 'X25519', public }, privateKey, 256)` behind the `StaticKey` interface in `noise.ts`, and an all-zero result is refused explicitly rather than trusted to the browser.
+The Noise transcript is byte-identical to the stablelib path; `__tests__/unit/e2ee-device-key-web.test.ts` checks both committed vectors through WebCrypto.
+The key is deleted wherever native deletes it (`clearDeviceStaticKey`).
+The `localStorage` SecureStore shim never holds a device key.
+
+**The browser must have WebCrypto X25519 and IndexedDB.**
+Probed by generating a throwaway key, since a browser can expose `crypto.subtle` without X25519.
+Missing either refuses encrypted pairing as `e2ee-web-unsupported`.
+
+**The streamer must accept a WebSocket ticket as a subprotocol.**
+A browser cannot set `X-TB-Ticket`, so a sealed socket is opened as `new WebSocket(url, ['threadbase-e2ee-v1', 'tb-ticket.<ticket>'])` and the server selects `threadbase-e2ee-v1`.
+After `open` the client checks `socket.protocol === 'threadbase-e2ee-v1'`; anything else closes the socket as a permanent failure — no ticket retry, no reconnect, no `?key=` redial.
+`/api/info` needs a credential and pairing is what mints it, so the web build checks the server only **after** the encrypted exchange succeeds: `exchangeToken` reads `GET /api/info` through the sealed REST path and requires `e2ee.wsTicketSubprotocol === true` (`serverAcceptsBrowserSealedSocket` in `types/api.ts` is the only reader) before it returns — so before any caller stores the server or dials a socket.
+Absent, false, not a boolean, an unparseable body, or a failed request refuses as `e2ee-web-server-unsupported`.
+A failed request is the expected answer from an older streamer, whose CORS policy blocks the `X-TB-*` headers.
+On refusal the REST context is dropped and the IndexedDB device key minted for this pairing is deleted; no credential was ever stored, because it exists only in the withheld result.
+The pair token is spent by then, so **a refused web pairing can leave a device entry on an older streamer**. The app does not revoke it; revoke it from another paired client.
+
+**Whoever serves the web build controls it.**
+Non-extractability stops a script from copying the key out; it does not stop a page from using the key while it is loaded.
+Whoever controls the host a web build is served from can replace that build with one that misuses the key or reads decrypted traffic, and the browser has no way to tell.
+A web build served from a host you control is therefore the highest-trust way to use Threadbase in a browser; a build served from anyone else's origin is only as trustworthy as that origin.
 
 ## Failure classification — the part to get right
 

@@ -1,10 +1,22 @@
 import nacl from 'tweetnacl'
 import naclUtil from 'tweetnacl-util'
 import { parseCapabilityList, type DeviceCapability } from '@/types/devices'
-import { E2EE_CLIENT_VERSION, serverIdFromUrl } from '@/types/api'
+import {
+  E2EE_CLIENT_VERSION,
+  serverAcceptsBrowserSealedSocket,
+  serverIdFromUrl,
+  type ServerInfo,
+} from '@/types/api'
 import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
 import { HAS_SECURE_KEYCHAIN } from '@/services/secure-store'
-import { beginPairHandshake, pairMessage1Payload } from '@/services/e2ee/pair-handshake'
+import {
+  beginPairHandshake,
+  clearDeviceStaticKey,
+  pairMessage1Payload,
+} from '@/services/e2ee/pair-handshake'
+import { canHoldDeviceStaticKey } from '@/services/e2ee/device-key'
+import { invalidateRestContext } from '@/services/e2ee/rest-session'
+import { authedFetch } from '@/services/authed-fetch'
 import type { NoiseInitiator } from '@/services/e2ee/noise'
 
 export interface PairUri {
@@ -117,8 +129,13 @@ export function classifyPairCredential(raw: string): PairCredentialKind {
  * - `e2ee-refused` — message 1 went out and the reply carried no message 2. The
  *   exchange did happen, so unlike the three above this one has probably spent
  *   the token; retrying wants a fresh QR.
- * - `e2ee-web-unsupported` — this build cannot hold a device key on this
- *   platform, so it declines before writing one rather than after.
+ * - `e2ee-web-unsupported` — this browser has no WebCrypto X25519 or no
+ *   IndexedDB, so it cannot hold a non-extractable device key. Declined before
+ *   one is written rather than after.
+ * - `e2ee-web-server-unsupported` — the pairing completed, but the streamer's
+ *   sealed `/api/info` does not advertise browser WebSocket tickets, so every
+ *   sealed socket would be refused. The result is withheld and the new device
+ *   key cleared; the token is spent and the streamer keeps a device row.
  */
 export class PairExchangeError extends Error {
   readonly kind:
@@ -133,6 +150,7 @@ export class PairExchangeError extends Error {
     | 'e2ee-version'
     | 'e2ee-refused'
     | 'e2ee-web-unsupported'
+    | 'e2ee-web-server-unsupported'
   constructor(kind: PairExchangeError['kind'], message: string) {
     super(message)
     this.name = 'PairExchangeError'
@@ -152,6 +170,7 @@ const NON_RETRYABLE_EXCHANGE_KINDS: ReadonlySet<PairExchangeError['kind']> = new
   'e2ee-version',
   'e2ee-refused',
   'e2ee-web-unsupported',
+  'e2ee-web-server-unsupported',
 ])
 
 export function isRetryablePairFailure(err: PairExchangeError): boolean {
@@ -246,7 +265,9 @@ export async function exchangeToken({
    * The scanned QR's `spk`. Its presence is the whole capability gate for
    * pairing: `GET /api/info` is authenticated and this is the request that
    * mints the credential, so the QR is the only thing that can say whether the
-   * server speaks E2EE before a credential exists.
+   * server speaks E2EE before a credential exists. Web adds a browser check
+   * before the exchange and a sealed server check after it — see
+   * `assertWebServerAcceptsSealedSocket`.
    */
   serverPublicKey?: string
 }): Promise<ExchangeResult> {
@@ -255,15 +276,18 @@ export async function exchangeToken({
   const recipient = nacl.box.keyPair()
   const clientPublicKey = naclUtil.encodeBase64(recipient.publicKey)
 
-  // Before `beginPairHandshake`, so nothing is written anywhere: on web the
-  // store is `localStorage`, which any script that achieves XSS on the origin
-  // can read, and a device static key is not a value to keep there. Refusing is
-  // the whole remedy — there is deliberately no plaintext retry of this same
-  // exchange (mobile-design §5.2). A QR with no `spk` never reaches here.
-  if (serverPublicKey && !HAS_SECURE_KEYCHAIN) {
+  const serverId = serverIdFromUrl(trimmedUrl)
+
+  // Web only — `HAS_SECURE_KEYCHAIN` is false exactly where SecureStore is the
+  // `localStorage` shim, and the device key goes to IndexedDB as a
+  // non-extractable WebCrypto key instead (`device-key.web.ts`). Before
+  // `beginPairHandshake`, so a refusal writes nothing and spends no pair token.
+  // Refusing is the whole remedy — there is deliberately no plaintext retry of
+  // this same exchange (mobile-design §5.2). A QR with no `spk` never gets here.
+  if (serverPublicKey && !HAS_SECURE_KEYCHAIN && !(await canHoldDeviceStaticKey())) {
     throw new PairExchangeError(
       'e2ee-web-unsupported',
-      'Encrypted pairing needs the Threadbase app for iOS or Android',
+      'This browser cannot hold a non-extractable encryption key',
     )
   }
 
@@ -272,7 +296,7 @@ export async function exchangeToken({
   let started: Awaited<ReturnType<typeof beginPairHandshake>>
   try {
     started = await beginPairHandshake({
-      serverId: serverIdFromUrl(trimmedUrl),
+      serverId,
       serverPublicKey,
       pairToken: token,
     })
@@ -312,7 +336,7 @@ export async function exchangeToken({
     // payload encoding to the user as "your QR is damaged", which is this same
     // misclassification pointing the other way.
     try {
-      message1 = started.handshake.writeMessage1(message1Payload)
+      message1 = await started.handshake.writeMessage1(message1Payload)
     } catch {
       // The first curve operation on the scanned key happens here, not in
       // `beginPairHandshake`: decoding checks length and alphabet, and the
@@ -397,7 +421,17 @@ export async function exchangeToken({
   // only part read. Reading an outer copy "as a fallback" is what would let the
   // unauthenticated value win.
   if (started.ok) {
-    const reply = readPairHandshakeReply(started.handshake, body?.e2ee)
+    const reply = await readPairHandshakeReply(started.handshake, body?.e2ee)
+    if (!HAS_SECURE_KEYCHAIN) {
+      await assertWebServerAcceptsSealedSocket({
+        id: serverId,
+        url: trimmedUrl,
+        apiKey: reply.deviceToken,
+        deviceToken: reply.deviceToken,
+        serverPublicKey,
+        requireEncryption: true,
+      })
+    }
     return {
       url: trimmedUrl,
       // The authenticated device credential, which is what §4.1 puts in
@@ -472,6 +506,58 @@ export async function exchangeToken({
 }
 
 /**
+ * Web only, after the encrypted exchange and before its result reaches any
+ * caller — so before the server record is stored or a socket is dialed.
+ *
+ * The capability lives on `GET /api/info`, which needs the credential this
+ * pairing just minted, so it cannot be asked earlier. The read goes through the
+ * sealed REST path; an older streamer blocks the `X-TB-*` headers in CORS, so a
+ * failed request is the expected old-server answer, not a network blip. Every
+ * outcome other than an explicit `wsTicketSubprotocol: true` refuses, never
+ * retries in plaintext, and clears the device key minted for this pairing.
+ * Nothing else needs clearing: the credential exists only in this call's result.
+ */
+async function assertWebServerAcceptsSealedSocket(target: {
+  id: string
+  url: string
+  apiKey: string
+  deviceToken: string
+  serverPublicKey: string | undefined
+  requireEncryption: true
+}): Promise<void> {
+  let info: ServerInfo | null = null
+  // Without a key `authedFetch` would not seal, so there is no request to make.
+  if (target.serverPublicKey) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), PAIR_EXCHANGE_TIMEOUT_MS)
+    try {
+      const res = await authedFetch(target, '/api/info', { signal: controller.signal })
+      if (res.ok) {
+        const parsed: ServerInfo | null = await res.json().catch(() => null)
+        info = parsed !== null && typeof parsed === 'object' ? parsed : null
+      }
+    } catch {
+      info = null
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
+  if (serverAcceptsBrowserSealedSocket(info)) return
+
+  invalidateRestContext(target.id)
+  try {
+    await clearDeviceStaticKey(target.id)
+  } catch {
+    // The refusal below stands regardless. A key left behind is reused, not
+    // duplicated, by the next pairing with this server.
+  }
+  throw new PairExchangeError(
+    'e2ee-web-server-unsupported',
+    'This streamer needs an update before a browser can connect with encryption',
+  )
+}
+
+/**
  * The exchange response. Every field but `e2ee` is the compatibility envelope
  * released clients read; a new client reads it only on the legacy path.
  */
@@ -530,10 +616,10 @@ function nonEmptyString(value: string | undefined): value is string {
  * shape check below is what makes an authenticated `{}` a failure rather than a
  * successful pairing carrying nothing.
  */
-function readPairHandshakeReply(
+async function readPairHandshakeReply(
   handshake: NoiseInitiator,
   raw: { v?: number; noise?: string } | undefined,
-): PairHandshakeReply {
+): Promise<PairHandshakeReply> {
   // Message 1 was sent, so a reply with no message 2 is the server refusing to
   // encrypt after the fact. That is a hard failure, never a plaintext result:
   // answering as an old server is a man in the middle's cheapest attack, and a
@@ -558,7 +644,7 @@ function readPairHandshakeReply(
 
   let payload: Uint8Array
   try {
-    payload = handshake.readMessage2(naclUtil.decodeBase64(noise)).payload
+    payload = (await handshake.readMessage2(naclUtil.decodeBase64(noise))).payload
   } catch {
     // Wrong static key, wrong PSK, or a rewritten reply — one kind, because the
     // remedy is the same and the difference is only useful to whoever caused it.

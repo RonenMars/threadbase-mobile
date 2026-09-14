@@ -7,12 +7,13 @@
  * Threadbase decision rather than a Noise one.
  */
 import { hash as sha256 } from '@stablelib/sha256'
-import { randomBytes } from 'tweetnacl'
 import naclUtil from 'tweetnacl-util'
 import { E2EE_CLIENT_VERSION } from '@/types/api'
-import * as SecureStore from '@/services/secure-store'
 import { concatBytes, createNoiseInitiator } from '@/services/e2ee/noise'
 import type { NoiseInitiator } from '@/services/e2ee/noise'
+import { loadDeviceStaticKey, loadOrCreateDeviceStaticKey } from '@/services/e2ee/device-key'
+
+export { clearDeviceStaticKey } from '@/services/e2ee/device-key'
 
 /**
  * `MixHash`'d before any handshake token. Two `IK` handshakes exist in this
@@ -83,47 +84,11 @@ export function pairMessage1Payload({ deviceName, readOnly }: PairMessage1Fields
   })
 }
 
-/** X25519 private keys are 32 bytes, and `@stablelib` treats them as a seed. */
-const DEVICE_STATIC_KEY_BYTES = 32
-
 /** 32 bytes of X25519 public key, unpadded base64url — the QR's `spk`. */
 const SERVER_STATIC_KEY_CHARS = 43
 
 export function derivePairPsk(pairToken: string): Uint8Array {
   return sha256(concatBytes(naclUtil.decodeUTF8(PSK_LABEL), naclUtil.decodeUTF8(pairToken)))
-}
-
-/**
- * Per-server, alongside `threadbase_api_key_<id>` and
- * `threadbase_device_token_<id>` in `stores/servers.ts`.
- */
-function deviceStaticKeyStoreKey(serverId: string): string {
-  return `threadbase_e2ee_device_key_${serverId}`
-}
-
-/**
- * Forgets this device's static key for a server.
- *
- * Exported so `stores/servers.ts` can clear it on the same terms as the device
- * token; the key itself is never handed back to a caller.
- */
-export async function clearDeviceStaticKey(serverId: string): Promise<void> {
-  await SecureStore.deleteItemAsync(deviceStaticKeyStoreKey(serverId))
-}
-
-/**
- * A previously stored device key, or `null` when there is none and when what is
- * there cannot be one. A corrupt entry is treated as absent so a re-pair mints a
- * usable key rather than failing forever on a value nothing can repair.
- */
-function decodeStoredDeviceKey(raw: string | null): Uint8Array | null {
-  if (!raw) return null
-  try {
-    const decoded = naclUtil.decodeBase64(raw)
-    return decoded.length === DEVICE_STATIC_KEY_BYTES ? decoded : null
-  } catch {
-    return null
-  }
 }
 
 /** The QR emits base64url; `tweetnacl-util` only decodes standard base64. */
@@ -152,7 +117,7 @@ export interface PairHandshakeArgs {
   serverPublicKey?: string
   /** The token carried by the scanned QR. Binds this handshake to that scan. */
   pairToken: string
-  /** Test-only injection. A real pairing mints a fresh key from the system CSPRNG. */
+  /** Test-only injection, native only. A real pairing mints a fresh key from the system CSPRNG. */
   clientStaticPrivate?: Uint8Array
   /** Test-only injection, forwarded verbatim to the Noise initiator. */
   ephemeralPrivate?: Uint8Array
@@ -171,7 +136,8 @@ export type PairHandshakeStart =
  * never be reachable by corrupting one QR parameter (mobile-design §3.2).
  *
  * **The device's private key is load-or-create, and a new one is written to
- * SecureStore before this returns**, so it is on disk before message 1 can be
+ * the device key store before this returns** (SecureStore on native, IndexedDB
+ * on web — `device-key.ts` / `device-key.web.ts`), so it is on disk before message 1 can be
  * built, let alone sent. The server registers the public half before it can
  * tell the client anything; a client that only kept its own half once a
  * response arrived would leave the server holding a key nobody can use — a
@@ -189,30 +155,15 @@ export async function beginPairHandshake(args: PairHandshakeArgs): Promise<PairH
   }
   const serverStaticPublic = decodeServerStaticKey(args.serverPublicKey)
 
-  const storeKey = deviceStaticKeyStoreKey(args.serverId)
-  const storedKey = await SecureStore.getItemAsync(storeKey)
-  const clientStaticPrivate =
-    args.clientStaticPrivate ?? decodeStoredDeviceKey(storedKey) ?? randomBytes(DEVICE_STATIC_KEY_BYTES)
-  const encodedKey = naclUtil.encodeBase64(clientStaticPrivate)
-
-  // Only a key this server does not already hold for us is written, and it is
-  // written before the initiator exists to build message 1 with.
-  if (encodedKey !== storedKey) {
-    await SecureStore.setItemAsync(
-      storeKey,
-      encodedKey,
-      // The default Keychain class syncs to iCloud and restores onto a new
-      // device, which would make "revoke this lost phone" incomplete.
-      { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY },
-    )
-  }
+  // Written, if new, before the initiator exists to build message 1 with.
+  const clientStatic = await loadOrCreateDeviceStaticKey(args.serverId, args.clientStaticPrivate)
 
   return {
     ok: true,
     handshake: createNoiseInitiator({
       pattern: 'IKpsk1',
       serverStaticPublic,
-      clientStaticPrivate,
+      clientStatic,
       psk: derivePairPsk(args.pairToken),
       prologue: naclUtil.decodeUTF8(PAIR_PROLOGUE),
       ephemeralPrivate: args.ephemeralPrivate,
@@ -271,10 +222,8 @@ export interface OpenHandshakeArgs {
  */
 export async function createOpenInitiator(args: OpenHandshakeArgs): Promise<OpenHandshakeStart> {
   const serverStaticPublic = decodeServerStaticKey(args.serverPublicKey)
-  const clientStaticPrivate = decodeStoredDeviceKey(
-    await SecureStore.getItemAsync(deviceStaticKeyStoreKey(args.serverId)),
-  )
-  if (!clientStaticPrivate) return { ok: false, reason: 'not-paired' }
+  const clientStatic = await loadDeviceStaticKey(args.serverId)
+  if (!clientStatic) return { ok: false, reason: 'not-paired' }
 
   return {
     ok: true,
@@ -282,7 +231,7 @@ export async function createOpenInitiator(args: OpenHandshakeArgs): Promise<Open
       // Psk-less IK. Passing `psk` at all here is refused by `noise.ts`.
       pattern: 'IK',
       serverStaticPublic,
-      clientStaticPrivate,
+      clientStatic,
       prologue: naclUtil.decodeUTF8(OPEN_PROLOGUE),
       ...(args.ephemeralPrivate ? { ephemeralPrivate: args.ephemeralPrivate } : {}),
     }),
