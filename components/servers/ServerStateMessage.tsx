@@ -133,6 +133,7 @@ export function ServerStateMessage({
         return {
           severity: 'error',
           detailKind: 'e2eeProtocolMismatch',
+          namedId: only,
           message: single
             ? t('stateMessage.e2eeProtocolMismatchNamed', { server: label })
             : t('stateMessage.e2eeProtocolMismatchAll'),
@@ -201,6 +202,7 @@ export function ServerStateMessage({
       return {
         severity: 'warning',
         detailKind: 'e2eeProtocolMismatch',
+        namedId: protocolMismatch.length === 1 ? protocolMismatch[0] : null,
         message: badLabel
           ? t('stateMessage.e2eeProtocolMismatchNamed', { server: badLabel })
           : t('stateMessage.e2eeProtocolMismatchSome'),
