@@ -26,5 +26,5 @@ export const Codex: Story = {
 }
 
 export const Cursor: Story = {
-  args: { provider: 'cursor-cli' },
+  args: { provider: 'cursor' },
 }

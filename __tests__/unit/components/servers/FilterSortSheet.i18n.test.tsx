@@ -8,7 +8,7 @@ import i18n from '@/test-utils/i18n-setup'
 
 const noop = () => {}
 const COUNTS = { needsYou: 1, working: 2, resumable: 41, cantResume: 3, observed: 2 }
-const PROVIDERS = { 'claude-code': 38, 'codex-cli': 11, 'cursor-cli': 2 }
+const PROVIDERS = { 'claude-code': 38, 'codex-cli': 11, 'cursor': 2 }
 
 async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilters; resultCount?: number; onChangeFilters?: (f: ListFilters) => void } = {}) {
   await i18n.changeLanguage(locale)

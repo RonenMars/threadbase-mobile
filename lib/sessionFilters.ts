@@ -1,4 +1,4 @@
-import { PROVIDER_NAMES, isProviderName, type ProviderName } from '@/constants/providers'
+import { PROVIDER_NAMES, canonicalizeProviderName, type ProviderName } from '@/constants/providers'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { deriveSessionPresentation, type SessionTier } from '@/lib/sessionPresentation'
 
@@ -28,8 +28,7 @@ export function itemTier(item: MergedItem): SessionTier {
 
 /** Unknown providers read as Claude, matching `providerLabelKey`. */
 export function itemProvider(item: MergedItem): ProviderName {
-  const provider = item.item.provider
-  return provider && isProviderName(provider) ? provider : 'claude-code'
+  return canonicalizeProviderName(item.item.provider) ?? 'claude-code'
 }
 
 function startOfToday(now: number): number {
@@ -71,7 +70,7 @@ export function countByTier(items: MergedItem[]): Record<SessionTier, number> {
 }
 
 export function countByProvider(items: MergedItem[]): Record<ProviderName, number> {
-  const counts: Record<ProviderName, number> = { 'claude-code': 0, 'codex-cli': 0, 'cursor-cli': 0 }
+  const counts: Record<ProviderName, number> = { 'claude-code': 0, 'codex-cli': 0, cursor: 0 }
   for (const item of items) counts[itemProvider(item)] += 1
   return counts
 }
