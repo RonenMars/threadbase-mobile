@@ -41,6 +41,7 @@
       "__tests__/integration/components/BrowseRecents.test.tsx",
       "__tests__/integration/components/EncryptionRefusalToClearFlow.test.tsx",
       "__tests__/integration/components/ProjectHubCard.test.tsx",
+      "__tests__/integration/components/ProjectHubList.test.tsx",
       "__tests__/integration/components/MessageItem.highlight.test.tsx",
       "__tests__/integration/components/LiveConversationView.test.tsx"
     ]
