@@ -299,7 +299,7 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
     throw new OpenError('E2EE_NOT_PAIRED', 'This device holds no encryption key for this server')
   }
 
-  const message1 = start.handshake.writeMessage1(
+  const message1 = await start.handshake.writeMessage1(
     naclUtil.decodeUTF8(openMessage1Payload(args.kind)),
   )
 
@@ -351,9 +351,9 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
     throw new OpenError('E2EE_MALFORMED', 'E2EE: the server answered without an encrypted handshake')
   }
 
-  let result: ReturnType<typeof start.handshake.readMessage2>
+  let result: Awaited<ReturnType<typeof start.handshake.readMessage2>>
   try {
-    result = start.handshake.readMessage2(naclUtil.decodeBase64(envelope.noise))
+    result = await start.handshake.readMessage2(naclUtil.decodeBase64(envelope.noise))
   } catch {
     throw new OpenError('E2EE_HANDSHAKE_FAILED', 'The server could not be authenticated')
   }

@@ -871,3 +871,88 @@ describe('WSClientManager – handshake budget', () => {
     expect(mockedOpenContextOnce).toHaveBeenCalledTimes(2)
   })
 })
+
+// A sealed socket that opens and then fails its first frame has not proved the
+// connection works, so it must not reset the backoff. Resetting at `onopen`
+// redialed every second, and five handshakes in ~4 s hit the streamer's
+// five-per-minute device limit.
+describe('WSClientManager – sealed backoff waits for a verified first frame', () => {
+  const pin = { serverPublicKey: 'pinned-server-key', requireEncryption: true }
+  const contextFor = (ticket: string) => ({
+    ctxId: `ctx-${ticket}`,
+    kind: 'ws' as const,
+    expiresAt: Date.now() + 30_000,
+    provisional: false,
+    ticket,
+    send: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 1, channel: 1 }),
+    recv: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 2, channel: 1 }),
+    destroy: jest.fn(),
+  })
+
+  /** Opens the newest socket and feeds it bytes that cannot unseal. */
+  const openThenFailFirstFrame = () => {
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+    mockSocket.onmessage!({ data: new Uint8Array([1, 2, 3, 4]) })
+  }
+
+  /** Asserts the next dial happens after exactly `ms`, not a millisecond sooner. */
+  const expectRedialAfter = async (ms: number, opensBefore: number) => {
+    jest.advanceTimersByTime(ms - 1)
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(opensBefore)
+    jest.advanceTimersByTime(1)
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(opensBefore + 1)
+  }
+
+  it('backs off exponentially across consecutive first-frame failures', async () => {
+    mockedOpenContextOnce
+      .mockResolvedValueOnce(contextFor('t1'))
+      .mockResolvedValueOnce(contextFor('t2'))
+      .mockResolvedValueOnce(contextFor('t3'))
+      .mockResolvedValueOnce(contextFor('t4'))
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    await flushAsyncConnect()
+    openThenFailFirstFrame()
+    await expectRedialAfter(1000, 1)
+    openThenFailFirstFrame()
+    await expectRedialAfter(2000, 2)
+    openThenFailFirstFrame()
+    await expectRedialAfter(4000, 3)
+    expect(mockSockets.map((s) => s.url)).toHaveLength(4)
+  })
+
+  it('resets the backoff once a first frame unseals', async () => {
+    mockedOpenContextOnce
+      .mockResolvedValueOnce(contextFor('t1'))
+      .mockResolvedValueOnce(contextFor('t2'))
+      .mockResolvedValueOnce(contextFor('t3'))
+      .mockResolvedValueOnce(contextFor('t4'))
+
+    wsManager.connect('pinned-server', 'https://secure.host', 'api-key', pin)
+    await flushAsyncConnect()
+    openThenFailFirstFrame()
+    await expectRedialAfter(1000, 1)
+    openThenFailFirstFrame()
+    await expectRedialAfter(2000, 2)
+
+    // Third attempt: a genuine frame unseals, then a later frame is corrupt.
+    mockSocket.readyState = 1
+    mockSocket.onopen!()
+    const serverSend = createRecordState({
+      key: recordKey,
+      ctxId: recordContextId,
+      direction: 2,
+      channel: 1,
+    })
+    mockSocket.onmessage!({
+      data: serverSend.seal(new TextEncoder().encode(JSON.stringify({ type: 'cache_ready' }))),
+    })
+    expect(wsManager.status('pinned-server')).toBe('connected')
+    mockSocket.onmessage!({ data: new Uint8Array([9, 9, 9, 9]) })
+
+    await expectRedialAfter(1000, 3)
+  })
+})
