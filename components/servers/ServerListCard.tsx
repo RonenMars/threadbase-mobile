@@ -7,6 +7,11 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { ServerConfig } from '@/types/api'
+import { wsManager } from '@/services/ws-client'
+import {
+  wsPermanentErrorMessage,
+  wsPermanentErrorStatusLabel,
+} from '@/components/servers/wsPermanentErrorMessage'
 
 interface Props {
   server: ServerConfig
@@ -30,6 +35,9 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
   const [showBottomLine, setShowBottomLine] = useState(false)
   const prevRefreshing = useRef(false)
   const styles = makeStyles(theme)
+  const lastError = wsManager.lastError(server.id)
+  const lastErrorText = wsPermanentErrorMessage(lastError, t)
+  const hasError = Boolean(server.connectionError || lastErrorText)
 
   useEffect(() => {
     progressAnim.current?.stop()
@@ -45,7 +53,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
     } else {
       progress.setValue(1)
       if (prevRefreshing.current) {
-        const color = server.connectionError ? theme.status.failed : theme.status.running
+        const color = (server.connectionError || lastErrorText) ? theme.status.failed : theme.status.running
         setResultColor(color)
         setShowBottomLine(true)
         resultOpacity.setValue(1)
@@ -81,7 +89,7 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
           {server.label || t('defaultLabel')}
         </Text>
         <View style={styles.iconGroup}>
-          {server.connectionError ? (
+          {hasError ? (
             <TouchableOpacity
               style={styles.iconBtn}
               onPress={() => onViewError(server.id)}
@@ -127,7 +135,11 @@ export function ServerListCard({ server, isRefreshing, onRemove, onEdit, onRefre
         </Text>
       ) : (
         <Text style={styles.meta}>
-          {server.isConnected ? t('status.connected') : t('status.disconnected')}
+          {lastError
+            ? wsPermanentErrorStatusLabel(lastError, t)
+            : server.isConnected
+              ? t('status.connected')
+              : t('status.disconnected')}
         </Text>
       )}
 

@@ -160,6 +160,7 @@ describe('WSClient on web — sealed sockets', () => {
     socket.onopen?.()
 
     expect(wsManager.status('pinned-server')).toBe('connected')
+    expect(wsManager.lastError('pinned-server')).toBeNull()
     expect(socket.send).toHaveBeenCalledTimes(1)
   })
 
@@ -174,6 +175,7 @@ describe('WSClient on web — sealed sockets', () => {
       socket.onopen?.()
 
       expect(wsManager.status('pinned-server')).toBe('disconnected')
+      expect(wsManager.lastError('pinned-server')).toBe('e2ee_protocol_mismatch')
       // Nothing — not even `register` — goes out on a socket that skipped the ticket path.
       expect(socket.send).not.toHaveBeenCalled()
       expect(socket.close).toHaveBeenCalled()

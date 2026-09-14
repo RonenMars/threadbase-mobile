@@ -14,6 +14,8 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { ServerConfig } from '@/types/api'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { wsManager } from '@/services/ws-client'
+import { wsPermanentErrorMessage } from '@/components/servers/wsPermanentErrorMessage'
 import { safeHostname } from '@/lib/serverUrl'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
@@ -43,7 +45,8 @@ export function ServerErrorModal({ visible, server, onClose }: Props) {
   )
   if (!server) return null
 
-  const errorText = server.connectionError ?? fetchError ?? null
+  const lastErrorText = wsPermanentErrorMessage(wsManager.lastError(server.id), t)
+  const errorText = lastErrorText ?? server.connectionError ?? fetchError ?? null
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
