@@ -55,13 +55,60 @@ describe('parseFlowsInput', () => {
 });
 
 describe('splitFlows', () => {
-  it('round-robins so later flows are not all parked on the last shard', () => {
-    const shards = splitFlows(['a.yaml', 'b.yaml', 'c.yaml', 'd.yaml', 'e.yaml'], 3);
-    expect(shards).toEqual([
-      { shard: '1', total: '3', flows: 'a.yaml d.yaml' },
-      { shard: '2', total: '3', flows: 'b.yaml e.yaml' },
-      { shard: '3', total: '3', flows: 'c.yaml' },
+  it('assigns longest jobs first and restores original order inside each shard', () => {
+    const flows = ['a.yaml', 'b.yaml', 'c.yaml', 'd.yaml'];
+    const weights = { 'a.yaml': 8, 'b.yaml': 7, 'c.yaml': 6, 'd.yaml': 5 };
+    expect(splitFlows(flows, 2, weights)).toEqual([
+      { shard: '1', total: '2', flows: 'a.yaml d.yaml' },
+      { shard: '2', total: '2', flows: 'b.yaml c.yaml' },
     ]);
+    expect(flows).toEqual(['a.yaml', 'b.yaml', 'c.yaml', 'd.yaml']);
+  });
+
+  it('conserves membership without duplicates or empty shards', () => {
+    const flows = ['a.yaml', 'b.yaml', 'c.yaml', 'd.yaml', 'e.yaml'];
+    const weights = { 'a.yaml': 10, 'b.yaml': 9, 'c.yaml': 3, 'd.yaml': 3, 'e.yaml': 2 };
+    const shards = splitFlows(flows, 3, weights);
+    const assigned = shards.flatMap((shard) => shard.flows.split(' '));
+    expect(shards).toHaveLength(3);
+    expect(shards.every((shard) => shard.flows.length > 0)).toBe(true);
+    expect(assigned.sort()).toEqual(flows.slice().sort());
+    expect(new Set(assigned).size).toBe(flows.length);
+  });
+
+  it('breaks equal-duration ties by original list position and equal load by bucket index', () => {
+    expect(
+      splitFlows(['a.yaml', 'b.yaml', 'c.yaml', 'd.yaml'], 2, {
+        'a.yaml': 5,
+        'b.yaml': 5,
+        'c.yaml': 5,
+        'd.yaml': 5,
+      }),
+    ).toEqual([
+      { shard: '1', total: '2', flows: 'a.yaml c.yaml' },
+      { shard: '2', total: '2', flows: 'b.yaml d.yaml' },
+    ]);
+  });
+
+  it('uses 120s for unknown, zero, negative, nonnumeric, and nonfinite weights', () => {
+    const fallback = splitFlows(['a.yaml', 'b.yaml', 'c.yaml'], 2, {});
+    expect(fallback).toEqual([
+      { shard: '1', total: '2', flows: 'a.yaml c.yaml' },
+      { shard: '2', total: '2', flows: 'b.yaml' },
+    ]);
+    expect(
+      splitFlows(['a.yaml', 'b.yaml', 'c.yaml'], 2, {
+        'a.yaml': 0,
+        'b.yaml': -4,
+        'c.yaml': Number.NaN,
+      }),
+    ).toEqual(fallback);
+    expect(
+      splitFlows(['a.yaml', 'b.yaml', 'c.yaml'], 2, {
+        'a.yaml': Number.POSITIVE_INFINITY,
+        'b.yaml': 'nope',
+      }),
+    ).toEqual(fallback);
   });
 
   it('does not emit empty shards when there are fewer flows than requested', () => {
@@ -82,37 +129,74 @@ describe('planPlatforms', () => {
   });
 });
 
+function collectFlows(shards) {
+  return shards.flatMap((shard) => shard.flows.split(' ').filter(Boolean));
+}
+
 describe('planShards', () => {
-  it('emits three Android shards and two iOS shards for the full suite', () => {
+  it('emits three duration-weighted shards per scheduled platform with no duplicates', () => {
     const plan = planShards({
       eventName: 'schedule',
       platformInput: '',
       flowsInput: '',
       mockScript: MOCK_SCRIPT,
+      durationWeights: {
+        android: { 'e2e/launch.yaml': 30, 'e2e/browse.yaml': 10, 'e2e/session_lifecycle.yaml': 10, 'e2e/server_drag_reorder.yaml': 10 },
+        ios: { 'e2e/launch.yaml': 10, 'e2e/browse.yaml': 30, 'e2e/session_lifecycle.yaml': 10, 'e2e/server_drag_reorder.yaml': 10 },
+      },
     });
     expect(ANDROID_SHARD_COUNT).toBe(3);
-    expect(IOS_SHARD_COUNT).toBe(2);
+    expect(IOS_SHARD_COUNT).toBe(3);
     expect(plan.androidShards).toHaveLength(3);
-    expect(plan.iosShards).toHaveLength(2);
-    expect(plan.androidShards.flatMap((shard) => shard.flows.split(' ')).sort()).toEqual(
-      plan.flows.slice().sort(),
-    );
-    expect(plan.iosShards.flatMap((shard) => shard.flows.split(' ')).sort()).toEqual(
-      plan.flows.slice().sort(),
-    );
+    expect(plan.iosShards).toHaveLength(3);
+    expect(plan.androidShards.every((shard) => shard.flows.length > 0)).toBe(true);
+    expect(plan.iosShards.every((shard) => shard.flows.length > 0)).toBe(true);
+    expect(collectFlows(plan.androidShards).sort()).toEqual(plan.flows.slice().sort());
+    expect(collectFlows(plan.iosShards).sort()).toEqual(plan.flows.slice().sort());
+    expect(new Set(collectFlows(plan.androidShards)).size).toBe(plan.flows.length);
+    expect(new Set(collectFlows(plan.iosShards)).size).toBe(plan.flows.length);
+    expect(plan.androidShards).not.toEqual(plan.iosShards);
   });
 
-  it('keeps a custom flows input on a single shard', () => {
-    const plan = planShards({
+  it('keeps a custom flows input on a single shard in the supplied order', () => {
+    const reversed = 'e2e/browse.yaml e2e/codex_parity.yaml';
+    const android = planShards({
       eventName: 'workflow_dispatch',
       platformInput: 'android',
-      flowsInput: 'e2e/codex_parity.yaml e2e/browse.yaml',
+      flowsInput: reversed,
       mockScript: MOCK_SCRIPT,
+      durationWeights: { android: { 'e2e/codex_parity.yaml': 999 }, ios: {} },
     });
-    expect(plan.androidShards).toEqual([
-      { shard: '1', total: '1', flows: 'e2e/codex_parity.yaml e2e/browse.yaml' },
+    const ios = planShards({
+      eventName: 'workflow_dispatch',
+      platformInput: 'ios',
+      flowsInput: reversed,
+      mockScript: MOCK_SCRIPT,
+      durationWeights: { android: {}, ios: { 'e2e/codex_parity.yaml': 999 } },
+    });
+    expect(android.androidShards).toEqual([
+      { shard: '1', total: '1', flows: reversed },
     ]);
-    expect(plan.iosShards).toEqual([]);
+    expect(android.iosShards).toEqual([]);
+    expect(ios.iosShards).toEqual([{ shard: '1', total: '1', flows: reversed }]);
+    expect(ios.androidShards).toEqual([]);
+  });
+
+  it('never promotes a duration-only path into the suite and still runs unweighted suite flows', () => {
+    const plan = planShards({
+      eventName: 'schedule',
+      platformInput: '',
+      flowsInput: '',
+      mockScript: MOCK_SCRIPT,
+      durationWeights: {
+        android: { 'e2e/not-in-suite.yaml': 999 },
+        ios: { 'e2e/not-in-suite.yaml': 999 },
+      },
+    });
+    expect(collectFlows(plan.androidShards).sort()).toEqual(plan.flows.slice().sort());
+    expect(collectFlows(plan.iosShards).sort()).toEqual(plan.flows.slice().sort());
+    expect(plan.flows).not.toContain('e2e/not-in-suite.yaml');
+    expect(collectFlows(plan.androidShards)).toContain('e2e/launch.yaml');
   });
 });
 
@@ -141,5 +225,32 @@ describe('mock-suite-shards CLI', () => {
     expect(JSON.parse(body.split('ios-shards<<EOF\n')[1].split('\nEOF')[0])).toEqual([
       { shard: '1', total: '1', flows: 'e2e/launch.yaml' },
     ]);
+  });
+
+  it('records historical shard estimates in the step summary', () => {
+    const output = path.join(os.tmpdir(), `e2e-shards-summary-${process.pid}.txt`);
+    const summary = path.join(os.tmpdir(), `e2e-shards-summary-md-${process.pid}.md`);
+    fs.writeFileSync(output, '');
+    fs.writeFileSync(summary, '');
+    const result = spawnSync(process.execPath, [SCRIPT], {
+      encoding: 'utf8',
+      cwd: path.resolve(__dirname, '../../..'),
+      env: {
+        ...process.env,
+        GITHUB_OUTPUT: output,
+        GITHUB_STEP_SUMMARY: summary,
+        GITHUB_EVENT_NAME: 'schedule',
+        INPUT_PLATFORM: '',
+        INPUT_FLOWS: '',
+      },
+    });
+    expect(result.status).toBe(0);
+    const body = fs.readFileSync(summary, 'utf8');
+    fs.unlinkSync(output);
+    fs.unlinkSync(summary);
+    expect(body).toMatch(/Android shards \(historical weights\)/);
+    expect(body).toMatch(/iOS shards \(historical weights\)/);
+    expect(body).toMatch(/shard 1\/3:/);
+    expect(body).toMatch(/e2e\/07_conversation_scroll_gaps\.yaml/);
   });
 });

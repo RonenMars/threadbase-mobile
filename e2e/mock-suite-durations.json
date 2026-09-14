@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "sources": {
+    "android": "https://github.com/RonenMars/threadbase-mobile/actions/runs/34803277723",
+    "ios": "https://github.com/RonenMars/threadbase-mobile/actions/runs/34788807171"
+  },
+  "android": {
+    "e2e/launch.yaml": 95,
+    "e2e/browse.yaml": 93,
+    "e2e/session_lifecycle.yaml": 115,
+    "e2e/server_drag_reorder.yaml": 90,
+    "e2e/bug6_bottom_bar_inset.yaml": 89,
+    "e2e/pty_turn_divider.yaml": 86,
+    "e2e/feat1_tree_drill_new_session.yaml": 97,
+    "e2e/feat2_export_in_info_shelf.yaml": 89,
+    "e2e/codex_parity.yaml": 90,
+    "e2e/voice_dictation.yaml": 94,
+    "e2e/settings_qr_scanner.yaml": 90,
+    "e2e/language_direction.yaml": 95,
+    "e2e/feedback_flow.yaml": 130,
+    "e2e/05_chat_flow.yaml": 116,
+    "e2e/06_search_anchor.yaml": 108,
+    "e2e/07_conversation_scroll_gaps.yaml": 205
+  },
+  "ios": {
+    "e2e/launch.yaml": 167,
+    "e2e/browse.yaml": 185,
+    "e2e/session_lifecycle.yaml": 81,
+    "e2e/server_drag_reorder.yaml": 79,
+    "e2e/bug6_bottom_bar_inset.yaml": 118,
+    "e2e/pty_turn_divider.yaml": 87,
+    "e2e/feat1_tree_drill_new_session.yaml": 92,
+    "e2e/feat2_export_in_info_shelf.yaml": 69,
+    "e2e/codex_parity.yaml": 67,
+    "e2e/voice_dictation.yaml": 80,
+    "e2e/settings_qr_scanner.yaml": 49,
+    "e2e/language_direction.yaml": 44,
+    "e2e/feedback_flow.yaml": 100,
+    "e2e/05_chat_flow.yaml": 79,
+    "e2e/06_search_anchor.yaml": 66,
+    "e2e/07_conversation_scroll_gaps.yaml": 307
+  }
+}

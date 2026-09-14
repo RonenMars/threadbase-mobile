@@ -363,10 +363,12 @@ async function main() {
   const maestroResult = maestroResults.find((result) => result.code !== 0) ||
     maestroResults[maestroResults.length - 1] || { code: 1, signal: null }
   const terminationSignal = maestroResult.signal || maestroResult.forwardedSignal
+  const reportGraceMs =
+    terminationSignal || process.env.E2E_PLATFORM === 'android' ? 0 : graceMs
   const matchingReports = await findNewMatchingReports(
     baseline,
     directories,
-    terminationSignal ? 0 : graceMs,
+    reportGraceMs,
     pollMs,
     warnOnce,
   )

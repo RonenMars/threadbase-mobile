@@ -8,20 +8,53 @@ We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS a
 
 ## Android CI
 
-The `E2E` GitHub Actions workflow defaults to Android and runs on `ubuntu-24.04` with Android API 35
-Google APIs `x86_64` `pixel_6` emulators and Maestro CLI 2.8.0. One job assembles the Release APK
-(and caches it per checked-out commit SHA); three parallel emulator jobs download that APK, install
-it with `adb`, and each run a shard of `test:e2e:mock` through `e2e/run-maestro.js`. iOS is the same
-shape on `macos-26`: one `xcodebuild` job, then two simulator shards. A `flows=` dispatch stays on
-one shard. A second dispatch of the same commit reuses the cached binary and skips the compile.
-The workflow disables Sentry source-map upload and uses the committed debug keystore only for this
-simulator APK, so it does not need production Sentry or signing credentials.
+The `E2E` GitHub Actions workflow defaults to Android and runs on `ubuntu-24.04` with Android API 35 Google APIs `x86_64` `pixel_6` emulators and Maestro CLI 2.8.0.
+One job assembles the Release APK and caches it for the exact tested SHA plus the executing workflow revision.
+Three parallel emulator jobs download that APK, install it with `adb`, and each run a duration-weighted shard of `test:e2e:mock` through `e2e/run-maestro.js`.
+iOS is the same shape on `macos-26`: one arm64-only `xcodebuild` job, then three simulator shards.
+Shard assignment uses historical flow seconds from `e2e/mock-suite-durations.json`.
+Those estimates are labeled as historical weights in the job summary and are not suite membership.
+A `flows=` dispatch stays on one shard in the supplied order.
+`npm run test:e2e:mock` remains the sequential local pass and still uses the full `package.json` list.
+The workflow disables Sentry source-map upload and uses the committed debug keystore only for this simulator APK, so it does not need production Sentry or signing credentials.
 
-The Android emulator reaches the runner-hosted mock server at `10.0.2.2`, while
-local iOS runs use `localhost`. The Android preflight checks emulator readiness
-and API level; iOS runs additionally retain the separate XCTest teardown-crash
-guard in `e2e/run-maestro.js`. Manual dispatch also provides `platform=ios` to
-run the retained macOS/iOS workflow.
+The Android emulator reaches the runner-hosted mock server at `10.0.2.2`, while local iOS runs use `localhost`.
+The Android preflight checks emulator readiness and API level.
+Explicit `E2E_PLATFORM=android` skips the delayed XCTest crash-report wait in `e2e/run-maestro.js`; iOS and callers that omit the variable still wait.
+Manual dispatch also provides `platform=ios` to run the macOS/iOS workflow.
+
+### Binary cache versus compiler cache
+
+The Android APK and iOS `e2e-ios-app.tgz` caches are exact-match only.
+Their keys include the tested SHA (`-f ref=`), the executing workflow revision (`--ref` / `github.workflow_sha`), and on iOS the recorded Xcode build number.
+They have no `restore-keys`, so a different commit cannot install another revision's app.
+A binary cache hit skips Node, CocoaPods, Ccache, DerivedData, and native compilation.
+
+Ccache and DerivedData are a separate layer.
+They restore with same-toolchain and architecture prefixes so a new tested SHA can reuse compilation, then save a new snapshot under that SHA.
+Do not treat a warm compiler cache as proof that the exact tested binary was reused.
+
+### Reproducing a miss or a hit
+
+`--ref` selects the workflow file.
+`-f ref=` selects the tested source.
+Actions caches are scoped to the workflow branch, so a warmup and a later dispatch of the same commit must use the same `--ref`.
+
+```bash
+# Workflow file and tested source from the same published branch.
+gh workflow run E2E --ref "$E2E_WORKFLOW_REF" -f ref="$E2E_TEST_SHA" -f platform=ios
+```
+
+A second dispatch of that same pair should hit the binary cache and skip native compilation.
+A different tested SHA misses the binary cache.
+A workflow-only change (for example a comment in `e2e.yml`) changes `github.workflow_sha` and misses the binary cache while native caches may still restore.
+
+The concurrency group `e2e-${{ inputs.ref || 'schedule' }}` serializes dispatches for the same target, including separate Android and iOS inputs.
+Standard hosted runners are free for this public repository, including `macos-26`.
+GitHub's documented Free/Pro/Team Mac concurrency maximum is five jobs; three iOS shards plus the iOS build job can fill that budget while other Mac workflows wait.
+
+Lightweight Maestro output under `e2e/_artifacts/maestro-output/` is uploaded per platform and shard on success and failure with one-day retention.
+Full screenshots and debug artifacts still upload on failure only.
 
 ## Prerequisites
 
