@@ -2,7 +2,7 @@ import React from 'react'
 import { fireEvent } from '@testing-library/react-native'
 import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
 import { ToastViewport } from '@/components/ui/ToastViewport'
-import { useToastStore } from '@/stores/toasts'
+import { useAlertStore } from '@/stores/alerts'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
 
@@ -36,7 +36,7 @@ function renderBanner(onPress: () => void) {
 }
 
 beforeEach(() => {
-  useToastStore.getState().reset()
+  useAlertStore.getState().reset()
   useServersStore.setState({
     servers: {},
     activeServerIds: [],

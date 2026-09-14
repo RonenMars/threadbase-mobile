@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { useToastSync } from '@/hooks/useToastSync'
+import { useAlertSync } from '@/hooks/useAlertSync'
 import { wsManager } from '@/services/ws-client'
 import type { ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
-import type { AlertLevel, AlertSpec } from '@/types/alerts'
+import { CAUSE_SERVERS_SUMMARY, serverCause, type AlertCause, type AlertLevel, type AlertSpec } from '@/types/alerts'
 import type { ServerConfig } from '@/types/api'
 
 type Props = {
@@ -64,8 +64,8 @@ export function ServerStateMessage({
   const [showInfo, setShowInfo] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { severity, message, detailKind } = useMemo((): { severity: Severity; message: string; detailKind: DetailKind | null } => {
-    if (activeServerIds.length === 0) return { severity: null, message: '', detailKind: null }
+  const { severity, message, detailKind, namedId } = useMemo((): { severity: Severity; message: string; detailKind: DetailKind | null; namedId: string | null } => {
+    if (activeServerIds.length === 0) return { severity: null, message: '', detailKind: null, namedId: null }
 
     const healthy: string[] = []
     const unreachable: string[] = []
@@ -88,6 +88,7 @@ export function ServerStateMessage({
 
     const single = activeServerIds.length === 1
     const label = single ? serverLabel(activeServerIds[0], servers) : ''
+    const only = single ? activeServerIds[0] : null
 
     // All servers unhealthy (indexing servers don't count as unreachable)
     if (healthy.length === 0 && indexing.length === activeServerIds.length) {
@@ -95,6 +96,7 @@ export function ServerStateMessage({
       return {
         severity: 'info',
         detailKind: 'indexing',
+        namedId: only ?? (indexing.length === 1 ? indexing[0] : null),
         message: indexingLabel
           ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
           : t('stateMessage.buildingHistory'),
@@ -106,6 +108,7 @@ export function ServerStateMessage({
         return {
           severity: 'error',
           detailKind: 'unreachable',
+          namedId: only,
           message: single
             ? t('stateMessage.unreachableNamed', { server: label })
             : t('stateMessage.unreachableAll'),
@@ -115,6 +118,7 @@ export function ServerStateMessage({
         return {
           severity: 'error',
           detailKind: 'fetchFailed',
+          namedId: only,
           message: single
             ? t('stateMessage.refreshFailedNamed', { server: label })
             : t('stateMessage.refreshFailedAll'),
@@ -124,6 +128,7 @@ export function ServerStateMessage({
         return {
           severity: 'warning',
           detailKind: 'disconnected',
+          namedId: only,
           message: single
             ? t('stateMessage.disconnectedNamed', { server: label })
             : t('stateMessage.disconnectedAll'),
@@ -133,12 +138,13 @@ export function ServerStateMessage({
         return {
           severity: 'info',
           detailKind: 'connecting',
+          namedId: only,
           message: single
             ? t('stateMessage.connectingNamed', { server: label })
             : t('stateMessage.connectingAll'),
         }
       }
-      return { severity: null, message: '', detailKind: null }
+      return { severity: null, message: '', detailKind: null, namedId: null }
     }
 
     // Some healthy, some degraded
@@ -148,6 +154,7 @@ export function ServerStateMessage({
       return {
         severity: 'info',
         detailKind: 'indexing',
+        namedId: indexing.length === 1 ? indexing[0] : null,
         message: indexingLabel
           ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
           : t('stateMessage.buildingHistory'),
@@ -158,6 +165,7 @@ export function ServerStateMessage({
       return {
         severity: 'warning',
         detailKind: 'unreachable',
+        namedId: unreachable.length === 1 ? unreachable[0] : null,
         message: badLabel
           ? t('stateMessage.partialUnreachableNamed', { server: badLabel })
           : t('stateMessage.partialUnreachableSome'),
@@ -168,6 +176,7 @@ export function ServerStateMessage({
       return {
         severity: 'warning',
         detailKind: 'fetchFailed',
+        namedId: fetchFailed.length === 1 ? fetchFailed[0] : null,
         message: badLabel
           ? t('stateMessage.refreshFailedNamed', { server: badLabel })
           : t('stateMessage.refreshFailedSome'),
@@ -178,6 +187,7 @@ export function ServerStateMessage({
       return {
         severity: 'warning',
         detailKind: 'disconnected',
+        namedId: bad.length === 1 ? bad[0] : null,
         message: badLabel
           ? t('stateMessage.disconnectedNamed', { server: badLabel })
           : t('stateMessage.disconnectedSome'),
@@ -188,13 +198,14 @@ export function ServerStateMessage({
       return {
         severity: 'info',
         detailKind: 'connecting',
+        namedId: connecting.length === 1 ? connecting[0] : null,
         message: connectingLabel
           ? t('stateMessage.connectingNamed', { server: connectingLabel })
           : t('stateMessage.connectingAll'),
       }
     }
 
-    return { severity: null, message: '', detailKind: null }
+    return { severity: null, message: '', detailKind: null, namedId: null }
     // wsConnectedCount triggers recompute when WS state flips
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, fetchStatuses, wsConnectedCount, servers, t])
@@ -216,7 +227,9 @@ export function ServerStateMessage({
 
   const spec = useMemo((): AlertSpec | null => {
     if (!visible || !severity || !detailKind) return null
+    const cause: AlertCause = namedId ? serverCause(namedId) : CAUSE_SERVERS_SUMMARY
     const base = {
+      cause,
       level: toLevel(severity),
       title: message,
       message: getDetailMessage(detailKind, t),
@@ -230,8 +243,8 @@ export function ServerStateMessage({
       buttonAction: onRetryFailed,
       onPress: onViewDetails,
     }
-  }, [visible, severity, detailKind, message, showAction, isRetrying, onRetryFailed, onViewDetails, t])
+  }, [visible, severity, detailKind, namedId, message, showAction, isRetrying, onRetryFailed, onViewDetails, t])
 
-  useToastSync(TOAST_ID, spec, VIEWPORT)
+  useAlertSync(TOAST_ID, spec, VIEWPORT)
   return null
 }
