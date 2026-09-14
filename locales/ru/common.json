@@ -18,6 +18,13 @@
       "error": "Ошибка",
       "warning": "Предупреждение",
       "info": "Информация"
+    },
+    "pill": {
+      "degraded": "Нестабильно",
+      "issues_one": "{{count}} проблема",
+      "issues_few": "{{count}} проблемы",
+      "issues_many": "{{count}} проблем",
+      "issues_other": "{{count}} проблемы"
     }
   },
   "error": {
@@ -94,11 +101,7 @@
     "retryAllRetrying_many": "Повтор {{count}} запросов…",
     "retryAllRetrying_other": "Повтор {{count}} запросов…",
     "codeLabel": "Код ошибки",
-    "rawLabel": "Исходная ошибка",
-    "issuesIndicator_one": "{{count}} проблема",
-    "issuesIndicator_few": "{{count}} проблемы",
-    "issuesIndicator_many": "{{count}} проблем",
-    "issuesIndicator_other": "{{count}} проблемы"
+    "rawLabel": "Исходная ошибка"
   },
   "errorPolicy": {
     "sessionExpired": "Срок действия сессии истёк",

@@ -18,6 +18,15 @@
       "error": "خطأ",
       "warning": "تحذير",
       "info": "معلومات"
+    },
+    "pill": {
+      "degraded": "تدهور",
+      "issues_zero": "لا توجد مشكلات",
+      "issues_one": "مشكلة واحدة",
+      "issues_two": "مشكلتان",
+      "issues_few": "{{count}} مشكلات",
+      "issues_many": "{{count}} مشكلة",
+      "issues_other": "{{count}} مشكلة"
     }
   },
   "error": {
@@ -96,13 +105,7 @@
     "retryAllRetrying_many": "جارٍ إعادة محاولة {{count}} طلباً…",
     "retryAllRetrying_other": "جارٍ إعادة محاولة {{count}} طلب…",
     "codeLabel": "رمز الخطأ",
-    "rawLabel": "الخطأ الأصلي",
-    "issuesIndicator_zero": "لا توجد مشكلات",
-    "issuesIndicator_one": "مشكلة واحدة",
-    "issuesIndicator_two": "مشكلتان",
-    "issuesIndicator_few": "{{count}} مشكلات",
-    "issuesIndicator_many": "{{count}} مشكلة",
-    "issuesIndicator_other": "{{count}} مشكلة"
+    "rawLabel": "الخطأ الأصلي"
   },
   "errorPolicy": {
     "sessionExpired": "انتهت صلاحية الجلسة",

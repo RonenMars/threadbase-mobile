@@ -43,6 +43,6 @@ appId: com.ronenmars.threadbase
     timeout: 2000
 
 - assertNotVisible:
-    id: "issues-indicator"
+        id: "status-pill"
 
 - takeScreenshot: e2e/_artifacts/screenshots/card-search
