@@ -3,7 +3,7 @@ import { cleanup } from '@testing-library/react-native'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { wsManager } from '@/services/ws-client'
-import { useToastStore } from '@/stores/toasts'
+import { useAlertStore } from '@/stores/alerts'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
 import type { ServerConfig } from '@/types/api'
@@ -19,7 +19,7 @@ const server: ServerConfig = {
 
 beforeEach(async () => {
   await cleanup()
-  useToastStore.getState().reset()
+  useAlertStore.getState().reset()
   await i18n.changeLanguage('he')
   jest.spyOn(wsManager, 'status').mockReturnValue('disconnected')
 })

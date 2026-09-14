@@ -11,14 +11,8 @@ export type AlertAppearance = {
   iconWeight: IconWeight
 }
 
-export function alertAppearance(
-  level: AlertLevel,
-  theme: Theme,
-  accentOverride?: string,
-): AlertAppearance {
+export function alertAppearance(level: AlertLevel, theme: Theme): AlertAppearance {
   switch (level) {
-    case 'debug':
-      return { accent: theme.text.secondary, Icon: Info, iconWeight: 'regular' }
     case 'info':
       return { accent: theme.text.secondary, Icon: Info, iconWeight: 'regular' }
     case 'warning':
@@ -27,11 +21,5 @@ export function alertAppearance(
       return { accent: theme.status.failed, Icon: WarningCircle, iconWeight: 'fill' }
     case 'critical':
       return { accent: theme.status.failed, Icon: WarningCircle, iconWeight: 'fill' }
-    case 'custom':
-      return {
-        accent: accentOverride ?? theme.text.accent,
-        Icon: WarningCircle,
-        iconWeight: 'fill',
-      }
   }
 }

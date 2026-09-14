@@ -13,18 +13,17 @@ type Props = {
   message: string
   details?: string
   level: AlertLevel
-  accent?: string
   onClose: () => void
 }
 
-export function AlertDetailsModal({ title, message, details, level, accent, onClose }: Props) {
+export function AlertDetailsModal({ title, message, details, level, onClose }: Props) {
   const { t } = useTranslation('common')
   const theme = useTheme()
   const directionStyle = useDirectionStyle()
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const styles = useMemo(() => makeStyles(theme), [theme])
-  const appearance = alertAppearance(level, theme, accent)
+  const appearance = alertAppearance(level, theme)
   const Icon = appearance.Icon
   const closeLabel = t('button.close')
 

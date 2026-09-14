@@ -12,6 +12,14 @@
     "settings": "Settings",
     "moreOptions": "More options"
   },
+  "alert": {
+    "level": {
+      "critical": "Critical",
+      "error": "Error",
+      "warning": "Warning",
+      "info": "Info"
+    }
+  },
   "error": {
     "authDeviceRevoked": "This device is no longer authorized. Pair it with the server again.",
     "authKeyRejected": "The server rejected the API key. Update the API key and try again.",
