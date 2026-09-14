@@ -43,7 +43,7 @@ describe('parseProvidersResponse', () => {
         ],
       },
       {
-        name: 'cursor-cli',
+        name: 'cursor',
         available: true,
         version: '2026.1.0',
         verifiedAgainst: { captured: ['2026.1.0'], min: '2026.1.0' },
@@ -64,7 +64,7 @@ describe('parseProvidersResponse', () => {
     const parsed = parseProvidersResponse(valid)
     expect(parsed?.providers).toHaveLength(3)
     expect(findProviderHealth(parsed?.providers, 'codex-cli')?.available).toBe(false)
-    expect(findProviderHealth(parsed?.providers, 'cursor-cli')?.available).toBe(true)
+    expect(findProviderHealth(parsed?.providers, 'cursor')?.available).toBe(true)
     expect(findProviderHealth(parsed?.providers, 'codex-cli')?.warnings[0].code).toBe(
       'provider_not_found',
     )

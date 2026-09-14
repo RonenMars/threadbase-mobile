@@ -1,26 +1,35 @@
-export const CLAUDE_CODE_PROVIDER = "claude-code" as const;
-export const CODEX_CLI_PROVIDER = "codex-cli" as const;
-export const CURSOR_CLI_PROVIDER = "cursor-cli" as const;
+export const CLAUDE_CODE_PROVIDER = 'claude-code' as const
+export const CODEX_CLI_PROVIDER = 'codex-cli' as const
+export const CURSOR_PROVIDER = 'cursor' as const
+/** Live PTY on main shipped this wire name; accept it and treat it as `cursor`. */
+export const LEGACY_CURSOR_PROVIDER = 'cursor-cli' as const
 
 export const PROVIDER_NAMES = [
   CLAUDE_CODE_PROVIDER,
   CODEX_CLI_PROVIDER,
-  CURSOR_CLI_PROVIDER,
-] as const;
+  CURSOR_PROVIDER,
+] as const
 
-export type ProviderName = (typeof PROVIDER_NAMES)[number];
+export type ProviderName = (typeof PROVIDER_NAMES)[number]
 
-export type ProviderLabelKey = "claude" | "codex" | "cursor";
+export type ProviderLabelKey = 'claude' | 'codex' | 'cursor'
+
+export function canonicalizeProviderName(value: string | undefined | null): ProviderName | undefined {
+  if (value === LEGACY_CURSOR_PROVIDER) return CURSOR_PROVIDER
+  if (value && (PROVIDER_NAMES as readonly string[]).includes(value)) return value as ProviderName
+  return undefined
+}
 
 export function isProviderName(value: string): value is ProviderName {
-  return (PROVIDER_NAMES as readonly string[]).includes(value);
+  return canonicalizeProviderName(value) !== undefined
 }
 
 /** i18n key under `sessions:provider.*` and `brand.*` token. Unknown names read as Claude. */
 export function providerLabelKey(
   provider: string | undefined | null,
 ): ProviderLabelKey {
-  if (provider === CODEX_CLI_PROVIDER) return "codex";
-  if (provider === CURSOR_CLI_PROVIDER) return "cursor";
-  return "claude";
+  const name = canonicalizeProviderName(provider ?? undefined)
+  if (name === CODEX_CLI_PROVIDER) return 'codex'
+  if (name === CURSOR_PROVIDER) return 'cursor'
+  return 'claude'
 }

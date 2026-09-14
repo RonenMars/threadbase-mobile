@@ -47,7 +47,7 @@ function conversation(overrides: Partial<MultiConversation>, ms: number): Merged
 const waiting = session({ id: 'w', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', provider: 'codex-cli' }, NOW - HOUR)
 const running = session({ id: 'r', status: 'running', ptyAttached: true, lifecycle: 'attached' }, NOW - 2 * HOUR)
 const held = session({ id: 'h', status: 'waiting_input', ptyAttached: false, lifecycle: 'resumable' }, NOW - 3 * DAY)
-const failed = session({ id: 'f', status: 'idle', lifecycle: 'failed', provider: 'cursor-cli' }, NOW - 10 * DAY)
+const failed = session({ id: 'f', status: 'idle', lifecycle: 'failed', provider: 'cursor' }, NOW - 10 * DAY)
 const old = conversation({ id: 'old', provider: 'codex-cli' }, NOW - 40 * DAY)
 
 const items = [waiting, running, held, failed, old]
@@ -76,7 +76,7 @@ describe('applyListFilters', () => {
     // The wire is untrusted: a newer streamer can send a provider name that is not in ProviderName.
     const newer = session({ id: 'n', provider: 'gemini-cli' as ProviderName }, NOW - HOUR)
     expect(applyListFilters([newer], DEFAULT_FILTERS, NOW).map((i) => i.item.id)).toEqual(['n'])
-    expect(countByProvider([newer])).toEqual({ 'claude-code': 1, 'codex-cli': 0, 'cursor-cli': 0 })
+    expect(countByProvider([newer])).toEqual({ 'claude-code': 1, 'codex-cli': 0, 'cursor': 0 })
   })
 
   it('applies the recency window to every row', () => {
@@ -96,7 +96,7 @@ describe('counts and presets', () => {
   })
 
   it('counts rows per agent', () => {
-    expect(countByProvider(items)).toEqual({ 'claude-code': 2, 'codex-cli': 2, 'cursor-cli': 1 })
+    expect(countByProvider(items)).toEqual({ 'claude-code': 2, 'codex-cli': 2, 'cursor': 1 })
   })
 
   it('recognises the defaults regardless of tier order', () => {
