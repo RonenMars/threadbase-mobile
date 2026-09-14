@@ -152,6 +152,9 @@ export function getConnectionLog(): readonly ConnectionLogEntry[] {
   return connectionLog
 }
 
+/** Permanent WS failures the UI can name, rather than showing a bare "disconnected". */
+export type WsPermanentError = 'e2ee_protocol_mismatch'
+
 class WSClient {
   private socket: WebSocket | null = null
   private url = ''
@@ -160,6 +163,7 @@ class WSClient {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private connectTimer: ReturnType<typeof setTimeout> | null = null
   private _status: 'connecting' | 'connected' | 'disconnected' = 'disconnected'
+  private _lastError: WsPermanentError | null = null
   private statusListeners: Set<(s: WSClient['_status']) => void> = new Set()
   private encryption: WsEncryptionConfig = {}
   private context: TransportContext | null = null
@@ -219,6 +223,7 @@ class WSClient {
     const generation = ++this.generation
     this._retireCurrentConnection()
     this._clearConnectTimer()
+    this._lastError = null
 
     this._setStatus('connecting')
     logConnection(this.serverId, 'connect', this.reconnectAttempt)
@@ -297,8 +302,10 @@ class WSClient {
         // The server opened the socket without taking the ticket path (web
         // only). Permanent for this build: no reconnect, no ticket retry, and
         // never a plaintext or `?key=` redial — the same terminal outcome as a
-        // non-retryable `OpenError` above.
+        // non-retryable `OpenError` above. Set the error before status so a
+        // status listener can read it and show more than "disconnected".
         logConnection(this.serverId, 'e2ee_protocol_mismatch')
+        this._lastError = 'e2ee_protocol_mismatch'
         this._retireCurrentConnection()
         this._setStatus('disconnected')
         return
@@ -502,6 +509,10 @@ class WSClient {
     return this._status
   }
 
+  lastError(): WsPermanentError | null {
+    return this._lastError
+  }
+
   onStatusChange(listener: (s: WSClient['_status']) => void): () => void {
     this.statusListeners.add(listener)
     return () => this.statusListeners.delete(listener)
@@ -611,6 +622,10 @@ class WSClientManager {
 
   status(serverId: string): 'connecting' | 'connected' | 'disconnected' {
     return this.clients.get(serverId)?.status() ?? 'disconnected'
+  }
+
+  lastError(serverId: string): WsPermanentError | null {
+    return this.clients.get(serverId)?.lastError() ?? null
   }
 
   send(serverId: string, msg: unknown) {

@@ -2,6 +2,7 @@
   "status": {
     "connected": "Connected",
     "disconnected": "Disconnected",
+    "e2eeProtocolMismatch": "Encryption mismatch",
     "unreachable": "Unreachable",
     "fetchFailed": "Fetch failed",
     "connecting": "Connecting…"
@@ -94,6 +95,9 @@
     "disconnectedNamed": "Disconnected from {{server}}. Showing cached sessions.",
     "disconnectedAll": "Disconnected from all servers. Showing cached sessions.",
     "disconnectedSome": "Disconnected from some servers. Showing cached sessions.",
+    "e2eeProtocolMismatchNamed": "{{server}} opened a connection that is not encrypted the way this browser requires. Update the streamer, or pair from the Threadbase app for iOS or Android.",
+    "e2eeProtocolMismatchAll": "These servers opened a connection that is not encrypted the way this browser requires.",
+    "e2eeProtocolMismatchSome": "Some servers opened a connection that is not encrypted the way this browser requires.",
     "connectingNamed": "Connecting to {{server}}…",
     "connectingAll": "Connecting to servers…",
     "partialUnreachableNamed": "{{server}} is unreachable. Some sessions may be missing.",
@@ -123,7 +127,8 @@
     "expand": "Show error details",
     "collapse": "Hide error details",
     "localhostUnreachable": "Can't reach 'localhost' from a physical device. Use your Mac's local IP (e.g. http://192.168.x.x:8766) or run: tb serve --tunnel",
-    "connectionFailed": "Connection failed. Check the server URL and try again."
+    "connectionFailed": "Connection failed. Check the server URL and try again.",
+    "e2eeProtocolMismatch": "This server opened a connection that is not encrypted the way this browser requires. Update the streamer, or pair from the Threadbase app for iOS or Android."
   },
   "indexing": {
     "label": "Scanning and indexing conversations…",
@@ -318,6 +323,7 @@
       "unreachable": "This server did not respond. Sessions listed below may be incomplete until it comes back.",
       "fetchFailed": "The app could not refresh the session list. Cached sessions are shown where available.",
       "disconnected": "The live connection dropped. Cached sessions stay visible until reconnect.",
+      "e2eeProtocolMismatch": "The live connection opened without the encrypted path this browser requires. Cached sessions stay visible.",
       "connecting": "Establishing a connection to the server.",
       "indexing": "The server is building its conversation index. History will appear when it is ready."
     }
