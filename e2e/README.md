@@ -4,19 +4,23 @@ A minimal smoke-test suite for the Threadbase app, driven by [Maestro](https://m
 
 ## Android CI
 
-The scheduled `E2E` GitHub Actions workflow, and manual runs with the default
-`platform=android`, run the mock suite on Ubuntu using Android **API 35** Google APIs `x86_64`
-(`pixel_6`) emulators and Maestro CLI **2.8.0**. One job assembles
-`:app:assembleRelease` (signed with the repository debug key, cached per commit
-SHA) and uploads that APK; three parallel emulator jobs install it with `adb`
-and each run a shard of the mock suite. `E2E_MOCK_SERVER_URL=http://10.0.2.2:7071`
-so the emulator can reach the runner-hosted mock server. Sentry source-map
-upload is disabled for this build; production deploy workflows and their
-signing/Sentry configuration are separate and unchanged. A `flows=` dispatch
-collapses to a single emulator.
+The scheduled `E2E` GitHub Actions workflow, and manual runs with the default `platform=android`, run the mock suite on Ubuntu using Android **API 35** Google APIs `x86_64` (`pixel_6`) emulators and Maestro CLI **2.8.0**.
+One job assembles `:app:assembleRelease` (signed with the repository debug key) and caches that APK for the exact tested SHA plus the executing workflow revision.
+Three parallel emulator jobs install it with `adb` and each run a duration-weighted shard of the mock suite.
+iOS uses the same one-build-then-three-shards shape on `macos-26`, compiling only the arm64 simulator slice.
+A `flows=` dispatch stays one shard in the supplied order.
+`E2E_MOCK_SERVER_URL=http://10.0.2.2:7071` so the emulator can reach the runner-hosted mock server.
+Sentry source-map upload is disabled for this build; production deploy workflows and their signing/Sentry configuration are separate and unchanged.
+`npm run test:e2e:mock` is still sequential locally.
 
-Use the normal dispatch inputs to select the code and, optionally, a subset of
-flows. The full mock-suite flow list remains `test:e2e:mock` in `package.json`.
+The Android APK and iOS `e2e-ios-app.tgz` caches are exact-match only (tested SHA + workflow revision; iOS also records the Xcode build).
+Ccache and DerivedData may restore across source changes on the same toolchain and must not be reported as a binary hit.
+To reproduce: `--ref` chooses the workflow, `-f ref=` chooses the tested source, and both dispatches must share `--ref`.
+Same pair → binary hit.
+Different tested SHA or workflow revision → binary miss.
+
+Use the normal dispatch inputs to select the code and, optionally, a subset of flows.
+The full mock-suite flow list remains `test:e2e:mock` in `package.json`.
 
 ```bash
 gh workflow run E2E -f ref=my/branch                         # Android (default)
@@ -24,10 +28,10 @@ gh workflow run E2E -f ref=my/branch -f flows="e2e/codex_parity.yaml"
 gh workflow run E2E -f platform=ios -f ref=my/branch          # retained iOS path
 ```
 
-Android validation does not replace the separate local iOS XCTest check. The
-iOS paths still use `e2e/check-sim.js` and `e2e/run-maestro.js`; the latter
-keeps its Apple XCTest teardown-crash detection and artifacts. Android has an
-API/device readiness check but no XCTest path.
+Android validation does not replace the separate local iOS XCTest check.
+The iOS paths still use `e2e/check-sim.js` and `e2e/run-maestro.js`; the latter keeps its Apple XCTest teardown-crash detection and artifacts.
+Explicit `E2E_PLATFORM=android` skips that delayed wait.
+Android has an API/device readiness check but no XCTest path.
 
 ## What it covers
 

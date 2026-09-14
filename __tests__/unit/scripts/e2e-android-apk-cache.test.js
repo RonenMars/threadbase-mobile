@@ -31,8 +31,9 @@ describe('e2e.yml Android APK cache', () => {
     const recordAt = stepIndex(src, 'Record checked-out SHA');
     const cacheAt = stepIndex(src, 'Cache Android Release APK');
     expect(recordAt).toBeLessThan(cacheAt);
-    expect(src).toMatch(/key: e2e-android-apk-v1-\$\{\{ runner\.os \}\}-x86_64-\$\{\{ steps\.head\.outputs\.sha \}\}/);
-    expect(src).not.toMatch(/e2e-android-apk-v1-.*github\.sha/);
+    expect(src).toMatch(/key: e2e-android-apk-v2-\$\{\{ runner\.os \}\}-x86_64-\$\{\{ steps\.head\.outputs\.sha \}\}-\$\{\{ github\.workflow_sha \}\}/);
+    expect(src).not.toMatch(/e2e-android-apk-v2-.*github\.sha/);
+    expect(src).not.toMatch(/e2e-android-apk-v1-/);
   });
 
   it('assembles the APK before android-emulator-runner and skips assemble on a cache hit', () => {
@@ -42,6 +43,16 @@ describe('e2e.yml Android APK cache', () => {
     expect(emulatorAt).toBeGreaterThan(-1);
     expect(assembleAt).toBeLessThan(emulatorAt);
     expect(src).toMatch(/steps\.apk-cache\.outputs\.cache-hit != 'true'/);
+  });
+
+  it('enables the Gradle task-output cache on Release x86_64 assembly', () => {
+    const src = workflowSource();
+    const apkJob = src.slice(src.indexOf('  android-apk:\n'), src.indexOf('  android-maestro:\n'));
+    expect(apkJob).toContain(
+      './gradlew :app:assembleRelease --build-cache -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}"',
+    );
+    expect(apkJob).toContain('gradle/actions/setup-gradle@v5');
+    expect(apkJob.match(/uses: actions\/cache@v5/g) || []).toHaveLength(1);
   });
 
   it('lets a feature-branch warmup write the Gradle cache', () => {

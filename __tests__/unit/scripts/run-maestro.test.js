@@ -72,6 +72,7 @@ function makeFixture() {
 function runGuard(fixture, options = {}) {
   return spawnSync(process.execPath, [SCRIPT, ...(options.args || ['test', 'e2e/example.yaml'])], {
     encoding: 'utf8',
+    timeout: options.timeout,
     env: {
       ...process.env,
       MAESTRO_BIN: fixture.fakeMaestro,
@@ -237,6 +238,53 @@ test('a matching report written after Maestro exits is found during the grace pe
 
   expect(result.status).not.toBe(0);
   expect(result.stderr).toMatch(/Maestro result is invalid/i);
+});
+
+test('explicit iOS still finds a delayed matching report', () => {
+  fixture = makeFixture();
+  const reportPath = path.join(fixture.reports, 'SpringBoard-delayed-ios.ips');
+
+  const result = runGuard(fixture, {
+    env: {
+      E2E_PLATFORM: 'ios',
+      E2E_XCTEST_CRASH_GRACE_MS: '200',
+      FAKE_ASYNC_REPORT_DELAY_MS: '20',
+      FAKE_REPORT_PATH: reportPath,
+      FAKE_REPORT_CONTENT: matchingReport(),
+    },
+  });
+
+  expect(result.status).not.toBe(0);
+  expect(result.stderr).toMatch(/Maestro result is invalid/i);
+});
+
+test('explicit Android skips the XCTest grace wait', () => {
+  fixture = makeFixture();
+  const result = runGuard(fixture, {
+    timeout: 5000,
+    env: {
+      E2E_PLATFORM: 'android',
+      E2E_XCTEST_CRASH_GRACE_MS: '60000',
+    },
+  });
+
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(0);
+});
+
+test('explicit Android preserves a nonzero Maestro exit without waiting', () => {
+  fixture = makeFixture();
+  const result = runGuard(fixture, {
+    timeout: 5000,
+    env: {
+      E2E_PLATFORM: 'android',
+      E2E_XCTEST_CRASH_GRACE_MS: '60000',
+      FAKE_EXIT_CODE: '7',
+    },
+  });
+
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(7);
 });
 
 test('a header-only partial report is retried until its crash body is complete', () => {
