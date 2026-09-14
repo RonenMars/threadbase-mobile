@@ -194,6 +194,7 @@ describe('PairScannerModal — retry is offered only where it can help', () => {
     'e2ee-version',
     'e2ee-refused',
     'e2ee-web-unsupported',
+    'e2ee-web-server-unsupported',
   ])('offers no retry after %s, and no way to connect unencrypted', async (kind) => {
     const screen = await scanFailingWith(kind)
     expect(screen.queryByTestId('pair-scanner-try-again')).toBeNull()

@@ -61,8 +61,8 @@ function pairedDevice() {
   mockedOpen.mockResolvedValue({
     ok: true,
     handshake: {
-      writeMessage1: () => new Uint8Array(48),
-      readMessage2: () => ({
+      writeMessage1: async () => new Uint8Array(48),
+      readMessage2: async () => ({
         payload: new TextEncoder().encode(
           JSON.stringify({
             v: 1,

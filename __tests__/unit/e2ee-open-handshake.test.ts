@@ -10,7 +10,7 @@
  * reading of the spec against itself.
  */
 import vectors from '../fixtures/e2ee-record-vectors.json'
-import { NOISE_OPEN_PROTOCOL_NAME, createNoiseInitiator } from '@/services/e2ee/noise'
+import { NOISE_OPEN_PROTOCOL_NAME, createNoiseInitiator, staticKeyFromPrivate } from '@/services/e2ee/noise'
 import { OPEN_PROLOGUE, openMessage1Payload } from '@/services/e2ee/pair-handshake'
 
 const b64 = (s: string): Uint8Array => Uint8Array.from(Buffer.from(s, 'base64'))
@@ -23,7 +23,7 @@ function initiator(overrides: Record<string, unknown> = {}) {
   return createNoiseInitiator({
     pattern: 'IK',
     serverStaticPublic: b64(open.keys.serverStaticPublic),
-    clientStaticPrivate: b64(open.keys.clientStaticPrivate),
+    clientStatic: staticKeyFromPrivate(b64(open.keys.clientStaticPrivate)),
     prologue: utf8(OPEN_PROLOGUE),
     ephemeralPrivate: b64(open.keys.clientEphemeralPrivate),
     ...overrides,
@@ -37,15 +37,15 @@ describe('/open handshake — psk-less IK against the v1.72.0 vector', () => {
     expect(open.psk).toBeNull()
   })
 
-  it('builds message 1 byte for byte', () => {
-    const msg1 = initiator().writeMessage1(utf8(open.payload1Utf8))
+  it('builds message 1 byte for byte', async () => {
+    const msg1 = await initiator().writeMessage1(utf8(open.payload1Utf8))
     expect(toB64(msg1)).toBe(open.message1)
   })
 
-  it('reads message 2 and derives both traffic keys and the handshake hash', () => {
+  it('reads message 2 and derives both traffic keys and the handshake hash', async () => {
     const h = initiator()
-    h.writeMessage1(utf8(open.payload1Utf8))
-    const result = h.readMessage2(b64(open.message2))
+    await h.writeMessage1(utf8(open.payload1Utf8))
+    const result = await h.readMessage2(b64(open.message2))
 
     expect(Buffer.from(result.payload).toString('utf8')).toBe(open.payload2Utf8)
     expect(toB64(result.handshakeHash)).toBe(open.handshakeHash)
@@ -58,39 +58,39 @@ describe('/open handshake — psk-less IK against the v1.72.0 vector', () => {
     expect(JSON.parse(openMessage1Payload('rest'))).toEqual({ v: 1, kind: 'rest' })
   })
 
-  it('REFUSES a valid pairing message 1 read under the /open prologue', () => {
+  it('REFUSES a valid pairing message 1 read under the /open prologue', async () => {
     // The vector that makes "default the prologue" a seeable mutation. Without
     // it, dropping the domain separation would silently pass everything else.
     const h = initiator()
-    h.writeMessage1(utf8(open.payload1Utf8))
-    expect(() => h.readMessage2(b64(open.pairingMessage1RejectedHere.message1))).toThrow()
+    await h.writeMessage1(utf8(open.payload1Utf8))
+    await expect(h.readMessage2(b64(open.pairingMessage1RejectedHere.message1))).rejects.toThrow()
     expect(open.pairingMessage1RejectedHere.expect).toBe('seal-failed')
   })
 
-  it('a pairing prologue produces a different message 1 — the separation is real', () => {
+  it('a pairing prologue produces a different message 1 — the separation is real', async () => {
     const wrong = initiator({ prologue: utf8('threadbase-e2ee/1 pair') })
-    expect(toB64(wrong.writeMessage1(utf8(open.payload1Utf8)))).not.toBe(open.message1)
+    expect(toB64(await wrong.writeMessage1(utf8(open.payload1Utf8)))).not.toBe(open.message1)
   })
 
-  it('the IKpsk1 protocol name produces a different message 1', () => {
+  it('the IKpsk1 protocol name produces a different message 1', async () => {
     // Domain separation comes from the protocol name too, not the prologue alone.
     const psk = new Uint8Array(32).fill(7)
     const asPairing = createNoiseInitiator({
       pattern: 'IKpsk1',
       serverStaticPublic: b64(open.keys.serverStaticPublic),
-      clientStaticPrivate: b64(open.keys.clientStaticPrivate),
+      clientStatic: staticKeyFromPrivate(b64(open.keys.clientStaticPrivate)),
       psk,
       prologue: utf8(OPEN_PROLOGUE),
       ephemeralPrivate: b64(open.keys.clientEphemeralPrivate),
     })
-    expect(toB64(asPairing.writeMessage1(utf8(open.payload1Utf8)))).not.toBe(open.message1)
+    expect(toB64(await asPairing.writeMessage1(utf8(open.payload1Utf8)))).not.toBe(open.message1)
   })
 })
 
 describe('pattern selection is explicit, never inferred from `psk` presence', () => {
   const base = {
     serverStaticPublic: b64(open.keys.serverStaticPublic),
-    clientStaticPrivate: b64(open.keys.clientStaticPrivate),
+    clientStatic: staticKeyFromPrivate(b64(open.keys.clientStaticPrivate)),
     prologue: utf8(OPEN_PROLOGUE),
   }
 
@@ -133,19 +133,19 @@ describe('pattern selection is explicit, never inferred from `psk` presence', ()
       createNoiseInitiator({
         pattern: 'IK',
         serverStaticPublic: base.serverStaticPublic,
-        clientStaticPrivate: base.clientStaticPrivate,
+        clientStatic: base.clientStatic,
       } as unknown as Parameters<typeof createNoiseInitiator>[0]),
     ).toThrow(/prologue is required/)
   })
 
-  it('a polluted Object.prototype cannot inject a psk into a psk-less IK', () => {
+  it('a polluted Object.prototype cannot inject a psk into a psk-less IK', async () => {
     const proto = Object.prototype as unknown as Record<string, unknown>
     try {
       proto.psk = new Uint8Array(32).fill(9)
       // A `config.psk ?? null` read would find the prototype's value and either
       // throw here or, worse, bind it. `Object.hasOwn` does not see it.
       const h = createNoiseInitiator({ ...base, pattern: 'IK', ephemeralPrivate: b64(open.keys.clientEphemeralPrivate) })
-      expect(toB64(h.writeMessage1(utf8(open.payload1Utf8)))).toBe(open.message1)
+      expect(toB64(await h.writeMessage1(utf8(open.payload1Utf8)))).toBe(open.message1)
     } finally {
       delete proto.psk
     }
