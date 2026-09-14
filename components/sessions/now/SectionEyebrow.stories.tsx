@@ -28,3 +28,7 @@ export const Working: Story = {
 export const EarlierToday: Story = {
   args: { label: 'EARLIER TODAY', tone: 'muted', count: 17 },
 }
+
+export const QuietWithAction: Story = {
+  args: { label: 'QUIET · 24', tone: 'muted', action: { label: 'Show', onPress: () => {} } },
+}

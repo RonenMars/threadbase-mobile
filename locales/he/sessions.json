@@ -67,7 +67,13 @@
     "activityToday": "{{total}} היום",
     "activityLast": "אחרון: {{time}}",
     "timeNow": "עכשיו",
-    "timeYesterday": "אתמול"
+    "timeYesterday": "אתמול",
+    "tierActive": "פעילים",
+    "tierRecent": "אחרונים",
+    "tierQuiet": "שקטים",
+    "showQuiet": "הצג",
+    "hideQuiet": "הסתר",
+    "filterPlaceholder": "סינון פרויקטים או נתיבים…"
   },
   "loading": {
     "title": "טוען סשנים",

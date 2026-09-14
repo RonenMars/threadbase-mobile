@@ -70,7 +70,13 @@
     "activityToday": "Сегодня: {{total}}",
     "activityLast": "последняя: {{time}}",
     "timeNow": "сейчас",
-    "timeYesterday": "Вчера"
+    "timeYesterday": "Вчера",
+    "tierActive": "АКТИВНЫЕ",
+    "tierRecent": "НЕДАВНИЕ",
+    "tierQuiet": "ТИХИЕ",
+    "showQuiet": "Показать",
+    "hideQuiet": "Скрыть",
+    "filterPlaceholder": "Фильтр проектов или путей…"
   },
   "loading": {
     "title": "Загрузка сессий",

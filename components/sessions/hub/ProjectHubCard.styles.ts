@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
+import { MONO_FONT } from '@/constants/mono'
 import type { RtlStyleKit } from '@/lib/rtl'
 
 export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
@@ -33,6 +34,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     gap: 2,
   },
   headerParent: {
+    fontFamily: MONO_FONT,
     color: theme.text.secondary,
     fontSize: font.xs - 1,
     fontWeight: '500',
@@ -56,8 +58,10 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     fontWeight: '600',
   },
   countBadge: {
+    fontFamily: MONO_FONT,
     color: theme.text.secondary,
     fontSize: font.xs,
+    fontVariant: ['tabular-nums'],
   },
   body: {
     borderTopWidth: 1,
