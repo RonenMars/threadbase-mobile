@@ -30,6 +30,7 @@
     "__tests__/unit/scripts/ci-script-test-shards.test.js",
     "__tests__/unit/scripts/e2e-android-apk-cache.test.js",
     "__tests__/unit/scripts/e2e-android-script-single-line.test.js",
+    "__tests__/unit/scripts/e2e-ios-build-cache.test.js",
     "__tests__/unit/scripts/e2e-schedule-and-notification.test.js",
     "__tests__/unit/scripts/mock-suite-shards.test.js",
     "__tests__/unit/scripts/ios-e2e-simulator-target.test.js",
