@@ -71,6 +71,13 @@ function ensureForegroundHook() {
  * Returns the live REST context for this server, opening or rolling over as
  * needed. Concurrent waiters share this object — REST has one send counter
  * per server, unlike a socket context.
+ *
+ * The old context is retired only once its replacement is open. Retiring it
+ * first left it as the binding's context while the open was in flight; a
+ * refused open (a 429 from the five-per-minute limit) or one slower than the
+ * drain then destroyed the only context every later request could pick up,
+ * and each send failed with "this record state has been destroyed" until the
+ * app restarted.
  */
 export async function acquireRestContext(args: OpenContextArgs): Promise<TransportContext> {
   ensureForegroundHook()
@@ -83,15 +90,11 @@ export async function acquireRestContext(args: OpenContextArgs): Promise<Transpo
   if (pending) return pending
 
   const attempt = (async () => {
-    if (existing && shouldRollover(existing, nowMs())) {
-      retire(existing, nowMs())
-    }
     const context = await opener({ ...args, kind: 'rest' })
     const current = live.get(serverId)
     if (current) {
+      retire(current, nowMs())
       current.context = context
-      current.bytes = 0
-      current.needsRollover = false
     } else {
       live.set(serverId, { context, bytes: 0, needsRollover: false, draining: [] })
     }
