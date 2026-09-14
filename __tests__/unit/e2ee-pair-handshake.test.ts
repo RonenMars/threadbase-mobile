@@ -61,7 +61,7 @@ describe('beginPairHandshake', () => {
     const started = await start(SERVER_PUBLIC_KEY)
     expect(started.ok).toBe(true)
     if (!started.ok) return
-    const message1 = started.handshake.writeMessage1(naclUtil.decodeUTF8(vectors.payload1Utf8))
+    const message1 = await started.handshake.writeMessage1(naclUtil.decodeUTF8(vectors.payload1Utf8))
     expect(naclUtil.encodeBase64(message1)).toBe(vectors.message1)
   })
 
@@ -167,7 +167,7 @@ describe('the device static key', () => {
     if (!started.ok) return
     // The stored key really drove the handshake: message 1 reproduces the
     // committed vector, which it can only do with that exact static key.
-    const message1 = started.handshake.writeMessage1(naclUtil.decodeUTF8(vectors.payload1Utf8))
+    const message1 = await started.handshake.writeMessage1(naclUtil.decodeUTF8(vectors.payload1Utf8))
     expect(naclUtil.encodeBase64(message1)).toBe(vectors.message1)
     // And nothing was rewritten — a write here is the overwrite being guarded.
     expect(setItemAsync).not.toHaveBeenCalled()

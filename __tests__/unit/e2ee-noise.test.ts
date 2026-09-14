@@ -9,7 +9,13 @@
 // exists only so the tamper cases have something to be rejected by.
 
 import naclUtil from 'tweetnacl-util'
-import { NOISE_PROTOCOL_NAME, SymmetricState, createNoiseInitiator, noiseNonce } from '@/services/e2ee/noise'
+import {
+  NOISE_PROTOCOL_NAME,
+  SymmetricState,
+  createNoiseInitiator,
+  noiseNonce,
+  staticKeyFromPrivate,
+} from '@/services/e2ee/noise'
 import { PAIR_PROLOGUE, derivePairPsk } from '@/services/e2ee/pair-handshake'
 import { createNoiseResponder } from '@/test-utils/noise-responder'
 import vectors from '@/__tests__/fixtures/noise-ikpsk1-vectors.json'
@@ -31,7 +37,7 @@ function initiator(overrides: { psk?: Uint8Array; serverStaticPublic?: Uint8Arra
   return createNoiseInitiator({
     pattern: 'IKpsk1',
     serverStaticPublic: overrides.serverStaticPublic ?? serverStaticPublic,
-    clientStaticPrivate,
+    clientStatic: staticKeyFromPrivate(clientStaticPrivate),
     psk: overrides.psk ?? psk,
     prologue,
     ephemeralPrivate: clientEphemeralPrivate,
@@ -48,25 +54,25 @@ function responder(overrides: { psk?: Uint8Array } = {}) {
 }
 
 /** One full round trip against the same-author responder. */
-function roundTrip(overrides: { initiatorPsk?: Uint8Array; responderPsk?: Uint8Array } = {}) {
+async function roundTrip(overrides: { initiatorPsk?: Uint8Array; responderPsk?: Uint8Array } = {}) {
   const client = initiator({ psk: overrides.initiatorPsk })
   const server = responder({ psk: overrides.responderPsk })
-  const message1 = client.writeMessage1(payload1)
+  const message1 = await client.writeMessage1(payload1)
   server.readMessage1(message1)
   const message2 = server.writeMessage2(payload2)
-  return { message1, message2, result: client.readMessage2(message2) }
+  return { message1, message2, result: await client.readMessage2(message2) }
 }
 
 describe('Noise IKpsk1 initiator — interop vectors', () => {
-  it('reproduces the committed message 1 byte for byte', () => {
-    const message1 = initiator().writeMessage1(payload1)
+  it('reproduces the committed message 1 byte for byte', async () => {
+    const message1 = await initiator().writeMessage1(payload1)
     expect(naclUtil.encodeBase64(message1)).toBe(vectors.message1)
   })
 
-  it('reads the committed message 2 and reproduces its transcript hash and split keys', () => {
+  it('reads the committed message 2 and reproduces its transcript hash and split keys', async () => {
     const client = initiator()
-    client.writeMessage1(payload1)
-    const result = client.readMessage2(b64(vectors.message2))
+    await client.writeMessage1(payload1)
+    const result = await client.readMessage2(b64(vectors.message2))
 
     // That the payload decrypts at all IS the key confirmation — there is no
     // separate `rootKeyConfirm` field, deliberately.
@@ -86,28 +92,26 @@ describe('Noise IKpsk1 initiator — interop vectors', () => {
 })
 
 describe('Noise IKpsk1 initiator — a wrong static key fails', () => {
-  it('completes against the right server static key', () => {
+  it('completes against the right server static key', async () => {
     // The positive control for the two assertions below: without it they would
     // both pass against a handshake that never completes for any key at all.
-    expect(() => {
-      const client = initiator()
-      client.writeMessage1(payload1)
-      client.readMessage2(b64(vectors.message2))
-    }).not.toThrow()
+    const client = initiator()
+    await client.writeMessage1(payload1)
+    await expect(client.readMessage2(b64(vectors.message2))).resolves.toBeDefined()
   })
 
-  it('rejects message 2 when the server static key is wrong by one byte', () => {
+  it('rejects message 2 when the server static key is wrong by one byte', async () => {
     const wrong = Uint8Array.from(serverStaticPublic)
     wrong[0] ^= 0x01
     const client = initiator({ serverStaticPublic: wrong })
-    client.writeMessage1(payload1)
-    expect(() => client.readMessage2(b64(vectors.message2))).toThrow()
+    await client.writeMessage1(payload1)
+    await expect(client.readMessage2(b64(vectors.message2))).rejects.toThrow()
   })
 
-  it('rejects message 2 when a different server static key is substituted wholesale', () => {
+  it('rejects message 2 when a different server static key is substituted wholesale', async () => {
     const client = initiator({ serverStaticPublic: b64(vectors.keys.clientStaticPublic) })
-    client.writeMessage1(payload1)
-    expect(() => client.readMessage2(b64(vectors.message2))).toThrow()
+    await client.writeMessage1(payload1)
+    await expect(client.readMessage2(b64(vectors.message2))).rejects.toThrow()
   })
 })
 
@@ -115,16 +119,16 @@ describe('Noise IKpsk1 — tampering is rejected at every byte', () => {
   // Every offset, not a sample: a gap in the sweep is a region an intermediary
   // could rewrite, and there is no way to know in advance which region that is.
 
-  it('accepts both messages untouched', () => {
+  it('accepts both messages untouched', async () => {
     // Positive control for both sweeps below.
-    const { message1, message2, result } = roundTrip()
+    const { message1, message2, result } = await roundTrip()
     expect(message1.length).toBe(103)
     expect(message2.length).toBe(105)
     expect(naclUtil.encodeUTF8(result.payload)).toBe(vectors.payload2Utf8)
   })
 
-  it('rejects message 1 with any single byte flipped', () => {
-    const pristine = initiator().writeMessage1(payload1)
+  it('rejects message 1 with any single byte flipped', async () => {
+    const pristine = await initiator().writeMessage1(payload1)
     for (let i = 0; i < pristine.length; i++) {
       const tampered = Uint8Array.from(pristine)
       tampered[i] ^= 0x01
@@ -132,21 +136,21 @@ describe('Noise IKpsk1 — tampering is rejected at every byte', () => {
     }
   })
 
-  it('rejects message 2 with any single byte flipped', () => {
+  it('rejects message 2 with any single byte flipped', async () => {
     const pristine = b64(vectors.message2)
     for (let i = 0; i < pristine.length; i++) {
       const tampered = Uint8Array.from(pristine)
       tampered[i] ^= 0x01
       const client = initiator()
-      client.writeMessage1(payload1)
-      expect(() => client.readMessage2(tampered)).toThrow()
+      await client.writeMessage1(payload1)
+      await expect(client.readMessage2(tampered)).rejects.toThrow()
     }
   })
 
-  it('rejects a message 2 truncated below its minimum length', () => {
+  it('rejects a message 2 truncated below its minimum length', async () => {
     const client = initiator()
-    client.writeMessage1(payload1)
-    expect(() => client.readMessage2(b64(vectors.message2).subarray(0, 47))).toThrow()
+    await client.writeMessage1(payload1)
+    await expect(client.readMessage2(b64(vectors.message2).subarray(0, 47))).rejects.toThrow()
   })
 })
 
@@ -164,19 +168,19 @@ describe('Noise IKpsk1 — the PSK binds the handshake to the scanned QR', () =>
     expect(naclUtil.encodeBase64(otherPsk)).not.toBe(naclUtil.encodeBase64(psk))
   })
 
-  it('produces a different message 1 for a different pair token', () => {
+  it('produces a different message 1 for a different pair token', async () => {
     // Deletion-proof and client-only: with the PSK unmixed these two byte
     // strings are identical, because nothing else about them differs.
-    const withScannedToken = initiator().writeMessage1(payload1)
-    const withOtherToken = initiator({ psk: otherPsk }).writeMessage1(payload1)
+    const withScannedToken = await initiator().writeMessage1(payload1)
+    const withOtherToken = await initiator({ psk: otherPsk }).writeMessage1(payload1)
     expect(naclUtil.encodeBase64(withOtherToken)).not.toBe(
       naclUtil.encodeBase64(withScannedToken),
     )
   })
 
-  it('produces a different transcript hash and different traffic keys for a different pair token', () => {
-    const scanned = roundTrip()
-    const other = roundTrip({ initiatorPsk: otherPsk, responderPsk: otherPsk })
+  it('produces a different transcript hash and different traffic keys for a different pair token', async () => {
+    const scanned = await roundTrip()
+    const other = await roundTrip({ initiatorPsk: otherPsk, responderPsk: otherPsk })
 
     expect(naclUtil.encodeBase64(other.result.handshakeHash)).not.toBe(
       naclUtil.encodeBase64(scanned.result.handshakeHash),
@@ -189,16 +193,16 @@ describe('Noise IKpsk1 — the PSK binds the handshake to the scanned QR', () =>
     )
   })
 
-  it('fails outright when the two sides hold different pair tokens', () => {
-    expect(() => roundTrip({ initiatorPsk: otherPsk })).toThrow()
+  it('fails outright when the two sides hold different pair tokens', async () => {
+    await expect(roundTrip({ initiatorPsk: otherPsk })).rejects.toThrow()
   })
 
-  it('agrees on the transcript hash and traffic keys when both sides hold the scanned token', () => {
+  it('agrees on the transcript hash and traffic keys when both sides hold the scanned token', async () => {
     // The positive control for the mismatch case above.
     const client = initiator()
     const server = responder()
-    server.readMessage1(client.writeMessage1(payload1))
-    const result = client.readMessage2(server.writeMessage2(payload2))
+    server.readMessage1(await client.writeMessage1(payload1))
+    const result = await client.readMessage2(server.writeMessage2(payload2))
     const [c2s, s2c] = server.split()
 
     expect(naclUtil.encodeBase64(result.handshakeHash)).toBe(
@@ -210,37 +214,37 @@ describe('Noise IKpsk1 — the PSK binds the handshake to the scanned QR', () =>
 })
 
 describe('Noise IKpsk1 initiator — message ordering', () => {
-  it('refuses to read message 2 before message 1 has been written', () => {
-    expect(() => initiator().readMessage2(b64(vectors.message2))).toThrow(
+  it('refuses to read message 2 before message 1 has been written', async () => {
+    await expect(initiator().readMessage2(b64(vectors.message2))).rejects.toThrow(
       /before message 1/,
     )
   })
 
-  it('refuses to write message 1 twice', () => {
+  it('refuses to write message 1 twice', async () => {
     const client = initiator()
-    client.writeMessage1(payload1)
-    expect(() => client.writeMessage1(payload1)).toThrow(/already written/)
+    await client.writeMessage1(payload1)
+    await expect(client.writeMessage1(payload1)).rejects.toThrow(/already written/)
   })
 
-  it('refuses to read message 2 twice', () => {
+  it('refuses to read message 2 twice', async () => {
     // The state is spent after the split. Without this the AEAD still rejects
     // the second read, but by accident rather than by contract — and a retry in
     // the layer above is exactly what would come to depend on the difference.
     const client = initiator()
-    client.writeMessage1(payload1)
-    client.readMessage2(b64(vectors.message2))
-    expect(() => client.readMessage2(b64(vectors.message2))).toThrow(/already read/)
+    await client.writeMessage1(payload1)
+    await client.readMessage2(b64(vectors.message2))
+    await expect(client.readMessage2(b64(vectors.message2))).rejects.toThrow(/already read/)
   })
 
-  it('stays spent after a message 2 that failed to authenticate', () => {
+  it('stays spent after a message 2 that failed to authenticate', async () => {
     // Fail closed: a rejected message 2 must not leave a handshake a caller can
     // feed a second, attacker-chosen one to.
     const tampered = Uint8Array.from(b64(vectors.message2))
     tampered[40] ^= 0x01
     const client = initiator()
-    client.writeMessage1(payload1)
-    expect(() => client.readMessage2(tampered)).toThrow()
-    expect(() => client.readMessage2(b64(vectors.message2))).toThrow(/already read/)
+    await client.writeMessage1(payload1)
+    await expect(client.readMessage2(tampered)).rejects.toThrow()
+    await expect(client.readMessage2(b64(vectors.message2))).rejects.toThrow(/already read/)
   })
 })
 

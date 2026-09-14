@@ -1,5 +1,7 @@
-// Item 6 of #698: the web build refuses an encrypted pairing rather than
-// putting this device's static key somewhere a script can read.
+// Item 6 of #698: the web build never puts this device's static key somewhere a
+// script can read. The key lives in IndexedDB as a non-extractable WebCrypto key
+// (`device-key.web.ts`, its own suite); `localStorage` never holds it. The
+// server-capability half of the web gate is in pair-exchange.test.ts.
 //
 // Why this file exists at all, and why it imports by explicit path:
 // `package.json`'s jest preset is the root `jest-expo`, whose haste block is
@@ -35,6 +37,8 @@ import { HAS_SECURE_KEYCHAIN, WHEN_UNLOCKED_THIS_DEVICE_ONLY } from '@/services/
 // Static, never `await import()`: jest runs without `--experimental-vm-modules`,
 // so a dynamic import throws here regardless of what the mock says.
 import { exchangeToken, PairExchangeError } from '@/services/pair-exchange'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 const localStorageBacking = new Map<string, string>()
 
@@ -43,6 +47,13 @@ const localStorageBacking = new Map<string, string>()
 jest.mock('@/services/secure-store', () =>
   jest.requireActual('@/services/secure-store.web'),
 )
+
+// Jest resolves the native device-key module, which would write through the
+// mocked shim above; the browser here is one that cannot hold a WebCrypto key.
+jest.mock('@/services/e2ee/device-key', () => ({
+  ...jest.requireActual('@/services/e2ee/device-key'),
+  canHoldDeviceStaticKey: jest.fn(async () => false),
+}))
 
 const SPK = 'D'.repeat(43)
 const SERVER_URL = 'https://web.test'
@@ -78,7 +89,7 @@ describe('the web secure-store shim', () => {
 })
 
 describe('exchangeToken on web', () => {
-  it('refuses an encrypted pairing and writes no device key', async () => {
+  it('refuses an encrypted pairing in a browser that cannot hold a key, and writes nothing', async () => {
     await expect(
       exchangeToken({ url: SERVER_URL, token: 'pt_x', serverPublicKey: SPK }),
     ).rejects.toMatchObject({ kind: 'e2ee-web-unsupported' })
@@ -86,9 +97,16 @@ describe('exchangeToken on web', () => {
     // The refusal has to come before anything is stored, not after: the whole
     // point is that no `D_priv` ever reaches `localStorage`.
     expect([...localStorageBacking.keys()]).toEqual([])
-    // And before the request, so the pair token is not spent on a pairing this
-    // platform was never going to complete.
+    // And before the request, so the pair token is not spent.
     expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('keeps the web device key out of the localStorage shim entirely', () => {
+    // Jest cannot resolve `.web` files, so this pins the wiring by source: the
+    // web key store must never import the module that is `localStorage` on web.
+    const source = readFileSync(join(__dirname, '../../../services/e2ee/device-key.web.ts'), 'utf8')
+    expect(source).toContain('indexedDB')
+    expect(source).not.toMatch(/from '@\/services\/secure-store/)
   })
 
   it('still pairs a legacy QR that offered no server key', async () => {

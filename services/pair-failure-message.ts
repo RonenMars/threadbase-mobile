@@ -49,6 +49,8 @@ export function resolvePairFailureMessage(err: Error, t: TFunction<'pair'>): str
         return t('scanner.errors.exchange.e2ee-refused')
       case 'e2ee-web-unsupported':
         return t('scanner.errors.exchange.e2ee-web-unsupported')
+      case 'e2ee-web-server-unsupported':
+        return t('scanner.errors.exchange.e2ee-web-server-unsupported')
       default:
         return resolveUnknownPairFailure(err.kind, t)
     }
