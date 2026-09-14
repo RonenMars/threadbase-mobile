@@ -17,6 +17,8 @@ export const Info: Story = {
     toast: {
       id: 'info',
       viewport: 'root',
+      cause: 'servers:summary',
+      raisedAt: 0,
       level: 'info',
       title: 'Connecting to Home Mac…',
       message: 'Establishing a connection to the server.',
@@ -29,6 +31,8 @@ export const WarningWithAction: Story = {
     toast: {
       id: 'cache-alert',
       viewport: 'root',
+      cause: 'cache:home',
+      raisedAt: 0,
       level: 'warning',
       title: '3 conversation histories are missing on Home Mac',
       message: 'Some conversation files on disk no longer match this server\'s cache.',
@@ -45,6 +49,8 @@ export const Error: Story = {
     toast: {
       id: 'server-state',
       viewport: 'root',
+      cause: 'server:home',
+      raisedAt: 0,
       level: 'error',
       title: "Can't reach Home Mac. Check your connection or server address.",
       message: 'This server did not respond.',

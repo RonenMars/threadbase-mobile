@@ -41,7 +41,7 @@ import { markIntroSeen, resolveIntroVariant, type IntroVariant } from '@/service
 import { currentIntroVersion } from '@/services/intro-version'
 import { goBackOrHub } from '@/lib/goBackOrHub'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
-import { ErrorBanner } from '@/components/ErrorBanner'
+import { AlertHost } from '@/components/alerts/AlertHost'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -577,7 +577,7 @@ function RootLayout() {
                 <ThemedStatusBar />
                 <ThemedStack router={router} />
                 <SlowQueryBanner />
-                <ErrorBanner />
+                <AlertHost />
                 <NavigationLockOverlay />
               </BiometricLockGate>
             </AuthGate>
