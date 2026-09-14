@@ -100,4 +100,4 @@ npx jest --ci --runInBand --testPathPattern 'browse-provider-flow|BrowseRecents|
 
 Live PTY — [streamer skill](https://github.com/RonenMars/threadbase-streamer/blob/HEAD/.claude/skills/add-provider/SKILL.md). History — [scanner skill](https://github.com/RonenMars/threadbase-scanner/blob/HEAD/.claude/skills/add-provider/SKILL.md). Installing the host CLI.
 
-Worked example: `cursor-cli` in PR #1055.
+Worked example: `cursor-cli` chips in PR #1055. History indexing is scanner + streamer (`cursorRoots`); this repo does not parse transcripts.
