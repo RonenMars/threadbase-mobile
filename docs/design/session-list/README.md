@@ -88,7 +88,7 @@ The `useIsGlass()` issue stays open: it still mis-routes `GlassCard` and `GlassS
 
 - **Use `isPresentationLive` (`lib/sessionPresentation.ts:389`), not the expression in this brief.** Mine drops `orphaned` — which `sessionPhase` treats as live — and drops the older-server fallback. There are 13 status-based gates to replace; the audit lists them. The rows in the LIVE block already return `live: false`; they appear there only because the header covers every session.
 - **Claim 15 is worse than described.** `None` on Status neither dismisses the sheet nor empties the list: `useSession.ts:44` omits the status param for an empty array, so the server returns everything, while the filter icon reports active (`app/index.tsx:205`). The UI lies about being filtered. This is why tier filtering must be **client-side** — the wire only knows wire statuses.
-- **Cursor is already on `main`** (PR #1055, 2026-09-12). Wire value is **`cursor-cli`**; `brand.cursor` and `sessions:provider.cursor` exist. Open question 3 is closed. Live start shipped first; HDD history is scanner `cursor-cli` + streamer `cursorRoots` (default `~/.cursor/projects`), not a mobile parser. Composer `state.vscdb` is out of scope. List items may carry optional `isImportedFromClaude` / `isImportedFromCodex` / `isImportedFromCursor` booleans from the streamer cache; ignore them until a UI uses them.
+- **Cursor is already on `main`** (PR #1055, 2026-09-12). Wire value is **`cursor`** (`cursor-cli` is a legacy alias); `brand.cursor` and `sessions:provider.cursor` exist. Open question 3 is closed. Live start shipped first; HDD history is scanner `cursor` + streamer `cursorRoots` (default `~/.cursor/projects`), not a mobile parser. Composer `state.vscdb` is out of scope. List items carry `isImportedFromClaude` / `isImportedFromCodex` / `isImportedFromCursor`; `ConversationFilter` can send `include` and those flags.
 - **`GlassFill` is not inert** — `app/settings.tsx` passes `material` at 11 sites. It *is* inert on list surfaces, which is all this brief needed it to be.
 - **`e2e/browse.yaml` has no Tree reference**; only `e2e/feat1_tree_drill_new_session.yaml`.
 - **`unavailable.worktree` is redundant** — `sessions:status.unavailableWorktree` already reads "Worktree gone". Reuse it.
@@ -338,7 +338,7 @@ Follow the repo's rule: resolve semantic values through an exhaustive `switch` w
 
 1. ~~Per-project today counts~~ — **answered**: not on the wire. Count sessions only.
 2. **`waiting_input` start time** — **answered for now**: nothing suitable on the wire, so the qualifier is cut. Worth a streamer field; it is the one number a triaging user most wants.
-3. ~~Cursor as a provider~~ — **answered**: already on `main`, wire value `cursor-cli`.
+3. ~~Cursor as a provider~~ — **answered**: already on `main`, wire value `cursor` (`cursor-cli` alias).
 4. ~~Tree retirement migration~~ — **answered**: `hydrate` in `stores/settings.ts:223`.
 
 ---

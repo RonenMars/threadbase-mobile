@@ -179,6 +179,9 @@ export interface Conversation {
   provider?: ProviderName
   /** Only populated by `/api/search`; absent on list and detail responses. */
   matches?: SearchMatch[]
+  isImportedFromClaude?: boolean
+  isImportedFromCodex?: boolean
+  isImportedFromCursor?: boolean
 }
 
 export interface ConversationFilter {
@@ -187,6 +190,10 @@ export interface ConversationFilter {
   dateTo?: string
   profileId?: string
   provider?: ProviderName
+  include?: 'all' | 'conversations' | 'subagents'
+  isImportedFromClaude?: boolean
+  isImportedFromCodex?: boolean
+  isImportedFromCursor?: boolean
 }
 
 export interface ConversationPage {
