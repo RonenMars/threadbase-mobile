@@ -3,8 +3,8 @@ import { create } from 'zustand'
 /**
  * Open/closed state for the global error recovery sheet, separate from the
  * errors themselves (loading-state.ts / serverFetchStatus.ts). Closing the
- * sheet is a minimize, not a dismiss — the underlying errors stay live so the
- * compact IssuesIndicator can reopen the same sheet.
+ * sheet is a minimize, not a dismiss — the underlying errors stay live so
+ * the header status pill can reopen the same sheet.
  */
 interface ErrorSheetState {
   open: boolean

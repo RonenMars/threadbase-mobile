@@ -69,12 +69,12 @@ appId: com.ronenmars.threadbase
 
 - extendedWaitUntil:
     notVisible:
-      id: "issues-indicator"
+      id: "status-pill"
     timeout: 15000
     optional: true
 
 - assertNotVisible:
-    id: "issues-indicator"
+    id: "status-pill"
 
 - assertVisible:
     id: "external-session-take-over"
