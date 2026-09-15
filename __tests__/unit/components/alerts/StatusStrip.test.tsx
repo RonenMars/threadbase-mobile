@@ -19,7 +19,6 @@ describe('HomeStatusStrip', () => {
   it('shows a new error for 6s then collapses', async () => {
     useAlertStore.getState().upsert({
       id: 'a',
-      viewport: 'home',
       cause: serverCause('a'),
       level: 'error',
       title: "Can't reach Studio",
@@ -42,7 +41,6 @@ describe('HomeStatusStrip', () => {
     useErrorSheetStore.setState({ open: true })
     useAlertStore.getState().upsert({
       id: 'a',
-      viewport: 'home',
       cause: serverCause('a'),
       level: 'error',
       title: "Can't reach Studio",
@@ -58,7 +56,6 @@ describe('HomeStatusStrip', () => {
   it('does not expand for a warning', async () => {
     useAlertStore.getState().upsert({
       id: 'w',
-      viewport: 'home',
       cause: 'host-pressure:a',
       level: 'warning',
       title: 'Host under load',
