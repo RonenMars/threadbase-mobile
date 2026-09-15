@@ -29,7 +29,7 @@ function seedServer(overrides: Partial<import('@/types/api').ServerConfig> = {})
   return server
 }
 
-function Harness({ onPress }: { onPress: () => void }) {
+function Harness({ onPress }: { onPress: (serverId: string) => void }) {
   const open = useOpenStatusSurface()
   return (
     <>
@@ -40,7 +40,7 @@ function Harness({ onPress }: { onPress: () => void }) {
   )
 }
 
-function renderBanner(onPress: () => void) {
+function renderBanner(onPress: (serverId: string) => void) {
   return renderWithI18n(<Harness onPress={onPress} />)
 }
 
@@ -63,7 +63,7 @@ describe('CacheAlertBanner', () => {
     expect(queryByTestId('status-pill')).toBeNull()
   })
 
-  it('renders nothing for a high-severity alert (handled by the modal, not the banner)', async () => {
+  it('raises an error for a high-severity alert so Review is on the Status sheet, not an auto-modal', async () => {
     const server = seedServer()
     useServersStore.getState().setCacheAlert(server.id, {
       fingerprint: 'fp1',
@@ -72,8 +72,13 @@ describe('CacheAlertBanner', () => {
       missingCount: 3,
       totalRows: 10,
     })
-    const { queryByTestId } = await renderBanner(jest.fn())
-    expect(queryByTestId('status-pill')).toBeNull()
+    const onPress = jest.fn()
+    const { getByTestId, findByTestId } = await renderBanner(onPress)
+    expect(getByTestId('status-pill')).toBeTruthy()
+    expect(useAlertStore.getState().alerts[0].level).toBe('error')
+    fireEvent.press(getByTestId('status-pill'))
+    fireEvent.press(await findByTestId(`status-row-action-cache-alert:${server.id}`))
+    expect(onPress).toHaveBeenCalledWith(server.id)
   })
 
   it('raises a warning for a low-severity alert with the missing count and server label', async () => {
@@ -105,7 +110,7 @@ describe('CacheAlertBanner', () => {
     const { findByTestId } = await renderBanner(onPress)
     fireEvent.press(await findByTestId('status-pill'))
     expect(await findByTestId('status-sheet')).toBeTruthy()
-    fireEvent.press(await findByTestId('status-row-action-cache-alert'))
-    expect(onPress).toHaveBeenCalled()
+    fireEvent.press(await findByTestId(`status-row-action-cache-alert:${server.id}`))
+    expect(onPress).toHaveBeenCalledWith(server.id)
   })
 })

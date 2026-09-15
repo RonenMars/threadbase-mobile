@@ -204,6 +204,32 @@ describe('Status sheet category rows', () => {
     await findByText('gone')
   })
 
+  it('names the displayed server on a messages failure', async () => {
+    useServersStore.setState({
+      servers: {
+        s0: {
+          id: 's0',
+          url: 'http://studio.local',
+          apiKey: '',
+          label: 'Studio Mac',
+          isConnected: true,
+          serverInfo: null,
+          connectionError: null,
+        },
+      },
+      activeServerIds: ['s0'],
+      displayedServerIds: ['s0'],
+    })
+    useLoadingStateStore.setState({
+      errors: [{ id: 'messages', category: 'messages', message: 'boom' }],
+    })
+    useErrorSheetStore.setState({ open: true })
+    const { getByText } = await renderWithI18n(<AlertHost />)
+
+    getByText("Messages didn't load from Studio Mac.")
+    getByText('This conversation may be missing recent replies.')
+  })
+
   it('opens Server Status from the sheet without stacking it over the sheet', async () => {
     useLoadingStateStore.setState({
       errors: [{ id: 'messages', category: 'messages', message: 'boom' }],
