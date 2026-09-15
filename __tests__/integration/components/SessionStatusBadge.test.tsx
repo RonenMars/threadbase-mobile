@@ -11,13 +11,13 @@ const managed = (status: SessionStatus): SessionPresentationInput => ({
 })
 
 const STATUSES: [SessionStatus, string][] = [
-  ['running', 'Running'],
-  ['waiting_input', 'Waiting'],
-  ['idle', 'Idle'],
+  ['running', 'Working'],
+  ['waiting_input', 'Needs you'],
+  ['idle', 'Resumable'],
 ]
 
 describe('SessionStatusBadge', () => {
-  test.each(STATUSES)('renders correct label for status "%s"', async (status, label) => {
+  test.each(STATUSES)('renders the five-tier label for status "%s"', async (status, label) => {
     const { getByText } = await render(<SessionStatusBadge session={managed(status)} />)
     expect(getByText(label)).toBeTruthy()
   })
@@ -30,18 +30,18 @@ describe('SessionStatusBadge', () => {
 
   it('renders a dot indicator alongside the label', async () => {
     const { getByText, toJSON } = await render(<SessionStatusBadge session={managed('running')} />)
-    expect(getByText('Running')).toBeTruthy()
+    expect(getByText('Working')).toBeTruthy()
     expect(toJSON()).not.toBeNull()
   })
 
-  it('renders the distinct "External" label for an alive external process', async () => {
+  it('renders Observed for an alive external process', async () => {
     const { getByText, queryByText } = await render(
       <SessionStatusBadge
         session={{ status: 'idle', ownership: 'external', processLiveness: 'alive' }}
       />,
     )
-    expect(getByText('External')).toBeTruthy()
-    expect(queryByText('Idle')).toBeNull()
+    expect(getByText('Observed')).toBeTruthy()
+    expect(queryByText('Resumable')).toBeNull()
   })
 
   it('is visually distinct from a managed running session', async () => {
@@ -51,10 +51,10 @@ describe('SessionStatusBadge', () => {
       />,
     )
     const running = await render(<SessionStatusBadge session={managed('running')} />)
-    expect(external.getByText('External')).toBeTruthy()
-    expect(external.queryByText('Running')).toBeNull()
-    expect(running.getByText('Running')).toBeTruthy()
-    expect(running.queryByText('External')).toBeNull()
+    expect(external.getByText('Observed')).toBeTruthy()
+    expect(external.queryByText('Working')).toBeNull()
+    expect(running.getByText('Working')).toBeTruthy()
+    expect(running.queryByText('Observed')).toBeNull()
   })
 
   it('uses presentation kind from a full session payload', async () => {
@@ -69,10 +69,10 @@ describe('SessionStatusBadge', () => {
       />,
     )
     expect(getByTestId('session-status-resumed')).toBeTruthy()
-    expect(getByText('Resumed')).toBeTruthy()
+    expect(getByText('Working')).toBeTruthy()
   })
 
-  it('labels a recovered session by what interrupted it', async () => {
+  it('labels a recovered session as Resumable', async () => {
     const { getByTestId, getByText } = await render(
       <SessionStatusBadge
         session={{
@@ -84,6 +84,6 @@ describe('SessionStatusBadge', () => {
       />,
     )
     expect(getByTestId('session-status-historical')).toBeTruthy()
-    expect(getByText('Interrupted')).toBeTruthy()
+    expect(getByText('Resumable')).toBeTruthy()
   })
 })

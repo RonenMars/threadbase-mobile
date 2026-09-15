@@ -7,8 +7,3 @@ export function formatCoarseElapsed(ms: number): string {
   const h = Math.floor(m / 60)
   return `${h}h ${m % 60}m`
 }
-
-/** Elapsed since `statusUpdatedAt`; while the status is `waiting_input` that is when the wait began. */
-export function formatWaitingSince(iso: string): string {
-  return formatCoarseElapsed(Date.now() - Date.parse(iso))
-}

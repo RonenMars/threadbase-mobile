@@ -1,6 +1,12 @@
 # Homepage Server State Scenarios
 
-Reference for every UI state the homepage (`app/index.tsx`) can be in, based on the full Cartesian product of server state dimensions. Use this document to identify missing UI coverage and regression-test connectivity edge cases.
+Reference for every UI state the homepage (`app/index.tsx`) can be in, based on the Cartesian product of server state dimensions. Use this document to identify missing UI coverage and regression-test connectivity edge cases.
+
+The header has **no** server-status bell, cloud icon, or coloured dot. Connectivity is:
+
+- **Banners** in the scrolling list header (`ServerOfflineBanner`, `ServerWarmingBanner`, `ServerUnsupportedBanner`, plus `ServerIndexingBanner`)
+- **`ServerStateMessage`**, a home-viewport toast (not a header control)
+- **`ServersStatusModal`**, opened from that toast, the all-offline empty state’s Details action, or other “view details” affordances
 
 ---
 
@@ -11,22 +17,26 @@ Each server has three independent state dimensions:
 | Dimension | Values | Source |
 |-----------|--------|--------|
 | **WS status** | `connecting` \| `connected` \| `disconnected` | `wsManager.status(id)` |
-| **HTTP fetch status** | `ok` (default) \| `error` | `useServerFetchStatusStore` → `fetchStatuses[id].status` |
+| **HTTP fetch status** | `ok` (default) \| `error` \| `warming_up` | `useServerFetchStatusStore` → `fetchStatuses[id].status` |
 | **Visibility** | visible (in `displayedServerIds`) \| hidden (filtered out) | `useServersStore` → `displayedServerIds` |
 
 A server only enters the state space at all if it is in `activeServerIds`. Hidden means it is in `activeServerIds` but not in `displayedServerIds` (the user toggled it off in FilterSortSheet).
 
-### Derived aggregate values (computed in `app/index.tsx`)
+Fetch status defaults to `ok` until a real failure or warmup is recorded.
+
+### Derived values in `app/index.tsx`
+
+The homepage no longer computes `healthyCount` / `allConnected` / `someConnected`. Aggregates that still exist:
 
 ```
-healthyCount = count of activeServerIds where wsOk && fetchOk
-serverCount  = activeServerIds.length
+allServersFailed = activeServerIds.length > 0
+  && sessionsDone
+  && every active server has fetchStatuses[id].status === 'error'
 
-allConnected  = healthyCount === serverCount && serverCount > 0
-someConnected = healthyCount > 0
+warmingServerIds = activeServerIds where fetchStatuses[id].status === 'warming_up'
 ```
 
-The fetch status defaults to `ok` until a real failure is recorded — a server that has never fetched is treated as healthy from the header dot's perspective.
+`ServerStateMessage` classifies each active server locally (healthy / unreachable / fetch-failed / disconnected / connecting / indexing) to pick toast copy. `ServersStatusModal` paints its own per-row dots from WS + fetch status.
 
 ---
 
@@ -34,19 +44,21 @@ The fetch status defaults to `ok` until a real failure is recorded — a server 
 
 | Component | What it shows | When it appears |
 |-----------|---------------|-----------------|
-| **Header cloud dot** | None / amber / red badge on the `Cloud` icon | Always visible; dot appears when not `allConnected` |
-| **SessionsLoadingOverlay** | Full-screen scrim with spinner, "Loading (X/Y)", server label, progress bar | When `!sessionsDone` (`isDone` from `useEagerSessions`) |
-| **Sessions list** | Cards for visible sessions only | Always rendered; empty if no visible sessions |
-| **FAB** | Teal `+` button, always rendered | Always visible; press is a silent no-op when `activeServerIds.length === 0` |
-| **ServerStatusModal** | Per-server dot + label, error detail text | On demand — opened by tapping the `Cloud` icon |
+| **Header** | Brand, `Now \| Projects`, search / filter / settings | Always. No connectivity glyph. |
+| **`ServerStateMessage`** | Home toast: connecting / disconnected / unreachable / refresh-failed / indexing | Info toasts wait 2s; warning and error are immediate. Tap opens `ServersStatusModal`; Retry calls `retryFailed()`. Renders nothing of its own (`return null`). |
+| **`ServerOfflineBanner`** | “Server unreachable” + host label + Retry | One per active server whose fetch status is `error`, unless the all-offline empty state replaced the list. |
+| **`ServerWarmingBanner`** | “Server is warming up” + host label | One per active server whose fetch status is `warming_up`. Now-list history also becomes skeleton rows for those ids. |
+| **`ServerUnsupportedBanner`** | “Server needs an update” | One per `unsupportedServerIds` host (when fetch is not already `error` / `warming_up`). |
+| **`ServerIndexingBanner`** | Scan progress while a displayed host is `warming_up` | Same fetch status as `ServerWarmingBanner`; can appear together with it. |
+| **`LoadingOverlay`** (`testID` `sessions-loading-overlay`) | Full-screen scrim, spinner, sessions progress | Only when there is **no** cached list data **and** sessions (or grouped summaries) are still fetching. |
+| **`SyncCachedNotice`** | “Showing cached data” | Background refresh with a warm cache, single-server only. |
+| **Sessions list** | Now or Projects rows for visible sessions | Replaced by `NoServersWelcome` or the all-offline `EmptyState` in those two empty cases. |
+| **FAB** | `+` new session. Hides on scroll-down, reveals on tab switch / scroll-up. | Press with no servers shows a toast (`sessions:fab.noServerHint`). Press toward an unreachable host opens `ServerErrorModal` instead of Browse. |
+| **`ServersStatusModal`** | Per-server dot + label + error detail | On demand — toast tap, all-offline Details, not from the header. |
+| **`NoServersWelcome`** | Add-a-server empty state | `activeServerIds.length === 0` and the user has never had a server. |
+| **All-offline `EmptyState`** | “Can’t connect to your servers” + Details + Retry | `allServersFailed`. Details opens `ServersStatusModal`. |
 
-**Components that do NOT exist (no banners):**
-
-- No `ServerIndexingBanner`
-- No `ServerErrorBanner`
-- No toast or inline error state
-
-All degraded-connection feedback is gated behind tapping the Cloud icon to open `ServerStatusModal`.
+`ServerErrorBanner` exists as a component but is **not** mounted on the homepage. Offline hosts use `ServerOfflineBanner`.
 
 ---
 
@@ -58,13 +70,12 @@ All degraded-connection feedback is gated behind tapping the Cloud icon to open 
 
 | UI element | State |
 |------------|-------|
-| Header dot | None (no dot) |
-| Sessions list | Empty (no sessions to show) |
-| Loading overlay | Hidden (`sessionsDone` is immediately `true` with no servers to paginate) |
-| FAB | Rendered, always visible — but press is a **silent no-op** |
-| StatusModal (if opened) | Shows "No servers configured" empty state text |
-
-**UX gap:** FAB looks tappable but does nothing. There is no empty-state prompt guiding the user to add a server.
+| Header | Search / filter / settings. No status control. |
+| Connectivity | `NoServersWelcome`. No banners, no toast. |
+| Sessions list | Replaced by the welcome card. |
+| Loading overlay | Hidden (`sessionsDone` is immediately `true` with no servers to paginate). |
+| FAB | Rendered; press shows `sessions:fab.noServerHint` (not a silent no-op). |
+| ServersStatusModal (if opened) | Shows “No servers configured” empty state text. |
 
 ---
 
@@ -74,45 +85,44 @@ All degraded-connection feedback is gated behind tapping the Cloud icon to open 
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Red** — `healthyCount=0` (WS not yet `connected`), `someConnected=false` → red |
-| Sessions list | Empty (WS not yet open, no sessions fetched) |
-| Loading overlay | Visible — `useEagerSessions` starts paginating; overlay shows indeterminate state until first page returns |
-| FAB | Rendered and pressable → navigates to `/browse` |
-| StatusModal | Amber dot, label **"Connecting…"** |
-
-> **Note on dot color during connect:** The header dot logic uses `dark.status.failed` (red) when `someConnected=false`. Even a server that is actively connecting shows as red at the header level. The amber dot for "connecting" only appears in the per-server row inside `ServerStatusModal`. This means normal app startup looks like an error state in the header until WS connects and a fetch completes.
-
-**UX gap:** Red dot during normal startup may look like an error. There is no transient "connecting" amber at the header level.
+| Header | Search / filter / settings. No status control. |
+| Connectivity | `ServerStateMessage` info toast after 2s (“Connecting to [server]…”). No per-host banner. |
+| Sessions list | Empty until the first page returns. |
+| Loading overlay | Visible if there is no cached data. |
+| FAB | Pressable → `/browse` once WS is up enough to not trip `connectionError`. |
+| ServersStatusModal | Amber dot, label **“Connecting…”** |
 
 ---
 
 ### 3.2 — Server: Connected, sessions loading
 
-**Condition:** WS=`connected`, fetch=`ok`, `isDone=false`
+**Condition:** WS=`connected`, fetch=`ok`, sessions not done
 
 | UI element | State |
 |------------|-------|
-| Header dot | **None** — `allConnected=true` |
-| Sessions list | Partially populated as pages arrive |
-| Loading overlay | **Visible** — spinner, "Loading (X/Y)", "Fetching from [server label]", progress bar fills as pages return |
-| FAB | Rendered and pressable |
-| StatusModal | Green dot, **"Connected"** |
+| Header | No status control. Single-server background refresh may show a header spinner. |
+| Connectivity | None. |
+| Sessions list | Cached rows if any; otherwise empty under the overlay. |
+| Loading overlay | **Visible** only when `!hasCachedData`. Warm cache uses `SyncCachedNotice` / header spinner instead. |
+| FAB | Rendered and pressable. |
+| ServersStatusModal | Green dot, **“Connected”** |
 
 ---
 
 ### 3.3 — Server: Connected, sessions fully loaded
 
-**Condition:** WS=`connected`, fetch=`ok`, `isDone=true`
+**Condition:** WS=`connected`, fetch=`ok`, `sessionsDone=true`
 
 | UI element | State |
 |------------|-------|
-| Header dot | **None** |
-| Sessions list | All sessions visible and sorted |
+| Header | No status control. |
+| Connectivity | None. |
+| Sessions list | All sessions visible and sorted. |
 | Loading overlay | **Hidden** |
-| FAB | Rendered and pressable |
-| StatusModal | Green dot, **"Connected"** |
+| FAB | Rendered and pressable. |
+| ServersStatusModal | Green dot, **“Connected”** |
 
-This is the nominal "all good" state.
+This is the nominal “all good” state.
 
 ---
 
@@ -122,13 +132,12 @@ This is the nominal "all good" state.
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Red** — `someConnected=false` |
-| Sessions list | Previously fetched sessions remain visible (cached in React Query / Zustand) |
-| Loading overlay | Hidden (if sessions were already loaded before disconnect) |
-| FAB | Rendered and pressable (navigates to `/browse`, which will itself fail) |
-| StatusModal | Red dot, **"Disconnected"** |
-
-**UX gap:** FAB still navigates to `/browse` on a disconnected server. No in-app feedback until the user actually tries to browse or create a session.
+| Header | No status control. |
+| Connectivity | `ServerStateMessage` warning toast (“Disconnected from [server]…”). No `ServerOfflineBanner` (fetch is still `ok`). |
+| Sessions list | Previously fetched sessions remain visible (cached). |
+| Loading overlay | Hidden if sessions were already loaded before disconnect. |
+| FAB | Pressable; if `connectionError` is set, `ServerErrorModal` instead of Browse. |
+| ServersStatusModal | Red dot, **“Disconnected”** |
 
 ---
 
@@ -138,15 +147,12 @@ This is the nominal "all good" state.
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Red** — `fetchOk=false` → `healthyCount=0` → `someConnected=false` → red |
-| Sessions list | Last successfully fetched sessions remain (stale data) |
-| Loading overlay | May be hidden (if pagination had previously completed) |
-| FAB | Rendered and pressable |
-| StatusModal | Amber dot, **"Fetch failed"** + error detail text |
-
-> **Dot color mismatch:** Header shows **red** (no healthy servers) but modal shows **amber** for this combination (WS connected + HTTP failing). The header and modal use different color logic.
-
-**UX gap:** Stale session data is shown silently; only the red header dot and modal (on demand) indicate the problem.
+| Header | No status control. |
+| Connectivity | `ServerOfflineBanner` + `ServerStateMessage` error toast. If this is the only active server and `sessionsDone`, the list is replaced by the all-offline `EmptyState` (banners are not shown). |
+| Sessions list | Last successfully fetched sessions remain (stale), unless all-offline empty state. |
+| Loading overlay | Hidden once pagination has failed or completed. |
+| FAB | Pressable; unreachable hosts open `ServerErrorModal`. |
+| ServersStatusModal | Amber dot, **“Fetch failed”** + error detail text. |
 
 ---
 
@@ -156,13 +162,27 @@ This is the nominal "all good" state.
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Red** — `someConnected=false` |
-| Sessions list | Last cached sessions visible (or empty on first boot) |
-| Loading overlay | Hidden (pagination won't start or will have failed) |
-| FAB | Rendered and pressable |
-| StatusModal | Red dot, **"Unreachable"** + error detail text |
+| Header | No status control. |
+| Connectivity | Same as 3.5: banner + error toast, or all-offline `EmptyState` when this is the only active server and fetches have finished. |
+| Sessions list | Last cached sessions (or empty on first boot / all-offline empty state). |
+| Loading overlay | Hidden. |
+| FAB | Pressable; Browse is blocked by `ServerErrorModal`. |
+| ServersStatusModal | Red dot, **“Unreachable”** + error detail text. |
 
-**UX gap:** Same as 3.4 and 3.5 — no inline banner. The only proactive signal is the red dot.
+---
+
+### 3.7 — Server: Warming up
+
+**Condition:** fetch=`warming_up` (WS typically `connected`)
+
+| UI element | State |
+|------------|-------|
+| Header | No status control. |
+| Connectivity | `ServerWarmingBanner` + `ServerIndexingBanner` + `ServerStateMessage` info toast after 2s (indexing / building history). |
+| Sessions list | Live session cards stay; conversation history for that host becomes skeleton rows (`warmingServerIds`). |
+| Loading overlay | Follows the cache/fetching rule in §5. |
+| FAB | Rendered and pressable. |
+| ServersStatusModal | Row follows WS; fetch is not `error`. |
 
 ---
 
@@ -176,11 +196,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **None** — `allConnected=true` |
-| Sessions list | Sessions from A and B, interleaved by sort order |
-| Loading overlay | Visible until both servers finish paginating, then hidden |
-| FAB | Tapping opens `NewSessionServerPicker` (multi-server picker) |
-| StatusModal | Both rows: green dot, **"Connected"** |
+| Header | No status control. |
+| Connectivity | None. |
+| Sessions list | Sessions from A and B, interleaved by sort order. |
+| Loading overlay | Visible until there is cached data **or** both servers finish; hidden once `hasCachedData` or `sessionsDone`. |
+| FAB | Tapping opens `NewSessionServerPicker`. |
+| ServersStatusModal | Both rows: green dot, **“Connected”** |
 
 ---
 
@@ -190,11 +211,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Amber** — `healthyCount=1`, `someConnected=true`, not `allConnected` |
-| Sessions list | Server A's sessions visible; Server B's arrive once WS connects and pages load |
-| Loading overlay | Visible while either server is still paginating |
-| FAB | Multi-server picker opens (both are active) |
-| StatusModal | A: green "Connected"; B: amber "Connecting…" |
+| Header | No status control. |
+| Connectivity | Info toast after 2s (“Connecting to [B]…”). No banner. |
+| Sessions list | Server A’s sessions visible; Server B’s arrive once WS connects and pages load. |
+| Loading overlay | Visible only while there is no cached data and something is still fetching. |
+| FAB | Multi-server picker (both are active). |
+| ServersStatusModal | A: green “Connected”; B: amber “Connecting…” |
 
 ---
 
@@ -204,11 +226,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Amber** — `healthyCount=1`, `someConnected=true`, not `allConnected` |
-| Sessions list | Server A sessions live; Server B sessions stale/cached |
-| Loading overlay | Hidden (if both servers previously completed pagination) |
-| FAB | Multi-server picker opens |
-| StatusModal | A: green "Connected"; B: red "Disconnected" |
+| Header | No status control. |
+| Connectivity | Warning toast for B. No offline banner (B’s fetch is still `ok`). |
+| Sessions list | Server A sessions live; Server B sessions stale/cached. |
+| Loading overlay | Hidden if both previously completed pagination. |
+| FAB | Multi-server picker. |
+| ServersStatusModal | A: green “Connected”; B: red “Disconnected” |
 
 ---
 
@@ -218,11 +241,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Amber** — `healthyCount=1`, `someConnected=true` |
-| Sessions list | Server A sessions live; Server B sessions stale (or empty on first boot) |
-| Loading overlay | Hidden |
-| FAB | Multi-server picker opens |
-| StatusModal | A: green "Connected"; B: red "Unreachable" + error text |
+| Header | No status control. |
+| Connectivity | `ServerOfflineBanner` for B + warning toast (“[B] is unreachable…”). List stays (A is healthy), so this is **not** `allServersFailed`. |
+| Sessions list | Server A sessions live; Server B sessions stale (or empty on first boot). |
+| Loading overlay | Hidden. |
+| FAB | Multi-server picker; picking B opens `ServerErrorModal`. |
+| ServersStatusModal | A: green “Connected”; B: red “Unreachable” + error text. |
 
 ---
 
@@ -232,13 +256,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Red** — `someConnected=false` |
-| Sessions list | Both servers' stale cached sessions (or empty on first boot) |
-| Loading overlay | Hidden |
-| FAB | Multi-server picker opens (both technically active), but any pick will fail at `/browse` |
-| StatusModal | A: red "Unreachable"; B: red "Unreachable" |
-
-**UX gap:** FAB picker still opens and lets the user pick a server, which will fail silently in `/browse`.
+| Header | No status control. |
+| Connectivity | Once `sessionsDone`, `allServersFailed` **EmptyState** (Details → modal, Retry). Per-host banners are not shown because the list header is not mounted. |
+| Sessions list | Replaced by the empty state. |
+| Loading overlay | Hidden. |
+| FAB | Still rendered; picking a host opens `ServerErrorModal`. |
+| ServersStatusModal | A: red “Unreachable”; B: red “Unreachable” |
 
 ---
 
@@ -248,13 +271,14 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **None** — both servers in `activeServerIds`, `healthyCount=2=serverCount` → `allConnected=true` |
-| Sessions list | Only Server A's sessions (B's filtered out by `displayedServerIds`) |
-| Loading overlay | Visible until both servers finish paginating (hidden servers are still paginated) |
-| FAB | Multi-server picker opens for both A and B (picker uses `activeServerIds`, not `displayedServerIds`) |
-| StatusModal | Both rows: green "Connected" |
+| Header | No status control. |
+| Connectivity | None. |
+| Sessions list | Only Server A’s sessions (B filtered out by `displayedServerIds`). |
+| Loading overlay | Hidden servers are still paginated; overlay only if there is no cached data. |
+| FAB | Multi-server picker for both A and B (picker uses `activeServerIds`). |
+| ServersStatusModal | Both rows: green “Connected” |
 
-> **Key nuance:** Hiding a server does not affect `activeServerIds`. Both servers are still paginated and both count toward `healthyCount`. A hidden server can still be picked in the FAB server picker.
+Hiding a server does not remove it from `activeServerIds`. Both are still paginated. A hidden server can still be picked in the FAB picker.
 
 ---
 
@@ -264,11 +288,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Amber** — `healthyCount=1` (B connected+ok), `serverCount=2`, `someConnected=true`, not `allConnected` |
-| Sessions list | No sessions yet from A (still connecting); B's sessions filtered out |
-| Loading overlay | Visible |
-| FAB | Multi-server picker |
-| StatusModal | A: amber "Connecting…"; B: green "Connected" |
+| Header | No status control. |
+| Connectivity | Info toast after 2s for A. |
+| Sessions list | No sessions yet from A; B’s sessions filtered out. |
+| Loading overlay | Visible if there is no cached data. |
+| FAB | Multi-server picker. |
+| ServersStatusModal | A: amber “Connecting…”; B: green “Connected” |
 
 ---
 
@@ -278,11 +303,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Amber** — `healthyCount=1` (B), `someConnected=true`, not `allConnected` |
-| Sessions list | Server A stale/empty sessions only (B hidden) |
-| Loading overlay | Hidden (if A previously completed or failed pagination) |
-| FAB | Multi-server picker for both A and B |
-| StatusModal | A: red "Unreachable"; B: green "Connected" |
+| Header | No status control. |
+| Connectivity | `ServerOfflineBanner` for A + warning toast. Not `allServersFailed` (B’s fetch is `ok`). |
+| Sessions list | Server A stale/empty sessions only (B hidden). |
+| Loading overlay | Hidden if A previously completed or failed pagination. |
+| FAB | Multi-server picker for both A and B. |
+| ServersStatusModal | A: red “Unreachable”; B: green “Connected” |
 
 ---
 
@@ -292,11 +318,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Amber** — `healthyCount=1` (A only), `someConnected=true` |
-| Sessions list | Server A sessions live; Server B stale |
-| Loading overlay | Hidden or retrying depending on session pagination state |
-| FAB | Multi-server picker |
-| StatusModal | A: green "Connected"; B: amber "Fetch failed" + error detail |
+| Header | No status control. |
+| Connectivity | `ServerOfflineBanner` for B + warning toast. |
+| Sessions list | Server A sessions live; Server B stale. |
+| Loading overlay | Hidden or retrying depending on pagination state. |
+| FAB | Multi-server picker; picking B opens `ServerErrorModal`. |
+| ServersStatusModal | A: green “Connected”; B: amber “Fetch failed” + error detail. |
 
 ---
 
@@ -306,13 +333,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Red** — `healthyCount=0`, `someConnected=false` |
-| Sessions list | Both stale (last good cache) |
-| Loading overlay | Hidden |
-| FAB | Multi-server picker |
-| StatusModal | A: amber "Fetch failed"; B: amber "Fetch failed" |
-
-> **Color mismatch:** Header shows **red** (no healthy servers) but modal shows **amber** for each server (WS connected + HTTP failing). The header `someConnected=false` path always uses the failure color regardless of WS state.
+| Header | No status control. |
+| Connectivity | `allServersFailed` EmptyState once `sessionsDone`. |
+| Sessions list | Replaced by the empty state. |
+| Loading overlay | Hidden. |
+| FAB | Multi-server picker; Browse blocked per host. |
+| ServersStatusModal | A: amber “Fetch failed”; B: amber “Fetch failed”. |
 
 ---
 
@@ -322,11 +348,12 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Red** — `someConnected=false` |
-| Sessions list | Both stale cached sessions |
-| Loading overlay | Hidden |
-| FAB | Multi-server picker |
-| StatusModal | A: red "Disconnected"; B: red "Disconnected" |
+| Header | No status control. |
+| Connectivity | Warning toast (“Disconnected from all servers…”). No offline banners (fetch still `ok`). Not `allServersFailed`. |
+| Sessions list | Both stale cached sessions. |
+| Loading overlay | Hidden. |
+| FAB | Multi-server picker. |
+| ServersStatusModal | A: red “Disconnected”; B: red “Disconnected” |
 
 ---
 
@@ -336,38 +363,36 @@ Notation: `[WS/fetch]` per server, e.g. `[connected/ok]`. Both servers are in `a
 
 | UI element | State |
 |------------|-------|
-| Header dot | **Amber** — `healthyCount=2` (A and C), `serverCount=3`, `someConnected=true`, not `allConnected` |
-| Sessions list | A sessions (live), B sessions (stale/empty) — C hidden |
-| Loading overlay | Hidden (if A, B, C done paginating) |
-| FAB | Three-server picker (all three in `activeServerIds`) |
-| StatusModal | A: green; B: red "Unreachable"; C: green |
+| Header | No status control. |
+| Connectivity | `ServerOfflineBanner` for B + warning toast. Not `allServersFailed` (A and C fetch `ok`). |
+| Sessions list | A sessions (live), B sessions (stale/empty) — C hidden. |
+| Loading overlay | Hidden if A, B, C done paginating. |
+| FAB | Three-server picker (all three in `activeServerIds`). |
+| ServersStatusModal | A: green; B: red “Unreachable”; C: green. |
 
 ---
 
 ## 5. Loading Overlay Scenarios
 
-The `SessionsLoadingOverlay` is controlled by the `isDone` flag from `useEagerSessions`. It appears at `zIndex: 50` covering the full screen with a semi-transparent scrim.
+`LoadingOverlay` in `app/index.tsx` is gated by `showLoadingModal = !hasCachedData && isStillFetching`. It is **not** `SessionsLoadingOverlay`, and it does **not** appear on every `!sessionsDone` — a warm cache skips the scrim.
 
 ### 5.1 — First boot, no cache
 
 **Condition:** App launched for the first time, no persisted React Query cache
 
-- `isDone = false` immediately on mount
-- Overlay appears with indeterminate bar (total=0 until first page returns)
-- Title: "Loading sessions" (no ratio until `total > 0`)
-- Subtitle: "Fetching from [server label]" once the current server is known
-- Progress bar: empty until `total > 0`
+- Overlay appears (testID `sessions-loading-overlay`) with spinner + sessions progress
+- Caption is “Fetching” / “Fetching N servers in parallel”, not a per-host label
+- Progress row fills as `loaded` / `total` arrive
 
 ---
 
 ### 5.2 — Cache hit on launch
 
-**Condition:** App re-launched, React Query cache is warm (stale but present)
+**Condition:** App re-launched, React Query cache is warm
 
-- Cached sessions render immediately in the list
-- `isDone` may briefly be `false` while background revalidation runs
-- If cache is fresh, overlay may not appear at all or flashes briefly
-- If cache is stale and full revalidation runs, overlay appears as in 5.1
+- Cached sessions render immediately
+- Overlay stays hidden
+- Single-server background refresh: header spinner and/or `SyncCachedNotice`
 
 ---
 
@@ -375,22 +400,17 @@ The `SessionsLoadingOverlay` is controlled by the `isDone` flag from `useEagerSe
 
 **Condition:** User pulls down on the sessions list
 
-- `handleSessionsRefresh` calls `refetchSessions()`
-- `manualRefreshing = true` → shows `RefreshControl` spinner in the list header
-- `isDone` resets to `false` → `SessionsLoadingOverlay` reappears over the stale list
-- Both `RefreshControl` and the full-screen overlay are visible simultaneously during the refetch
-- When pagination completes: overlay hides, `manualRefreshing = false` → `RefreshControl` hides
+- `RefreshControl` spinner in the list
+- Overlay does **not** cover a warm list (`hasCachedData` is true)
 
 ---
 
 ### 5.4 — Multi-server sequential pagination
 
-**Condition:** Two+ servers configured, `useEagerSessions` paginates them sequentially
+**Condition:** Two+ servers configured, sessions paginate across them
 
-- Overlay visible throughout; server label updates as each server becomes current
-- Progress counters are global: `loaded` and `total` accumulate across all servers
-- Between servers (after server A finishes, before server B's first page returns), `total` reflects the running global total and `currentServerLabel` updates to B
-- Overlay hides once the last server's last page has returned
+- Overlay visible only while there is no cached data
+- In-flight caption uses the count of servers currently fetching, not the current host’s label
 
 ---
 
@@ -398,47 +418,49 @@ The `SessionsLoadingOverlay` is controlled by the `isDone` flag from `useEagerSe
 
 **Condition:** Server B is hidden (`displayedServerIds` excludes it) but in `activeServerIds`
 
-- `useEagerSessions` still paginates Server B (it uses `activeServerIds`, not `displayedServerIds`)
-- Overlay shows Server B's label while fetching even though B's sessions will not appear in the list
-- **UX inconsistency:** The overlay says "Fetching from [B]" but no sessions from B will appear once the overlay disappears.
+- Eager session fetch still paginates B
+- Overlay (when shown) does not name B; B’s rows are filtered out of the list
 
 ---
 
 ### 5.6 — Pagination complete
 
-**Condition:** All servers' sessions fetched, `isDone = true`
+**Condition:** All servers’ sessions fetched, `sessionsDone = true`
 
-- Overlay hidden (`return null` in `SessionsLoadingOverlay`)
+- Overlay hidden
 - Sessions list is fully populated and scrollable
 - Normal operation resumes
 
 ---
 
-## 6. Currently Implemented UI vs Gaps
+## 6. Currently Implemented UI vs Remaining Gaps
 
 ### Summary: what each scenario proactively shows
 
-| Scenario | Proactive signal | On-demand signal (tap Cloud icon) |
-|----------|-----------------|-----------------------------------|
-| All connected + loaded | Nothing (clean state) | All rows green "Connected" |
-| Any server connecting | Red header dot | Amber dot per connecting server in modal |
-| Any server disconnected | Amber or red dot | Red "Disconnected" per server |
-| Any fetch error | Amber or red dot | Amber/red "Fetch failed" / "Unreachable" + error text |
-| Sessions loading | Full-screen overlay with progress bar | N/A (overlay is proactive) |
-| No servers configured | Nothing | Modal shows empty-state text |
+| Scenario | Proactive signal | On-demand (`ServersStatusModal`) |
+|----------|------------------|----------------------------------|
+| All connected + loaded | Nothing (clean state) | All rows green “Connected” |
+| Any server connecting | Info toast after 2s | Amber “Connecting…” per connecting server |
+| Any server disconnected (fetch still ok) | Warning toast | Red “Disconnected” |
+| Any fetch error | `ServerOfflineBanner` and/or all-offline empty state + error/warning toast | “Fetch failed” / “Unreachable” + error text |
+| Any `warming_up` | `ServerWarmingBanner` + `ServerIndexingBanner` + indexing toast; history skeletons on Now | Modal row follows WS |
+| Sessions loading, no cache | Full-screen `LoadingOverlay` | N/A |
+| No servers configured | `NoServersWelcome` | Modal empty-state text |
 
-### UX gaps
+### Remaining UX gaps
 
 | Gap | Scenario(s) | Description |
 |-----|-------------|-------------|
-| **Silent FAB on no servers** | 3.0 | FAB is always rendered and appears interactive, but pressing it executes `if (activeServerIds.length === 0) return` with no feedback. No empty-state prompt to add a server. |
-| **Red dot on first connect** | 3.1 | During normal startup `healthyCount=0` immediately, so the dot turns red. It does not show amber or nothing while connecting — only the per-server modal row is amber. Users may misread this as an error. |
-| **FAB navigates into failing servers** | 3.4, 3.5, 3.6, 4.5 | When all active servers are down or unreachable, FAB still opens the picker/browse screen. The failure surfaces only after the user picks a server and the browse screen fails. |
-| **Overlay fetches hidden servers** | 5.5 | Loading overlay shows a hidden server's label and counts its sessions in the progress meter, but none of those sessions will appear in the list after the overlay dismisses. |
-| **Stale data shown without staleness indicator** | 3.4, 3.5, 3.6, 4.5, 4.10, 4.11 | Cached sessions from a failed/disconnected server remain in the list with no visual marker. The header dot is the only signal, and only if the user notices and acts on it. |
-| **Header dot color mismatch vs modal** | 3.5, 4.10 | WS=`connected` + fetch=`error`: header shows **red** (0 healthy servers) but modal shows **amber** per server. The header red implies "nothing working" which conflicts with the amber "partial problem" framing in the modal. |
-| **No reconnecting indicator** | Post-disconnect reconnect | After disconnect + reconnect cycle, the dot stays red until WS is `connected` AND a fetch succeeds. There is no visible "reconnecting" transition state in the header. |
-| **No error count in dot** | All multi-server error states | The amber/red dot gives no count. With 3+ servers, users cannot tell from the dot alone how many servers are failing. |
+| **FAB still offers dead hosts** | 3.4, 3.5, 3.6, 4.5 | Picker still lists unreachable servers; the failure is `ServerErrorModal` after pick rather than disabling the row. |
+| **Stale rows without a per-row marker** | 3.4, 3.5, 3.6, 4.5, 4.10, 4.11 | Cached sessions from a failed host stay in the list. The signal is the banner/toast/empty state, not a chip on the row. |
+| **Hidden-server fetch still counts** | 5.5 | Hidden servers are still paginated even though their rows never appear. |
+| **No reconnecting word in the modal** | Post-disconnect reconnect | After disconnect + reconnect, the modal stays on connecting/disconnected until WS is `connected` **and** a fetch succeeds. |
+
+Closed (do not re-open as gaps):
+
+- Header cloud / bell / coloured dot — removed on purpose. Status is banners + toast + modal.
+- Silent FAB on no servers — toast on press; `NoServersWelcome` for a fresh install.
+- “No banners” — `ServerOfflineBanner`, `ServerWarmingBanner`, `ServerUnsupportedBanner`, and `ServerIndexingBanner` all mount from the homepage list header.
 
 ---
 
@@ -451,68 +473,56 @@ Severity definitions used below:
 - **Error** — fully broken state where the user cannot accomplish their goal. Action is required (or at minimum clearly expected).
 - **None** — nominal state; no message needed.
 
+`ServerStateMessage` maps these onto toast level. Per-host `error` fetch also paints `ServerOfflineBanner` when the list is visible.
+
 ### Single-server
 
 | Scenario | Severity | Suggested message |
 |----------|----------|-------------------|
-| **3.0** No servers configured | **Info** | "Add a server to get started" — empty state prompt in the sessions area + FAB tooltip/disabled state |
-| **3.1** Server connecting | **Info** | "Connecting to [server]…" — transient inline notice; auto-dismisses once connected. Not an error. |
-| **3.2** Connected, sessions loading | **None** | Loading overlay already communicates this state adequately. |
-| **3.3** Connected, sessions loaded | **None** | Nominal state — no message. |
-| **3.4** Server disconnected (clean) | **Warning** | "Disconnected from [server]. Showing cached sessions." — persistent until reconnected; amber inline banner. |
-| **3.5** Connected WS + fetch error | **Warning** | "Couldn't refresh sessions from [server]. Tap for details." — persistent until fetch succeeds; amber inline banner. |
-| **3.6** Server unreachable (WS + fetch both down) | **Error** | "Can't reach [server]. Check your connection or server address." — persistent red inline banner until resolved. |
+| **3.0** No servers configured | **Info** | `NoServersWelcome` — add a server. |
+| **3.1** Server connecting | **Info** | “Connecting to [server]…” — toast after 2s; auto-irrelevant once connected. |
+| **3.2** Connected, sessions loading | **None** | Overlay / sync notice already communicate this. |
+| **3.3** Connected, sessions loaded | **None** | Nominal. |
+| **3.4** Server disconnected (clean) | **Warning** | “Disconnected from [server]. Showing cached sessions.” |
+| **3.5** Connected WS + fetch error | **Warning** / **Error** | Banner + toast; all-offline empty state when this is the only server. |
+| **3.6** Server unreachable | **Error** | Banner + toast, or all-offline empty state. |
+| **3.7** Warming up | **Info** | Warming banner + “building history” toast. |
 
 ### Two-server (and N-server generalizations)
 
 | Scenario | Severity | Suggested message |
 |----------|----------|-------------------|
 | **4.1** Both connected + ok | **None** | Nominal. |
-| **4.2** One connected, one connecting | **Info** | "Connecting to [B]…" — transient per-server notice, auto-dismisses. |
-| **4.3** One connected, one disconnected | **Warning** | "Disconnected from [B]. Showing cached sessions." |
-| **4.4** One connected, one unreachable | **Warning** | "[B] is unreachable. Some sessions may be missing." |
-| **4.5** Both unreachable | **Error** | "Can't reach any servers. Check your connection." — FAB should be disabled or show inline error on tap. |
-| **4.6** One connected, one hidden | **None** | Hidden is an intentional user choice. No message needed. |
-| **4.7** One connecting, one hidden (connected) | **Info** | "Connecting to [A]…" — same as 4.2. |
-| **4.8** One unreachable (visible), one hidden (healthy) | **Warning** | "[A] is unreachable. Some sessions may be missing." — note: healthy server is hidden so the user's view is degraded. |
-| **4.9** One connected + ok, one fetch-failed | **Warning** | "Couldn't refresh sessions from [B]. Tap for details." |
-| **4.10** Both connected + fetch-failed | **Error** | "Couldn't refresh sessions from any server. Tap for details." — header is already red; needs inline text. |
-| **4.11** Both disconnected (no error) | **Warning** | "Disconnected from all servers. Showing cached sessions." |
-| **4.12** Three-server: one connected, one unreachable, one hidden | **Warning** | "[B] is unreachable. Some sessions may be missing." |
+| **4.2** One connected, one connecting | **Info** | “Connecting to [B]…” |
+| **4.3** One connected, one disconnected | **Warning** | “Disconnected from [B]. Showing cached sessions.” |
+| **4.4** One connected, one unreachable | **Warning** | “[B] is unreachable. Some sessions may be missing.” + banner on B. |
+| **4.5** Both unreachable | **Error** | All-offline empty state. |
+| **4.6** One connected, one hidden | **None** | Hidden is an intentional user choice. |
+| **4.7** One connecting, one hidden (connected) | **Info** | “Connecting to [A]…” |
+| **4.8** One unreachable (visible), one hidden (healthy) | **Warning** | “[A] is unreachable…” — healthy server is hidden so the view is degraded. |
+| **4.9** One connected + ok, one fetch-failed | **Warning** | Banner on B + refresh-failed toast. |
+| **4.10** Both connected + fetch-failed | **Error** | All-offline empty state. |
+| **4.11** Both disconnected (no error) | **Warning** | “Disconnected from all servers. Showing cached sessions.” |
+| **4.12** Three-server: one connected, one unreachable, one hidden | **Warning** | “[B] is unreachable. Some sessions may be missing.” |
 
 ### Loading overlay
 
 | Scenario | Severity | Message approach |
 |----------|----------|-----------------|
-| **5.1** First boot, no cache | **None** | Overlay already communicates loading adequately. |
-| **5.2** Cache hit on launch | **None** | Cached data renders immediately; background refresh is silent. |
-| **5.3** Pull-to-refresh | **None** | `RefreshControl` spinner is sufficient feedback. |
-| **5.4** Multi-server sequential pagination | **None** | Overlay + server label already communicates this. |
-| **5.5** Pagination with hidden server | **Info** | Consider suppressing hidden-server label from overlay subtitle, or show "(hidden)" qualifier so users aren't confused by a server name they didn't expect. |
+| **5.1** First boot, no cache | **None** | Overlay already communicates loading. |
+| **5.2** Cache hit on launch | **None** | Cached data renders immediately; background refresh is quiet. |
+| **5.3** Pull-to-refresh | **None** | `RefreshControl` is sufficient. |
+| **5.4** Multi-server sequential pagination | **None** | Overlay only without cache. |
+| **5.5** Pagination with hidden server | **Info** | Overlay no longer names the hidden host. |
 | **5.6** Pagination complete | **None** | No message needed. |
 
 ### Message placement guidance
 
 | Placement | When to use |
 |-----------|-------------|
-| **Inline banner (below header, above list)** | Persistent degraded states: warning or error that persists until the server recovers (scenarios 3.4, 3.5, 3.6, 4.3, 4.4, 4.5, 4.9, 4.10, 4.11) |
-| **Transient inline notice / toast** | Short-lived transitional states that auto-resolve: connecting (3.1, 4.2, 4.7) |
-| **Empty-state prompt in sessions area** | No servers configured (3.0) |
-| **FAB disabled state / tooltip** | All-servers-down (4.5) or no-servers (3.0) — FAB should not silently no-op |
-| **ServerStatusModal only** | Already implemented for detailed error text; keep as the drill-down layer |
-
-### Priority order for implementation
-
-1. **Error** scenarios first — these are fully broken states with no current user signal beyond the header dot:
-   - 3.6 Unreachable (single server)
-   - 4.5 Both unreachable
-   - 4.10 Both connected + fetch-failed
-
-2. **Warning** scenarios — degraded but partially functional:
-   - 3.4 Disconnected (single, stale data shown)
-   - 3.5 Fetch error while WS connected
-   - 4.3, 4.4, 4.8, 4.9, 4.11, 4.12 Multi-server degraded combos
-
-3. **Info** scenarios last — non-blocking, nice-to-have polish:
-   - 3.0 No servers (empty state)
-   - 3.1, 4.2, 4.7 Connecting transitional state
+| **Inline banner (list header)** | Persistent per-host fetch failure, warmup, or unsupported version while other hosts still render. |
+| **Home toast (`ServerStateMessage`)** | Connecting, disconnected, unreachable, refresh-failed, indexing — with Retry / Details on warning and error. |
+| **All-offline empty state** | Every active server’s fetch status is `error` and sessions are done. |
+| **Welcome card** | No servers configured. |
+| **FAB toast** | Press with zero servers. |
+| **`ServersStatusModal`** | Drill-down: per-server dots, labels, error text. Not a header button. |

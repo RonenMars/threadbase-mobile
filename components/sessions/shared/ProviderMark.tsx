@@ -2,13 +2,13 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { providerLabelKey, type ProviderName, type ProviderLabelKey } from '@/constants/providers'
-import { radius } from '@/constants/theme'
+import { brand, radius } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
 // Path data from assets/icons/providers/{claudecode,codex,cursor}.svg
 // (lobehub/lobe-icons, MIT — see assets/icons/providers/LICENSE). Inlined because
 // Metro has no SVG transformer; all three share a 24x24 viewBox.
-const MARK_PATHS: Record<ProviderLabelKey, string> = {
+export const PROVIDER_MARK_PATHS: Record<ProviderLabelKey, string> = {
   claude:
     'M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z',
   codex:
@@ -23,9 +23,23 @@ const TILE_SIZE = 22
 type ProviderMarkProps = {
   provider: ProviderName
   size?: number
+  /** `color` is the session-detail header; the list stays monochrome. */
+  variant?: 'mono' | 'color'
 }
 
-export function ProviderMark({ provider, size = TILE_SIZE }: ProviderMarkProps) {
+/** Claude uses lobe-icons claude-color; Codex/Cursor use `brand.*`. Detail header only. */
+function colorFill(key: ProviderLabelKey): string {
+  switch (key) {
+    case 'claude':
+      return '#D97757'
+    case 'codex':
+      return brand.codex
+    case 'cursor':
+      return brand.cursor
+  }
+}
+
+export function ProviderMark({ provider, size = TILE_SIZE, variant = 'mono' }: ProviderMarkProps) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
   const key = providerLabelKey(provider)
@@ -43,6 +57,8 @@ export function ProviderMark({ provider, size = TILE_SIZE }: ProviderMarkProps) 
       break
   }
 
+  const fill = variant === 'color' ? colorFill(key) : theme.text.secondary
+
   return (
     <View
       accessibilityRole="image"
@@ -58,7 +74,7 @@ export function ProviderMark({ provider, size = TILE_SIZE }: ProviderMarkProps) 
       }}
     >
       <Svg width={MARK_SIZE} height={MARK_SIZE} viewBox="0 0 24 24">
-        <Path d={MARK_PATHS[key]} fill={theme.text.secondary} fillRule="evenodd" clipRule="evenodd" />
+        <Path d={PROVIDER_MARK_PATHS[key]} fill={fill} fillRule="evenodd" clipRule="evenodd" />
       </Svg>
     </View>
   )
