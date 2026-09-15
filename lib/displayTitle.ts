@@ -162,12 +162,35 @@ function normaliseForEcho(text: string): string {
     .trim()
 }
 
+/**
+ * Rung 2 of the ladder: when message one is a tool envelope, the instruction
+ * lives inside it (usually `<action>…</action>`), not in the leftover after
+ * the tags are stripped. An unclosed envelope is the streamer's 80-char cut.
+ */
+function extractEnvelopeInstruction(raw: string): string {
+  const action = raw.match(/<action>([\s\S]*?)<\/action>/i)
+  if (action) return collapseWhitespace(action[1].replace(/<[^>]+>/g, ' '))
+  const closed = raw.match(/<user_action>([\s\S]*?)<\/user_action>/i)
+  if (!closed) return ''
+  return collapseWhitespace(closed[1].replace(/<[^>]+>/g, ' '))
+}
+
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
 function resolveTitle(input: DisplayTitleInput): Pick<DisplayTitle, 'title' | 'source'> {
   const customName = input.customName?.trim()
   if (customName) return { title: customName, source: 'rename' }
 
   const cleaned = cleanFirstMessage(input.firstMessage ?? '')
   if (!isRejectedTitle(cleaned)) return { title: cleaned, source: 'message' }
+
+  const instruction = extractEnvelopeInstruction(input.firstMessage ?? '')
+  if (instruction && !isRejectedTitle(sentenceCase(instruction))) {
+    return { title: sentenceCase(instruction), source: 'message' }
+  }
+  if (instruction && !isNoise(instruction)) return { title: instruction, source: 'command' }
 
   // The work itself: a session that only ran a command is its command, shown
   // as typed rather than sentence-cased.

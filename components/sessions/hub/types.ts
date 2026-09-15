@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -29,6 +30,8 @@ export interface ProjectHubListProps {
   topInset?: number
   /** Scrolls with the cards: the quick-access strip and banners. */
   ListHeaderComponent?: ReactElement | null
+  onNewSession?: () => void
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
 }
 
 export interface ProjectHubCardProps {

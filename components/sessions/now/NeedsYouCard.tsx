@@ -4,8 +4,8 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { MONO_FONT } from '@/constants/mono'
 import { useTheme } from '@/contexts/ThemeContext'
 import { StateBadge, getSessionTierLabel } from '@/components/sessions/StateBadge'
-import { formatWaitingSince } from '@/components/sessions/shared/formatCoarseElapsed'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
+import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
 import { LiveCard } from './LiveCard'
 
@@ -14,6 +14,7 @@ interface Props {
   title: string
   serverLabel?: string | null
   serverColor?: string | null
+  dominantProvider?: ProviderName
   isFirst?: boolean
 }
 
@@ -27,14 +28,11 @@ function shortPath(path: string): string {
  * waiting on the user. The mono block is the raw terminal tail, not a parsed
  * question — there is no answer affordance here by design.
  */
-export function NeedsYouCard({ session, title, serverLabel, serverColor, isFirst }: Props) {
+export function NeedsYouCard({ session, title, serverLabel, serverColor, dominantProvider, isFirst }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const { handlePress, handleLongPress } = useSessionRowActions(session)
-  const waitingFor = session.statusUpdatedAt
-    ? t('row.waitingFor', { elapsed: formatWaitingSince(session.statusUpdatedAt) })
-    : undefined
   const tierLabel = getSessionTierLabel('needsYou', t)
 
   return (
@@ -44,13 +42,15 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, isFirst
       emphasis="solid"
       serverLabel={serverLabel}
       serverColor={serverColor}
+      provider={session.provider}
+      dominantProvider={dominantProvider}
       onPress={handlePress}
       onLongPress={handleLongPress}
       accessibilityLabel={`${title}, ${tierLabel}`}
       testID={`session-row-${session.id}`}
       isFirst={isFirst}
     >
-      <StateBadge tier="needsYou" qualifier={waitingFor} />
+      <StateBadge tier="needsYou" />
       {session.lastOutput ? (
         <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
       ) : null}
