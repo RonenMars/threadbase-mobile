@@ -190,6 +190,26 @@ describe('useEagerSessions', () => {
     expect(result.current.sessions.map((s) => s.id)).toEqual(['b1'])
   })
 
+  it('keeps previously loaded sessions when a later refetch of that server fails', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet
+      .mockResolvedValueOnce(pageOf(['a1'], { nextCursor: null, total: 1 }))
+      .mockRejectedValueOnce(new Error('offline'))
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+    expect(result.current.sessions.map((s) => s.id)).toEqual(['a1'])
+
+    await act(async () => {
+      await result.current.refetch()
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    expect(result.current.sessions.map((s) => s.id)).toEqual(['a1'])
+    expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error')
+  })
+
   it('uses the short initial timeout without retrying a failed server', async () => {
     setActiveServers([{ id: 'srv-A', label: 'A' }])
     mockGet.mockRejectedValueOnce(new Error('offline'))

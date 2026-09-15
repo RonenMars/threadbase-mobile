@@ -35,6 +35,16 @@
       "warningCount_other": "{{count}} אזהרות",
       "retryEverything": "נסה הכול שוב",
       "technicalDetails": "פרטים טכניים"
+    },
+    "inline": {
+      "unreachableSince": "לא ניתן להגיע מאז {{time}}",
+      "sessionsStale_one": "הסשן למטה נטען לאחרונה {{ago}}. ודאו שהמחשב ער ומחובר לאותה רשת.",
+      "sessionsStale_two": "שני הסשנים למטה נטענו לאחרונה {{ago}}. ודאו שהמחשב ער ומחובר לאותה רשת.",
+      "sessionsStale_other": "{{count}} הסשנים למטה נטענו לאחרונה {{ago}}. ודאו שהמחשב ער ומחובר לאותה רשת.",
+      "loadedAgo_one": "לפני דקה",
+      "loadedAgo_two": "לפני שתי דקות",
+      "loadedAgo_other": "לפני {{count}} דקות",
+      "retryNow": "נסה שוב עכשיו"
     }
   },
   "error": {
