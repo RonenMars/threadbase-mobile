@@ -14,6 +14,7 @@
   },
   "error": {
     "loadFailed": "Couldn't load conversation",
+    "loadFailedMessage": "The messages didn't arrive. Retry or go back to the list.",
     "notFound": "This conversation is no longer available on the server.",
     "back": "Back to hub"
   },

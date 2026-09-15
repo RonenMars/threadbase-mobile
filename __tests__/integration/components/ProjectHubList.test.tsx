@@ -3,6 +3,8 @@ import { fireEvent, waitFor } from '@testing-library/react-native'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import { renderWithI18n } from '@/test-utils/render'
+import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiSession } from '@/types/api'
 
@@ -97,5 +99,57 @@ describe('ProjectHubList tiers', () => {
     expect(queryByText('RECENT')).toBeNull()
     expect(getByText('QUIET · 1')).toBeTruthy()
     expect(getByTestId('hub-project-old-one')).toBeTruthy()
+  })
+})
+
+describe('ProjectHubList server failure', () => {
+  afterEach(() => {
+    useServerFetchStatusStore.getState().reset()
+    useServersStore.setState({ activeServerIds: [], displayedServerIds: [], servers: {} })
+  })
+
+  it('shows a section failure panel for one down host', async () => {
+    useServersStore.setState({
+      activeServerIds: ['srv-1', 'srv-2'],
+      displayedServerIds: ['srv-1', 'srv-2'],
+      servers: {
+        'srv-1': { id: 'srv-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+        'srv-2': { id: 'srv-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+    useServerFetchStatusStore.getState().recordFailure('srv-2', new Error('offline'))
+    const { getByTestId, queryByTestId } = await renderHub(
+      [liveSession],
+      [
+        summary('fresh', DAY),
+        { ...summary('other', DAY), serverId: 'srv-2', path: '/home/user/other', name: 'other' },
+      ],
+    )
+    expect(getByTestId('server-failure-srv-2')).toBeTruthy()
+    expect(getByTestId('server-header-retry-srv-2')).toBeTruthy()
+    expect(queryByTestId('server-failure-srv-1')).toBeNull()
+  })
+
+  it('does not paint per-server failure panels when every host is down', async () => {
+    useServersStore.setState({
+      activeServerIds: ['srv-1', 'srv-2'],
+      displayedServerIds: ['srv-1', 'srv-2'],
+      servers: {
+        'srv-1': { id: 'srv-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+        'srv-2': { id: 'srv-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+    useServerFetchStatusStore.getState().recordFailure('srv-1', new Error('offline'))
+    useServerFetchStatusStore.getState().recordFailure('srv-2', new Error('offline'))
+    const { getByTestId, queryByTestId } = await renderHub(
+      [liveSession],
+      [
+        summary('fresh', DAY),
+        { ...summary('other', DAY), serverId: 'srv-2', path: '/home/user/other', name: 'other' },
+      ],
+    )
+    expect(queryByTestId('server-failure-srv-1')).toBeNull()
+    expect(queryByTestId('server-failure-srv-2')).toBeNull()
+    expect(getByTestId('hub-project-fresh')).toBeTruthy()
   })
 })
