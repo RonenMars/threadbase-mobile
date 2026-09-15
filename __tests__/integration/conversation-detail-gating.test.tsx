@@ -399,4 +399,16 @@ describe('conversation detail — 404 live-session fallback', () => {
     expect(text).toContain('no longer available')
     expect(mockReplace).not.toHaveBeenCalled()
   })
+
+  it('shows an inline error in the message area when load fails for a reason other than 404', async () => {
+    mockDetailRef.current = new Error('timeout')
+    mockSessionRef.current = null
+
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushAllQueries()
+
+    expect(root.getByTestId('conversation-load-error')).toBeTruthy()
+    expect(root.queryByTestId('conversation-not-found')).toBeNull()
+    expect(allText(root)).toContain("Couldn't load conversation")
+  })
 })

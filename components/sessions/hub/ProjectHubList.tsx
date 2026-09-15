@@ -60,6 +60,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   ListHeaderComponent,
   onNewSession,
   onScroll,
+  onRetryServer,
+  onOpenStatus,
 }: ProjectHubListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -278,7 +280,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const showSearch = searchOpen && debouncedQuery.length > 0
 
   type HubFlatItem =
-    | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number }
+    | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number; failed: boolean }
     | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number; action?: { label: string; onPress: () => void; testID?: string } }
     | { kind: 'group'; group: ProjectGroup }
     | { kind: 'quietChips'; key: string; scope: string; groups: ProjectGroup[] }
@@ -321,6 +323,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     // one a stale collapsed flag would hide its groups with no way to expand
     // (the header isn't collapsible below).
     const collapseApplies = serverGroups.length > 1
+    const allFailed = activeServerIds.length > 0
+      && activeServerIds.every((id) => fetchStatuses[id]?.status === 'error')
     // A server too old for /api/projects/summary gets its own row — omitting it
     // would read as "this server has no projects", which is not what happened.
     const unsupportedRows: HubFlatItem[] = unsupportedServerIds.map((serverId) => ({
@@ -331,17 +335,20 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     return showServerHeaders
       ? [...serverGroups.flatMap((sg) => {
           const expanded = !collapseApplies || !collapsedServers.includes(sg.serverId)
+          const failed = !allFailed && fetchStatuses[sg.serverId]?.status === 'error'
           const body: HubFlatItem[] =
             sg.totalCount > 0
               ? tiered(sg.groups, sg.serverId)
-              : [{ kind: 'serverEmpty' as const, serverId: sg.serverId }]
+              : failed
+                ? []
+                : [{ kind: 'serverEmpty' as const, serverId: sg.serverId }]
           return [
-            { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount },
+            { kind: 'header' as const, serverId: sg.serverId, serverLabel: sg.serverLabel, totalCount: sg.totalCount, failed },
             ...(expanded ? body : []),
           ]
         }), ...unsupportedRows]
       : [...tiered(groups, 'all'), ...unsupportedRows]
-  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, quietOpen, toggleQuiet, t])
+  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, quietOpen, toggleQuiet, t, activeServerIds, fetchStatuses])
 
   if (drill && !searchOpen) {
     return <DrillView key={drill.node.fullPath} node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} topInset={topInset} onScroll={onScroll} />
@@ -415,38 +422,36 @@ export const ProjectHubList = React.memo(function ProjectHubList({
                   isExpanded={!collapsedServers.includes(item.serverId)}
                   onToggle={() => toggleServer(item.serverId)}
                   isRefreshing={isBackgroundRefreshing}
+                  failed={item.failed}
+                  onRetry={item.failed ? () => onRetryServer?.(item.serverId) : undefined}
+                  onDetails={item.failed ? onOpenStatus : undefined}
                 />
               )
             }
             if (item.kind === 'serverEmpty') {
               const fetchStatus = fetchStatuses[item.serverId]?.status
-              const isError = fetchStatus === 'error'
-              // Third status is the warm-up / indexing state — treat non-ok/non-error as warming.
+              // Fetch errors render on the section header. Warm-up / indexing is
+              // the remaining non-ok empty, distinct from a host with no sessions.
               const isWarming = fetchStatus != null && fetchStatus !== 'ok' && fetchStatus !== 'error'
-              const emptyTitle = isError
-                ? t('list.serverOffline')
-                : isWarming
-                  ? t('list.serverWarming')
-                  : t('list.serverEmpty')
-              const emptySubtitle = isError
-                ? t('list.serverOfflineSubtitle')
-                : isWarming
-                  ? t('list.serverWarmingSubtitle')
-                  : t('list.serverEmptySubtitle')
               return (
                 <View style={styles.serverEmpty} testID={`server-empty-${item.serverId}`}>
-                  <EmptyState title={emptyTitle} subtitle={emptySubtitle} />
+                  <EmptyState
+                    title={isWarming ? t('list.serverWarming') : t('list.serverEmpty')}
+                    subtitle={isWarming ? t('list.serverWarmingSubtitle') : t('list.serverEmptySubtitle')}
+                  />
                 </View>
               )
             }
             return (
-              <ProjectHubCard
-                group={item.group}
-                isOpen={openIds.has(item.group.projectId)}
-                onToggle={toggleOpen}
-                forceServerChip={shouldForceServerChip(item.group.projectPath, collidingPaths)}
-                onBrowsePath={openDrill}
-              />
+              <View style={fetchStatuses[item.group.serverId]?.status === 'error' ? { opacity: 0.6 } : undefined}>
+                <ProjectHubCard
+                  group={item.group}
+                  isOpen={openIds.has(item.group.projectId)}
+                  onToggle={toggleOpen}
+                  forceServerChip={shouldForceServerChip(item.group.projectPath, collidingPaths)}
+                  onBrowsePath={openDrill}
+                />
+              </View>
             )
           }}
           {...LIST_WINDOW}

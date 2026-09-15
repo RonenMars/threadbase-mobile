@@ -32,6 +32,14 @@
       "warningCount_other": "{{count}} warnings",
       "retryEverything": "Retry everything",
       "technicalDetails": "Technical details"
+    },
+    "inline": {
+      "unreachableSince": "Unreachable since {{time}}",
+      "sessionsStale_one": "The {{count}} session below was last loaded {{ago}}. Check the machine is awake and on the same network.",
+      "sessionsStale_other": "The {{count}} sessions below were last loaded {{ago}}. Check the machine is awake and on the same network.",
+      "loadedAgo_one": "{{count}} minute ago",
+      "loadedAgo_other": "{{count}} minutes ago",
+      "retryNow": "Retry now"
     }
   },
   "error": {
