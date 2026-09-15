@@ -1,4 +1,4 @@
-import { ErrorBanner } from '@/components/ErrorBanner'
+import { AlertHost } from '@/components/alerts/AlertHost'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
@@ -29,7 +29,7 @@ function seedFailures(count: number) {
   })
 }
 
-describe('ErrorBanner server rows', () => {
+describe('Status sheet server rows', () => {
   beforeEach(() => {
     useErrorSheetStore.setState({ open: false })
     useAlertStore.getState().reset()
@@ -41,7 +41,7 @@ describe('ErrorBanner server rows', () => {
   it('renders one row per failing server, named or addressed, once the sheet is opened', async () => {
     seedFailures(3)
     useErrorSheetStore.setState({ open: true })
-    const { getByTestId, getByText } = await renderWithI18n(<ErrorBanner />)
+    const { getByTestId, getByText } = await renderWithI18n(<AlertHost />)
 
     getByTestId('error-sheet-row-s0')
     getByTestId('error-sheet-row-s1')
@@ -51,41 +51,35 @@ describe('ErrorBanner server rows', () => {
     expect(useErrorSheetStore.getState().open).toBe(true)
   })
 
-  it('offers Retry all only when more than one thing failed', async () => {
+  it('offers Retry everything only when more than one thing failed', async () => {
     seedFailures(3)
     useErrorSheetStore.setState({ open: true })
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined)
-    const { getByText } = await renderWithI18n(<ErrorBanner />)
+    const { getByText } = await renderWithI18n(<AlertHost />)
 
-    fireEvent.press(getByText('Retry all'))
-    // No key filter — every failing server and category is in the list.
-    expect(invalidate).toHaveBeenCalledWith()
-    expect(useLoadingStateStore.getState().errors).toHaveLength(0)
+    fireEvent.press(getByText('Retry everything'))
+    expect(invalidate).toHaveBeenCalledTimes(3)
     invalidate.mockRestore()
   })
 
-  it('shows no Retry all for a single failure', async () => {
+  it('shows no Retry everything for a single failure', async () => {
     seedFailures(1)
     useErrorSheetStore.setState({ open: true })
-    const { queryByText, getByTestId } = await renderWithI18n(<ErrorBanner />)
+    const { queryByText, getByTestId } = await renderWithI18n(<AlertHost />)
 
     getByTestId('error-sheet-row-s0')
-    expect(queryByText('Retry all')).toBeNull()
+    expect(queryByText('Retry everything')).toBeNull()
   })
 
-  it('drills a row into ServerErrorModal, falling back to the fetch error', async () => {
+  it('expands technical details with the fetch error instead of drilling into ServerErrorModal', async () => {
     seedFailures(2)
     useErrorSheetStore.setState({ open: true })
-    const { getByTestId, findByText } = await renderWithI18n(<ErrorBanner />)
+    const { getByTestId, findByText, queryByText } = await renderWithI18n(<AlertHost />)
 
-    fireEvent.press(getByTestId('error-sheet-row-s1'))
+    fireEvent.press(getByTestId('status-row-details-s1'))
 
-    // connectionError is null on these servers, so the modal would show an empty
-    // error box without the serverFetchStatus fallback.
     await findByText('unreachable 1')
-    // A DetailRow label only ServerErrorModal renders, proving the drill-in
-    // landed there rather than just expanding the row in place.
-    await findByText('URL')
+    expect(queryByText('URL')).toBeNull()
   })
 
   it('skips a failing server that is no longer in the store', async () => {
@@ -101,20 +95,20 @@ describe('ErrorBanner server rows', () => {
     })
 
     useErrorSheetStore.setState({ open: true })
-    const { queryByTestId } = await renderWithI18n(<ErrorBanner />)
+    const { queryByTestId } = await renderWithI18n(<AlertHost />)
 
     expect(queryByTestId('error-sheet-row-s0')).toBeTruthy()
     expect(queryByTestId('error-sheet-row-srv_ghost')).toBeNull()
   })
 
-  it('disables the retry icon while its retry is in flight, then re-enables it', async () => {
+  it('disables the retry button while its retry is in flight, then re-enables it', async () => {
     seedFailures(1)
     useErrorSheetStore.setState({ open: true })
     let resolveInvalidate: () => void = () => {}
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockReturnValue(
       new Promise((resolve) => { resolveInvalidate = () => resolve(undefined) }),
     )
-    const { getByTestId } = await renderWithI18n(<ErrorBanner />)
+    const { getByTestId } = await renderWithI18n(<AlertHost />)
 
     fireEvent.press(getByTestId('error-sheet-retry-s0'))
     await waitFor(() => {

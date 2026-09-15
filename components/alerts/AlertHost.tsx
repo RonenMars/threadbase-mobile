@@ -1,7 +1,9 @@
-import { ErrorBanner } from '@/components/ErrorBanner'
+import { StatusSheet } from '@/components/alerts/StatusSheet'
 import { useAlertAnnouncements } from '@/hooks/useAlertAnnouncements'
+import { useRequestFailureAlerts } from '@/hooks/useRequestFailureAlerts'
 
 export function AlertHost() {
   useAlertAnnouncements()
-  return <ErrorBanner />
+  useRequestFailureAlerts()
+  return <StatusSheet />
 }

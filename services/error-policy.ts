@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next'
 
-/** How a classified error should be surfaced. `blocking` is not wired into any
- * consumer yet — see the "Where to Use Option 1" deferral note in ErrorBanner. */
+/** How a classified error should be surfaced. `blocking` (401/403) is an
+ * exclusion from the Status sheet; the critical dialog is step 5. */
 export type ErrorPresentation = 'inline' | 'recovery-sheet' | 'blocking'
 
 export interface ClassifiedError {
@@ -44,7 +44,7 @@ export function isTransientError(error: unknown): boolean {
 /**
  * Maps a raw fetch/API error to a presentation classification. Deliberately
  * does not decide title/message wording for query-category failures — those
- * stay the existing per-category copy in ErrorBanner, which already carries
+ * stay the existing per-category copy in the Status sheet, which already carries
  * more context (which screen section failed) than a status code alone can.
  * This only supplies what the status/code adds: a more specific description
  * when one exists, plus the technical code for the details row.

@@ -67,6 +67,14 @@ export type AlertSpec = {
   details?: string
   /** Milliseconds. Honoured for `info` only; other levels ignore it. `null` stays until dismissed. Info defaults to 5000 when omitted. */
   timeout?: number | null
+  /** Server error code or `HTTP <status>`, when one is known. */
+  code?: string
+  /** The raw, unparaphrased error text from the failing request. */
+  rawMessage?: string
+  /** When true, StatusRow shows Retry. 404s and similar set this false. */
+  retryable?: boolean
+  /** Whether this row's retry is currently in flight. */
+  retrying?: boolean
   hideCloseButton?: boolean
   onPress?: () => void
   onClose?: () => void
