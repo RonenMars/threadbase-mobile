@@ -83,6 +83,7 @@
       "__tests__/integration/components/TokenTooltip.test.tsx",
       "__tests__/integration/components/ToolCard.test.tsx",
       "__tests__/integration/components/TourOverlay.test.tsx",
+      "__tests__/integration/home-inline-failures.test.tsx",
       "__tests__/integration/hooks/useClaudeFlags.test.tsx",
       "__tests__/integration/services/cacheAlertResolveFlow.test.tsx"
     ]

@@ -10,6 +10,7 @@ import { serverCause } from '@/types/alerts'
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
     status: () => 'disconnected',
+    lastError: () => null,
     onAnyStatusChange: () => () => {},
   },
 }))
