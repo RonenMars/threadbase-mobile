@@ -116,6 +116,7 @@
   "errorPolicy": {
     "sessionExpired": "Your session has expired",
     "forbidden": "You don't have permission to access this",
+    "blockingHint": "Open Settings to pair this device again or update the API key.",
     "notFound": "This could no longer be found",
     "timeout": "The server took too long to respond",
     "tooManyRequests": "Too many requests",

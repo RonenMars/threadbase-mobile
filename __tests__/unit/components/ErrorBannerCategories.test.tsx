@@ -7,6 +7,8 @@ import { useAlertStore } from '@/stores/alerts'
 import { renderWithI18n } from '@/test-utils/render'
 import { queryClient } from '@/services/query-client'
 import { act, fireEvent, waitFor } from '@testing-library/react-native'
+import { useRouter } from 'expo-router'
+import type { ServerConfig } from '@/types/api'
 
 describe('Status sheet category rows', () => {
   beforeEach(() => {
@@ -15,6 +17,14 @@ describe('Status sheet category rows', () => {
     useLoadingStateStore.setState({ errors: [], dismissed: [] })
     useServerFetchStatusStore.setState({ statuses: {} })
     useServersStore.setState({ servers: {} })
+    ;(useRouter as jest.Mock).mockImplementation(() => ({
+      push: jest.fn(),
+      replace: jest.fn(),
+      back: jest.fn(),
+      navigate: jest.fn(),
+      setParams: jest.fn(),
+      canGoBack: jest.fn(() => true),
+    }))
   })
 
   it('does not auto-open the status sheet', async () => {
@@ -123,8 +133,60 @@ describe('Status sheet category rows', () => {
       errors: [{ id: 'sessions', category: 'sessions', status: 401, message: 'expired' }],
     })
     useErrorSheetStore.setState({ open: true })
-    const { queryByTestId } = await renderWithI18n(<AlertHost />)
+    const { queryByTestId, getByTestId, getByText } = await renderWithI18n(<AlertHost />)
 
+    expect(queryByTestId('status-sheet')).toBeNull()
+    getByTestId('critical-dialog')
+    getByText('Your session has expired')
+    getByText('Open Settings to pair this device again or update the API key.')
+  })
+
+  it('routes a 401 to Settings and sticky-dismisses so the dialog does not return', async () => {
+    const push = jest.fn()
+    ;(useRouter as jest.Mock).mockReturnValue({
+      push,
+      replace: jest.fn(),
+      back: jest.fn(),
+      navigate: jest.fn(),
+      setParams: jest.fn(),
+      canGoBack: jest.fn(() => true),
+    })
+    useLoadingStateStore.setState({
+      errors: [{ id: 'sessions', category: 'sessions', status: 401, message: 'expired' }],
+    })
+    const { getByTestId, queryByTestId } = await renderWithI18n(<AlertHost />)
+
+    fireEvent.press(getByTestId('critical-dialog-action'))
+    expect(push).toHaveBeenCalledWith('/settings')
+    expect(useLoadingStateStore.getState().errors).toHaveLength(0)
+    expect(useLoadingStateStore.getState().dismissed).toContain('sessions')
+    await waitFor(() => {
+      expect(useAlertStore.getState().alerts).toHaveLength(0)
+      expect(queryByTestId('critical-dialog')).toBeNull()
+    })
+  })
+
+  it('still raises the critical dialog when servers are also down', async () => {
+    const server: ServerConfig = {
+      id: 's0',
+      url: 'https://host.example',
+      apiKey: '',
+      label: 'Studio Mac',
+      isConnected: false,
+      serverInfo: null,
+      connectionError: null,
+    }
+    useServersStore.setState({ servers: { s0: server } })
+    useServerFetchStatusStore.setState({
+      statuses: { s0: { status: 'error', error: 'unreachable', lastCheckedAt: 0 } },
+    })
+    useLoadingStateStore.setState({
+      errors: [{ id: 'sessions', category: 'sessions', status: 401, message: 'expired' }],
+    })
+    useErrorSheetStore.setState({ open: true })
+    const { getByTestId, queryByTestId } = await renderWithI18n(<AlertHost />)
+
+    getByTestId('critical-dialog')
     expect(queryByTestId('status-sheet')).toBeNull()
   })
 
