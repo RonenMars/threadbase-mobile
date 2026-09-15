@@ -40,7 +40,6 @@ import { SplashAnimation } from '@/components/SplashAnimation'
 import { markIntroSeen, resolveIntroVariant, type IntroVariant } from '@/services/intro-splash'
 import { currentIntroVersion } from '@/services/intro-version'
 import { goBackOrHub } from '@/lib/goBackOrHub'
-import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { AlertHost } from '@/components/alerts/AlertHost'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
@@ -576,7 +575,6 @@ function RootLayout() {
               <BiometricLockGate>
                 <ThemedStatusBar />
                 <ThemedStack router={router} />
-                <SlowQueryBanner />
                 <AlertHost />
                 <NavigationLockOverlay />
               </BiometricLockGate>

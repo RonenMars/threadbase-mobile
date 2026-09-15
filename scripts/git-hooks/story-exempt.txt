@@ -13,3 +13,7 @@ components/sessions/now/NowList.tsx
 components/alerts/AlertHost.tsx
 # Store-driven producer: warning lives on the status pill and Status sheet.
 components/servers/HostPressureBanner.tsx
+# Store-driven producer: cache integrity lives on the pill and Status sheet.
+components/servers/CacheAlertBanner.tsx
+# Store-driven producer: slow session fetch lives on the pill and Status sheet.
+components/SlowQueryBanner.tsx
