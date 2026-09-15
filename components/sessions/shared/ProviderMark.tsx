@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
 import { providerLabelKey, type ProviderName, type ProviderLabelKey } from '@/constants/providers'
-import { radius } from '@/constants/theme'
+import { brand, radius } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
 // Path data from assets/icons/providers/{claudecode,codex,cursor}.svg
@@ -17,9 +17,6 @@ export const PROVIDER_MARK_PATHS: Record<ProviderLabelKey, string> = {
     'M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z',
 }
 
-/** lobe-icons claudecode-color / claude-color. Used on the session detail header only. */
-const CLAUDE_COLOR = '#D97757'
-
 const MARK_SIZE = 13
 const TILE_SIZE = 22
 
@@ -28,6 +25,18 @@ type ProviderMarkProps = {
   size?: number
   /** `color` is the session-detail header; the list stays monochrome. */
   variant?: 'mono' | 'color'
+}
+
+/** Claude uses lobe-icons claude-color; Codex/Cursor use `brand.*`. Detail header only. */
+function colorFill(key: ProviderLabelKey): string {
+  switch (key) {
+    case 'claude':
+      return '#D97757'
+    case 'codex':
+      return brand.codex
+    case 'cursor':
+      return brand.cursor
+  }
 }
 
 export function ProviderMark({ provider, size = TILE_SIZE, variant = 'mono' }: ProviderMarkProps) {
@@ -48,7 +57,7 @@ export function ProviderMark({ provider, size = TILE_SIZE, variant = 'mono' }: P
       break
   }
 
-  const fill = variant === 'color' && key === 'claude' ? CLAUDE_COLOR : theme.text.secondary
+  const fill = variant === 'color' ? colorFill(key) : theme.text.secondary
 
   return (
     <View
