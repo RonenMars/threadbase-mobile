@@ -6,7 +6,7 @@ export function useProviderHealth(serverId: string | null | undefined) {
     queryKey: ['provider-health', serverId],
     queryFn: ({ signal }) => fetchProviderHealth(serverId!, signal),
     enabled: !!serverId,
-    // Browse renders its own failure state, and ErrorBanner deliberately keeps
+    // Browse renders its own failure state, and the Status sheet deliberately keeps
     // the `browse` category out of the global sheet. This query is keyed
     // 'provider-health' though, so categoryForHash files it under 'other' and
     // it raised a global "Something went wrong" anyway — including against a

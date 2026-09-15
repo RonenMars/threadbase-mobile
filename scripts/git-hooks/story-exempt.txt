@@ -8,8 +8,8 @@ components/ui/ToastViewport.tsx
 components/terminal/TerminalRawModeToast.tsx
 # @gorhom/bottom-sheet composition — native-only primitive, matches the
 # documented "don't story ... the bottom sheet" exclusion (docs/storybook.md).
-components/ui/ErrorRecoverySheet.tsx
+components/alerts/StatusSheet.tsx
 # Screen-sized list composition over stores, router and the quick-access sheet — the pieces (cards, rows, eyebrow) have stories.
 components/sessions/now/NowList.tsx
-# Store-driven host: announcements plus ErrorBanner; no chrome of its own.
+# Store-driven host: announcements plus StatusSheet; no chrome of its own.
 components/alerts/AlertHost.tsx
