@@ -5,6 +5,11 @@ export interface DisplayTitleInput {
   customName?: string | null
   /** Raw first user message text (or the server's session_name, which is usually that same text). */
   firstMessage?: string | null
+  /**
+   * Later user turns. Tried only when message one is a dump / envelope with no
+   * leftover instruction — a greeting still falls through to assistant / identity.
+   */
+  laterUserMessages?: readonly string[] | null
   /** First assistant message text, for the fallback chain and the subtitle. */
   firstAssistantMessage?: string | null
   projectName?: string | null
@@ -56,6 +61,17 @@ const ABSOLUTE_PATH = /(?<![\w:/<])\/(?:[\w.@+~-]+\/)*([\w.@+~-]+)\/?/g
 const BARE_PATH = /^\/?[\w.@+~-]+(?:\/[\w.@+~-]+)+\/?$/
 const HEX_ID = /^[0-9a-f]{7,}$/i
 const NON_ALNUM = /[^\p{L}\p{N}]/gu
+const IMPORT_LINE =
+  /^(?:import(?:\s+type)?\s+.+\sfrom\s+['"][^'"]+['"];?|import\s+['"][^'"]+['"];?|export\s+default\b.*|export\s+(?:type\s+)?\{.*|export\s+\*\s+from\s+['"][^'"]+['"];?|export\s+(?:async\s+)?(?:function|class|const|let|var|type|interface|enum)\b.*)$/gm
+const IMPORT_OPEN = /^(?:import(?:\s+type)?|export(?:\s+type)?)\s*\{?\s*$/gm
+const FROM_CLAUSE = /^\}?\s*from\s+['"][^'"]+['"];?\s*$/gm
+const DESTRUCTURE_MEMBER = /^[A-Za-z_$][\w$]*(?:\s+as\s+[A-Za-z_$][\w$]*)?\s*,?\s*$/gm
+const STACK_FRAME = /^\s*at\s+.+$/gm
+const ERROR_LINE = /^(?:[A-Za-z]*Error|Error):.+$/gm
+const USE_DIRECTIVE = /^['"]use (?:client|server|strict)['"];?\s*$/gm
+const ENVELOPE_OPEN = /<(?:user_action|action|bash-input|context|system-reminder|INSTRUCTIONS|permissions instructions|environment_context)\b/i
+const CODE_LINE =
+  /^(?:return|const|let|var|function|type|interface|enum|class|if|for|while|switch|await|async|throw|try|catch|finally|else|case|default|new)\b|^(?:this\.|module\.|require\()|^[{}();[\],]+$|^(?:<\/?[A-Z][\w.]*|<[a-z][\w-]*[\s/>])/
 
 const BRACKET_PAIRS: Record<string, string> = { '{': '}', '[': ']' }
 
@@ -175,26 +191,102 @@ function extractEnvelopeInstruction(raw: string): string {
   return collapseWhitespace(closed[1].replace(/<[^>]+>/g, ' '))
 }
 
+function hasMatch(raw: string, re: RegExp): boolean {
+  re.lastIndex = 0
+  const found = re.test(raw)
+  re.lastIndex = 0
+  return found
+}
+
+/** True when message one is a paste, stack trace, fenced dump, or tool envelope. */
+function looksLikeDump(raw: string): boolean {
+  if (!raw.trim()) return false
+  if (ENVELOPE_OPEN.test(raw) || raw.includes('```')) return true
+  return (
+    hasMatch(raw, IMPORT_LINE) ||
+    hasMatch(raw, IMPORT_OPEN) ||
+    hasMatch(raw, FROM_CLAUSE) ||
+    hasMatch(raw, STACK_FRAME)
+  )
+}
+
+function looksLikeCode(line: string): boolean {
+  return CODE_LINE.test(line)
+}
+
+/**
+ * After the dump bodies are gone, keep the leftover prose — "fix this crash"
+ * after a stack trace, or the instruction under a pasted `_layout.tsx`.
+ */
+function extractDumpInstruction(raw: string): string {
+  const leftover = raw
+    .replace(HEADING_MARKS, '')
+    .replace(FENCED_CODE, '\n')
+    .replace(IMAGE_TAG, ' ')
+    .replace(IMAGE_PLACEHOLDER, ' ')
+    .replace(INJECTED_TAG, '\n')
+    .replace(IMPORT_LINE, '\n')
+    .replace(IMPORT_OPEN, '\n')
+    .replace(FROM_CLAUSE, '\n')
+    .replace(DESTRUCTURE_MEMBER, '\n')
+    .replace(STACK_FRAME, '\n')
+    .replace(ERROR_LINE, '\n')
+    .replace(USE_DIRECTIVE, '\n')
+  const prose = leftover
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !looksLikeCode(line))
+    .join(' ')
+  return collapseWhitespace(prose.replace(/<[^>]+>/g, ' '))
+}
+
 function sentenceCase(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+function rungFromInstruction(instruction: string): Pick<DisplayTitle, 'title' | 'source'> | null {
+  if (!instruction) return null
+  if (!isRejectedTitle(sentenceCase(instruction))) {
+    return { title: sentenceCase(instruction), source: 'message' }
+  }
+  if (!isNoise(instruction)) return { title: instruction, source: 'command' }
+  return null
+}
+
+/** Resolve one raw turn without walking to a later one. */
+function titleFromRaw(raw: string): Pick<DisplayTitle, 'title' | 'source'> | null {
+  if (looksLikeDump(raw)) {
+    const instruction = extractEnvelopeInstruction(raw) || extractDumpInstruction(raw)
+    const fromDump = rungFromInstruction(instruction)
+    if (fromDump) return fromDump
+    return null
+  }
+
+  const cleaned = cleanFirstMessage(raw)
+  if (!isRejectedTitle(cleaned)) return { title: cleaned, source: 'message' }
+
+  const fromEnvelope = rungFromInstruction(extractEnvelopeInstruction(raw))
+  if (fromEnvelope) return fromEnvelope
+
+  // The work itself: a session that only ran a command is its command, shown
+  // as typed rather than sentence-cased.
+  if (!isNoise(cleaned)) return { title: stripMessageNoise(raw), source: 'command' }
+  return null
 }
 
 function resolveTitle(input: DisplayTitleInput): Pick<DisplayTitle, 'title' | 'source'> {
   const customName = input.customName?.trim()
   if (customName) return { title: customName, source: 'rename' }
 
-  const cleaned = cleanFirstMessage(input.firstMessage ?? '')
-  if (!isRejectedTitle(cleaned)) return { title: cleaned, source: 'message' }
+  const first = titleFromRaw(input.firstMessage ?? '')
+  if (first) return first
 
-  const instruction = extractEnvelopeInstruction(input.firstMessage ?? '')
-  if (instruction && !isRejectedTitle(sentenceCase(instruction))) {
-    return { title: sentenceCase(instruction), source: 'message' }
+  if (looksLikeDump(input.firstMessage ?? '')) {
+    for (const later of input.laterUserMessages ?? []) {
+      const next = titleFromRaw(later)
+      if (next) return next
+    }
   }
-  if (instruction && !isNoise(instruction)) return { title: instruction, source: 'command' }
-
-  // The work itself: a session that only ran a command is its command, shown
-  // as typed rather than sentence-cased.
-  if (!isNoise(cleaned)) return { title: stripMessageNoise(input.firstMessage ?? ''), source: 'command' }
 
   const assistant = firstSentence(input.firstAssistantMessage ?? '')
   if (assistant) return { title: assistant, source: 'assistant' }
