@@ -27,6 +27,15 @@ export function getStatusPillCaption(
   }
 }
 
+export function formatMinutesAgo(
+  raisedAt: number,
+  t: TFunction,
+  now: number = Date.now(),
+): string {
+  const minutes = Math.max(1, Math.round((now - raisedAt) / 60_000))
+  return t('alert.inline.loadedAgo', { count: minutes })
+}
+
 export function getStatusSummary(
   errorCount: number,
   warningCount: number,

@@ -24,3 +24,16 @@ export const Collapsible: Story = {
 export const Refreshing: Story = {
   args: { serverId: 'srv-1', serverLabel: 'MacBook Pro', totalCount: 319, isRefreshing: true },
 }
+
+export const Failed: Story = {
+  args: {
+    serverId: 'srv-1',
+    serverLabel: 'studio-linux',
+    totalCount: 6,
+    collapsible: true,
+    isExpanded: true,
+    failed: true,
+    onRetry: () => {},
+    onDetails: () => {},
+  },
+}
