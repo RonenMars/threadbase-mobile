@@ -31,7 +31,7 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import {
   CLAUDE_CODE_PROVIDER,
   CODEX_CLI_PROVIDER,
-  CURSOR_CLI_PROVIDER,
+  CURSOR_PROVIDER,
   PROVIDER_NAMES,
   type ProviderName,
 } from '@/constants/providers'
@@ -527,7 +527,7 @@ export default function BrowseScreen() {
             : ([
             { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: brand.claude },
             { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: brand.codex },
-            { value: CURSOR_CLI_PROVIDER, label: t('sessions:provider.cursor'), color: brand.cursor },
+            { value: CURSOR_PROVIDER, label: t('sessions:provider.cursor'), color: brand.cursor },
           ]).map((option) => {
             const selected = selectedProvider === option.value
             const health = findProviderHealth(providerHealth?.providers, option.value)

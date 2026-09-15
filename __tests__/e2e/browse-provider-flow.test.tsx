@@ -126,16 +126,16 @@ describe('BrowseScreen e2e provider flow', () => {
     expect(target).toContain('provider=codex-cli')
   })
 
-  it('sends cursor-cli when Cursor is selected', async () => {
+  it('sends cursor when Cursor is selected', async () => {
     const { getByTestId, getByText } = await renderScreen()
 
-    await fireEvent.press(getByTestId('start-provider-cursor-cli'))
+    await fireEvent.press(getByTestId('start-provider-cursor'))
     await fireEvent.press(getByText('Start Session Here'))
 
     await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
     const target = mockPush.mock.calls[0][0] as string
     expect(target).toContain('/session/new?')
-    expect(target).toContain('provider=cursor-cli')
+    expect(target).toContain('provider=cursor')
   })
 
   // `available === false` cannot express "we do not know yet": an undefined
@@ -152,10 +152,10 @@ describe('BrowseScreen e2e provider flow', () => {
 
       expect(getByTestId('start-provider-skeleton-claude-code')).toBeTruthy()
       expect(getByTestId('start-provider-skeleton-codex-cli')).toBeTruthy()
-      expect(getByTestId('start-provider-skeleton-cursor-cli')).toBeTruthy()
+      expect(getByTestId('start-provider-skeleton-cursor')).toBeTruthy()
       expect(queryByTestId('start-provider-claude-code')).toBeNull()
       expect(queryByTestId('start-provider-codex-cli')).toBeNull()
-      expect(queryByTestId('start-provider-cursor-cli')).toBeNull()
+      expect(queryByTestId('start-provider-cursor')).toBeNull()
     })
   })
 
@@ -183,7 +183,7 @@ describe('BrowseScreen e2e provider flow', () => {
     const { getByTestId, queryByTestId } = await renderScreen()
 
     expect(queryByTestId('start-provider-skeleton-codex-cli')).toBeNull()
-    expect(queryByTestId('start-provider-skeleton-cursor-cli')).toBeNull()
+    expect(queryByTestId('start-provider-skeleton-cursor')).toBeNull()
     expect(getByTestId('start-provider-codex-cli').props.accessibilityState.disabled).toBe(false)
   })
 
