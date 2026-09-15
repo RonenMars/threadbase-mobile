@@ -18,6 +18,7 @@ import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import { ArrowUUpLeft, CopySimple, InfoIcon, PencilSimple, Sparkle, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
+import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
 import { deriveSessionPresentation, sessionOpensAsHistory } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
@@ -26,7 +27,6 @@ import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { isTerminalSession } from '@/utils/terminalSession'
-import { providerLabelKey } from '@/constants/providers'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
@@ -1053,9 +1053,9 @@ export default function SessionDetailScreen() {
           <View style={styles.statusBar}>
             <SessionStatusBadge session={session} isRefetching={false} />
             {session.provider ? (
-              <Text style={styles.metaChip} testID="session-provider-chip">
-                {t(`sessions:provider.${providerLabelKey(session.provider)}`)}
-              </Text>
+              <View testID="session-provider-chip">
+                <ProviderMark provider={session.provider} variant="color" />
+              </View>
             ) : null}
             {capabilityLabel ? (
               <Text style={styles.metaChip} testID="session-capability-chip">

@@ -20,3 +20,7 @@ type Story = StoryObj<typeof FAB>
 export const NewSession: Story = {
   args: { onPress: () => {} },
 }
+
+export const Hidden: Story = {
+  args: { onPress: () => {}, hidden: true },
+}
