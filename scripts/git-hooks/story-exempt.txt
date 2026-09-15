@@ -4,8 +4,6 @@
 
 # Store-driven host: renders nothing of its own, the visual is Toast (see Toast.stories.tsx).
 components/ui/ToastViewport.tsx
-# Emits an AlertSpec into the toast store and renders null — no UI to story.
-components/terminal/TerminalRawModeToast.tsx
 # @gorhom/bottom-sheet composition — native-only primitive, matches the
 # documented "don't story ... the bottom sheet" exclusion (docs/storybook.md).
 components/alerts/StatusSheet.tsx
@@ -13,3 +11,5 @@ components/alerts/StatusSheet.tsx
 components/sessions/now/NowList.tsx
 # Store-driven host: announcements, CriticalDialog, and StatusSheet.
 components/alerts/AlertHost.tsx
+# Store-driven producer: warning lives on the status pill and Status sheet.
+components/servers/HostPressureBanner.tsx
