@@ -6,7 +6,6 @@
     "back": "חזרה",
     "close": "סגירה",
     "retry": "נסה שוב",
-    "retryAll": "נסה הכול שוב",
     "apply": "החל",
     "openSettings": "פתח הגדרות",
     "settings": "הגדרות",
@@ -24,6 +23,18 @@
       "issues_one": "בעיה אחת",
       "issues_two": "{{count}} בעיות",
       "issues_other": "{{count}} בעיות"
+    },
+    "status": {
+      "title": "סטטוס",
+      "summaryBoth": "{{errors}} · {{warnings}}",
+      "errorCount_one": "שגיאה אחת",
+      "errorCount_two": "{{count}} שגיאות",
+      "errorCount_other": "{{count}} שגיאות",
+      "warningCount_one": "אזהרה אחת",
+      "warningCount_two": "{{count}} אזהרות",
+      "warningCount_other": "{{count}} אזהרות",
+      "retryEverything": "נסה הכול שוב",
+      "technicalDetails": "פרטים טכניים"
     }
   },
   "error": {
@@ -87,17 +98,13 @@
     "titleMessages": "טעינת ההודעות נכשלה",
     "titleSessionDetail": "טעינת פרטי הסשן נכשלה",
     "titleOther": "משהו השתבש",
-    "listTitle": "חלק מהבקשות נכשלו",
     "messageSessions": "הסשנים סירבו להיטען. שווה לנסות שוב.",
     "messageConversations": "ההיסטוריה לא הגיעה. ניסיון נוסף בדרך כלל פותר זאת.",
     "messageMessages": "ההודעות נתקעו. הקישו \"נסה שוב\" כדי לנסות שנית.",
     "messageSessionDetail": "פרטי הסשן לא הגיעו. ניסיון נוסף בדרך כלל פותר זאת.",
     "messageOther": "משהו השתבש אצלנו. נסו שוב או סגרו והמשיכו.",
-    "messageConnection": "לא ניתן להגיע אל {{label}}",
+    "messageConnection": "שום דבר לא נטען מהשרת הזה. הסשנים למטה עלולים להיות לא מעודכנים.",
     "retrying": "מנסה שוב…",
-    "retryAllRetrying_one": "מנסה שוב בקשה אחת…",
-    "retryAllRetrying_two": "מנסה שוב {{count}} בקשות…",
-    "retryAllRetrying_other": "מנסה שוב {{count}} בקשות…",
     "codeLabel": "קוד שגיאה",
     "rawLabel": "שגיאה מקורית"
   },
