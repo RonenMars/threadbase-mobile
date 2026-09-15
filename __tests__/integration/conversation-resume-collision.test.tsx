@@ -145,47 +145,37 @@ describe('conversation detail — resume collision', () => {
   }
 
   it('a 409 shows the confirm dialog and does NOT resume', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(
       new ConversationBusyError('busy', { detectedBy: ['jsonl_mtime'], likelyOwner: 'external' }),
     )
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    await waitFor(() => root.getByTestId('resume-collision-dialog'))
     // One preflight POST, no force on it.
     expect(mockPost).toHaveBeenCalledTimes(1)
     expect(mockPost.mock.calls[0][1]).toEqual({ sessionId: CONV_ID })
     // Did NOT proceed to the live session.
     expect(mockReplace).not.toHaveBeenCalled()
-
-    alertSpy.mockRestore()
   })
 
   it('confirming the dialog retries with force: true and proceeds', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost
       .mockRejectedValueOnce(
         new ConversationBusyError('busy', { detectedBy: ['process_argv'], likelyOwner: 'external' }),
       )
       .mockResolvedValueOnce(mockResumeResponse('sess-forced'))
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-
-    // Invoke the confirm button specifically — the dialog can also carry a
-    // destructive "Take over" option, so match on the absence of a style rather
-    // than "not cancel".
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    const confirm = buttons.find((b) => b.style === undefined)
+    await waitFor(() => root.getByTestId('resume-collision-confirm'))
     await act(async () => {
-      confirm?.onPress?.()
+      fireEvent.press(root.getByTestId('resume-collision-confirm'))
     })
 
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2))
@@ -194,8 +184,6 @@ describe('conversation detail — resume collision', () => {
     const target = mockReplace.mock.calls[0][0] as string
     expect(target).toContain('/session/sess-forced')
     expect(target).toContain('resumedFromConversationId=' + CONV_ID)
-
-    alertSpy.mockRestore()
   })
 
   it('a normal 200 resume proceeds with no dialog', async () => {
@@ -266,61 +254,48 @@ describe('conversation detail — resume collision', () => {
   // waits before spawning), offered at the moment of conflict instead of being
   // the primary button on a screen the user lands on by tapping a session.
   it('offers "Take over" only when a real process was matched (likelyOwner external)', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(
       new ConversationBusyError('busy', { detectedBy: ['process_argv'], likelyOwner: 'external' }),
     )
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    expect(buttons.some((b) => b.style === 'destructive')).toBe(true)
-
-    alertSpy.mockRestore()
+    await waitFor(() => root.getByTestId('resume-collision-take-over'))
   })
 
   it('omits "Take over" when only an mtime hit was seen (nothing to adopt)', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(
       new ConversationBusyError('busy', { detectedBy: ['jsonl_mtime'], likelyOwner: 'unknown' }),
     )
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    expect(buttons.some((b) => b.style === 'destructive')).toBe(false)
-    // Cancel + "Resume anyway" only.
-    expect(buttons).toHaveLength(2)
-
-    alertSpy.mockRestore()
+    await waitFor(() => root.getByTestId('resume-collision-dialog'))
+    expect(root.queryByTestId('resume-collision-take-over')).toBeNull()
+    root.getByTestId('resume-collision-cancel')
+    root.getByTestId('resume-collision-confirm')
   })
 
   it('pressing "Take over" adopts the session instead of force-resuming', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost
       .mockRejectedValueOnce(
         new ConversationBusyError('busy', { detectedBy: ['process_argv'], likelyOwner: 'external' }),
       )
       .mockResolvedValueOnce({ sessionId: 'sess-adopted' })
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    const takeOver = buttons.find((b) => b.style === 'destructive')
+    await waitFor(() => root.getByTestId('resume-collision-take-over'))
     await act(async () => {
-      takeOver?.onPress?.()
+      fireEvent.press(root.getByTestId('resume-collision-take-over'))
     })
 
     // Hits the adopt endpoint — never a forced resume (which would leave two
@@ -331,8 +306,6 @@ describe('conversation detail — resume collision', () => {
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
     expect(mockReplace.mock.calls[0][0] as string).toContain('/session/sess-adopted')
-
-    alertSpy.mockRestore()
   })
 
   // The recovery affordance ported from the now-deleted /session/new resume
@@ -375,20 +348,17 @@ describe('conversation detail — resume collision', () => {
       .mockRejectedValueOnce(new Error('boom'))
       .mockResolvedValueOnce(mockResumeResponse('sess-force-retried'))
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-
-    const collisionButtons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    const confirm = collisionButtons.find((b) => b.style === undefined)
+    await waitFor(() => root.getByTestId('resume-collision-confirm'))
     await act(async () => {
-      confirm?.onPress?.()
+      fireEvent.press(root.getByTestId('resume-collision-confirm'))
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
-    const failureButtons = (alertSpy.mock.calls[1][2] ?? []) as AlertButton[]
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    const failureButtons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
     const retry = failureButtons.find((b) => b.text === 'Retry')
     await act(async () => {
       retry?.onPress?.()
@@ -422,26 +392,24 @@ describe('conversation detail — resume collision', () => {
   }
 
   it('a Codex active-writer 409 stays put and offers only Cancel + Fork', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(codexBusy())
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
+    await waitFor(() => root.getByTestId('resume-collision-dialog'))
     // Never lands on /session/:id?starting=1 for a session that cannot start.
     expect(mockReplace).not.toHaveBeenCalled()
     expect(mockPost).toHaveBeenCalledTimes(1)
 
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Fork into Threadbase'])
+    root.getByTestId('resume-collision-cancel')
+    root.getByTestId('resume-collision-fork')
+    root.getByText('Fork into Threadbase')
     // canForce:false and canTakeOver:false win over likelyOwner 'external'.
-    expect(buttons.some((b) => b.text === 'Resume anyway')).toBe(false)
-    expect(buttons.some((b) => b.style === 'destructive')).toBe(false)
-
-    alertSpy.mockRestore()
+    expect(root.queryByTestId('resume-collision-confirm')).toBeNull()
+    expect(root.queryByTestId('resume-collision-take-over')).toBeNull()
   })
 
   // The Codex copy states the lock rather than the detection signal. Folding a
@@ -449,70 +417,58 @@ describe('conversation detail — resume collision', () => {
   // Codex client currently has it open") and, on an empty `detectedBy`,
   // contradicted it ("has" vs "may still be using").
   it('states the Codex lock without restating it as a detection reason', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(codexBusy())
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    const message = alertSpy.mock.calls[0][1] as string
-    expect(alertSpy.mock.calls[0][0]).toBe('This Codex session is open elsewhere')
-    expect(message).toContain('Codex lets only one app write to a conversation at a time')
-    expect(message).not.toContain('currently has it open')
-    expect(message).not.toContain('may still be using it')
+    await waitFor(() => root.getByText('This Codex session is open elsewhere'))
+    const message = root.getByText(/Codex lets only one app write to a conversation at a time/)
+    expect(message.props.children).not.toContain('currently has it open')
+    expect(root.queryByText(/may still be using it/)).toBeNull()
     // Fork is confirmed here, so the paragraph names that button and its cost.
-    expect(message).toContain('Fork into Threadbase leaves the other session running')
+    root.getByText(/Fork into Threadbase leaves the other session running/)
     // No take-over button on offer, so no take-over paragraph.
-    expect(message).not.toContain('Take over closes that session')
-
-    alertSpy.mockRestore()
+    expect(root.queryByText(/Take over closes that session/)).toBeNull()
   })
 
   it('names the owner and explains take-over when the server allows it', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(codexBusy({ canTakeOver: true }))
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    const message = alertSpy.mock.calls[0][1] as string
-    expect(message).toContain('a Codex session on your computer is holding this one')
-    // Every paragraph names a button that is actually on the dialog, in button order.
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Take over', 'Fork into Threadbase'])
+    await waitFor(() => root.getByTestId('resume-collision-dialog'))
+    const message = String(root.getByText(/a Codex session on your computer is holding this one/).props.children)
+    root.getByTestId('resume-collision-cancel')
+    root.getByTestId('resume-collision-take-over')
+    root.getByTestId('resume-collision-fork')
+    expect(root.queryByTestId('resume-collision-confirm')).toBeNull()
     expect(message.indexOf('Take over closes that session')).toBeGreaterThan(
       message.indexOf('a Codex session on your computer'),
     )
     expect(message.indexOf('Fork into Threadbase leaves')).toBeGreaterThan(
       message.indexOf('Take over closes that session'),
     )
-
-    alertSpy.mockRestore()
   })
 
   // The `reason.*` labels still carry the non-Codex path, where the collision is
   // a guess rather than a lock.
   it('an unknown future signal still renders readable fallback copy', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(
       new ConversationBusyError('busy', { detectedBy: ['lock_file_v2'], likelyOwner: 'unknown' }),
     )
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    expect(alertSpy.mock.calls[0][1]).toContain('another program may still be using it')
-
-    alertSpy.mockRestore()
+    await waitFor(() => root.getByText(/another program may still be using it/))
   })
 
   it('Fork forks and navigates from the collision dialog alone', async () => {
@@ -528,22 +484,18 @@ describe('conversation detail — resume collision', () => {
       ptyAttached: true,
     })
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-
-    const fork = ((alertSpy.mock.calls[0][2] ?? []) as AlertButton[]).find(
-      (b) => b.text === 'Fork into Threadbase',
-    )
+    await waitFor(() => root.getByTestId('resume-collision-fork'))
     await act(async () => {
-      fork?.onPress?.()
+      fireEvent.press(root.getByTestId('resume-collision-fork'))
     })
 
     // One press, one fork: no second confirmation dialog to press through.
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2))
-    expect(alertSpy).toHaveBeenCalledTimes(1)
+    expect(alertSpy).not.toHaveBeenCalled()
     expect(mockPost.mock.calls[1][0]).toBe(`/api/sessions/${CONV_ID}/fork`)
     // Non-idempotent: a transport-level retry could spawn a second fork.
     expect(mockPost.mock.calls[1][2]).toMatchObject({ retry: false })
@@ -566,23 +518,19 @@ describe('conversation detail — resume collision', () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValueOnce(codexBusy()).mockRejectedValueOnce(new Error('timed out'))
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-
-    const fork = ((alertSpy.mock.calls[0][2] ?? []) as AlertButton[]).find(
-      (b) => b.text === 'Fork into Threadbase',
-    )
+    await waitFor(() => root.getByTestId('resume-collision-fork'))
     await act(async () => {
-      fork?.onPress?.()
+      fireEvent.press(root.getByTestId('resume-collision-fork'))
     })
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
     // Exactly one fork POST, and no Retry affordance that could make a second
     // fork out of a request that may have succeeded server-side.
     expect(mockPost.mock.calls.filter(([path]) => String(path).endsWith('/fork'))).toHaveLength(1)
-    const buttons = (alertSpy.mock.calls[1][2] ?? []) as AlertButton[]
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
     expect(buttons.some((b) => b.text === 'Retry')).toBe(false)
     expect(mockReplace).not.toHaveBeenCalled()
 
@@ -590,50 +538,44 @@ describe('conversation detail — resume collision', () => {
   })
 
   it('a legacy CONVERSATION_BUSY body keeps the Claude flow and offers no Fork', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(
       new ConversationBusyError('busy', { detectedBy: ['process_argv'], likelyOwner: 'external' }),
     )
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    expect(alertSpy.mock.calls[0][0]).toBe('Resume this conversation?')
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Take over', 'Resume anyway'])
+    await waitFor(() => root.getByText('Resume this conversation?'))
+    root.getByTestId('resume-collision-cancel')
+    root.getByTestId('resume-collision-take-over')
+    root.getByTestId('resume-collision-confirm')
+    expect(root.queryByTestId('resume-collision-fork')).toBeNull()
     // Every action but Cancel explains itself, in button order.
-    const message = alertSpy.mock.calls[0][1] as string
-    expect(message.indexOf('Take over closes that session')).toBeGreaterThan(0)
+    const message = String(root.getByText(/Take over closes that session/).props.children)
     expect(message.indexOf('Resume anyway continues the conversation here')).toBeGreaterThan(
       message.indexOf('Take over closes that session'),
     )
-
-    alertSpy.mockRestore()
   })
 
   it('explains "Resume anyway" when it is the only action offered', async () => {
-    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     mockPost.mockRejectedValue(
       new ConversationBusyError('busy', { detectedBy: [], likelyOwner: 'unknown' }),
     )
 
-    const { btn } = await renderAndFindResume()
+    const { root, btn } = await renderAndFindResume()
     await act(async () => {
       fireEvent.press(btn)
     })
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Resume anyway'])
-    const message = alertSpy.mock.calls[0][1] as string
-    expect(message).toContain('both will be writing to the same history')
-    // No take-over or fork button, so neither paragraph appears.
-    expect(message).not.toContain('Take over closes that session')
-    expect(message).not.toContain('Fork into Threadbase leaves')
-
-    alertSpy.mockRestore()
+    await waitFor(() => root.getByTestId('resume-collision-dialog'))
+    root.getByTestId('resume-collision-cancel')
+    root.getByTestId('resume-collision-confirm')
+    expect(root.queryByTestId('resume-collision-take-over')).toBeNull()
+    expect(root.queryByTestId('resume-collision-fork')).toBeNull()
+    root.getByText(/both will be writing to the same history/)
+    expect(root.queryByText(/Take over closes that session/)).toBeNull()
+    expect(root.queryByText(/Fork into Threadbase leaves/)).toBeNull()
   })
 })
