@@ -38,5 +38,5 @@ export const CodexColor: Story = {
 }
 
 export const CursorColor: Story = {
-  args: { provider: 'cursor-cli', variant: 'color' },
+  args: { provider: 'cursor', variant: 'color' },
 }
