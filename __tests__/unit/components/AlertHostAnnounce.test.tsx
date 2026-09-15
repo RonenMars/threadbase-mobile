@@ -99,4 +99,18 @@ describe('AlertHost announcements', () => {
     })
     expect(announce).toHaveBeenCalledWith('Error. Messages failed to load')
   })
+
+  it('announces a blocking auth failure as critical', async () => {
+    await renderWithI18n(<AlertHost />)
+    announce.mockClear()
+    await act(async () => {
+      useLoadingStateStore.setState({
+        errors: [{ id: 'sessions', category: 'sessions', status: 401, message: 'expired' }],
+      })
+    })
+
+    await waitFor(() => {
+      expect(announce).toHaveBeenCalledWith('Critical. Your session has expired')
+    })
+  })
 })

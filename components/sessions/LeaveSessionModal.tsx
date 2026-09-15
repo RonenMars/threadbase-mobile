@@ -1,22 +1,15 @@
 import React, { useState } from 'react'
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { CircleIcon, RadioButtonIcon, SquareIcon, CheckSquareIcon } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { CriticalDialog, type CriticalAction } from '@/components/alerts/CriticalDialog'
+import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { AppliedSessionLeaveAction } from '@/lib/sessionLeavePolicy'
 import { DEFAULT_LEAVE_MODAL_CHOICE } from '@/lib/sessionLeavePolicy'
 import type { SessionLeavePhase } from '@/hooks/useSessionLeaveGuard'
-import { blockTextDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 const OPTIONS: AppliedSessionLeaveAction[] = ['kill', 'leave', 'kill_on_idle']
 
@@ -68,115 +61,87 @@ export function LeaveSessionModal({
   onDismissError,
   onModalDismiss,
 }: Props) {
+  const theme = useTheme()
+  const styles = makeStyles(theme)
+  const { direction } = useAppDirection()
+  const optionTextStyle = textDirectionStyle(direction)
+  const { t } = useTranslation(['terminal', 'common'])
   const showOptions = visible && phase === 'idle'
   const showPending = phase === 'pending'
   const showError = phase === 'error'
-  return (
-    <Modal
-      visible={showOptions || showPending || showError}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onCancel}
-      onDismiss={onModalDismiss}
-    >
-      {showOptions ? <LeaveSessionForm onCancel={onCancel} onConfirm={onConfirm} /> : null}
-      {showPending ? <LeaveSessionStatusCard kind="pending" /> : null}
-      {showError ? <LeaveSessionStatusCard kind="error" onDismiss={onDismissError} /> : null}
-    </Modal>
-  )
-}
-
-function LeaveSessionStatusCard({
-  kind,
-  onDismiss,
-}: {
-  kind: 'pending' | 'error'
-  onDismiss?: () => void
-}) {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
-  const directionStyle = useDirectionStyle()
-  const { direction } = useAppDirection()
-  const copyStyle = blockTextDirectionStyle(direction)
-  const optionTextStyle = textDirectionStyle(direction)
-  const { t } = useTranslation(['terminal', 'common'])
-
-  return (
-    <View style={[styles.overlay, directionStyle]}>
-      <View
-        style={styles.card}
-        accessibilityRole="alert"
-        accessibilityViewIsModal
-        testID={kind === 'pending' ? 'leave-session-pending' : 'leave-session-error'}
-      >
-        {kind === 'pending' ? (
-          <View style={styles.statusRow}>
-            <ActivityIndicator color={theme.text.accent} />
-            <Text style={[styles.body, copyStyle]}>{t('terminal:leaveSession.pending')}</Text>
-          </View>
-        ) : (
-          <>
-            <Text style={[styles.body, copyStyle]}>{t('terminal:leaveSession.error')}</Text>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={onDismiss}
-              testID="leave-session-error-ok"
-              accessibilityRole="button"
-              accessibilityLabel={t('common:button.confirm')}
-            >
-              <Text style={[styles.confirmLabel, optionTextStyle]}>{t('common:button.confirm')}</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </View>
-  )
-}
-
-function LeaveSessionForm({
-  onCancel,
-  onConfirm,
-}: Pick<Props, 'onCancel' | 'onConfirm'>) {
-  const theme = useTheme()
-  const styles = makeStyles(theme)
-  const directionStyle = useDirectionStyle()
-  const { direction } = useAppDirection()
-  const copyStyle = blockTextDirectionStyle(direction)
-  const optionTextStyle = textDirectionStyle(direction)
-  const { t } = useTranslation(['terminal', 'common'])
+  const open = showOptions || showPending || showError
   const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
   const [remember, setRemember] = useState(false)
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setChoice(DEFAULT_LEAVE_MODAL_CHOICE)
+      setRemember(false)
+    }
+  }
+
+  const message = showPending
+    ? t('terminal:leaveSession.pending')
+    : showError
+      ? t('terminal:leaveSession.error')
+      : t('terminal:leaveSession.body')
+
+  const testID = showPending
+    ? 'leave-session-pending'
+    : showError
+      ? 'leave-session-error'
+      : 'leave-session-modal'
+
+  const actions: CriticalAction[] = showError
+    ? [{
+        label: t('common:button.confirm'),
+        onPress: onDismissError,
+        testID: 'leave-session-error-ok',
+      }]
+    : showOptions
+      ? [
+          {
+            label: t('common:button.cancel'),
+            onPress: onCancel,
+            variant: 'secondary',
+            testID: 'leave-session-cancel',
+          },
+          {
+            label: t('common:button.confirm'),
+            onPress: () => onConfirm(choice, remember),
+            testID: 'leave-session-confirm',
+          },
+        ]
+      : []
 
   return (
-      <View style={[styles.overlay, directionStyle]}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={onCancel}
-          accessibilityLabel={t('common:button.cancel')}
-        />
-        <View
-          style={styles.card}
-          accessibilityRole="alert"
-          accessibilityViewIsModal
-          testID="leave-session-modal"
-        >
-          <Text style={[styles.title, copyStyle]}>{t('terminal:leaveSession.title')}</Text>
-          <Text style={[styles.body, copyStyle]}>{t('terminal:leaveSession.body')}</Text>
-
+    <CriticalDialog
+      visible={open}
+      title={t('terminal:leaveSession.title')}
+      message={message}
+      busy={showPending}
+      dismissable={!showPending}
+      onRequestClose={showError ? onDismissError : onCancel}
+      onDismiss={onModalDismiss}
+      testID={testID}
+      actions={actions}
+    >
+      {showOptions ? (
+        <>
           <View accessibilityRole="radiogroup" style={styles.options}>
             {OPTIONS.map((id) => {
-              const selected = choice === id
+              const checked = choice === id
               return (
                 <TouchableOpacity
                   key={id}
                   style={styles.option}
                   onPress={() => setChoice(id)}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected }}
+                  accessibilityState={{ checked }}
                   testID={`leave-session-option-${id}`}
                 >
-                  {selected ? (
+                  {checked ? (
                     <RadioButtonIcon size={22} color={theme.text.accent} weight="fill" />
                   ) : (
                     <CircleIcon size={22} color={theme.text.secondary} />
@@ -204,65 +169,14 @@ function LeaveSessionForm({
             )}
             <Text style={[styles.rememberLabel, optionTextStyle]}>{t('terminal:leaveSession.remember')}</Text>
           </TouchableOpacity>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onCancel}
-              testID="leave-session-cancel"
-              accessibilityRole="button"
-              accessibilityLabel={t('common:button.cancel')}
-            >
-              <Text style={[styles.cancelLabel, optionTextStyle]}>{t('common:button.cancel')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.confirmButton}
-              onPress={() => onConfirm(choice, remember)}
-              testID="leave-session-confirm"
-              accessibilityRole="button"
-              accessibilityLabel={t('common:button.confirm')}
-            >
-              <Text style={[styles.confirmLabel, optionTextStyle]}>{t('common:button.confirm')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+        </>
+      ) : null}
+    </CriticalDialog>
   )
 }
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.6)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: spacing.xl,
-    },
-    card: {
-      width: '100%',
-      backgroundColor: theme.bg.card,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: theme.border,
-      padding: spacing.xl,
-      gap: spacing.md,
-    },
-    title: {
-      color: theme.text.primary,
-      fontSize: font.lg,
-      fontWeight: '600',
-    },
-    body: {
-      color: theme.text.secondary,
-      fontSize: font.sm,
-      lineHeight: 20,
-    },
-    statusRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
     options: {
       gap: spacing.sm,
     },
@@ -297,38 +211,6 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.sm,
       flex: 1,
-    },
-    buttonRow: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-      marginTop: spacing.xs,
-    },
-    cancelButton: {
-      flex: 1,
-      minHeight: 44,
-      borderRadius: radius.md,
-      borderWidth: 1,
-      borderColor: theme.border,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    cancelLabel: {
-      color: theme.text.primary,
-      fontSize: font.base,
-      fontWeight: '600',
-    },
-    confirmButton: {
-      flex: 1,
-      minHeight: 44,
-      borderRadius: radius.md,
-      backgroundColor: theme.text.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    confirmLabel: {
-      color: theme.text.onAccent,
-      fontSize: font.base,
-      fontWeight: '700',
     },
   })
 }

@@ -41,6 +41,7 @@ export type CredentialKind = 'device' | 'shared'
 export class AuthError extends Error {
   readonly credential: CredentialKind
   readonly path: string
+  readonly status = 401
 
   constructor(credential: CredentialKind, path: string) {
     const route = path.replace(/\?.*$/, '')
