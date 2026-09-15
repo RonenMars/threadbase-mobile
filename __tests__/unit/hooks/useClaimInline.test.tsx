@@ -29,7 +29,6 @@ describe('useClaimInline', () => {
     const cause = serverCause('one')
     useAlertStore.getState().upsert({
       id: 'one',
-      viewport: 'global',
       cause,
       level: 'error',
       title: 'studio-linux',
