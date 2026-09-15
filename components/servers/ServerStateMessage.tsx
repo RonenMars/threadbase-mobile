@@ -13,7 +13,6 @@ type Props = {
   servers: Record<string, ServerConfig>
   fetchStatuses: Record<string, ServerFetchStatusEntry>
   wsConnectedCount: number
-  onViewDetails: () => void
   onRetryFailed: (serverId: string) => void
   isRetrying: boolean
 }
@@ -117,7 +116,6 @@ function classifyServer(
 function toSpec(
   row: ServerRow,
   t: TFunction<'servers'>,
-  onViewDetails: () => void,
   onRetryFailed: (serverId: string) => void,
   isRetrying: boolean,
 ): AlertSpec {
@@ -131,12 +129,11 @@ function toSpec(
   }
   const showAction = row.severity === 'error' || row.severity === 'warning'
   if (!showAction) return base
-  if (isRetrying) return { ...base, message: t('stateMessage.retrying'), onPress: onViewDetails }
+  if (isRetrying) return { ...base, message: t('stateMessage.retrying') }
   return {
     ...base,
     buttonText: t('action.retry'),
     buttonAction: () => onRetryFailed(row.id),
-    onPress: onViewDetails,
   }
 }
 
@@ -145,7 +142,6 @@ export function ServerStateMessage({
   servers,
   fetchStatuses,
   wsConnectedCount,
-  onViewDetails,
   onRetryFailed,
   isRetrying,
 }: Props) {
@@ -175,12 +171,12 @@ export function ServerStateMessage({
     return rows.flatMap((row) => {
       if (row.severity === 'info' && !showInfo) return []
       return [{
-        ...toSpec(row, t, onViewDetails, onRetryFailed, isRetrying),
+        ...toSpec(row, t, onRetryFailed, isRetrying),
         id: `server-state:${row.id}`,
         viewport: VIEWPORT,
       }]
     })
-  }, [rows, showInfo, t, onViewDetails, onRetryFailed, isRetrying])
+  }, [rows, showInfo, t, onRetryFailed, isRetrying])
 
   useAlertListSync(entries)
   return null

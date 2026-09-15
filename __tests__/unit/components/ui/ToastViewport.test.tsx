@@ -79,7 +79,7 @@ describe('ToastViewport', () => {
     expect(queryByTestId('toast-server-state')).toBeNull()
   })
 
-  it('still renders a terminal warning while the home pill is the global surface', async () => {
+  it('does not render a terminal-viewport warning — raw mode is inline now', async () => {
     useAlertStore.getState().upsert({
       ...infoToast,
       level: 'error',
@@ -96,6 +96,6 @@ describe('ToastViewport', () => {
       timeout: null,
     })
     const { queryByTestId } = await renderWithI18n(<ToastViewport id="terminal" />)
-    expect(queryByTestId('toast-terminal-raw')).toBeTruthy()
+    expect(queryByTestId('toast-terminal-raw')).toBeNull()
   })
 })

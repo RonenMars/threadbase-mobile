@@ -4,7 +4,6 @@ import Reanimated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
-import { ToastViewport } from '@/components/ui/ToastViewport'
 import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -186,7 +185,6 @@ export function TerminalView({
 
   return (
     <Reanimated.View style={[styles.container, keyboardInset]}>
-      <ToastViewport id="terminal" />
       <TerminalRawModeToast visible={confidence === 'low'} />
       {conversationId ? (
         <SessionHistoryFeed

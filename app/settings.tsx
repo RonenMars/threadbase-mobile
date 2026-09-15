@@ -25,6 +25,7 @@ import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
 import { ServerListCard } from '@/components/servers/ServerListCard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { ServerEditModal } from '@/components/servers/ServerEditModal'
+import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
@@ -40,6 +41,7 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 import { removeServerAndUnregisterPush } from '@/services/server-removal'
+import { queryClient } from '@/services/query-client'
 
 function getAddServerActionLabel(action: AddServerAction, t: TFunction<'settings'>): string {
   switch (action) {
@@ -286,6 +288,7 @@ export default function SettingsScreen() {
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
+  const [serversStatusOpen, setServersStatusOpen] = useState(false)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
   const [qrScannerOpen, setQrScannerOpen] = useState(false)
   const [cameraFingerprint, setCameraFingerprint] = useState<string | null>(null)
@@ -478,6 +481,17 @@ await refreshServerInfo(serverId)
           <GlassFill />
           <QrCode size={18} color={theme.text.accent} />
           <Text style={s.scanQrText}>{t('servers.scanQr')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          testID="settings-server-status-row"
+          style={[s.scanQrBtn, { justifyContent: 'space-between' }, isGlass && s.cardGlass]}
+          onPress={() => setServersStatusOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={i18n.t('servers:statusModal.titleSingle')}
+        >
+          <GlassFill />
+          <Text style={s.scanQrText}>{i18n.t('servers:statusModal.titleSingle')}</Text>
+          <SettingsChevron />
         </TouchableOpacity>
 
         <SectionHeader title={t('section.displayedServers')} />
@@ -898,6 +912,15 @@ await refreshServerInfo(serverId)
         visible={errorServerId !== null}
         server={errorServerId ? servers[errorServerId] ?? null : null}
         onClose={() => setErrorServerId(null)}
+      />
+      <ServersStatusModal
+        visible={serversStatusOpen}
+        onClose={() => setServersStatusOpen(false)}
+        onRetrySessions={(serverId) => {
+          void queryClient.invalidateQueries({
+            predicate: (query) => query.queryKey.includes(serverId),
+          })
+        }}
       />
 
       <ServerEditModal
