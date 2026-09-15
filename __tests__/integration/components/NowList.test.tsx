@@ -209,6 +209,33 @@ describe('NowList', () => {
     expect(queryByTestId('quiet-tail')).toBeNull()
   })
 
+  it('qualifies Needs you with how long the wait has lasted', async () => {
+    const waiting = session({
+      id: 'w',
+      status: 'waiting_input',
+      ptyAttached: true,
+      lifecycle: 'attached',
+      sessionName: 'Why sessions open in terminal view',
+      statusUpdatedAt: new Date(NOW - 2 * 60_000).toISOString(),
+    })
+    const { getByText, queryByText } = await renderList([asItem(waiting)])
+    expect(getByText('Needs you · waiting 2m')).toBeTruthy()
+    expect(queryByText('waiting 22m')).toBeNull()
+  })
+
+  it('falls back to the JSONL tail when statusUpdatedAt is missing', async () => {
+    const waiting = session({
+      id: 'w',
+      status: 'waiting_input',
+      ptyAttached: true,
+      lifecycle: 'attached',
+      sessionName: 'Why sessions open in terminal view',
+      activity: { state: 'quiet', lastEventAt: new Date(NOW - 45_000).toISOString(), source: 'jsonl' },
+    })
+    const { getByText } = await renderList([asItem(waiting)])
+    expect(getByText('Needs you · waiting 45s')).toBeTruthy()
+  })
+
   it('keeps live cards and shows history skeletons while a server is warming', async () => {
     const waiting = session({ id: 'w', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', sessionName: 'Why sessions open in terminal view' })
     const history = asConv(conversation({ id: 'old', sessionName: 'Fix the resume collision copy' }))

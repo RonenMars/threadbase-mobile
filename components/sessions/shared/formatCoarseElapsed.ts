@@ -7,3 +7,22 @@ export function formatCoarseElapsed(ms: number): string {
   const h = Math.floor(m / 60)
   return `${h}h ${m % 60}m`
 }
+
+/**
+ * How long `waiting_input` has lasted. Prefer `statusUpdatedAt` (the status
+ * flip). Older streamers omit it, so fall back to the JSONL tail stamp — that
+ * is last activity, not wait start. Never `elapsedMs`.
+ */
+export function waitSinceIso(session: {
+  statusUpdatedAt?: string
+  activity?: { lastEventAt: string } | null
+}): string | undefined {
+  return session.statusUpdatedAt ?? session.activity?.lastEventAt
+}
+
+export function formatWaitSince(iso: string | undefined | null, now: number = Date.now()): string | null {
+  if (!iso) return null
+  const start = Date.parse(iso)
+  if (!Number.isFinite(start)) return null
+  return formatCoarseElapsed(Math.max(0, now - start))
+}
