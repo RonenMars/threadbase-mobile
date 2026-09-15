@@ -40,7 +40,6 @@ describe('ServerStateMessage producers', () => {
           [b.id]: { status: 'error', lastCheckedAt: Date.now() },
         }}
         wsConnectedCount={0}
-        onViewDetails={() => {}}
         onRetryFailed={() => {}}
         isRetrying={false}
       />,

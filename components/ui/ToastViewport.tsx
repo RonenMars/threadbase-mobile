@@ -12,17 +12,11 @@ type Props = {
 export function toastsForViewport(
   id: string,
   arb: ArbitratedAlerts,
-  alerts: readonly AlertEntry[],
 ): AlertEntry[] {
-  // Home is the global surface: info toasts only, and only while nothing
-  // higher is occupying the pill. Other viewports (terminal) keep their own
-  // chrome until those producers are demoted.
-  if (id === 'home') {
-    if (globalSurface(arb) !== 'info') return []
-    const first = arb.infos.find((alert) => alert.viewport === id)
-    return first ? [first] : []
-  }
-  return alerts.filter((alert) => alert.viewport === id)
+  if (id !== 'home') return []
+  if (globalSurface(arb) !== 'info') return []
+  const first = arb.infos.find((alert) => alert.viewport === id)
+  return first ? [first] : []
 }
 
 export function ToastViewport({ id }: Props) {
@@ -31,7 +25,7 @@ export function ToastViewport({ id }: Props) {
   const detailsId = useAlertStore((s) => s.detailsId)
   const closeDetails = useAlertStore((s) => s.closeDetails)
   const arb = useMemo(() => arbitrate(alerts, inlineClaims), [alerts, inlineClaims])
-  const visible = toastsForViewport(id, arb, alerts)
+  const visible = toastsForViewport(id, arb)
   const detailsToast = visible.find((alert) => alert.id === detailsId)
 
   return (
