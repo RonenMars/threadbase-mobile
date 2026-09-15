@@ -1,15 +1,29 @@
-import { act } from 'react'
+import { act, type ReactElement } from 'react'
+import { I18nextProvider } from 'react-i18next'
 import renderer from 'react-test-renderer'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import { brand, dark } from '@/constants/theme'
+import i18n from '@/test-utils/i18n-setup'
 
-function renderFill(element: React.ReactElement): string | undefined {
-  let tree: renderer.ReactTestRenderer | null = null
+function renderFill(element: ReactElement): string | undefined {
+  let tree: ReturnType<typeof renderer.create> | undefined
   act(() => {
-    tree = renderer.create(element)
+    tree = renderer.create(
+      <ThemeProvider>
+        <I18nextProvider i18n={i18n}>{element}</I18nextProvider>
+      </ThemeProvider>,
+    )
   })
-  const withFill = tree!.root.findAll((n) => typeof n.props.fill === 'string')
-  return withFill[0]?.props.fill as string | undefined
+  if (tree === undefined) {
+    throw new Error('ProviderMark renderer produced no tree')
+  }
+  const root = tree.root as {
+    findAll: (predicate: (node: { props: { fill?: string } }) => boolean) => { props: { fill?: string } }[]
+  }
+  const withFill = root.findAll((node) => typeof node.props.fill === 'string')
+  const fill = withFill[0]?.props.fill
+  return typeof fill === 'string' ? fill : undefined
 }
 
 describe('ProviderMark', () => {
