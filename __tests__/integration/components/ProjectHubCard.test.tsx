@@ -116,14 +116,35 @@ describe('ProjectHubCard', () => {
 
   const todayGroup: ProjectGroup = { ...group, sessions: [{ ...session, startedAt: new Date().toISOString() }] }
 
-  it('omits the today count while the card is closed', async () => {
-    const { getByText, queryByText } = await renderCard(false, todayGroup)
-    expect(getByText(/1 live · last/)).toBeTruthy()
-    expect(queryByText(/today/)).toBeNull()
+  it('prints the session today count on a closed card', async () => {
+    const { getByText } = await renderCard(false, todayGroup)
+    expect(getByText(/1 live · 1 today · last/)).toBeTruthy()
   })
 
   it('prints the today count once the card is open', async () => {
     const { getByText } = await renderCard(true, todayGroup)
     expect(getByText(/1 live · 1 today · last/)).toBeTruthy()
+  })
+
+  it('prefers needs-you over live on the activity line', async () => {
+    const waitingGroup: ProjectGroup = {
+      ...group,
+      sessions: [{ ...session, status: 'waiting_input', ptyAttached: true, startedAt: new Date().toISOString() }],
+    }
+    const { getByText } = await renderCard(false, waitingGroup)
+    expect(getByText(/1 needs you · 1 today · last/)).toBeTruthy()
+  })
+
+  it('caps the open preview at three rows', async () => {
+    const many: ProjectGroup = {
+      ...group,
+      conversationCount: 0,
+      sessions: [1, 2, 3, 4].map((n) => ({ ...session, id: `s${n}`, startedAt: `2026-07-13T10:0${n}:00.000Z` })),
+    }
+    const { queryByText, getByText } = await renderCard(true, many)
+    expect(getByText('session:s4')).toBeTruthy()
+    expect(getByText('session:s3')).toBeTruthy()
+    expect(getByText('session:s2')).toBeTruthy()
+    expect(queryByText('session:s1')).toBeNull()
   })
 })

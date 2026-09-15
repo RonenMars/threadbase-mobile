@@ -2,6 +2,9 @@ import type { ReactNode } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { showsProviderMark } from '@/lib/providerDominance'
+import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
+import type { ProviderName } from '@/constants/providers'
 import { ServerChip } from '@/components/sessions/shared/ServerChip'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 
@@ -13,6 +16,8 @@ interface Props {
   emphasis: 'solid' | 'faint'
   serverLabel?: string | null
   serverColor?: string | null
+  provider?: ProviderName
+  dominantProvider?: ProviderName
   onPress: () => void
   onLongPress?: () => void
   accessibilityLabel: string
@@ -28,6 +33,8 @@ export function LiveCard({
   emphasis,
   serverLabel,
   serverColor,
+  provider,
+  dominantProvider,
   onPress,
   onLongPress,
   accessibilityLabel,
@@ -54,6 +61,9 @@ export function LiveCard({
         <View style={styles.body}>
           <View style={styles.titleRow}>
             <Text style={styles.title} numberOfLines={2}>{title}</Text>
+            {showsProviderMark(provider, dominantProvider) && provider ? (
+              <ProviderMark provider={provider} />
+            ) : null}
             {serverLabel ? (
               <ServerChip label={serverLabel} color={serverColor ?? SERVER_COLOR_DEFAULT} variant="label" />
             ) : null}
