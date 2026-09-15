@@ -131,6 +131,17 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 
 - Drop `onViewDetails` from `ServerStateMessage.i18n.test.tsx` (removed by #1097; INT #1092 lastError case still asserts protocol-mismatch copy). Isolated suite 2/2.
 
+### 15:46 — #1094 unique wait-duration commit
+
+- GitHub head still `5a5a3493` (`feat(sessions): show how long a Needs-you card has been waiting`). CI BLOCKED (Type check + Unit jest), same as the earlier #1094 unique set; included anyway.
+- **Command:** `git rebase --onto INT 2bb27339` (unique `5a5a3493`)
+- **Result:** clean (1/1). Merge `eb761fb2`. Rebased unique `7cdff401`.
+
+### 15:53 — checkpoint
+
+- lint green. typecheck green. Targeted `formatCoarseElapsed|NowList` 25/25. Unit 2239. Integration 522 / 71 suites. i18n 460 passed / 1 skipped. Scripts batch: 252 passed / 2 failed; isolated `run-maestro` pass (load flake); `ci-lint-shards` host-only (`expo-env.d.ts`, same as before).
+- Origin: `git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0**
+
 ## 6. Per-PR record
 
 ### #1088 update
@@ -169,9 +180,9 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 
 | Field | Value |
 |---|---|
-| Unique commits | `27892cde` `fc2518cf` `2bb27339` → `2a9e3ce2` `d577030d` `906fe3bc` |
-| Conflicts | ledger 7 |
-| Integration SHA | `14ab6248` |
+| Unique commits | `27892cde` `fc2518cf` `2bb27339` → `2a9e3ce2` `d577030d` `906fe3bc`; later unique `5a5a3493` → `7cdff401` |
+| Conflicts | ledger 7 on the first unique set; wait-duration unique was clean |
+| Integration SHA | first unique merge `14ab6248`; wait-duration merge `eb761fb2` |
 | GitHub CI | BLOCKED; INT follow-up repairs the two unit holes that showed locally |
 
 ### #1095
@@ -262,4 +273,4 @@ Kept #1092's per-server `classifyServer` (that is the PR). Discarded the aggrega
 
 ## 10. Origin-absent proof
 
-`git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0** (re-checked after #1099)
+`git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0** (re-checked after #1094 wait-duration unique)
