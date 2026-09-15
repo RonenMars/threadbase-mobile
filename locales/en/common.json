@@ -18,6 +18,11 @@
       "error": "Error",
       "warning": "Warning",
       "info": "Info"
+    },
+    "pill": {
+      "degraded": "Degraded",
+      "issues_one": "{{count}} issue",
+      "issues_other": "{{count}} issues"
     }
   },
   "error": {
@@ -92,9 +97,7 @@
     "retryAllRetrying_one": "Retrying {{count}} request…",
     "retryAllRetrying_other": "Retrying {{count}} requests…",
     "codeLabel": "Error code",
-    "rawLabel": "Raw error",
-    "issuesIndicator_one": "{{count}} issue",
-    "issuesIndicator_other": "{{count}} issues"
+    "rawLabel": "Raw error"
   },
   "errorPolicy": {
     "sessionExpired": "Your session has expired",

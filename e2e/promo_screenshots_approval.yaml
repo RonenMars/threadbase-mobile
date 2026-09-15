@@ -63,12 +63,12 @@ appId: com.ronenmars.threadbase
 
 - extendedWaitUntil:
     notVisible:
-      id: "issues-indicator"
+      id: "status-pill"
     timeout: 15000
     optional: true
 
 - assertNotVisible:
-    id: "issues-indicator"
+    id: "status-pill"
 
 - extendedWaitUntil:
     visible:
@@ -103,7 +103,7 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 
 - assertNotVisible:
-    id: "issues-indicator"
+    id: "status-pill"
 
 - takeScreenshot: e2e/_artifacts/screenshots/hero-approval-card
 
@@ -124,6 +124,6 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 
 - assertNotVisible:
-    id: "issues-indicator"
+    id: "status-pill"
 
 - takeScreenshot: e2e/_artifacts/screenshots/card-approve

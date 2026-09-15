@@ -1,22 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { AccessibilityInfo } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
 import { useArbitratedAlerts } from '@/hooks/useArbitratedAlerts'
+import { getAlertLevelLabel } from '@/lib/alertLabels'
 import type { AlertCause, AlertLevel } from '@/types/alerts'
-
-function getAlertLevelLabel(level: AlertLevel, t: TFunction<'common'>): string {
-  switch (level) {
-    case 'critical':
-      return t('alert.level.critical')
-    case 'error':
-      return t('alert.level.error')
-    case 'warning':
-      return t('alert.level.warning')
-    case 'info':
-      return t('alert.level.info')
-  }
-}
 
 export function useAlertAnnouncements() {
   const { t } = useTranslation('common')

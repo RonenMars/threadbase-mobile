@@ -38,8 +38,9 @@ describe('ErrorBanner server rows', () => {
     useServersStore.setState({ servers: {} })
   })
 
-  it('renders one row per failing server, named or addressed, and opens the sheet automatically', async () => {
+  it('renders one row per failing server, named or addressed, once the sheet is opened', async () => {
     seedFailures(3)
+    useErrorSheetStore.setState({ open: true })
     const { getByTestId, getByText } = await renderWithI18n(<ErrorBanner />)
 
     getByTestId('error-sheet-row-s0')
@@ -52,6 +53,7 @@ describe('ErrorBanner server rows', () => {
 
   it('offers Retry all only when more than one thing failed', async () => {
     seedFailures(3)
+    useErrorSheetStore.setState({ open: true })
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined)
     const { getByText } = await renderWithI18n(<ErrorBanner />)
 
@@ -64,6 +66,7 @@ describe('ErrorBanner server rows', () => {
 
   it('shows no Retry all for a single failure', async () => {
     seedFailures(1)
+    useErrorSheetStore.setState({ open: true })
     const { queryByText, getByTestId } = await renderWithI18n(<ErrorBanner />)
 
     getByTestId('error-sheet-row-s0')
@@ -72,6 +75,7 @@ describe('ErrorBanner server rows', () => {
 
   it('drills a row into ServerErrorModal, falling back to the fetch error', async () => {
     seedFailures(2)
+    useErrorSheetStore.setState({ open: true })
     const { getByTestId, findByText } = await renderWithI18n(<ErrorBanner />)
 
     fireEvent.press(getByTestId('error-sheet-row-s1'))
@@ -96,14 +100,16 @@ describe('ErrorBanner server rows', () => {
       },
     })
 
+    useErrorSheetStore.setState({ open: true })
     const { queryByTestId } = await renderWithI18n(<ErrorBanner />)
 
-    queryByTestId('error-sheet-row-s0')
+    expect(queryByTestId('error-sheet-row-s0')).toBeTruthy()
     expect(queryByTestId('error-sheet-row-srv_ghost')).toBeNull()
   })
 
   it('disables the retry icon while its retry is in flight, then re-enables it', async () => {
     seedFailures(1)
+    useErrorSheetStore.setState({ open: true })
     let resolveInvalidate: () => void = () => {}
     const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockReturnValue(
       new Promise((resolve) => { resolveInvalidate = () => resolve(undefined) }),
