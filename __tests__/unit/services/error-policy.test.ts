@@ -1,4 +1,4 @@
-import { NotFoundError } from '@/services/api-client'
+import { AuthError, NotFoundError } from '@/services/api-client'
 import { classifyError, isTransientError } from '@/services/error-policy'
 import i18n from '@/test-utils/i18n-setup'
 
@@ -10,6 +10,14 @@ describe('classifyError', () => {
     expect(result.presentation).toBe('blocking')
     expect(result.retryable).toBe(false)
     expect(result.description).toBeTruthy()
+  })
+
+  it('classifies a real AuthError as blocking via its stamped status', () => {
+    const result = classifyError(new AuthError('shared', '/api/sessions'), t)
+    expect(result.presentation).toBe('blocking')
+    expect(result.retryable).toBe(false)
+    expect(result.code).toBe('HTTP_401')
+    expect(result.description).toBe(t('errorPolicy.sessionExpired'))
   })
 
   it('classifies a 403 as blocking and not retryable', () => {
