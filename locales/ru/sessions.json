@@ -190,6 +190,7 @@
     "quietTail_few": "{{count}} тихие сессии · ничего не спрашивали",
     "quietTail_many": "{{count}} тихих сессий · ничего не спрашивали",
     "quietTail_other": "{{count}} тихих сессий · ничего не спрашивали",
+    "waitingFor": "ожидание {{elapsed}}",
     "open": "Открыть"
   },
   "layout": {
