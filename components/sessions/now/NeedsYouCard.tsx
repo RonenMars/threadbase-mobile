@@ -1,13 +1,26 @@
+import { useEffect, useState } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { MONO_FONT } from '@/constants/mono'
 import { useTheme } from '@/contexts/ThemeContext'
 import { StateBadge, getSessionTierLabel } from '@/components/sessions/StateBadge'
+import { formatWaitSince, waitSinceIso } from '@/components/sessions/shared/formatCoarseElapsed'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
 import { LiveCard } from './LiveCard'
+
+/** Wait stamps are fixed, so the card ticks locally or the number freezes. */
+function useNow(enabled: boolean): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!enabled) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [enabled])
+  return now
+}
 
 interface Props {
   session: MultiSession
@@ -33,7 +46,12 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const { handlePress, handleLongPress } = useSessionRowActions(session)
+  const stamp = waitSinceIso(session)
+  const now = useNow(stamp != null)
+  const wait = formatWaitSince(stamp, now)
+  const qualifier = wait ? t('row.waitingFor', { elapsed: wait }) : undefined
   const tierLabel = getSessionTierLabel('needsYou', t)
+  const accessibilityLabel = qualifier ? `${title}, ${tierLabel}, ${qualifier}` : `${title}, ${tierLabel}`
 
   return (
     <LiveCard
@@ -46,11 +64,11 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
       dominantProvider={dominantProvider}
       onPress={handlePress}
       onLongPress={handleLongPress}
-      accessibilityLabel={`${title}, ${tierLabel}`}
+      accessibilityLabel={accessibilityLabel}
       testID={`session-row-${session.id}`}
       isFirst={isFirst}
     >
-      <StateBadge tier="needsYou" />
+      <StateBadge tier="needsYou" qualifier={qualifier} />
       {session.lastOutput ? (
         <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
       ) : null}
