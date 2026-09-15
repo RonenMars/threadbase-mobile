@@ -9,17 +9,8 @@ export function useOpenStatusSurface(fallback?: () => void) {
 
   return useCallback(() => {
     const surface = globalSurface(arb)
-    if (surface === 'error') {
+    if (surface === 'error' || surface === 'warning') {
       openSheet()
-      return
-    }
-    const warning = arb.warnings[0]
-    if (warning?.onPress) {
-      warning.onPress()
-      return
-    }
-    if (warning?.buttonAction) {
-      warning.buttonAction()
       return
     }
     fallback?.()

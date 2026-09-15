@@ -26,3 +26,18 @@ export function getStatusPillCaption(
       return t('alert.pill.degraded')
   }
 }
+
+export function getStatusSummary(
+  errorCount: number,
+  warningCount: number,
+  t: TFunction<'common'>,
+): string {
+  if (errorCount > 0 && warningCount > 0) {
+    return t('alert.status.summaryBoth', {
+      errors: t('alert.status.errorCount', { count: errorCount }),
+      warnings: t('alert.status.warningCount', { count: warningCount }),
+    })
+  }
+  if (errorCount > 0) return t('alert.status.errorCount', { count: errorCount })
+  return t('alert.status.warningCount', { count: warningCount })
+}
