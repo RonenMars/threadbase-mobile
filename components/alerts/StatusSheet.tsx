@@ -29,7 +29,7 @@ export function StatusSheet() {
   const rows = statusRows(arb.all)
   const sheetOpen = useErrorSheetStore((s) => s.open)
   const closeSheet = useErrorSheetStore((s) => s.closeSheet)
-  const visible = sheetOpen && rows.length > 0
+  const visible = sheetOpen && rows.length > 0 && arb.critical == null
   const summary = getStatusSummary(arb.errors.length, arb.warnings.length, t)
   const title = t('alert.status.title')
   const retryable = rows.filter((row) => row.retryable && row.buttonAction)
