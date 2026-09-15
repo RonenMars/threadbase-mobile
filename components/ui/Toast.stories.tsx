@@ -16,7 +16,6 @@ export const Info: Story = {
   args: {
     toast: {
       id: 'info',
-      viewport: 'root',
       cause: 'servers:summary',
       raisedAt: 0,
       level: 'info',
@@ -30,7 +29,6 @@ export const WarningWithAction: Story = {
   args: {
     toast: {
       id: 'cache-alert',
-      viewport: 'root',
       cause: 'cache:home',
       raisedAt: 0,
       level: 'warning',
@@ -48,7 +46,6 @@ export const Error: Story = {
   args: {
     toast: {
       id: 'server-state',
-      viewport: 'root',
       cause: 'server:home',
       raisedAt: 0,
       level: 'error',

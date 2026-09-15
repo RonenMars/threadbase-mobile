@@ -5,27 +5,19 @@ import { arbitrate, globalSurface, type ArbitratedAlerts } from '@/lib/alertArbi
 import { useAlertStore } from '@/stores/alerts'
 import type { AlertEntry } from '@/types/alerts'
 
-type Props = {
-  id: string
-}
-
-export function toastsForViewport(
-  id: string,
-  arb: ArbitratedAlerts,
-): AlertEntry[] {
-  if (id !== 'home') return []
+export function infoToasts(arb: ArbitratedAlerts): AlertEntry[] {
   if (globalSurface(arb) !== 'info') return []
-  const first = arb.infos.find((alert) => alert.viewport === id)
+  const first = arb.infos[0]
   return first ? [first] : []
 }
 
-export function ToastViewport({ id }: Props) {
+export function ToastViewport() {
   const alerts = useAlertStore((s) => s.alerts)
   const inlineClaims = useAlertStore((s) => s.inlineClaims)
   const detailsId = useAlertStore((s) => s.detailsId)
   const closeDetails = useAlertStore((s) => s.closeDetails)
   const arb = useMemo(() => arbitrate(alerts, inlineClaims), [alerts, inlineClaims])
-  const visible = toastsForViewport(id, arb)
+  const visible = infoToasts(arb)
   const detailsToast = visible.find((alert) => alert.id === detailsId)
 
   return (
