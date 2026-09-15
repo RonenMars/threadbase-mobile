@@ -177,6 +177,17 @@ export interface Conversation {
   model?: string
   totalTokens?: number
   provider?: ProviderName
+  /**
+   * Whether the conversation can be resumed. Absent on older servers — treat
+   * `undefined` as resumable. False when the project dir the session ran in is
+   * gone; history is still viewable but resume would fail. A resumable
+   * `codex-cli` conversation can still collide with the client that holds its
+   * writer lock, which the server reports as a 409 carrying
+   * `reasonCode: 'CODEX_SESSION_ACTIVE'`.
+   */
+  resumable?: boolean
+  /** Set only when `resumable` is false; explains why. */
+  unavailableReason?: UnavailableReason
   /** Only populated by `/api/search`; absent on list and detail responses. */
   matches?: SearchMatch[]
 }
@@ -226,21 +237,6 @@ export interface ConversationDetail extends Conversation {
   messages: Message[]
   turn_durations?: TurnDuration[]
   lastPrompt?: string
-  /**
-   * Whether the conversation can be resumed. Absent on older servers — treat
-   * `undefined` as resumable. False when the project dir the session ran in is
-   * gone; history is still viewable but resume would fail.
-   */
-  resumable?: boolean
-  /** Set only when `resumable` is false; explains why. */
-  unavailableReason?: UnavailableReason
-  /**
-   * Source provider. Resumability is not implied by it — `resumable` above is
-   * authoritative for both providers. A resumable 'codex-cli' conversation can
-   * still collide with the client that holds its writer lock, which the server
-   * reports as a 409 carrying `reasonCode: 'CODEX_SESSION_ACTIVE'`.
-   */
-  provider?: ProviderName
   /**
    * Where the messages this session inherited from a `codex fork` parent stop
    * and its own turns begin. Absent unless the server reports the seam.

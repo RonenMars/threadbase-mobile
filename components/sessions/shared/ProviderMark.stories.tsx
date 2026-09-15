@@ -28,3 +28,15 @@ export const Codex: Story = {
 export const Cursor: Story = {
   args: { provider: 'cursor-cli' },
 }
+
+export const ClaudeColor: Story = {
+  args: { provider: 'claude-code', variant: 'color' },
+}
+
+export const CodexColor: Story = {
+  args: { provider: 'codex-cli', variant: 'color' },
+}
+
+export const CursorColor: Story = {
+  args: { provider: 'cursor-cli', variant: 'color' },
+}

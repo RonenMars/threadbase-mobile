@@ -1,7 +1,4 @@
 {
-  "header": {
-    "serverStatus": "حالة الخادم"
-  },
   "search": {
     "placeholder": "ابحث في السيشنات والمحادثات…",
     "accessibilityLabel": "بحث"
@@ -29,7 +26,7 @@
     "empty": "لا توجد سيشنات",
     "emptySubtitle": "ابدؤوا سيشن Claude Code أو Codex\nلرؤيته هنا",
     "allServersOffline": "يتعذر الاتصال بخوادمك",
-    "allServersOfflineSubtitle": "تحقق من أن هاتفك يستطيع الوصول إلى عناوين الخوادم، ثم استخدم زر حالة الخادم أعلاه لإعادة المحاولة أو عرض التفاصيل.",
+    "allServersOfflineSubtitle": "تحقق من أن هاتفك يستطيع الوصول إلى عناوين الخوادم، ثم أعد المحاولة أو اعرض التفاصيل.",
     "noResults": "لا توجد نتائج",
     "noResultsSubtitle": "لا شيء يطابق \"{{query}}\"",
     "serverEmpty": "لا توجد سيشنات على هذا الخادم",
@@ -71,6 +68,12 @@
     "activityLive_few": "{{count}} جلسات نشطة",
     "activityLive_many": "{{count}} جلسة نشطة",
     "activityLive_other": "{{count}} جلسة نشطة",
+    "activityNeedsYou_zero": "لا شيء يحتاجك",
+    "activityNeedsYou_one": "واحد يحتاجك",
+    "activityNeedsYou_two": "اثنان يحتاجانك",
+    "activityNeedsYou_few": "{{count}} يحتاجونك",
+    "activityNeedsYou_many": "{{count}} يحتاجونك",
+    "activityNeedsYou_other": "{{count}} يحتاجونك",
     "activityToday": "{{total}} اليوم",
     "activityLast": "الأخير: {{time}}",
     "timeNow": "الآن",
@@ -186,16 +189,26 @@
     "channelName": "السيشنات المباشرة"
   },
   "tree": {
-    "unknownPath": "(غير معروف)"
+    "unknownPath": "(غير معروف)",
+    "folders": "مجلدات",
+    "here_zero": "هنا · لا محادثات",
+    "here_one": "هنا · محادثة واحدة",
+    "here_two": "هنا · محادثتان",
+    "here_few": "هنا · {{count}} محادثات",
+    "here_many": "هنا · {{count}} محادثة",
+    "here_other": "هنا · {{count}} محادثة"
+  },
+  "unavailable": {
+    "worktree": "شجرة العمل اختفت — لا يمكن الاستئناف"
   },
   "row": {
-    "waitingFor": "في الانتظار منذ {{elapsed}}",
     "quietTail_zero": "لا توجد جلسات هادئة · لم يُطلب شيء",
     "quietTail_one": "جلسة هادئة واحدة · لم يُطلب شيء",
     "quietTail_two": "جلستان هادئتان · لم يُطلب شيء",
     "quietTail_few": "{{count}} جلسات هادئة · لم يُطلب شيء",
     "quietTail_many": "{{count}} جلسة هادئة · لم يُطلب شيء",
     "quietTail_other": "{{count}} جلسة هادئة · لم يُطلب شيء",
+    "waitingFor": "بانتظار {{elapsed}}",
     "open": "فتح"
   },
   "layout": {

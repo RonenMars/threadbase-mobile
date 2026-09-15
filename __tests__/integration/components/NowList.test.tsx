@@ -193,4 +193,64 @@ describe('NowList', () => {
     expect(queryByTestId('quiet-tail')).toBeNull()
     expect(getByTestId('conversation-row-n0')).toBeTruthy()
   })
+
+  it('renders a first-class cannot-resume row for a gone worktree', async () => {
+    const gone = asConv(conversation({
+      id: 'gone',
+      sessionName: 'int-2026-09-12 · tb-streamer worktree',
+      title: 'int-2026-09-12 · tb-streamer worktree',
+      resumable: false,
+      unavailableReason: 'worktree_removed',
+    }))
+    const { getByText, queryByTestId } = await renderList([gone])
+    expect(getByText('Int-2026-09-12 · tb-streamer worktree')).toBeTruthy()
+    expect(getByText("Worktree gone — can't resume")).toBeTruthy()
+    expect(queryByTestId('quiet-tail')).toBeNull()
+  })
+
+  it('qualifies Needs you with how long the wait has lasted', async () => {
+    const waiting = session({
+      id: 'w',
+      status: 'waiting_input',
+      ptyAttached: true,
+      lifecycle: 'attached',
+      sessionName: 'Why sessions open in terminal view',
+      statusUpdatedAt: new Date(NOW - 2 * 60_000).toISOString(),
+    })
+    const { getByText, queryByText } = await renderList([asItem(waiting)])
+    expect(getByText('Needs you · waiting 2m')).toBeTruthy()
+    expect(queryByText('waiting 22m')).toBeNull()
+  })
+
+  it('falls back to the JSONL tail when statusUpdatedAt is missing', async () => {
+    const waiting = session({
+      id: 'w',
+      status: 'waiting_input',
+      ptyAttached: true,
+      lifecycle: 'attached',
+      sessionName: 'Why sessions open in terminal view',
+      activity: { state: 'quiet', lastEventAt: new Date(NOW - 45_000).toISOString(), source: 'jsonl' },
+    })
+    const { getByText } = await renderList([asItem(waiting)])
+    expect(getByText('Needs you · waiting 45s')).toBeTruthy()
+  })
+
+  it('keeps live cards and shows history skeletons while a server is warming', async () => {
+    const waiting = session({ id: 'w', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', sessionName: 'Why sessions open in terminal view' })
+    const history = asConv(conversation({ id: 'old', sessionName: 'Fix the resume collision copy' }))
+    const { getByTestId, getAllByTestId, queryByTestId } = await renderList(
+      [asItem(waiting), history],
+      'state',
+      { warmingServerIds: ['server-1'] },
+    )
+    expect(getByTestId('session-row-w')).toBeTruthy()
+    expect(queryByTestId('conversation-row-old')).toBeNull()
+    expect(getAllByTestId('history-skeleton', { includeHiddenElements: true })).toHaveLength(2)
+  })
+
+  it('offers New session on an empty list', async () => {
+    const onNewSession = jest.fn()
+    const { getByTestId } = await renderList([], 'state', { onNewSession })
+    expect(getByTestId('empty-state-action')).toBeTruthy()
+  })
 })

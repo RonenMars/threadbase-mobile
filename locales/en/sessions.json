@@ -1,7 +1,4 @@
 {
-  "header": {
-    "serverStatus": "Server status"
-  },
   "search": {
     "placeholder": "Search sessions & conversations…",
     "accessibilityLabel": "Search"
@@ -29,7 +26,7 @@
     "empty": "No sessions",
     "emptySubtitle": "Start a Claude Code or Codex\nsession to see it here",
     "allServersOffline": "Can’t connect to your servers",
-    "allServersOfflineSubtitle": "Check that your phone can reach the server addresses, then use the server status button above to retry or view details.",
+    "allServersOfflineSubtitle": "Check that your phone can reach the server addresses, then retry or view details.",
     "noResults": "No results",
     "noResultsSubtitle": "Nothing matched \"{{query}}\"",
     "serverEmpty": "No sessions on this server",
@@ -55,10 +52,12 @@
   },
   "hub": {
     "browsePath": "Browse path",
-    "seeAll_one": "See all {{count}} conversation",
-    "seeAll_other": "See all {{count}} conversations",
+    "seeAll_one": "All {{count}} conversation",
+    "seeAll_other": "All {{count}} conversations",
     "activityLive_one": "{{count}} live",
     "activityLive_other": "{{count}} live",
+    "activityNeedsYou_one": "{{count}} needs you",
+    "activityNeedsYou_other": "{{count}} need you",
     "activityToday": "{{total}} today",
     "activityLast": "last {{time}}",
     "timeNow": "now",
@@ -162,12 +161,18 @@
     "channelName": "Live sessions"
   },
   "tree": {
-    "unknownPath": "(unknown)"
+    "unknownPath": "(unknown)",
+    "folders": "FOLDERS",
+    "here_one": "HERE · {{count}} CONVERSATION",
+    "here_other": "HERE · {{count}} CONVERSATIONS"
+  },
+  "unavailable": {
+    "worktree": "Worktree gone — can't resume"
   },
   "row": {
-    "waitingFor": "waiting {{elapsed}}",
     "quietTail_one": "{{count}} quiet session · nothing was asked",
     "quietTail_other": "{{count}} quiet sessions · nothing was asked",
+    "waitingFor": "waiting {{elapsed}}",
     "open": "Open"
   },
   "layout": {

@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useState } from 'react'
+import React, { forwardRef, useEffect, useRef, useState } from 'react'
 import { TouchableOpacity, Text, StyleSheet, Animated, type View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'phosphor-react-native'
@@ -10,13 +10,15 @@ import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 interface Props {
   onPress: () => void
   onLayout?: () => void
+  hidden?: boolean
 }
 
-export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, ref) {
+export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout, hidden = false }, ref) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const [glowAnim] = useState(() => new Animated.Value(0.08))
+  const hideAnim = useRef(new Animated.Value(0)).current
   const reduceMotion = useReduceMotion()
 
   useEffect(() => {
@@ -38,32 +40,48 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout }, r
     return () => loop.stop()
   }, [glowAnim, reduceMotion])
 
+  useEffect(() => {
+    Animated.timing(hideAnim, {
+      toValue: hidden ? 1 : 0,
+      duration: reduceMotion ? 0 : 180,
+      useNativeDriver: true,
+    }).start()
+  }, [hidden, hideAnim, reduceMotion])
+
   return (
-    <TouchableOpacity
-      ref={ref}
-      onPress={onPress}
-      onLayout={onLayout}
-      activeOpacity={0.75}
-      accessibilityLabel={t('fab.newSession')}
-      accessibilityRole="button"
-      testID="fab-new-session"
+    <Animated.View
+      pointerEvents={hidden ? 'none' : 'box-none'}
       style={[
         styles.fab,
         {
           bottom: FAB_BOTTOM + insets.bottom,
           backgroundColor: theme.text.accent,
           shadowColor: theme.text.accent,
+          opacity: hideAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+          transform: [{ translateY: hideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 16] }) }],
         },
       ]}
     >
-      {/* glow halo */}
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.glow, { opacity: glowAnim, backgroundColor: theme.text.accent }]}
-      />
-      <Plus size={16} color={theme.bg.primary} weight="bold" />
-      <Text style={[styles.label, { color: theme.bg.primary }]}>{t('fab.newSession')}</Text>
-    </TouchableOpacity>
+      <TouchableOpacity
+        ref={ref}
+        onPress={onPress}
+        onLayout={onLayout}
+        activeOpacity={0.75}
+        accessibilityLabel={t('fab.newSession')}
+        accessibilityRole="button"
+        accessibilityElementsHidden={hidden}
+        testID="fab-new-session"
+        style={styles.hit}
+      >
+        {/* glow halo */}
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.glow, { opacity: glowAnim, backgroundColor: theme.text.accent }]}
+        />
+        <Plus size={16} color={theme.bg.primary} weight="bold" />
+        <Text style={[styles.label, { color: theme.bg.primary }]}>{t('fab.newSession')}</Text>
+      </TouchableOpacity>
+    </Animated.View>
   )
 })
 
@@ -81,12 +99,7 @@ const styles = StyleSheet.create({
     // Physical right in both directions — `end` would pin this to the left in RTL.
     right: 20,
     height: FAB_HEIGHT,
-    paddingHorizontal: 18,
     borderRadius: FAB_HEIGHT / 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
     borderWidth: 1,
     borderColor: 'rgba(88,166,255,0.35)',
     // iOS shadow
@@ -95,6 +108,16 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     // Android elevation
     elevation: 8,
+    zIndex: 2,
+  },
+  hit: {
+    height: FAB_HEIGHT,
+    paddingHorizontal: 18,
+    borderRadius: FAB_HEIGHT / 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   label: {
     fontSize: font.sm,

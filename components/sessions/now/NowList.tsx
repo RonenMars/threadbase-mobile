@@ -1,8 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { View, FlatList, RefreshControl } from 'react-native'
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as Haptics from 'expo-haptics'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
@@ -19,16 +21,24 @@ import {
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { conversationHref } from '@/lib/conversationHref'
-import { deriveSessionPresentation, type SessionTier } from '@/lib/sessionPresentation'
+import {
+  deriveConversationPresentation,
+  deriveSessionPresentation,
+  type SessionStatusLabel,
+  type SessionTier,
+} from '@/lib/sessionPresentation'
 import { useNavLockStore } from '@/stores/navLock'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useQuietTailStore } from '@/stores/quietTail'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
+import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import type { MultiConversation, MultiSession } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
+import { CantResumeRow } from './CantResumeRow'
 import { EarlierRow } from './EarlierRow'
+import { HistorySkeletonRow } from './HistorySkeletonRow'
 import { dominantProvider as findDominantProvider } from '@/lib/providerDominance'
 import { NeedsYouCard } from './NeedsYouCard'
 import { QuietTailRow } from './QuietTailRow'
@@ -51,12 +61,17 @@ interface Props {
   /** `state` sections the list; the other two flatten it into one ordered run. */
   order?: SortBy
   direction?: SortOrder
+  /** Servers still indexing history — live cards stay, conversation rows become skeletons. */
+  warmingServerIds?: string[]
+  onNewSession?: () => void
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
 }
 
 interface Entry {
   item: MergedItem
   title: RowTitle
   tier: SessionTier | null
+  statusLabel: SessionStatusLabel | null
 }
 
 type FlatItem =
@@ -64,6 +79,9 @@ type FlatItem =
   | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
   | { kind: 'quietTail'; key: string; entries: Entry[] }
+  | { kind: 'skeleton'; key: string }
+
+const HISTORY_SKELETONS = 2
 
 /** More than ~5 quiet rows in one time group gather into a tail row. */
 const QUIET_TAIL_MIN = 6
@@ -76,17 +94,84 @@ function toRow(entry: Entry): FlatItem {
   return { kind: 'row', key: entryKey(entry), entry, isFirst: false }
 }
 
+function appendSkeletons(out: FlatItem[], key: string) {
+  for (let i = 0; i < HISTORY_SKELETONS; i += 1) {
+    out.push({ kind: 'skeleton', key: `${key}-skel-${i}` })
+  }
+}
+
+function isWarmingConversation(entry: Entry, warming: Set<string>): boolean {
+  return entry.item.kind === 'conversation' && warming.has(entry.item.item.serverId)
+}
+
 /**
  * Quiet rows (a command or only an identity for a title) stay inline in time
  * order as light one-line rows. Once a group holds QUIET_TAIL_MIN of them they
  * leave the group and one tail row sits at its end: never mid-list, never
- * above real work. Display-layer only.
+ * above real work. Display-layer only. Can't-resume rows stay first-class.
  */
 function withQuietTail(bucket: Entry[], bucketKey: string): FlatItem[] {
-  const quiet = bucket.filter((e) => e.title.rung !== 'intent')
+  const quiet = bucket.filter((e) => e.title.rung !== 'intent' && e.tier !== 'cantResume')
   if (quiet.length < QUIET_TAIL_MIN) return bucket.map(toRow)
-  const loud = bucket.filter((e) => e.title.rung === 'intent')
+  const loud = bucket.filter((e) => e.title.rung === 'intent' || e.tier === 'cantResume')
   return [...loud.map(toRow), { kind: 'quietTail', key: `quiet-${bucketKey}`, entries: quiet }]
+}
+
+function CantResumeSessionRow({
+  session,
+  title,
+  statusLabel,
+  timestamp,
+}: {
+  session: MultiSession
+  title: string
+  statusLabel: SessionStatusLabel | null
+  timestamp: number
+}) {
+  const { handlePress, handleLongPress } = useSessionRowActions(session)
+  return (
+    <CantResumeRow
+      title={title}
+      statusLabel={statusLabel}
+      timestamp={timestamp}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
+      testID={`session-row-${session.id}`}
+    />
+  )
+}
+
+function CantResumeConversationRow({
+  conv,
+  title,
+  statusLabel,
+  timestamp,
+  highlight,
+  onLongPress,
+}: {
+  conv: MultiConversation
+  title: string
+  statusLabel: SessionStatusLabel | null
+  timestamp: number
+  highlight?: string
+  onLongPress?: (conv: MultiConversation) => void
+}) {
+  const router = useRouter()
+  const handlePress = useCallback(() => {
+    Haptics.selectionAsync()
+    useNavLockStore.getState().lock()
+    router.push(conversationHref(conv.id, conv.serverId, highlight))
+  }, [conv, highlight, router])
+  return (
+    <CantResumeRow
+      title={title}
+      statusLabel={statusLabel}
+      timestamp={timestamp}
+      onPress={handlePress}
+      onLongPress={onLongPress ? () => onLongPress(conv) : undefined}
+      testID={`conversation-row-${conv.id}`}
+    />
+  )
 }
 
 /**
@@ -108,6 +193,9 @@ export const NowList = React.memo(function NowList({
   ListHeaderComponent,
   order = 'state',
   direction: sortDirection = 'desc',
+  warmingServerIds = [],
+  onNewSession,
+  onScroll,
 }: Props) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -124,6 +212,7 @@ export const NowList = React.memo(function NowList({
   const setQuietTail = useQuietTailStore((s) => s.set)
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
   const multiServer = activeServerIds.length > 1
+  const warming = useMemo(() => new Set(warmingServerIds), [warmingServerIds])
 
   const entries = useMemo((): Entry[] => {
     const q = searchQuery.trim().toLowerCase()
@@ -131,9 +220,16 @@ export const NowList = React.memo(function NowList({
     return visible.map((item) => {
       const stored = storedNameFor(names, nameOrigins, item.item.serverId, item.item.id)
       if (item.kind === 'session') {
-        return { item, title: resolveSessionRowTitle(item.item, stored), tier: deriveSessionPresentation(item.item).tier }
+        const presentation = deriveSessionPresentation(item.item)
+        return { item, title: resolveSessionRowTitle(item.item, stored), tier: presentation.tier, statusLabel: presentation.statusLabel }
       }
-      return { item, title: resolveConversationRowTitle(item.item, stored), tier: null }
+      const presentation = deriveConversationPresentation(item.item)
+      return {
+        item,
+        title: resolveConversationRowTitle(item.item, stored),
+        tier: presentation?.tier ?? null,
+        statusLabel: presentation?.statusLabel ?? null,
+      }
     })
   }, [items, searchQuery, conversationsFromServer, names, nameOrigins])
 
@@ -142,18 +238,20 @@ export const NowList = React.memo(function NowList({
   const flatData = useMemo((): FlatItem[] => {
     const sign = sortDirection === 'asc' ? -1 : 1
     const byTime = (a: Entry, b: Entry) => sign * (b.item.ms - a.item.ms)
+    const withoutWarmingHistory = (list: Entry[]) => list.filter((e) => !isWarmingConversation(e, warming))
     if (order !== 'state') {
       const projectOf = (e: Entry) =>
         e.item.kind === 'session' ? e.item.item.projectName : (e.item.item.projectPath.split('/').filter(Boolean).pop() ?? '')
       const byProject = (a: Entry, b: Entry) => projectOf(a).localeCompare(projectOf(b)) || byTime(a, b)
-      const flat = withQuietTail([...entries].sort(order === 'projectName' ? byProject : byTime), 'all')
+      const flat = withQuietTail([...withoutWarmingHistory(entries)].sort(order === 'projectName' ? byProject : byTime), 'all')
       const first = flat.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
       if (first && first.kind === 'row') first.isFirst = true
+      if (warming.size > 0) appendSkeletons(flat, 'all')
       return flat
     }
     const needsYou = entries.filter((e) => e.tier === 'needsYou').sort(byTime)
     const working = entries.filter((e) => e.tier === 'working').sort(byTime)
-    const earlier = entries.filter((e) => e.tier !== 'needsYou' && e.tier !== 'working').sort(byTime)
+    const earlier = withoutWarmingHistory(entries.filter((e) => e.tier !== 'needsYou' && e.tier !== 'working')).sort(byTime)
 
     const out: FlatItem[] = []
     if (needsYou.length > 0) {
@@ -166,17 +264,19 @@ export const NowList = React.memo(function NowList({
     }
 
     if (multiServer) {
-      const withRows = activeServerIds.filter((id) => earlier.some((e) => e.item.item.serverId === id))
+      const withRows = activeServerIds.filter((id) => earlier.some((e) => e.item.item.serverId === id) || warming.has(id))
       const collapsible = withRows.length > 1
       for (const id of withRows) {
         const bucket = earlier.filter((e) => e.item.item.serverId === id)
         out.push({ kind: 'serverHeader', key: `server-${id}`, serverId: id, serverLabel: servers[id]?.label ?? id, totalCount: bucket.length })
         if (collapsible && collapsedServers.includes(id)) continue
         out.push(...withQuietTail(bucket, id))
+        if (warming.has(id)) appendSkeletons(out, id)
       }
     } else {
       const today = earlier.filter((e) => isToday(new Date(e.item.ms).toISOString()))
       const older = earlier.filter((e) => !isToday(new Date(e.item.ms).toISOString()))
+      const warmingHere = warming.size > 0
       if (today.length > 0) {
         out.push({ kind: 'eyebrow', key: 'eyebrow-today', tone: 'muted', label: t('live.headerEarlierToday'), count: today.length })
         out.push(...withQuietTail(today, 'today'))
@@ -185,12 +285,18 @@ export const NowList = React.memo(function NowList({
         out.push({ kind: 'eyebrow', key: 'eyebrow-older', tone: 'muted', label: t('live.headerEarlier'), count: older.length })
         out.push(...withQuietTail(older, 'older'))
       }
+      if (warmingHere) {
+        if (today.length === 0 && older.length === 0) {
+          out.push({ kind: 'eyebrow', key: 'eyebrow-warming', tone: 'muted', label: t('live.headerEarlier') })
+        }
+        appendSkeletons(out, 'warming')
+      }
     }
 
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, t])
+  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, warming, t])
 
   const openQuietTail = useCallback((tail: Entry[]) => {
     setQuietTail(tail.map((e) => ({ item: e.item, title: e.title.title })))
@@ -217,7 +323,31 @@ export const NowList = React.memo(function NowList({
         )
       case 'quietTail':
         return <QuietTailRow count={item.entries.length} onPress={() => openQuietTail(item.entries)} />
+      case 'skeleton':
+        return <HistorySkeletonRow />
       case 'row': {
+        if (item.entry.tier === 'cantResume') {
+          if (item.entry.item.kind === 'session') {
+            return (
+              <CantResumeSessionRow
+                session={item.entry.item.item}
+                title={item.entry.title.title}
+                statusLabel={item.entry.statusLabel}
+                timestamp={item.entry.item.ms}
+              />
+            )
+          }
+          return (
+            <CantResumeConversationRow
+              conv={item.entry.item.item}
+              title={item.entry.title.title}
+              statusLabel={item.entry.statusLabel}
+              timestamp={item.entry.item.ms}
+              highlight={highlight}
+              onLongPress={setActiveConv}
+            />
+          )
+        }
         // A live tier is a card wherever it sits; everything else is a two-line row.
         if (item.entry.tier === 'needsYou' || item.entry.tier === 'working') {
           const session = item.entry.item.item as MultiSession
@@ -228,6 +358,7 @@ export const NowList = React.memo(function NowList({
               title={item.entry.title.title}
               serverLabel={multiServer ? session.serverLabel : undefined}
               serverColor={servers[session.serverId]?.color}
+              dominantProvider={dominantProvider}
               isFirst={item.isFirst}
             />
           )
@@ -257,6 +388,8 @@ export const NowList = React.memo(function NowList({
         keyboardShouldPersistTaps="handled"
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         {...LIST_WINDOW}
         {...inset.props}
         ListHeaderComponent={
@@ -285,7 +418,11 @@ export const NowList = React.memo(function NowList({
             {searchQuery ? (
               <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: searchQuery })} />
             ) : (
-              <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+              <EmptyState
+                title={t('list.empty')}
+                subtitle={t('list.emptySubtitle')}
+                action={onNewSession ? { label: t('fab.newSession'), onPress: onNewSession, plus: true } : undefined}
+              />
             )}
           </View>
         }
