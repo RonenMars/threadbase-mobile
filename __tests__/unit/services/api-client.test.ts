@@ -68,6 +68,7 @@ describe('Error classes', () => {
     const err = new AuthError('shared', '/api/profiles')
     expect(err.name).toBe('AuthError')
     expect(err.message).toMatch(/Unauthorized/i)
+    expect(err.status).toBe(401)
   })
 
   it('NotFoundError includes path in message', () => {
