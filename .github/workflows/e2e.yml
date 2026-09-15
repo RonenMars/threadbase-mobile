@@ -13,9 +13,9 @@ name: E2E
 # by hand when a change actually touches a flow.
 #
 # Default full-suite shape: one build job per platform, then parallel Maestro
-# shards that reuse that binary. Android is three emulator VMs after one APK
-# job; iOS is two simulator VMs after one xcodebuild. A `flows` input collapses
-# to a single shard so a one-flow rerun does not pay three emulators.
+# shards that reuse that binary. Android and iOS each use three VMs after one
+# Release build. A `flows` input collapses to a single shard so a one-flow
+# rerun does not pay three emulators.
 #
 #   gh workflow run E2E                       # main, whole mock suite
 #   gh workflow run E2E -f ref=572            # PR #572's head
@@ -25,9 +25,11 @@ name: E2E
 #   gh workflow run E2E -f flows=e2e/codex_parity.yaml            # one flow
 #   gh workflow run E2E -f ref=572 -f flows="e2e/a.yaml e2e/b.yaml"
 #
-# The APK / iOS .app is cached per checked-out SHA (and uploaded as an artifact
-# to the shards in the same run). A second dispatch of the same commit reuses
-# that binary and only pays emulator/simulator boot + Maestro.
+# The APK / iOS .app is cached for the exact tested SHA and workflow revision
+# (and uploaded as an artifact to the shards in the same run). A second
+# dispatch of the same pair reuses that binary and only pays emulator/simulator
+# boot + Maestro. Native compiler caches are separate and may restore across
+# source changes; they never substitute for a missing exact binary.
 #
 # Two independent selectors, easy to confuse:
 #
@@ -84,6 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.resolve.outputs.ref }}
+      sha: ${{ steps.head.outputs.sha }}
       android: ${{ steps.plan.outputs.android }}
       ios: ${{ steps.plan.outputs.ios }}
       android-shards: ${{ steps.plan.outputs.android-shards }}
@@ -118,6 +121,10 @@ jobs:
         with:
           ref: ${{ steps.resolve.outputs.ref }}
 
+      - name: Record resolved SHA
+        id: head
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Plan shards
         id: plan
         env:
@@ -134,14 +141,24 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.resolve.outputs.ref }}
+          ref: ${{ needs.resolve.outputs.sha }}
 
       # github.sha is the commit that *triggered* the workflow (`--ref`), which
       # is the workflow file's branch and is not always the code under test
-      # (`-f ref=`). The APK cache must follow the checked-out tree.
+      # (`-f ref=`). The APK cache must follow the checked-out tree. Downstream
+      # jobs pin that tree by SHA so a moving branch cannot drift a shard.
       - name: Record checked-out SHA
         id: head
-        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          RESOLVED_SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse HEAD)
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          if [ "$SHA" != "$RESOLVED_SHA" ]; then
+            echo "::error::Checked-out SHA $SHA does not match resolved SHA $RESOLVED_SHA."
+            exit 1
+          fi
 
       - uses: actions/setup-node@v5
         with:
@@ -156,7 +173,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # setup-android@v4 defaults to `tools platform-tools`. Google dropped the
+      # legacy `tools` package, so cmdline-tools 20.0 exits 1 with "Failed to
+      # find package 'tools'" (run 34902788290).
       - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       # cache-read-only defaults to true off `main`, which would make a feature-
       # branch warmup unable to seed the next dispatch on that same branch.
@@ -173,7 +195,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: android/app/build/outputs/apk/release/app-release.apk
-          key: e2e-android-apk-v1-${{ runner.os }}-x86_64-${{ steps.head.outputs.sha }}
+          key: e2e-android-apk-v2-${{ runner.os }}-x86_64-${{ steps.head.outputs.sha }}-${{ github.workflow_sha }}
 
       # Assemble before any emulator boots so a 20-minute compile does not hold
       # a live emulator idle. That idle window is what made later Maestro flows
@@ -188,7 +210,7 @@ jobs:
           TB_MOBILE_UPLOAD_KEY_PASSWORD: android
           SENTRY_DISABLE_AUTO_UPLOAD: true
         working-directory: android
-        run: ./gradlew :app:assembleRelease -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}"
+        run: ./gradlew :app:assembleRelease --build-cache -PreactNativeArchitectures="${REACT_NATIVE_ARCHITECTURES:-x86_64}"
 
       - name: Note APK cache hit
         if: ${{ steps.apk-cache.outputs.cache-hit == 'true' }}
@@ -217,7 +239,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.resolve.outputs.ref }}
+          ref: ${{ needs.resolve.outputs.sha }}
 
       - uses: actions/setup-node@v5
         with:
@@ -300,6 +322,15 @@ jobs:
             cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
           fi
 
+      - name: Upload Maestro results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: maestro-results-android-${{ matrix.shard }}
+          path: e2e/_artifacts/maestro-output/
+          retention-days: 1
+          if-no-files-found: warn
+
       - name: Upload Maestro artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v6
@@ -319,29 +350,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.resolve.outputs.ref }}
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
-
-      - name: Restore iOS DerivedData cache
-        uses: actions/cache@v5
-        with:
-          path: build/ios-ci
-          key: ios-derived-v1-${{ runner.os }}-xcode26.3-${{ hashFiles('package-lock.json', 'app.json') }}
-          restore-keys: |
-            ios-derived-v1-${{ runner.os }}-xcode26.3-${{ hashFiles('package-lock.json') }}-
-            ios-derived-v1-${{ runner.os }}-xcode26.3-
+          ref: ${{ needs.resolve.outputs.sha }}
 
       - name: Select Xcode 26
         # expo-modules-jsi's Package.swift requires swift-tools 6.2 (Xcode 26)
@@ -349,7 +358,86 @@ jobs:
         # the iOS job runs on macos-26 and pins the same toolchain as deploy.yml.
         run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
 
+      - name: Record Xcode identity
+        id: toolchain
+        run: |
+          set -euo pipefail
+          BUILD=$(xcodebuild -version | awk '/Build version/ { print $3; exit }')
+          if [ -z "$BUILD" ]; then
+            echo '::error::Could not read Xcode build version.'
+            xcodebuild -version >&2
+            exit 1
+          fi
+          echo "xcode-build=$BUILD" >> "$GITHUB_OUTPUT"
+
+      # Exact match only: a prefix restore would install another commit's .app.
+      # The key includes both the tested SHA (`-f ref=`) and the executing
+      # workflow revision (`--ref`) so a workflow-only change cannot reuse a
+      # binary built with different compile flags.
+      - name: Cache iOS Release app
+        id: ios-app-cache
+        uses: actions/cache@v5
+        with:
+          path: e2e-ios-app.tgz
+          key: e2e-ios-app-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-Release-development-${{ needs.resolve.outputs.sha }}-${{ github.workflow_sha }}
+
+      - uses: actions/setup-node@v5
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        run: npm ci
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Export Ccache directory
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        run: |
+          set -euo pipefail
+          command -v ccache >/dev/null || brew install ccache
+          export CCACHE_DIR="$HOME/.cache/tb-e2e-ccache"
+          mkdir -p "$CCACHE_DIR"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+
+      - name: Restore iOS Ccache
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/tb-e2e-ccache
+          key: e2e-ios-ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-${{ hashFiles('package-lock.json', 'ios/Podfile', 'ios/Podfile.lock', 'ios/Podfile.properties.json', 'app.json') }}-${{ needs.resolve.outputs.sha }}
+          restore-keys: |
+            e2e-ios-ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-${{ hashFiles('package-lock.json', 'ios/Podfile', 'ios/Podfile.lock', 'ios/Podfile.properties.json', 'app.json') }}-
+            e2e-ios-ccache-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-
+
+      - name: Configure Ccache
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        run: |
+          set -euo pipefail
+          ccache --set-config=compiler_check=content
+          ccache --set-config=max_size=2G
+          ccache --zero-stats
+
+      - name: Restore iOS DerivedData cache
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache@v5
+        with:
+          path: build/ios-ci
+          key: ios-derived-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-${{ hashFiles('package-lock.json', 'ios/Podfile', 'ios/Podfile.lock', 'ios/Podfile.properties.json', 'app.json') }}-${{ needs.resolve.outputs.sha }}
+          restore-keys: |
+            ios-derived-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-${{ hashFiles('package-lock.json', 'ios/Podfile', 'ios/Podfile.lock', 'ios/Podfile.properties.json', 'app.json') }}-
+            ios-derived-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-
+
       - name: Install CocoaPods
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        env:
+          USE_CCACHE: '1'
         # `ios/` is committed, so `expo prebuild` reports "reusing /ios" and skips
         # the CocoaPods step entirely — leaving a CI checkout with no `ios/Pods/`
         # and an xcodebuild that dies on a missing `Pods-Threadbase.release
@@ -367,13 +455,16 @@ jobs:
       # into the compile, before any Maestro flow runs. `development` skips the
       # upload; deploy.yml stays on the strict default.
       - name: Resolve app env (skips the Sentry source-map upload)
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
         env:
           APP_ENV: development
         run: ./scripts/check-sentry-env.sh >> "$GITHUB_ENV"
 
       - name: Build iOS app (Release)
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
         env:
           SENTRY_DISABLE_AUTO_UPLOAD: true
+          USE_CCACHE: '1'
         run: |
           set -euo pipefail
           xcodebuild \
@@ -382,17 +473,60 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/ios-ci \
+            ARCHS=arm64 \
+            -showBuildTimingSummary \
             build
           APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
           if [ -z "$APP_PATH" ]; then
             echo '::error::xcodebuild succeeded but Threadbase.app was not under build/ios-ci.'
             exit 1
           fi
+          ARCHS=$(lipo -archs "$APP_PATH/Threadbase")
+          if [ "$ARCHS" != "arm64" ]; then
+            echo "::error::Expected arm64-only Threadbase, got '$ARCHS'."
+            exit 1
+          fi
           # upload-artifact flattens a directory, so downloading Threadbase.app
           # produced Info.plist at the destination root and simctl never saw a
           # bundle (run 34785370547). A tarball keeps the directory name.
           tar -C "$(dirname "$APP_PATH")" -czf e2e-ios-app.tgz Threadbase.app
-          echo "Built $APP_PATH" >> "$GITHUB_STEP_SUMMARY"
+          echo "Built $APP_PATH ($ARCHS)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Show Ccache stats
+        if: ${{ always() && steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        run: ccache --show-stats || true
+
+      - name: Note iOS app cache hit
+        if: ${{ steps.ios-app-cache.outputs.cache-hit == 'true' }}
+        env:
+          TEST_SHA: ${{ needs.resolve.outputs.sha }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          XCODE_BUILD: ${{ steps.toolchain.outputs.xcode-build }}
+          CACHE_KEY: e2e-ios-app-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-Release-development-${{ needs.resolve.outputs.sha }}-${{ github.workflow_sha }}
+        run: |
+          {
+            echo "Reusing cached iOS Release app"
+            echo "- tested SHA: $TEST_SHA"
+            echo "- workflow revision: $WORKFLOW_SHA"
+            echo "- Xcode build: $XCODE_BUILD"
+            echo "- cache key: $CACHE_KEY"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate iOS Release app tarball
+        run: |
+          set -euo pipefail
+          if [ ! -f e2e-ios-app.tgz ]; then
+            echo '::error::e2e-ios-app.tgz is missing; refusing to fall back to another commit.'
+            exit 1
+          fi
+          NAMES=$(tar -tzf e2e-ios-app.tgz)
+          for required in 'Threadbase.app/Info.plist' 'Threadbase.app/Threadbase'; do
+            if ! printf '%s\n' "$NAMES" | grep -Fxq "$required"; then
+              echo "::error::$required is missing from e2e-ios-app.tgz; refusing to fall back to another commit."
+              printf '%s\n' "$NAMES" >&2
+              exit 1
+            fi
+          done
 
       - name: Upload iOS Release app
         uses: actions/upload-artifact@v6
@@ -415,7 +549,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ needs.resolve.outputs.ref }}
+          ref: ${{ needs.resolve.outputs.sha }}
 
       - uses: actions/setup-node@v5
         with:
@@ -518,6 +652,15 @@ jobs:
             mkdir -p e2e/_artifacts/maestro-session
             cp -R "$LATEST" e2e/_artifacts/maestro-session/ || true
           fi
+
+      - name: Upload Maestro results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: maestro-results-ios-${{ matrix.shard }}
+          path: e2e/_artifacts/maestro-output/
+          retention-days: 1
+          if-no-files-found: warn
 
       - name: Upload Maestro artifacts on failure
         if: failure()
