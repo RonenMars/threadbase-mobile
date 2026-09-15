@@ -58,6 +58,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   unsupportedServerIds = [],
   topInset = 0,
   ListHeaderComponent,
+  onNewSession,
+  onScroll,
 }: ProjectHubListProps) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -342,7 +344,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, quietOpen, toggleQuiet, t])
 
   if (drill && !searchOpen) {
-    return <DrillView node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} topInset={topInset} />
+    return <DrillView key={drill.node.fullPath} node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} topInset={topInset} onScroll={onScroll} />
   }
 
   return (
@@ -371,6 +373,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             {...inset.props}
             contentContainerStyle={[styles.listContent, inset.contentStyle]}
             stickySectionHeadersEnabled={false}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
           />
         )
       ) : (
@@ -477,9 +481,15 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             />
           }
           contentContainerStyle={[hubFlatData.length === 0 ? styles.emptyListContent : styles.listContent, inset.contentStyle]}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           ListEmptyComponent={
             <View style={{ flex: 1 }}>
-              <EmptyState title={t('list.empty')} subtitle={t('list.emptySubtitle')} />
+              <EmptyState
+                title={t('list.empty')}
+                subtitle={t('list.emptySubtitle')}
+                action={onNewSession ? { label: t('fab.newSession'), onPress: onNewSession, plus: true } : undefined}
+              />
             </View>
           }
         />

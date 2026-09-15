@@ -1,7 +1,4 @@
 {
-  "header": {
-    "serverStatus": "מצב השרת"
-  },
   "search": {
     "placeholder": "חפש סשנים ושיחות…",
     "accessibilityLabel": "חיפוש"
@@ -29,7 +26,7 @@
     "empty": "אין סשנים",
     "emptySubtitle": "התחילו סשן Claude Code או Codex\nכדי לראות אותו כאן",
     "allServersOffline": "לא ניתן להתחבר לשרתים שלך",
-    "allServersOfflineSubtitle": "בדקו שהטלפון יכול להגיע לכתובות השרתים, ואז השתמשו בכפתור סטטוס השרת למעלה כדי לנסות שוב או לראות פרטים.",
+    "allServersOfflineSubtitle": "בדקו שהטלפון יכול להגיע לכתובות השרתים, ואז נסו שוב או הציגו פרטים.",
     "noResults": "אין תוצאות",
     "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
     "serverEmpty": "אין סשנים בשרת זה",
@@ -62,6 +59,9 @@
     "activityLive_one": "אחד פעיל",
     "activityLive_two": "שניים פעילים",
     "activityLive_other": "{{count}} פעילים",
+    "activityNeedsYou_one": "אחד צריך אותך",
+    "activityNeedsYou_two": "שניים צריכים אותך",
+    "activityNeedsYou_other": "{{count}} צריכים אותך",
     "activityToday": "{{total}} היום",
     "activityLast": "אחרון: {{time}}",
     "timeNow": "עכשיו",
@@ -168,10 +168,16 @@
     "channelName": "סשנים חיים"
   },
   "tree": {
-    "unknownPath": "(לא ידוע)"
+    "unknownPath": "(לא ידוע)",
+    "folders": "תיקיות",
+    "here_one": "כאן · שיחה אחת",
+    "here_two": "כאן · שתי שיחות",
+    "here_other": "כאן · {{count}} שיחות"
+  },
+  "unavailable": {
+    "worktree": "עץ העבודה נעלם — אי אפשר להמשיך"
   },
   "row": {
-    "waitingFor": "ממתין {{elapsed}}",
     "quietTail_one": "סשן שקט אחד · לא נשאל דבר",
     "quietTail_two": "שני סשנים שקטים · לא נשאל דבר",
     "quietTail_other": "{{count}} סשנים שקטים · לא נשאל דבר",
