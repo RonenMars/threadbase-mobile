@@ -29,6 +29,8 @@ export interface ProjectHubListProps {
   topInset?: number
   /** Scrolls with the cards: the quick-access strip and banners. */
   ListHeaderComponent?: ReactElement | null
+  onRetryServer?: (serverId: string) => void
+  onOpenStatus?: () => void
 }
 
 export interface ProjectHubCardProps {

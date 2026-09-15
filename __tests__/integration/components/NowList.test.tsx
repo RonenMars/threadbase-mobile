@@ -7,6 +7,7 @@ import { fireEvent } from '@testing-library/react-native'
 import { renderWithI18n } from '@/test-utils/render'
 import { useQuietTailStore } from '@/stores/quietTail'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -192,5 +193,53 @@ describe('NowList', () => {
     const { queryByTestId, getByTestId } = await renderList(items)
     expect(queryByTestId('quiet-tail')).toBeNull()
     expect(getByTestId('conversation-row-n0')).toBeTruthy()
+  })
+
+  it('puts a failure panel on a down server and keeps the other host healthy', async () => {
+    useServersStore.setState({
+      activeServerIds: ['server-1', 'server-2'],
+      servers: {
+        'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+        'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+    useServerFetchStatusStore.getState().recordFailure('server-1', new Error('offline'))
+    try {
+      const older1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
+      const older2 = asConv(conversation({ id: 'c2', serverId: 'server-2', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 1000)
+      const { getByTestId, queryByTestId } = await renderList([older1, older2])
+      expect(getByTestId('server-failure-server-1')).toBeTruthy()
+      expect(getByTestId('server-header-retry-server-1')).toBeTruthy()
+      expect(queryByTestId('server-failure-server-2')).toBeNull()
+      expect(queryByTestId('server-offline-banner')).toBeNull()
+      expect(getByTestId('conversation-row-c1')).toBeTruthy()
+    } finally {
+      useServerFetchStatusStore.getState().reset()
+      useServersStore.setState({ activeServerIds: [], servers: {} })
+    }
+  })
+
+  it('does not paint per-server failure panels when every host is down', async () => {
+    useServersStore.setState({
+      activeServerIds: ['server-1', 'server-2'],
+      servers: {
+        'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+        'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+    useServerFetchStatusStore.getState().recordFailure('server-1', new Error('offline'))
+    useServerFetchStatusStore.getState().recordFailure('server-2', new Error('offline'))
+    try {
+      const older1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
+      const older2 = asConv(conversation({ id: 'c2', serverId: 'server-2', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 1000)
+      const { getByTestId, queryByTestId } = await renderList([older1, older2])
+      expect(queryByTestId('server-failure-server-1')).toBeNull()
+      expect(queryByTestId('server-failure-server-2')).toBeNull()
+      expect(getByTestId('conversation-row-c1')).toBeTruthy()
+      expect(getByTestId('now-list-scroll')).toBeTruthy()
+    } finally {
+      useServerFetchStatusStore.getState().reset()
+      useServersStore.setState({ activeServerIds: [], servers: {} })
+    }
   })
 })
