@@ -53,7 +53,7 @@ export const NotRetryable: Story = {
       cause: 'query:messages',
       raisedAt: 0,
       level: 'error',
-      title: 'Messages failed to load',
+      title: "Messages didn't load.",
       message: 'This could no longer be found',
       code: 'HTTP_404',
       rawMessage: 'not found',
