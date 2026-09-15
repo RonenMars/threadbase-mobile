@@ -1,9 +1,11 @@
 import React from 'react'
 import { act, cleanup, fireEvent, waitFor } from '@testing-library/react-native'
+import { AlertHost } from '@/components/alerts/AlertHost'
 import { HomeStatusPill } from '@/components/alerts/StatusPill'
 import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { useAlertStore } from '@/stores/alerts'
+import { useErrorSheetStore } from '@/stores/errorSheet'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
 import type { HostPressureAlert, ServerConfig } from '@/types/api'
@@ -45,6 +47,7 @@ function Harness() {
   const open = useOpenStatusSurface()
   return (
     <>
+      <AlertHost />
       <HostPressureBanner />
       <HomeStatusPill onPress={open} />
     </>
@@ -59,9 +62,16 @@ function alertTitle() {
   return useAlertStore.getState().alerts[0]?.title
 }
 
+async function openAdvice(screen: Awaited<ReturnType<typeof renderBanner>>) {
+  fireEvent.press(screen.getByTestId('status-pill'))
+  expect(await screen.findByTestId('status-sheet')).toBeTruthy()
+  fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
+}
+
 beforeEach(() => {
   cleanup()
   useAlertStore.getState().reset()
+  useErrorSheetStore.setState({ open: false })
   useServersStore.setState({
     servers: {},
     activeServerIds: [],
@@ -154,29 +164,29 @@ describe('HostPressureBanner', () => {
       liveAgents: 0,
       updatedAt: '2026-08-18T00:00:00.000Z',
     })
-    const { getByTestId, findByText } = await renderBanner()
+    const screen = await renderBanner()
     expect(alertTitle()).toBe('My Server is responding slowly.')
-    fireEvent.press(getByTestId('status-pill'))
-    expect(await findByText(/The Threadbase server itself is delayed/)).toBeTruthy()
+    await openAdvice(screen)
+    expect(await screen.findByText(/The Threadbase server itself is delayed/)).toBeTruthy()
     expect(
-      await findByText(/On the computer, quit Cursor, Chrome, or any VMs you don't need/),
+      await screen.findByText(/On the computer, quit Cursor, Chrome, or any VMs you don't need/),
     ).toBeTruthy()
   })
 
   it('opens OS-specific advice from the status pill', async () => {
     const server = seedServer()
     useServersStore.getState().setHostPressure(server.id, elevated)
-    const { getByTestId, findByText, queryByText } = await renderBanner()
-    expect(queryByText('The computer is low on free RAM.')).toBeNull()
-    fireEvent.press(getByTestId('status-pill'))
-    expect(await findByText('The computer is low on free RAM.')).toBeTruthy()
+    const screen = await renderBanner()
+    expect(screen.queryByText('The computer is low on free RAM.')).toBeNull()
+    await openAdvice(screen)
+    expect(await screen.findByText('The computer is low on free RAM.')).toBeTruthy()
     expect(
-      await findByText(/The CPU can still look idle/),
+      await screen.findByText(/The CPU can still look idle/),
     ).toBeTruthy()
     expect(
-      await findByText(/On this Mac, quit Cursor, Chrome, or any VMs/),
+      await screen.findByText(/On this Mac, quit Cursor, Chrome, or any VMs/),
     ).toBeTruthy()
-    expect(await findByText('Dismiss')).toBeTruthy()
+    expect(await screen.findByText('Dismiss')).toBeTruthy()
   })
 
   it('mentions live agents only when that reason fired', async () => {
@@ -186,10 +196,10 @@ describe('HostPressureBanner', () => {
       reasons: ['memory', 'agents'],
       liveAgents: 5,
     })
-    const { getByTestId, findByText, queryByText } = await renderBanner()
-    expect(queryByText(/5 agents/)).toBeNull()
-    fireEvent.press(getByTestId('status-pill'))
-    expect(await findByText('5 agents are running on this computer.')).toBeTruthy()
+    const screen = await renderBanner()
+    expect(screen.queryByText(/5 agents/)).toBeNull()
+    await openAdvice(screen)
+    expect(await screen.findByText('5 agents are running on this computer.')).toBeTruthy()
   })
 
   it('falls back to GET /api/info platform when the frame omits os', async () => {
@@ -207,12 +217,12 @@ describe('HostPressureBanner', () => {
       liveAgents: 0,
       updatedAt: '2026-08-18T00:00:00.000Z',
     })
-    const { getByTestId, findByText } = await renderBanner()
+    const screen = await renderBanner()
     expect(alertTitle()).toBe('My Server is under load.')
-    fireEvent.press(getByTestId('status-pill'))
-    expect(await findByText('The CPU is busy.')).toBeTruthy()
+    await openAdvice(screen)
+    expect(await screen.findByText('The CPU is busy.')).toBeTruthy()
     expect(
-      await findByText(/On this Windows PC, quit Cursor, Chrome, or any VMs/),
+      await screen.findByText(/On this Windows PC, quit Cursor, Chrome, or any VMs/),
     ).toBeTruthy()
   })
 
@@ -221,7 +231,7 @@ describe('HostPressureBanner', () => {
     useServersStore.getState().setHostPressure(server.id, elevated)
     const screen = await renderBanner()
 
-    fireEvent.press(screen.getByTestId('status-pill'))
+    await openAdvice(screen)
     fireEvent.press(await screen.findByTestId('host-pressure-dismiss'))
     await waitFor(() => {
       expect(screen.queryByTestId('status-pill')).toBeNull()
@@ -231,6 +241,7 @@ describe('HostPressureBanner', () => {
       useServersStore.getState().setHostPressure(server.id, { ...elevated, level: 'critical' })
     })
     fireEvent.press(screen.getByTestId('status-pill'))
+    fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
     expect(await screen.findByTestId('host-pressure-sheet')).toBeTruthy()
 
     await act(async () => {
@@ -244,7 +255,7 @@ describe('HostPressureBanner', () => {
     const server = seedServer()
     useServersStore.getState().setHostPressure(server.id, elevated)
     const screen = await renderBanner()
-    fireEvent.press(screen.getByTestId('status-pill'))
+    await openAdvice(screen)
     fireEvent.press(await screen.findByTestId('host-pressure-dismiss'))
     await waitFor(() => {
       expect(screen.queryByTestId('status-pill')).toBeNull()
