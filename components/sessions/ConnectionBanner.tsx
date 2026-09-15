@@ -14,8 +14,8 @@ interface Props {
   variant: 'reconnecting' | 'stalled'
 }
 
-// Slim inline strip (ServerErrorBanner precedent) — a persistent connection
-// indicator must not block the content the way the modal-style Banner does.
+// Slim inline strip — a persistent connection indicator must not block the
+// content the way a modal-style banner does.
 export function ConnectionBanner({ variant }: Props) {
   const { t } = useTranslation('terminal')
   const theme = useTheme()

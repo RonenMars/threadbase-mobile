@@ -1,5 +1,6 @@
 import { StatusSheet } from '@/components/alerts/StatusSheet'
 import { CriticalDialog, type CriticalAction } from '@/components/alerts/CriticalDialog'
+import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { useAlertAnnouncements } from '@/hooks/useAlertAnnouncements'
 import { useRequestFailureAlerts } from '@/hooks/useRequestFailureAlerts'
 import { useArbitratedAlerts } from '@/hooks/useArbitratedAlerts'
@@ -51,6 +52,7 @@ export function AlertHost() {
   useRequestFailureAlerts()
   return (
     <>
+      <SlowQueryBanner />
       <CriticalDialogHost />
       <StatusSheet />
     </>

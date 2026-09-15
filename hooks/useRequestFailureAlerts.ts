@@ -7,6 +7,7 @@ import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
 import { queryClient } from '@/services/query-client'
 import { classifyError } from '@/services/error-policy'
+import { formatMinutesAgo } from '@/lib/alertLabels'
 import { useAlertListSync } from '@/hooks/useAlertSync'
 import type { AlertInput } from '@/stores/alerts'
 import { queryCause, serverCause } from '@/types/alerts'
@@ -19,18 +20,43 @@ function isSheetCategory(category: QueryCategory): category is SheetCategory {
   return category !== 'browse'
 }
 
-function getCategoryTitle(category: SheetCategory, t: TFunction<'common'>): string {
+function namedServer(
+  servers: Record<string, { label?: string; url: string }>,
+  displayedIds: string[],
+): string | undefined {
+  const ids = displayedIds.length > 0 ? displayedIds : Object.keys(servers)
+  if (ids.length !== 1) return undefined
+  const server = servers[ids[0]]
+  const label = server?.label?.trim() || server?.url
+  return label || undefined
+}
+
+function getCategoryTitle(
+  category: SheetCategory,
+  t: TFunction<'common'>,
+  server?: string,
+): string {
   switch (category) {
     case 'sessions':
-      return t('errorBanner.titleSessions')
+      return server
+        ? t('errorBanner.titleSessions_named', { server })
+        : t('errorBanner.titleSessions')
     case 'conversations':
-      return t('errorBanner.titleConversations')
+      return server
+        ? t('errorBanner.titleConversations_named', { server })
+        : t('errorBanner.titleConversations')
     case 'messages':
-      return t('errorBanner.titleMessages')
+      return server
+        ? t('errorBanner.titleMessages_named', { server })
+        : t('errorBanner.titleMessages')
     case 'session-detail':
-      return t('errorBanner.titleSessionDetail')
+      return server
+        ? t('errorBanner.titleSessionDetail_named', { server })
+        : t('errorBanner.titleSessionDetail')
     case 'other':
-      return t('errorBanner.titleOther')
+      return server
+        ? t('errorBanner.titleOther_named', { server })
+        : t('errorBanner.titleOther')
   }
 }
 
@@ -64,6 +90,7 @@ export function useRequestFailureAlerts() {
   const dismissError = useLoadingStateStore((s) => s.dismissError)
   const statuses = useServerFetchStatusStore((s) => s.statuses)
   const servers = useServersStore((s) => s.servers)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const { t } = useTranslation('common')
   const router = useRouter()
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set())
@@ -105,16 +132,21 @@ export function useRequestFailureAlerts() {
   }
 
   const entries = useMemo((): AlertInput[] => {
+    const host = namedServer(servers, displayedServerIds)
     const serverRows: AlertInput[] = failedServerIds.map((serverId): AlertInput => {
       const entry = statuses[serverId]
       const server = servers[serverId]
       const label = server.label?.trim() || server.url
+      const ago = entry.lastCheckedAt ? formatMinutesAgo(entry.lastCheckedAt, t) : undefined
+      const message = ago
+        ? t('errorBanner.messageConnectionAgo', { label, ago })
+        : t('errorBanner.messageConnection', { label })
       return {
         id: serverId,
         cause: serverCause(serverId),
         level: 'error',
         title: label,
-        message: t('errorBanner.messageConnection', { label }),
+        message,
         code: entry.code ?? (entry.httpStatus ? `HTTP_${entry.httpStatus}` : undefined),
         rawMessage: entry.error,
         retryable: true,
@@ -139,7 +171,7 @@ export function useRequestFailureAlerts() {
         id: error.id,
         cause: queryCause(error.id),
         level: 'error',
-        title: getCategoryTitle(error.category, t),
+        title: getCategoryTitle(error.category, t, host),
         message: classified.description ?? getCategoryMessage(error.category, t),
         code: error.code ?? (error.status ? `HTTP_${error.status}` : undefined),
         rawMessage: error.message,
@@ -187,7 +219,7 @@ export function useRequestFailureAlerts() {
 
     const rest = failedServerIds.length > 0 ? serverRows : categoryRows
     return [...blockingRows, ...rest]
-  }, [failedServerIds, sheetErrors, blockingErrors, servers, statuses, retryingIds, t, dismissError, router])
+  }, [failedServerIds, sheetErrors, blockingErrors, servers, displayedServerIds, statuses, retryingIds, t, dismissError, router])
 
   useAlertListSync(entries)
 }
