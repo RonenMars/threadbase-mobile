@@ -1,36 +1,38 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import type { ViewStyle } from 'react-native'
-import { Terminal } from 'phosphor-react-native'
-import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
-import { GlassFill } from '@/components/ui/GlassFill'
+import Svg, { Path } from 'react-native-svg'
+import { Plus } from 'phosphor-react-native'
+import { useTheme } from '@/contexts/ThemeContext'
+import { PROVIDER_MARK_PATHS } from '@/components/sessions/shared/ProviderMark'
 import { font, spacing, radius, type Theme } from '@/constants/theme'
 
 interface EmptyStateProps {
   title: string
   subtitle?: string
   style?: ViewStyle
-  action?: { label: string; onPress: () => void }
+  action?: { label: string; onPress: () => void; plus?: boolean }
   secondaryAction?: { label: string; onPress: () => void }
 }
 
 export function EmptyState({ title, subtitle, style, action, secondaryAction }: EmptyStateProps) {
   const theme = useTheme()
-  const isGlass = useIsGlass()
   const s = useMemo(() => styles(theme), [theme])
 
   return (
     <View style={[s.container, style]}>
-      <View style={[s.iconWrap, isGlass && s.iconWrapGlass]}>
-        <GlassFill />
-        <Terminal size={32} color={theme.text.accent} weight="light" />
+      <View style={s.iconWrap}>
+        <Svg width={20} height={20} viewBox="0 0 24 24">
+          <Path d={PROVIDER_MARK_PATHS.claude} fill={theme.border} fillRule="evenodd" clipRule="evenodd" />
+        </Svg>
       </View>
       <Text style={s.title}>{title}</Text>
       {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
       {action || secondaryAction ? (
         <View style={s.actions}>
           {action ? (
-            <TouchableOpacity style={s.action} onPress={action.onPress}>
+            <TouchableOpacity style={s.action} onPress={action.onPress} testID="empty-state-action">
+              {action.plus ? <Plus size={14} color={theme.bg.primary} weight="bold" /> : null}
               <Text style={s.actionText}>{action.label}</Text>
             </TouchableOpacity>
           ) : null}
@@ -56,19 +58,15 @@ function styles(theme: Theme) {
       backgroundColor: theme.bg.primary,
     },
     iconWrap: {
-      width: 56,
-      height: 56,
-      borderRadius: radius.md,
-      backgroundColor: theme.bg.card,
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      backgroundColor: theme.bg.secondary,
       borderWidth: 1,
       borderColor: theme.border,
-      overflow: 'hidden',
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.sm,
-    },
-    iconWrapGlass: {
-      backgroundColor: 'transparent',
     },
     title: {
       color: theme.text.primary,
@@ -91,9 +89,12 @@ function styles(theme: Theme) {
     },
     action: {
       minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'center',
+      gap: spacing.sm,
       paddingHorizontal: spacing.md,
-      borderRadius: radius.sm,
+      borderRadius: 18,
       backgroundColor: theme.text.accent,
     },
     actionText: {

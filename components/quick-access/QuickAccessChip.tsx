@@ -48,7 +48,7 @@ export function QuickAccessChip({ item, tab, editMode, onPress, onDelete }: Prop
         <Folder size={13} color={isPinned ? theme.text.accent : theme.text.secondary} />
       ) : (
         // session, conversation, and project-chat all visually represent a chat;
-        // use the same lightning icon to match SessionCard branding.
+        // use the same lightning icon as live session rows.
         <Lightning size={13} color={isPinned ? theme.text.accent : theme.text.secondary} />
       )}
       <Text

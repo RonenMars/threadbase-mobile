@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useNavLockStore } from '@/stores/navLock'
-import { isPresentationLive } from '@/lib/sessionPresentation'
+import { isPresentationLive, deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
 import { projectRailToken } from './projectTiers'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
@@ -74,9 +74,6 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
   const projectId = group.sessions.find((s) => s.projectId)?.projectId ?? encodedPath
 
   const todaySessionCount = group.sessions.filter((s) => isToday(s.startedAt)).length
-  // Only the loaded rows can be counted, so this is 0 while the card is closed
-  // — the closed header shows "N live · last <time>" without a today count.
-  const todayConvCount = conversations.filter((c) => isToday(c.lastActivity)).length
 
   // Colour belongs to state alone: the rail is the most urgent live session's
   // colour, and a project with nothing live has no rail.
@@ -90,11 +87,9 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     [group.projectPath],
   )
 
-  // A closed card cannot know "N today": the conversations it would count are
-  // fetched on expand, so the piece appears only once it is true.
   const activitySummary = useMemo(() => {
+    const needsYouCount = group.sessions.filter((s) => deriveSessionPresentation(s).tier === 'needsYou').length
     const liveCount = group.sessions.filter(isPresentationLive).length
-    const todayCount = isOpen ? todaySessionCount + todayConvCount : 0
     const lastActivity = group.latestActivityMs > 0
       ? formatListTime(group.latestActivityMs, {
           locale: i18n.language,
@@ -105,11 +100,12 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
         })
       : null
     const pieces: string[] = []
-    if (liveCount > 0) pieces.push(t('hub.activityLive', { count: liveCount }))
-    if (todayCount > 0) pieces.push(t('hub.activityToday', { total: todayCount }))
+    if (needsYouCount > 0) pieces.push(t('hub.activityNeedsYou', { count: needsYouCount }))
+    else if (liveCount > 0) pieces.push(t('hub.activityLive', { count: liveCount }))
+    if (todaySessionCount > 0) pieces.push(t('hub.activityToday', { total: todaySessionCount }))
     if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')
-  }, [group.sessions, group.latestActivityMs, isOpen, todaySessionCount, todayConvCount, i18n.language, t])
+  }, [group.sessions, group.latestActivityMs, todaySessionCount, i18n.language, t])
 
   return (
     <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
@@ -150,38 +146,45 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
           {isOpen && (
             <View style={styles.body}>
           <View style={styles.section}>
-            {[
-              ...group.sessions.map((s) => ({
-                key: `s-${s.serverId}::${s.id}`,
-                ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
-                node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
-              })),
-              ...conversations.map((c) => ({
-                key: `c-${c.serverId}::${c.id}`,
-                ms: Date.parse(c.lastActivity) || 0,
-                node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} forceServerChip={forceServerChip} />,
-              })),
-            ]
-              .sort((a, b) => b.ms - a.ms)
-              .map((item) => item.node)}
-            {isLoading ? (
-              <ActivityIndicator
-                style={styles.bodySpinner}
-                size="small"
-                color={theme.text.secondary}
-                testID={`hub-conversations-loading-${group.projectPath}`}
-              />
-            ) : null}
-            {convCount > conversations.length ? (
-              <TouchableOpacity
-                onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
-                activeOpacity={0.75}
-                style={styles.seeAllRow}
-              >
-                <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
-                <CaretRight size={14} color={theme.text.accent} />
-              </TouchableOpacity>
-            ) : null}
+            {(() => {
+              const previewLimit = 3
+              const merged = [
+                ...group.sessions.map((s) => ({
+                  key: `s-${s.serverId}::${s.id}`,
+                  ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
+                  node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
+                })),
+                ...conversations.map((c) => ({
+                  key: `c-${c.serverId}::${c.id}`,
+                  ms: Date.parse(c.lastActivity) || 0,
+                  node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} forceServerChip={forceServerChip} />,
+                })),
+              ].sort((a, b) => b.ms - a.ms)
+              const hasMore = merged.length > previewLimit || convCount > conversations.length
+              return (
+                <>
+                  {merged.slice(0, previewLimit).map((item) => item.node)}
+                  {isLoading ? (
+                    <ActivityIndicator
+                      style={styles.bodySpinner}
+                      size="small"
+                      color={theme.text.secondary}
+                      testID={`hub-conversations-loading-${group.projectPath}`}
+                    />
+                  ) : null}
+                  {hasMore && convCount > 0 ? (
+                    <TouchableOpacity
+                      onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
+                      activeOpacity={0.75}
+                      style={styles.seeAllRow}
+                    >
+                      <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
+                      <CaretRight size={14} color={theme.text.accent} />
+                    </TouchableOpacity>
+                  ) : null}
+                </>
+              )
+            })()}
           </View>
               {onBrowsePath ? (
                 <TouchableOpacity

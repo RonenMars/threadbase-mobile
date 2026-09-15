@@ -17,6 +17,7 @@ import { getAgentPhaseLabel } from '@/components/sessions/agentPhaseLabel'
 import { formatCoarseElapsed } from '@/components/sessions/shared/formatCoarseElapsed'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
+import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
 import { LiveCard } from './LiveCard'
 
@@ -25,6 +26,7 @@ interface Props {
   title: string
   serverLabel?: string | null
   serverColor?: string | null
+  dominantProvider?: ProviderName
   isFirst?: boolean
 }
 
@@ -58,7 +60,7 @@ const sweepStyles = StyleSheet.create({
   bar: { position: 'absolute', top: 0, height: 2, width: `${SWEEP_WIDTH * 100}%`, borderRadius: 1 },
 })
 
-export function WorkingCard({ session, title, serverLabel, serverColor, isFirst }: Props) {
+export function WorkingCard({ session, title, serverLabel, serverColor, dominantProvider, isFirst }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const { handlePress, handleLongPress } = useSessionRowActions(session)
@@ -75,6 +77,8 @@ export function WorkingCard({ session, title, serverLabel, serverColor, isFirst 
       emphasis="faint"
       serverLabel={serverLabel}
       serverColor={serverColor}
+      provider={session.provider}
+      dominantProvider={dominantProvider}
       onPress={handlePress}
       onLongPress={handleLongPress}
       accessibilityLabel={`${title}, ${tierLabel}`}

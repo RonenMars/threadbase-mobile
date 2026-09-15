@@ -8,7 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 // Path data from assets/icons/providers/{claudecode,codex,cursor}.svg
 // (lobehub/lobe-icons, MIT — see assets/icons/providers/LICENSE). Inlined because
 // Metro has no SVG transformer; all three share a 24x24 viewBox.
-const MARK_PATHS: Record<ProviderLabelKey, string> = {
+export const PROVIDER_MARK_PATHS: Record<ProviderLabelKey, string> = {
   claude:
     'M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487V20H15v-2.921H9V20H7.488v-2.921H6V20H4.487v-2.921H3V14.05H0V10.95h3V5h17.998v5.949zM6 10.949h1.488V8.102H6v2.847zm10.51 0H18V8.102h-1.49v2.847z',
   codex:
@@ -17,15 +17,20 @@ const MARK_PATHS: Record<ProviderLabelKey, string> = {
     'M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z',
 }
 
+/** lobe-icons claudecode-color / claude-color. Used on the session detail header only. */
+const CLAUDE_COLOR = '#D97757'
+
 const MARK_SIZE = 13
 const TILE_SIZE = 22
 
 type ProviderMarkProps = {
   provider: ProviderName
   size?: number
+  /** `color` is the session-detail header; the list stays monochrome. */
+  variant?: 'mono' | 'color'
 }
 
-export function ProviderMark({ provider, size = TILE_SIZE }: ProviderMarkProps) {
+export function ProviderMark({ provider, size = TILE_SIZE, variant = 'mono' }: ProviderMarkProps) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
   const key = providerLabelKey(provider)
@@ -43,6 +48,8 @@ export function ProviderMark({ provider, size = TILE_SIZE }: ProviderMarkProps) 
       break
   }
 
+  const fill = variant === 'color' && key === 'claude' ? CLAUDE_COLOR : theme.text.secondary
+
   return (
     <View
       accessibilityRole="image"
@@ -58,7 +65,7 @@ export function ProviderMark({ provider, size = TILE_SIZE }: ProviderMarkProps) 
       }}
     >
       <Svg width={MARK_SIZE} height={MARK_SIZE} viewBox="0 0 24 24">
-        <Path d={MARK_PATHS[key]} fill={theme.text.secondary} fillRule="evenodd" clipRule="evenodd" />
+        <Path d={PROVIDER_MARK_PATHS[key]} fill={fill} fillRule="evenodd" clipRule="evenodd" />
       </Svg>
     </View>
   )

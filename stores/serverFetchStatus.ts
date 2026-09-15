@@ -3,7 +3,7 @@ import type { ServerWarmupState } from '@/types/api'
 
 // Per-server HTTP fetch health, separate from the WebSocket connection status
 // in ws-client. A server can be WS-connected but failing GETs (or vice versa).
-// The Hub header dot and ServerStatusModal AND-combine both signals when
+// ServerStateMessage and ServersStatusModal AND-combine both signals when
 // deciding green/amber/red.
 
 export type ServerFetchStatus = 'ok' | 'error' | 'warming_up'

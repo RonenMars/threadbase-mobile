@@ -150,6 +150,26 @@ describe('resolveDisplayTitle', () => {
     ).toEqual({ title: 'The login flow fails because the token expires.', source: 'assistant' })
   })
 
+  it('takes the instruction out of a tool envelope when the rest of the message is noise', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: '<user_action> <action>review the login flow</action> <results>',
+        projectName: 'app',
+        branch: 'main',
+      }),
+    ).toEqual({ title: 'Review the login flow', source: 'message' })
+  })
+
+  it('keeps a short envelope action as a command rather than falling to identity', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: '<user_action> <action>review</action> <results>',
+        projectName: 'app',
+        branch: 'main',
+      }),
+    ).toEqual({ title: 'review', source: 'command' })
+  })
+
   it('keeps a short command as the title, as typed, on the quiet rung', () => {
     expect(resolveDisplayTitle({ firstMessage: 'git pull', projectName: 'app', branch: 'main' })).toEqual({
       title: 'git pull',
