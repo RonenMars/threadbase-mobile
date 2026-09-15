@@ -242,4 +242,79 @@ describe('resolveDisplayTitle', () => {
     expect(result.title).toBe('Does the currently running session resume after the app restarts?')
     expect(result.title).not.toBe('does-the-currently-r')
   })
+
+  it('keeps the instruction after a pasted module dump', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: [
+          "import { Stack } from 'expo-router'",
+          "import { ThemeProvider } from '@/contexts/ThemeContext'",
+          '',
+          'export default function RootLayout() {',
+          '  return (',
+          '    <ThemeProvider>',
+          '      <Stack />',
+          '    </ThemeProvider>',
+          '  )',
+          '}',
+          '',
+          'Make the splash play only once per version',
+        ].join('\n'),
+        projectName: 'app',
+        branch: 'main',
+      }),
+    ).toEqual({ title: 'Make the splash play only once per version', source: 'message' })
+  })
+
+  it('keeps the instruction after a stack trace', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: [
+          "TypeError: Cannot read property 'foo' of undefined",
+          '    at RootLayout (app/_layout.tsx:12:5)',
+          '    at renderWithHooks (react-dom.js:3:1)',
+          'please fix this crash on launch',
+        ].join('\n'),
+        projectName: 'app',
+        branch: 'main',
+      }),
+    ).toEqual({ title: 'Please fix this crash on launch', source: 'message' })
+  })
+
+  it('walks to a later user turn when the first message is only a dump', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: [
+          "import { Stack } from 'expo-router'",
+          'export default function RootLayout() {',
+          '  return <Stack />',
+          '}',
+        ].join('\n'),
+        laterUserMessages: ['Wire the splash so it only plays once'],
+        projectName: 'app',
+        branch: 'main',
+      }),
+    ).toEqual({ title: 'Wire the splash so it only plays once', source: 'message' })
+  })
+
+  it('does not walk to a later turn when the first message is only a greeting', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: 'hi',
+        laterUserMessages: ['Wire the splash so it only plays once'],
+        projectName: 'app',
+        branch: 'main',
+      }),
+    ).toEqual({ title: 'app · main', source: 'untitled' })
+  })
+
+  it('does not treat a prose import request as a dump', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: 'import the helper from foo now',
+        projectName: 'app',
+        branch: 'main',
+      }),
+    ).toEqual({ title: 'Import the helper from foo now', source: 'message' })
+  })
 })
