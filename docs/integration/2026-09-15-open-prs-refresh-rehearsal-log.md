@@ -107,6 +107,30 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 - `conversation-search-anchor`: re-export `AuthError` from the api-client mock (#1096 `instanceof AuthError`).
 - `scripts/ci-integration-test-shards.json`: assign `home-inline-failures.test.tsx`. Isolated suites green; NowList 13/13 (both #1094 and #1095 cases).
 
+### 14:03 — #1097 rebase
+
+- **Command:** `git rebase --onto INT 0d186469` (unique `3f9eae33`)
+- **Result:** clean. Merge `327e941e`. Rebased unique `17d35c4a`.
+
+### 14:03 — #1098 rebase
+
+- **Command:** `git rebase --onto INT 3f9eae33` (unique `37f89433`)
+- **Result:** clean. Merge `34589715`. Rebased unique `035b13b4`.
+
+### 14:04 — #1099 rebase conflict (ledger 17)
+
+- **Command:** `git rebase --onto INT 37f89433` (unique `56d36b94`)
+- **Result:** modify/delete `ServerErrorBanner.tsx`. Take the delete. Merge `2d4e0295`. Rebased unique `5f4e6bda`.
+
+### 14:05 — checkpoint
+
+- lint green. typecheck red until follow-up (`onViewDetails` leftover on INT i18n test). After follow-up: typecheck green. Unit 2229. Integration 520 / 71 suites all pass. i18n 460 / 1 skipped. Scripts: 253 passed / 1 failed (`ci-lint-shards` host `expo-env.d.ts`, same as before).
+- Origin: `git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0**
+
+### 14:06 — INT follow-up
+
+- Drop `onViewDetails` from `ServerStateMessage.i18n.test.tsx` (removed by #1097; INT #1092 lastError case still asserts protocol-mismatch copy). Isolated suite 2/2.
+
 ## 6. Per-PR record
 
 ### #1088 update
@@ -168,6 +192,33 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 | Integration SHA | `24616675` |
 | GitHub CI | UNSTABLE; `AuthError` mock hole in search-anchor is INT-only (the screen gained `instanceof AuthError` on this PR) |
 
+### #1097
+
+| Field | Value |
+|---|---|
+| Unique commits | `3f9eae33` → `17d35c4a` |
+| Conflicts | none |
+| Integration SHA | `327e941e` |
+| GitHub CI | UNSTABLE |
+
+### #1098
+
+| Field | Value |
+|---|---|
+| Unique commits | `37f89433` → `035b13b4` |
+| Conflicts | none |
+| Integration SHA | `34589715` |
+| GitHub CI | UNSTABLE |
+
+### #1099
+
+| Field | Value |
+|---|---|
+| Unique commits | `56d36b94` → `5f4e6bda` |
+| Conflicts | ledger 17 |
+| Integration SHA | `2d4e0295` |
+| GitHub CI | UNSTABLE |
+
 ## 7. Conflict ledger
 
 | # | PR | File | What collided | Resolution | Class |
@@ -185,6 +236,7 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 | 14 | #1095 | hub `types.ts` / `ProjectHubList.tsx` | same prop split as NowList | Keep both | M |
 | 15 | #1095 | `locales/{en,ar,he,ru}/sessions.json` + hashes | #1094 retry copy vs #1095 stale-scope copy | Take #1095 `Can't reach any…` / hashes | M |
 | 16 | #1095 | `NowList.test.tsx` | cant-resume/warming/empty vs failure-panel tests | Keep all five tests | M |
+| 17 | #1099 | `ServerErrorBanner.tsx` | INT lastError patch vs #1099 delete | Take the delete. Banner was unmounted; lastError lives on `ServerStateMessage` | J |
 
 ### Judgment call 1 in full
 
@@ -198,11 +250,16 @@ Kept #1092's per-server `classifyServer` (that is the PR). Discarded the aggrega
 - #1096 ∩ search-anchor: `instanceof AuthError` against a mock that only re-exported `NotFoundError`. INT follow-up.
 - #1095 new `home-inline-failures.test.tsx` was not in `ci-integration-test-shards.json`. INT follow-up.
 - Host: gitignored `expo-env.d.ts` (mtime 2026-09-15 08:58) makes `ci-lint-shards` fail locally; not from these PRs; left alone.
+- #1097 ∩ INT i18n test: `onViewDetails` removed from `ServerStateMessage` props; INT protocol-mismatch case still passed it. Follow-up drops the prop.
 
 ### Judgment call 2 in full
 
 #1095 vs #1094 on NowList: keep #1094 warming / CantResume / empty FAB / hide-on-scroll, and #1095 inline failure panels / stale opacity / allFailed banner. withRows includes a warming server even when every host is also in error, so history skeletons are not dropped behind the stale-scope banner.
 
+### Judgment call 3 in full
+
+#1099 deletes unused `ServerErrorBanner`. INT had patched it with `wsManager.lastError` / `wsPermanentErrorMessage` for e2ee protocol mismatch — the same classification already lives on mounted `ServerStateMessage`. Keeping the file would reintroduce a leftover surface the PR exists to fold. Delete.
+
 ## 10. Origin-absent proof
 
-`git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0** (re-checked after #1096)
+`git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0** (re-checked after #1099)
