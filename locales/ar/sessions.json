@@ -1,7 +1,4 @@
 {
-  "header": {
-    "serverStatus": "حالة الخادم"
-  },
   "search": {
     "placeholder": "ابحث في السيشنات والمحادثات…",
     "accessibilityLabel": "بحث"

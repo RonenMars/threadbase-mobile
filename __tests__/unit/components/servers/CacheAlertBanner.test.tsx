@@ -1,7 +1,8 @@
 import React from 'react'
 import { fireEvent } from '@testing-library/react-native'
+import { HomeStatusPill } from '@/components/alerts/StatusPill'
 import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
-import { ToastViewport } from '@/components/ui/ToastViewport'
+import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { useAlertStore } from '@/stores/alerts'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
@@ -26,13 +27,18 @@ function seedServer(overrides: Partial<import('@/types/api').ServerConfig> = {})
   return server
 }
 
-function renderBanner(onPress: () => void) {
-  return renderWithI18n(
+function Harness({ onPress }: { onPress: () => void }) {
+  const open = useOpenStatusSurface()
+  return (
     <>
       <CacheAlertBanner onPress={onPress} />
-      <ToastViewport id="home" />
-    </>,
+      <HomeStatusPill onPress={open} />
+    </>
   )
+}
+
+function renderBanner(onPress: () => void) {
+  return renderWithI18n(<Harness onPress={onPress} />)
 }
 
 beforeEach(() => {
@@ -49,8 +55,8 @@ beforeEach(() => {
 describe('CacheAlertBanner', () => {
   it('renders nothing when there is no cache alert', async () => {
     seedServer()
-    const { toJSON } = await renderBanner(jest.fn())
-    expect(toJSON()).toBeNull()
+    const { queryByTestId } = await renderBanner(jest.fn())
+    expect(queryByTestId('status-pill')).toBeNull()
   })
 
   it('renders nothing for a high-severity alert (handled by the modal, not the banner)', async () => {
@@ -62,11 +68,11 @@ describe('CacheAlertBanner', () => {
       missingCount: 3,
       totalRows: 10,
     })
-    const { toJSON } = await renderBanner(jest.fn())
-    expect(toJSON()).toBeNull()
+    const { queryByTestId } = await renderBanner(jest.fn())
+    expect(queryByTestId('status-pill')).toBeNull()
   })
 
-  it('renders the banner for a low-severity alert with the missing count and server label', async () => {
+  it('raises a warning for a low-severity alert with the missing count and server label', async () => {
     const server = seedServer()
     useServersStore.getState().setCacheAlert(server.id, {
       fingerprint: 'fp1',
@@ -75,11 +81,14 @@ describe('CacheAlertBanner', () => {
       missingCount: 3,
       totalRows: 10,
     })
-    const { findByText } = await renderBanner(jest.fn())
-    expect(await findByText(/3 conversation histories are missing on My Server/)).toBeTruthy()
+    const { getByTestId } = await renderBanner(jest.fn())
+    expect(getByTestId('status-pill')).toBeTruthy()
+    expect(useAlertStore.getState().alerts[0].title).toMatch(
+      /3 conversation histories are missing on My Server/,
+    )
   })
 
-  it('calls onPress from Review', async () => {
+  it('calls onPress from the status pill', async () => {
     const server = seedServer()
     useServersStore.getState().setCacheAlert(server.id, {
       fingerprint: 'fp1',
@@ -90,7 +99,7 @@ describe('CacheAlertBanner', () => {
     })
     const onPress = jest.fn()
     const { findByTestId } = await renderBanner(onPress)
-    fireEvent.press(await findByTestId('toast-action-cache-alert'))
+    fireEvent.press(await findByTestId('status-pill'))
     expect(onPress).toHaveBeenCalled()
   })
 })
