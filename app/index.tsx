@@ -32,7 +32,6 @@ import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
-import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
@@ -143,13 +142,12 @@ export default function ProjectsHub() {
   // Header controls
   const [searchOpen, setSearchOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [statusModalOpen, setStatusModalOpen] = useState(false)
   const [browseErrorServerId, setBrowseErrorServerId] = useState<string | null>(null)
   const [pickerVisible, setPickerVisible] = useState(false)
   const [fabNoServerToast, setFabNoServerToast] = useState(false)
   const [manualCacheAlertServerId, setManualCacheAlertServerId] = useState<string | null>(null)
   const [cacheAlertToast, setCacheAlertToast] = useState<string | null>(null)
-  const openStatusSurface = useOpenStatusSurface(() => setStatusModalOpen(true))
+  const openStatusSurface = useOpenStatusSurface()
 
   // Auto-open for a pending high-severity alert (derived, not stateful); the
   // low-severity banner can also open the modal manually via setCacheAlertModalServerId.
@@ -516,7 +514,6 @@ export default function ProjectsHub() {
         servers={servers}
         fetchStatuses={fetchStatuses}
         wsConnectedCount={wsConnectedCount}
-        onViewDetails={() => setStatusModalOpen(true)}
         onRetryFailed={(serverId) => retryFailed([serverId])}
         isRetrying={isRetryingFailedServers}
       />
@@ -622,11 +619,6 @@ export default function ProjectsHub() {
       />
 
       {/* Modals & Sheets */}
-      <ServersStatusModal
-        visible={statusModalOpen}
-        onClose={() => setStatusModalOpen(false)}
-        onRetrySessions={(serverId) => retryFailed([serverId])}
-      />
       <FilterSortSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}

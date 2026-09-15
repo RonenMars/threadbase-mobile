@@ -65,7 +65,6 @@ function alertTitle() {
 async function openAdvice(screen: Awaited<ReturnType<typeof renderBanner>>) {
   fireEvent.press(screen.getByTestId('status-pill'))
   expect(await screen.findByTestId('status-sheet')).toBeTruthy()
-  fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
 }
 
 beforeEach(() => {
@@ -179,7 +178,7 @@ describe('HostPressureBanner', () => {
     const screen = await renderBanner()
     expect(screen.queryByText('The computer is low on free RAM.')).toBeNull()
     await openAdvice(screen)
-    expect(await screen.findByText('The computer is low on free RAM.')).toBeTruthy()
+    expect(await screen.findByText(/The computer is low on free RAM/)).toBeTruthy()
     expect(
       await screen.findByText(/The CPU can still look idle/),
     ).toBeTruthy()
@@ -199,7 +198,7 @@ describe('HostPressureBanner', () => {
     const screen = await renderBanner()
     expect(screen.queryByText(/5 agents/)).toBeNull()
     await openAdvice(screen)
-    expect(await screen.findByText('5 agents are running on this computer.')).toBeTruthy()
+    expect(await screen.findByText(/5 agents are running on this computer/)).toBeTruthy()
   })
 
   it('falls back to GET /api/info platform when the frame omits os', async () => {
@@ -220,7 +219,7 @@ describe('HostPressureBanner', () => {
     const screen = await renderBanner()
     expect(alertTitle()).toBe('My Server is under load.')
     await openAdvice(screen)
-    expect(await screen.findByText('The CPU is busy.')).toBeTruthy()
+    expect(await screen.findByText(/The CPU is busy/)).toBeTruthy()
     expect(
       await screen.findByText(/On this Windows PC, quit Cursor, Chrome, or any VMs/),
     ).toBeTruthy()
@@ -232,7 +231,7 @@ describe('HostPressureBanner', () => {
     const screen = await renderBanner()
 
     await openAdvice(screen)
-    fireEvent.press(await screen.findByTestId('host-pressure-dismiss'))
+    fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
     await waitFor(() => {
       expect(screen.queryByTestId('status-pill')).toBeNull()
     })
@@ -241,13 +240,14 @@ describe('HostPressureBanner', () => {
       useServersStore.getState().setHostPressure(server.id, { ...elevated, level: 'critical' })
     })
     fireEvent.press(screen.getByTestId('status-pill'))
-    fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
-    expect(await screen.findByTestId('host-pressure-sheet')).toBeTruthy()
+    expect(await screen.findByTestId('error-sheet-row-host-pressure')).toBeTruthy()
+    expect(await screen.findByText('My Server is low on memory.')).toBeTruthy()
 
     await act(async () => {
       useServersStore.getState().setHostPressure(server.id, elevated)
     })
-    expect(screen.queryByTestId('host-pressure-sheet')).toBeNull()
+    expect(screen.queryByTestId('status-pill')).toBeNull()
+    expect(screen.queryByTestId('error-sheet-row-host-pressure')).toBeNull()
     screen.unmount()
   })
 
@@ -256,7 +256,7 @@ describe('HostPressureBanner', () => {
     useServersStore.getState().setHostPressure(server.id, elevated)
     const screen = await renderBanner()
     await openAdvice(screen)
-    fireEvent.press(await screen.findByTestId('host-pressure-dismiss'))
+    fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
     await waitFor(() => {
       expect(screen.queryByTestId('status-pill')).toBeNull()
     })
