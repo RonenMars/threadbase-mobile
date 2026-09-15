@@ -32,6 +32,7 @@ import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useQuietTailStore } from '@/stores/quietTail'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -65,6 +66,8 @@ interface Props {
   warmingServerIds?: string[]
   onNewSession?: () => void
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+  onRetryServer?: (serverId: string) => void
+  onOpenStatus?: () => void
 }
 
 interface Entry {
@@ -76,7 +79,7 @@ interface Entry {
 
 type FlatItem =
   | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number }
-  | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number }
+  | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number; failed: boolean }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
   | { kind: 'quietTail'; key: string; entries: Entry[] }
   | { kind: 'skeleton'; key: string }
@@ -196,6 +199,8 @@ export const NowList = React.memo(function NowList({
   warmingServerIds = [],
   onNewSession,
   onScroll,
+  onRetryServer,
+  onOpenStatus,
 }: Props) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -208,6 +213,7 @@ export const NowList = React.memo(function NowList({
   const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const setQuietTail = useQuietTailStore((s) => s.set)
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
@@ -264,11 +270,24 @@ export const NowList = React.memo(function NowList({
     }
 
     if (multiServer) {
-      const withRows = activeServerIds.filter((id) => earlier.some((e) => e.item.item.serverId === id) || warming.has(id))
+      const allFailed = activeServerIds.length > 0
+        && activeServerIds.every((id) => fetchStatuses[id]?.status === 'error')
+      const withRows = activeServerIds.filter((id) =>
+        earlier.some((e) => e.item.item.serverId === id)
+        || warming.has(id)
+        || (!allFailed && fetchStatuses[id]?.status === 'error'),
+      )
       const collapsible = withRows.length > 1
       for (const id of withRows) {
         const bucket = earlier.filter((e) => e.item.item.serverId === id)
-        out.push({ kind: 'serverHeader', key: `server-${id}`, serverId: id, serverLabel: servers[id]?.label ?? id, totalCount: bucket.length })
+        out.push({
+          kind: 'serverHeader',
+          key: `server-${id}`,
+          serverId: id,
+          serverLabel: servers[id]?.label ?? id,
+          totalCount: bucket.length,
+          failed: !allFailed && fetchStatuses[id]?.status === 'error',
+        })
         if (collapsible && collapsedServers.includes(id)) continue
         out.push(...withQuietTail(bucket, id))
         if (warming.has(id)) appendSkeletons(out, id)
@@ -296,7 +315,7 @@ export const NowList = React.memo(function NowList({
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, warming, t])
+  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, warming, fetchStatuses, t])
 
   const openQuietTail = useCallback((tail: Entry[]) => {
     setQuietTail(tail.map((e) => ({ item: e.item, title: e.title.title })))
@@ -319,6 +338,9 @@ export const NowList = React.memo(function NowList({
             isExpanded={!collapsedServers.includes(item.serverId)}
             onToggle={() => toggleServer(item.serverId)}
             isRefreshing={isBackgroundRefreshing}
+            failed={item.failed}
+            onRetry={item.failed ? () => onRetryServer?.(item.serverId) : undefined}
+            onDetails={item.failed ? onOpenStatus : undefined}
           />
         )
       case 'quietTail':
@@ -348,11 +370,12 @@ export const NowList = React.memo(function NowList({
             />
           )
         }
+        const stale = fetchStatuses[item.entry.item.item.serverId]?.status === 'error'
         // A live tier is a card wherever it sits; everything else is a two-line row.
         if (item.entry.tier === 'needsYou' || item.entry.tier === 'working') {
           const session = item.entry.item.item as MultiSession
           const Card = item.entry.tier === 'needsYou' ? NeedsYouCard : WorkingCard
-          return (
+          const card = (
             <Card
               session={session}
               title={item.entry.title.title}
@@ -362,21 +385,24 @@ export const NowList = React.memo(function NowList({
               isFirst={item.isFirst}
             />
           )
+          return stale ? <View style={{ opacity: 0.6 }}>{card}</View> : card
         }
         return (
-          <EarlierRow
-            item={item.entry.item}
-            title={item.entry.title.title}
-            quiet={item.entry.title.rung !== 'intent'}
-            isFirst={item.isFirst}
-            highlight={highlight}
-            dominantProvider={dominantProvider}
-            onLongPressConversation={setActiveConv}
-          />
+          <View style={stale ? { opacity: 0.6 } : undefined}>
+            <EarlierRow
+              item={item.entry.item}
+              title={item.entry.title.title}
+              quiet={item.entry.title.rung !== 'intent'}
+              isFirst={item.isFirst}
+              highlight={highlight}
+              dominantProvider={dominantProvider}
+              onLongPressConversation={setActiveConv}
+            />
+          </View>
         )
       }
     }
-  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, openQuietTail, highlight, dominantProvider])
+  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, openQuietTail, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">

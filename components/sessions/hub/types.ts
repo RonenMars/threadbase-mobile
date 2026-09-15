@@ -32,6 +32,8 @@ export interface ProjectHubListProps {
   ListHeaderComponent?: ReactElement | null
   onNewSession?: () => void
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+  onRetryServer?: (serverId: string) => void
+  onOpenStatus?: () => void
 }
 
 export interface ProjectHubCardProps {
