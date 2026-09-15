@@ -1,6 +1,6 @@
 import { canSetModelEffort } from '@/lib/modelEffortSupport'
 import { NetworkError, NotFoundError } from '@/services/api-client'
-import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, CURSOR_CLI_PROVIDER } from '@/constants/providers'
+import { CLAUDE_CODE_PROVIDER, CODEX_CLI_PROVIDER, CURSOR_PROVIDER } from '@/constants/providers'
 import { MODEL_NAME_RE } from '@/constants/models'
 
 describe('canSetModelEffort', () => {
@@ -19,7 +19,7 @@ describe('canSetModelEffort', () => {
   })
 
   it('is false for a Cursor session', () => {
-    expect(canSetModelEffort({ provider: CURSOR_CLI_PROVIDER, effort: 'high' })).toBe(false)
+    expect(canSetModelEffort({ provider: CURSOR_PROVIDER, effort: 'high' })).toBe(false)
   })
 
   // A streamer too old for the PATCH routes never puts `effort` in session state.
