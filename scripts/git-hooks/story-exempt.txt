@@ -11,5 +11,5 @@ components/terminal/TerminalRawModeToast.tsx
 components/alerts/StatusSheet.tsx
 # Screen-sized list composition over stores, router and the quick-access sheet — the pieces (cards, rows, eyebrow) have stories.
 components/sessions/now/NowList.tsx
-# Store-driven host: announcements plus StatusSheet; no chrome of its own.
+# Store-driven host: announcements, CriticalDialog, and StatusSheet.
 components/alerts/AlertHost.tsx

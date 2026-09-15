@@ -32,7 +32,7 @@ import { useNavLockStore } from '@/stores/navLock'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
-import { createApiForServer, ConversationBusyError, NotFoundError } from '@/services/api-client'
+import { createApiForServer, AuthError, ConversationBusyError, NotFoundError } from '@/services/api-client'
 import { CODEX_CLI_PROVIDER, providerLabelKey } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
@@ -48,6 +48,7 @@ import { LivePauseControl } from '@/components/conversation/LivePauseControl'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { InlineError } from '@/components/alerts/InlineError'
+import { CriticalDialog, type CriticalAction } from '@/components/alerts/CriticalDialog'
 import { useClaimInline } from '@/hooks/useClaimInline'
 import { queryCause } from '@/types/alerts'
 import type { Message, Session } from '@/types/api'
@@ -332,7 +333,10 @@ export default function ConversationDetailScreen() {
   const mergedMessages = livePaused ? frozenRef.current : liveMerged
 
   const isConvNotFound = error instanceof NotFoundError
-  useClaimInline(error && !isConvNotFound ? [queryCause('messages')] : [])
+  const isBlockingLoad = error instanceof AuthError
+    || (typeof error === 'object' && error !== null && 'status' in error
+      && ((error as { status?: number }).status === 401 || (error as { status?: number }).status === 403))
+  useClaimInline(error && !isConvNotFound && !isBlockingLoad ? [queryCause('messages')] : [])
   // ponytail: only fires when conversation 404s — avoids extra request on normal loads
   const { data: liveSession, isLoading: isSessionLoading } = useQuery({
     queryKey: ['session', serverId, id],
@@ -367,6 +371,13 @@ export default function ConversationDetailScreen() {
   }, [isConvNotFound, isSessionLoading, isSessionLive, serverId, id])
 
   const [infoVisible, setInfoVisible] = useState(false)
+  const [resumeCollision, setResumeCollision] = useState<{
+    title: string
+    message: string
+    canTakeOver: boolean
+    canFork: boolean
+    canForce: boolean
+  } | null>(null)
   const [footerHeight, setFooterHeight] = useState(0)
   // Flips once FlashList reports it has drawn its items (onLoad). Reset per
   // conversation / per re-anchor so a new window re-gates the skeleton.
@@ -604,20 +615,13 @@ export default function ConversationDetailScreen() {
                 err.canForce ? t('resume.confirmExplain') : null,
               ].filter((s): s is string => s !== null)
               const message = [baseMessage, ...explanations].join('\n\n')
-              Alert.alert(title, message, [
-                { text: t('common:button.cancel'), style: 'cancel' },
-                ...(err.canTakeOver
-                  ? [
-                      {
-                        text: t('resume.takeOver'),
-                        style: 'destructive' as const,
-                        onPress: takeOverSession,
-                      },
-                    ]
-                  : []),
-                ...(err.canFork ? [{ text: t('resume.fork'), onPress: forkIntoThreadbase }] : []),
-                ...(err.canForce ? [{ text: t('resume.confirm'), onPress: forceResume }] : []),
-              ])
+              setResumeCollision({
+                title,
+                message,
+                canTakeOver: err.canTakeOver,
+                canFork: err.canFork,
+                canForce: err.canForce,
+              })
             } else {
               Alert.alert(t('resume.failed'), err instanceof Error ? err.message : String(err), [
                 { text: t('common:button.cancel'), style: 'cancel' },
@@ -629,7 +633,52 @@ export default function ConversationDetailScreen() {
       )
     }
     attempt()
-  }, [resume, navigateToResumedSession, forceResume, takeOverSession, forkIntoThreadbase, t])
+  }, [resume, navigateToResumedSession, t])
+
+  const resumeCollisionActions = useMemo((): CriticalAction[] => {
+    if (!resumeCollision) return []
+    const close = () => setResumeCollision(null)
+    const actions: CriticalAction[] = [{
+      label: t('common:button.cancel'),
+      onPress: close,
+      variant: 'secondary',
+      testID: 'resume-collision-cancel',
+    }]
+    if (resumeCollision.canTakeOver) {
+      actions.push({
+        label: t('resume.takeOver'),
+        onPress: () => {
+          close()
+          takeOverSession()
+        },
+        variant: 'destructive',
+        testID: 'resume-collision-take-over',
+      })
+    }
+    if (resumeCollision.canFork) {
+      actions.push({
+        label: t('resume.fork'),
+        onPress: () => {
+          close()
+          forkIntoThreadbase()
+        },
+        variant: 'secondary',
+        testID: 'resume-collision-fork',
+      })
+    }
+    if (resumeCollision.canForce) {
+      actions.push({
+        label: t('resume.confirm'),
+        onPress: () => {
+          close()
+          forceResume()
+        },
+        variant: resumeCollision.canTakeOver ? 'secondary' : 'primary',
+        testID: 'resume-collision-confirm',
+      })
+    }
+    return actions
+  }, [resumeCollision, takeOverSession, forkIntoThreadbase, forceResume, t])
 
   const handleBackToLiveSession = useCallback(() => {
     if (!fromSession) return
@@ -795,6 +844,15 @@ export default function ConversationDetailScreen() {
               <Text style={styles.retryBtnText}>{t('error.back')}</Text>
             </TouchableOpacity>
           </View>
+        </SafeAreaView>
+      )
+    }
+    if (isBlockingLoad) {
+      return (
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+          <ScreenHeader right={headerActions} />
+          {searchBar}
+          <View style={styles.listWrapper} />
         </SafeAreaView>
       )
     }
@@ -983,6 +1041,14 @@ export default function ConversationDetailScreen() {
           { label: 'Total Tokens', value: conversation.totalTokens != null ? String(conversation.totalTokens) : undefined },
           { label: 'Last Activity', value: conversation.lastActivity },
         ]}
+      />
+      <CriticalDialog
+        visible={resumeCollision != null}
+        title={resumeCollision?.title ?? ''}
+        message={resumeCollision?.message}
+        onRequestClose={() => setResumeCollision(null)}
+        testID="resume-collision-dialog"
+        actions={resumeCollisionActions}
       />
     </SafeAreaView>
   )
