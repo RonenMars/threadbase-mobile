@@ -63,6 +63,14 @@ describe('e2e.yml Android APK cache', () => {
     expect(readOnlyAt).toBeGreaterThan(setupAt);
   });
 
+  it('does not ask setup-android to install the removed tools package', () => {
+    const src = workflowSource();
+    const apkJob = src.slice(src.indexOf('  android-apk:\n'), src.indexOf('  android-maestro:\n'));
+    expect(apkJob).toContain('android-actions/setup-android@v4');
+    expect(apkJob).toContain('packages: platform-tools');
+    expect(apkJob).not.toContain('packages: tools');
+  });
+
   it('does not boot an emulator in the APK job', () => {
     const src = workflowSource();
     const apkJob = src.slice(src.indexOf('  android-apk:\n'), src.indexOf('  android-maestro:\n'));
