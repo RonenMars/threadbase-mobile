@@ -27,6 +27,13 @@ describe('LeaveSessionModal', () => {
     expect(screen.getByTestId('leave-session-option-leave')).toBeTruthy()
     expect(screen.getByTestId('leave-session-option-kill_on_idle')).toBeTruthy()
     expect(screen.queryByRole('combobox')).toBeNull()
+    expect(screen.getByTestId('leave-session-option-leave').props.accessibilityState).toEqual(
+      expect.objectContaining({ checked: true }),
+    )
+    expect(screen.getByTestId('leave-session-option-kill').props.accessibilityState).toEqual(
+      expect.objectContaining({ checked: false }),
+    )
+    expect(screen.getByTestId('leave-session-option-leave').props.accessibilityState.selected).toBeUndefined()
 
     await fireEvent.press(screen.getByTestId('leave-session-confirm'))
     expect(onConfirm).toHaveBeenCalledWith('leave', false)
