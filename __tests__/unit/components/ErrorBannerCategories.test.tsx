@@ -203,4 +203,18 @@ describe('Status sheet category rows', () => {
     await findByText('HTTP_404')
     await findByText('gone')
   })
+
+  it('opens Server Status from the sheet without stacking it over the sheet', async () => {
+    useLoadingStateStore.setState({
+      errors: [{ id: 'messages', category: 'messages', message: 'boom' }],
+    })
+    useErrorSheetStore.setState({ open: true })
+    const { getByTestId, queryByTestId, getByText } = await renderWithI18n(<AlertHost />)
+
+    getByTestId('status-sheet-server-status')
+    fireEvent.press(getByTestId('status-sheet-server-status'))
+    await waitFor(() => expect(queryByTestId('status-sheet')).toBeNull())
+    getByText(/Servers? Status/)
+    expect(useErrorSheetStore.getState().open).toBe(false)
+  })
 })
