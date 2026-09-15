@@ -6,7 +6,6 @@ import type { AlertEntry } from '@/types/alerts'
 
 const errorEntry: AlertEntry = {
   id: 's0',
-  viewport: 'global',
   cause: 'server:s0',
   raisedAt: 0,
   level: 'error',
@@ -37,7 +36,6 @@ export const Warning: Story = {
   args: {
     entry: {
       id: 'hp',
-      viewport: 'home',
       cause: 'host-pressure:s0',
       raisedAt: 0,
       level: 'warning',
@@ -52,7 +50,6 @@ export const NotRetryable: Story = {
   args: {
     entry: {
       id: 'messages',
-      viewport: 'global',
       cause: 'query:messages',
       raisedAt: 0,
       level: 'error',

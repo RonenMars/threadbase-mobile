@@ -40,7 +40,6 @@ describe('HomeStatusPill', () => {
   it('hides an info-only store', async () => {
     useAlertStore.getState().upsert({
       id: 'info',
-      viewport: 'home',
       cause: serverCause('a'),
       level: 'info',
       title: 'Connecting',
@@ -55,7 +54,6 @@ describe('HomeStatusPill', () => {
   it('hides a claimed error cause', async () => {
     useAlertStore.getState().upsert({
       id: 'a',
-      viewport: 'home',
       cause: serverCause('a'),
       level: 'error',
       title: 'A down',
@@ -72,7 +70,6 @@ describe('HomeStatusPill', () => {
   it('counts distinct error causes', async () => {
     useAlertStore.getState().upsert({
       id: 'a',
-      viewport: 'home',
       cause: serverCause('a'),
       level: 'error',
       title: 'A down',
@@ -81,7 +78,6 @@ describe('HomeStatusPill', () => {
     })
     useAlertStore.getState().upsert({
       id: 'b',
-      viewport: 'home',
       cause: serverCause('b'),
       level: 'error',
       title: 'B down',

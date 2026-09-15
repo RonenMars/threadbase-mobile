@@ -7,14 +7,12 @@ function entry(overrides: {
   level: AlertLevel
   title: string
   cause?: AlertCause
-  viewport?: string
   message?: string
   timeout?: number | null
   onPress?: () => void
 }): AlertInput {
   return {
     id: overrides.id,
-    viewport: overrides.viewport ?? 'home',
     cause: overrides.cause ?? serverCause('a'),
     level: overrides.level,
     title: overrides.title,
@@ -37,7 +35,6 @@ describe('useAlertStore', () => {
   it('auto-dismisses info after the default timeout', () => {
     useAlertStore.getState().upsert({
       id: 'ephemeral',
-      viewport: 'root',
       cause: 'servers:summary',
       level: 'info',
       title: 'Hello',
@@ -51,7 +48,6 @@ describe('useAlertStore', () => {
   it('does not auto-dismiss when timeout is null', () => {
     useAlertStore.getState().upsert({
       id: 'sticky',
-      viewport: 'home',
       cause: 'servers:summary',
       level: 'warning',
       title: 'Stay',
@@ -86,7 +82,6 @@ describe('useAlertStore', () => {
   it('does not revive a sticky-dismissed toast until the fingerprint changes', () => {
     const spec = {
       id: 'server-state',
-      viewport: 'home',
       cause: 'servers:summary' as AlertCause,
       level: 'warning' as const,
       title: 'AK is unreachable',
@@ -107,7 +102,6 @@ describe('useAlertStore', () => {
   it('re-arms the timeout when the copy is replaced', () => {
     const base = {
       id: 'ephemeral',
-      viewport: 'root',
       cause: 'servers:summary' as AlertCause,
       level: 'info' as const,
       message: 'World',
@@ -132,7 +126,6 @@ describe('useAlertStore', () => {
   it('replaces rather than mutates when onPress appears under identical copy', () => {
     const base = {
       id: 'server-state',
-      viewport: 'home',
       cause: 'servers:summary' as AlertCause,
       level: 'info' as const,
       title: 'Connecting to My Server…',
@@ -151,7 +144,6 @@ describe('useAlertStore', () => {
   it('clears the sticky block when the alert itself goes away', () => {
     const spec = {
       id: 'host-pressure',
-      viewport: 'home',
       cause: 'host-pressure:srv' as AlertCause,
       level: 'warning' as const,
       title: 'My Server is under memory pressure.',
