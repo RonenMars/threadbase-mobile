@@ -30,7 +30,6 @@ async function upsertError(id: string, title: string) {
   await act(async () => {
     useAlertStore.getState().upsert({
       id,
-      viewport: 'home',
       cause: serverCause(id),
       level: 'error',
       title,
@@ -57,7 +56,6 @@ describe('AlertHost announcements', () => {
     await act(async () => {
       useAlertStore.getState().upsert({
         id: 'hp',
-        viewport: 'home',
         cause: 'host-pressure:s0',
         level: 'warning',
         title: 'Host under load',

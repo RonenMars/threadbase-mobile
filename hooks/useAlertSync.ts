@@ -25,10 +25,10 @@ export function useAlertListSync(entries: readonly AlertInput[]) {
   }, [dismiss])
 }
 
-export function useAlertSync(id: string, spec: AlertSpec | null, viewport: string) {
+export function useAlertSync(id: string, spec: AlertSpec | null) {
   const entries = useMemo(
-    (): AlertInput[] => (spec ? [{ ...spec, id, viewport }] : []),
-    [spec, id, viewport],
+    (): AlertInput[] => (spec ? [{ ...spec, id }] : []),
+    [spec, id],
   )
   useAlertListSync(entries)
 }
