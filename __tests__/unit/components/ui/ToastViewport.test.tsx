@@ -17,24 +17,34 @@ beforeEach(() => {
 })
 
 describe('ToastViewport', () => {
-  it('opens the details sheet for a toast whose only body copy is message', async () => {
+  it('shows the message on the toast without opening a modal', async () => {
     useAlertStore.getState().upsert(infoToast)
-    const { findByTestId, queryByTestId, getAllByText } = await renderWithI18n(
+    const { findByTestId, queryByTestId, getByText } = await renderWithI18n(
       <ToastViewport />,
     )
     expect(queryByTestId('alert-details-sheet')).toBeNull()
+    await findByTestId('toast-server-state')
+    getByText('Establishing a connection to the server.')
     fireEvent.press(await findByTestId('toast-server-state'))
-    expect(await findByTestId('alert-details-sheet')).toBeTruthy()
-    expect(getAllByText('Establishing a connection to the server.').length).toBeGreaterThan(0)
+    expect(queryByTestId('alert-details-sheet')).toBeNull()
   })
 
-  it('prefers an explicit onPress over the details sheet', async () => {
+  it('shows details inline on the toast', async () => {
+    useAlertStore.getState().upsert({
+      ...infoToast,
+      details: '3 of the cached histories are missing.',
+    })
+    const { getByText } = await renderWithI18n(<ToastViewport />)
+    getByText('Establishing a connection to the server.')
+    getByText('3 of the cached histories are missing.')
+  })
+
+  it('prefers an explicit onPress over doing nothing', async () => {
     const onPress = jest.fn()
     useAlertStore.getState().upsert({ ...infoToast, id: 'connecting', onPress })
-    const { findByTestId, queryByTestId } = await renderWithI18n(<ToastViewport />)
+    const { findByTestId } = await renderWithI18n(<ToastViewport />)
     fireEvent.press(await findByTestId('toast-connecting'))
     expect(onPress).toHaveBeenCalledTimes(1)
-    expect(queryByTestId('alert-details-sheet')).toBeNull()
   })
 
   it('renders only the first info toast', async () => {
