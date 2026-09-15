@@ -138,20 +138,12 @@ export default function ProjectsHub() {
   const [browseErrorServerId, setBrowseErrorServerId] = useState<string | null>(null)
   const [pickerVisible, setPickerVisible] = useState(false)
   const [fabNoServerToast, setFabNoServerToast] = useState(false)
-  const [manualCacheAlertServerId, setManualCacheAlertServerId] = useState<string | null>(null)
+  const [cacheAlertModalServerId, setCacheAlertModalServerId] = useState<string | null>(null)
   const [cacheAlertToast, setCacheAlertToast] = useState<string | null>(null)
   const openStatusSurface = useOpenStatusSurface()
-
-  // Auto-open for a pending high-severity alert (derived, not stateful); the
-  // low-severity banner can also open the modal manually via setCacheAlertModalServerId.
-  // Both auto-close once the store no longer has an alert for that server
-  // (e.g. resolved from another surface) since neither branch is sticky state.
-  const highSeverityCacheAlertServerId = displayedServerIds.find(
-    (id) => cacheAlert[id]?.severity === 'high',
-  ) ?? null
-  const cacheAlertModalServerId = highSeverityCacheAlertServerId
-    ?? (manualCacheAlertServerId && cacheAlert[manualCacheAlertServerId] ? manualCacheAlertServerId : null)
-  const setCacheAlertModalServerId = setManualCacheAlertServerId
+  if (cacheAlertModalServerId && !cacheAlert[cacheAlertModalServerId]) {
+    setCacheAlertModalServerId(null)
+  }
 
   // Order and filters. Tier, agent and recency filter client-side: the wire
   // only knows three statuses, and an empty status list used to mean "all".
@@ -495,11 +487,7 @@ export default function ProjectsHub() {
 
       <EncryptionRefusalBanner />
 
-      <CacheAlertBanner onPress={() => {
-        const lowSeverityId = displayedServerIds.find((id) => cacheAlert[id]?.severity === 'low')
-        if (lowSeverityId) setCacheAlertModalServerId(lowSeverityId)
-      }}
-      />
+      <CacheAlertBanner onPress={(serverId) => setCacheAlertModalServerId(serverId)} />
 
       <HostPressureBanner />
 
