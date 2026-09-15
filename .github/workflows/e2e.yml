@@ -173,7 +173,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # setup-android@v4 defaults to `tools platform-tools`. Google dropped the
+      # legacy `tools` package, so cmdline-tools 20.0 exits 1 with "Failed to
+      # find package 'tools'" (run 34902788290).
       - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       # cache-read-only defaults to true off `main`, which would make a feature-
       # branch warmup unable to seed the next dispatch on that same branch.
