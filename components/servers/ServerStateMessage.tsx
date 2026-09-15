@@ -42,7 +42,6 @@ function getDetailMessage(detail: DetailKind, t: TFunction<'servers'>): string {
   }
 }
 
-const VIEWPORT = 'home'
 const INFO_DELAY_MS = 2000
 
 function toLevel(severity: Severity): AlertLevel {
@@ -173,7 +172,6 @@ export function ServerStateMessage({
       return [{
         ...toSpec(row, t, onRetryFailed, isRetrying),
         id: `server-state:${row.id}`,
-        viewport: VIEWPORT,
       }]
     })
   }, [rows, showInfo, t, onRetryFailed, isRetrying])

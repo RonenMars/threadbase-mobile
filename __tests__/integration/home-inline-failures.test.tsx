@@ -110,7 +110,6 @@ describe('home inline-first failures', () => {
     useServerFetchStatusStore.getState().recordFailure('srv-2', new Error('offline'))
     useAlertStore.getState().upsert({
       id: 'srv-1',
-      viewport: 'global',
       cause: serverCause('srv-1'),
       level: 'error',
       title: 'MacBook Pro',
@@ -119,7 +118,6 @@ describe('home inline-first failures', () => {
     })
     useAlertStore.getState().upsert({
       id: 'srv-2',
-      viewport: 'global',
       cause: serverCause('srv-2'),
       level: 'error',
       title: 'studio-linux',

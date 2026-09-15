@@ -3,7 +3,6 @@ import { alertFingerprint, TOAST_DEFAULT_TIMEOUT_MS, type AlertCause, type Alert
 
 export type AlertInput = AlertSpec & {
   id: string
-  viewport: string
 }
 
 type AlertState = {
@@ -27,11 +26,10 @@ const stickyFingerprints = new Map<string, string>()
 // suppression, so it covers copy only. This answers "does the row need
 // repainting?", which also covers the non-copy props Toast renders. `icon` is a
 // ReactNode and can't be compared, so it rides along with the callbacks.
-function renderSignature(entry: AlertSpec & { id: string; viewport: string }): string {
+function renderSignature(entry: AlertSpec & { id: string }): string {
   return [
     alertFingerprint(entry),
     entry.cause,
-    entry.viewport,
     entry.buttonText ?? '',
     entry.buttonVariant ?? '',
     entry.hideCloseButton ? '1' : '',
