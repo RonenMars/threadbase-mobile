@@ -17,7 +17,6 @@ import {
   getHostPressureWhyFineLabel,
 } from './hostPressureLabels'
 
-const VIEWPORT = 'home'
 const TOAST_ID = 'host-pressure'
 
 export function HostPressureBanner() {
@@ -87,6 +86,6 @@ export function HostPressureBanner() {
     }
   }, [visible, alertServerId, pressure, servers, handleDismiss, t])
 
-  useAlertSync(TOAST_ID, spec, VIEWPORT)
+  useAlertSync(TOAST_ID, spec)
   return null
 }

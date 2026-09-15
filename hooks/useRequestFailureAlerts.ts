@@ -11,8 +11,6 @@ import { useAlertListSync } from '@/hooks/useAlertSync'
 import type { AlertInput } from '@/stores/alerts'
 import { queryCause, serverCause } from '@/types/alerts'
 
-const VIEWPORT = 'global'
-
 /** Categories published into the global Status sheet. `browse` is excluded:
  * the file-tree screen already renders its own failure inline. */
 type SheetCategory = Exclude<QueryCategory, 'browse'>
@@ -113,7 +111,6 @@ export function useRequestFailureAlerts() {
       const label = server.label?.trim() || server.url
       return {
         id: serverId,
-        viewport: VIEWPORT,
         cause: serverCause(serverId),
         level: 'error',
         title: label,
@@ -140,7 +137,6 @@ export function useRequestFailureAlerts() {
       const retryable = classified.retryable
       const base: AlertInput = {
         id: error.id,
-        viewport: VIEWPORT,
         cause: queryCause(error.id),
         level: 'error',
         title: getCategoryTitle(error.category, t),
@@ -171,7 +167,6 @@ export function useRequestFailureAlerts() {
       }
       return {
         id: `blocking:${error.id}`,
-        viewport: VIEWPORT,
         cause: queryCause(error.id),
         level: 'critical',
         title: classified.description ?? t('errorPolicy.sessionExpired'),
