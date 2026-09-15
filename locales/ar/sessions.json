@@ -208,6 +208,7 @@
     "quietTail_few": "{{count}} جلسات هادئة · لم يُطلب شيء",
     "quietTail_many": "{{count}} جلسة هادئة · لم يُطلب شيء",
     "quietTail_other": "{{count}} جلسة هادئة · لم يُطلب شيء",
+    "waitingFor": "بانتظار {{elapsed}}",
     "open": "فتح"
   },
   "layout": {
