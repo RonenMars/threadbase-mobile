@@ -47,6 +47,9 @@ import { InfoModal } from '@/components/shared/InfoModal'
 import { LivePauseControl } from '@/components/conversation/LivePauseControl'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
+import { InlineError } from '@/components/alerts/InlineError'
+import { useClaimInline } from '@/hooks/useClaimInline'
+import { queryCause } from '@/types/alerts'
 import type { Message, Session } from '@/types/api'
 import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
 
@@ -329,6 +332,7 @@ export default function ConversationDetailScreen() {
   const mergedMessages = livePaused ? frozenRef.current : liveMerged
 
   const isConvNotFound = error instanceof NotFoundError
+  useClaimInline(error && !isConvNotFound ? [queryCause('messages')] : [])
   // ponytail: only fires when conversation 404s — avoids extra request on normal loads
   const { data: liveSession, isLoading: isSessionLoading } = useQuery({
     queryKey: ['session', serverId, id],
@@ -773,14 +777,14 @@ export default function ConversationDetailScreen() {
         </SafeAreaView>
       )
     }
-    return (
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']} testID="conversation-not-found">
-        <ScreenHeader right={headerActions} />
-        {searchBar}
-        <View style={styles.centered}>
-          <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
-          <Text style={styles.errorMessage}>{isConvNotFound ? t('error.notFound') : error.message}</Text>
-          {isConvNotFound ? (
+    if (isConvNotFound) {
+      return (
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']} testID="conversation-not-found">
+          <ScreenHeader right={headerActions} />
+          {searchBar}
+          <View style={styles.centered}>
+            <Text style={styles.errorTitle}>{t('error.loadFailed')}</Text>
+            <Text style={styles.errorMessage}>{t('error.notFound')}</Text>
             <TouchableOpacity
               testID="conversation-not-found-back"
               style={styles.retryBtn}
@@ -790,11 +794,21 @@ export default function ConversationDetailScreen() {
             >
               <Text style={styles.retryBtnText}>{t('error.back')}</Text>
             </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
-              <Text style={styles.retryBtnText}>{t('common:button.retry')}</Text>
-            </TouchableOpacity>
-          )}
+          </View>
+        </SafeAreaView>
+      )
+    }
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ScreenHeader right={headerActions} />
+        {searchBar}
+        <View style={styles.listWrapper}>
+          <InlineError
+            testID="conversation-load-error"
+            title={t('error.loadFailed')}
+            message={t('error.loadFailedMessage')}
+            onRetry={() => { void refetch() }}
+          />
         </View>
       </SafeAreaView>
     )

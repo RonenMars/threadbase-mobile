@@ -44,6 +44,22 @@
       "warningCount_other": "{{count}} تحذير",
       "retryEverything": "إعادة محاولة الكل",
       "technicalDetails": "التفاصيل التقنية"
+    },
+    "inline": {
+      "unreachableSince": "تعذّر الوصول منذ {{time}}",
+      "sessionsStale_zero": "لا توجد سيشنات بالأسفل. تحقق من أن الجهاز مستيقظ وعلى نفس الشبكة.",
+      "sessionsStale_one": "تم تحميل السيشن أدناه آخر مرة {{ago}}. تحقق من أن الجهاز مستيقظ وعلى نفس الشبكة.",
+      "sessionsStale_two": "تم تحميل السيشنين أدناه آخر مرة {{ago}}. تحقق من أن الجهاز مستيقظ وعلى نفس الشبكة.",
+      "sessionsStale_few": "تم تحميل الـ {{count}} سيشنات أدناه آخر مرة {{ago}}. تحقق من أن الجهاز مستيقظ وعلى نفس الشبكة.",
+      "sessionsStale_many": "تم تحميل الـ {{count}} سيشناً أدناه آخر مرة {{ago}}. تحقق من أن الجهاز مستيقظ وعلى نفس الشبكة.",
+      "sessionsStale_other": "تم تحميل الـ {{count}} سيشن أدناه آخر مرة {{ago}}. تحقق من أن الجهاز مستيقظ وعلى نفس الشبكة.",
+      "loadedAgo_zero": "قبل 0 دقائق",
+      "loadedAgo_one": "قبل دقيقة",
+      "loadedAgo_two": "قبل دقيقتين",
+      "loadedAgo_few": "قبل {{count}} دقائق",
+      "loadedAgo_many": "قبل {{count}} دقيقة",
+      "loadedAgo_other": "قبل {{count}} دقيقة",
+      "retryNow": "إعادة المحاولة الآن"
     }
   },
   "error": {
