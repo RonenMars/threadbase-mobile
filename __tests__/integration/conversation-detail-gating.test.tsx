@@ -17,7 +17,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { createWrapper } from '@/test-utils'
-import { NotFoundError } from '@/services/api-client'
+import { AuthError, NotFoundError } from '@/services/api-client'
 import i18n from '@/test-utils/i18n-setup'
 
 function makeDetail(messageCount: number) {
@@ -52,8 +52,9 @@ const mockDetailRef: { current: unknown } = { current: null }
 const mockSessionRef: { current: unknown } = { current: null }
 
 jest.mock('@/services/api-client', () => {
-  const { NotFoundError } = jest.requireActual('@/services/api-client')
+  const { AuthError, NotFoundError } = jest.requireActual('@/services/api-client')
   return {
+    AuthError,
     NotFoundError,
     createApiForServer: () => ({
       get: (path: string) => {
@@ -398,5 +399,28 @@ describe('conversation detail — 404 live-session fallback', () => {
     const text = allText(root)
     expect(text).toContain('no longer available')
     expect(mockReplace).not.toHaveBeenCalled()
+  })
+
+  it('shows an inline error in the message area when load fails for a reason other than 404', async () => {
+    mockDetailRef.current = new Error('timeout')
+    mockSessionRef.current = null
+
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushAllQueries()
+
+    expect(root.getByTestId('conversation-load-error')).toBeTruthy()
+    expect(root.queryByTestId('conversation-not-found')).toBeNull()
+    expect(allText(root)).toContain("Couldn't load conversation")
+  })
+
+  it('does not show the inline load error for a blocking auth failure', async () => {
+    mockDetailRef.current = new AuthError('shared', '/api/conversations/conv-gating')
+    mockSessionRef.current = null
+
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushAllQueries()
+
+    expect(root.queryByTestId('conversation-load-error')).toBeNull()
+    expect(root.queryByTestId('conversation-not-found')).toBeNull()
   })
 })

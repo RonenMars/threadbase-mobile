@@ -14,7 +14,7 @@ describe('i18n', () => {
   });
 
   it('interpolates server name', () => {
-    expect(i18n.t('servers:error.subtitle', { server: 'My Mac' })).toContain('My Mac');
+    expect(i18n.t('servers:dialog.removeMessage', { server: 'My Mac' })).toContain('My Mac');
   });
 
   it('falls back to key when translation is missing', () => {

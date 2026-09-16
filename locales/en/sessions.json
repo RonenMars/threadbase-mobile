@@ -10,7 +10,8 @@
     "placeholder": "e.g. Fix auth bug"
   },
   "slowLoading": {
-    "sessions": "Fetching sessions is taking longer than expected.\nHold still…",
+    "sessionsTitle": "Sessions are taking longer than expected.",
+    "sessionsMessage": "The list will fill in when the server answers.",
     "detailTitle": "Session details are taking their time…",
     "detailMessage": "Fetching the details — shouldn't be long."
   },
@@ -25,14 +26,13 @@
   "list": {
     "empty": "No sessions",
     "emptySubtitle": "Start a Claude Code or Codex\nsession to see it here",
-    "allServersOffline": "Can’t connect to your servers",
-    "allServersOfflineSubtitle": "Check that your phone can reach the server addresses, then retry or view details.",
+    "allServersOffline": "Can't reach any of your servers",
+    "allServersOfflineSubtitle": "Sessions below may be stale.",
     "noResults": "No results",
     "noResultsSubtitle": "Nothing matched \"{{query}}\"",
     "serverEmpty": "No sessions on this server",
     "serverEmptySubtitle": "Start a session here or switch servers.",
     "serverOffline": "Server unreachable",
-    "serverOfflineSubtitle": "Showing other servers. Retry when this host is back.",
     "serverWarming": "Server is warming up",
     "serverWarmingSubtitle": "History will appear when indexing finishes.",
     "serverNeedsUpgrade": "Server needs an update",
@@ -170,16 +170,11 @@
     "worktree": "Worktree gone — can't resume"
   },
   "row": {
-    "quietTail_one": "{{count}} quiet session · nothing was asked",
-    "quietTail_other": "{{count}} quiet sessions · nothing was asked",
     "waitingFor": "waiting {{elapsed}}",
     "open": "Open"
   },
   "layout": {
     "now": "Now",
     "projects": "Projects"
-  },
-  "quiet": {
-    "screenTitle": "Quiet sessions"
   }
 }

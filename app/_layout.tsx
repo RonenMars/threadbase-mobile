@@ -41,7 +41,6 @@ import { markIntroSeen, resolveIntroVariant, type IntroVariant } from '@/service
 import { currentIntroVersion } from '@/services/intro-version'
 import { goBackOrHub } from '@/lib/goBackOrHub'
 import { basename } from '@/components/sessions/shared/pathTail'
-import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { AlertHost } from '@/components/alerts/AlertHost'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
@@ -467,10 +466,6 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={{ title: t('sessions:manageFavorites.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
-        name="quiet-sessions"
-        options={{ title: t('sessions:quiet.screenTitle'), headerShown: true }}
-      />
-      <Stack.Screen
         name="help-feedback"
         options={{ title: i18n.t('feedback:screenTitle'), headerShown: true }}
       />
@@ -577,7 +572,6 @@ function RootLayout() {
               <BiometricLockGate>
                 <ThemedStatusBar />
                 <ThemedStack router={router} />
-                <SlowQueryBanner />
                 <AlertHost />
                 <NavigationLockOverlay />
               </BiometricLockGate>

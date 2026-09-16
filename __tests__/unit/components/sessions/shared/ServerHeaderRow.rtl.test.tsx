@@ -33,6 +33,32 @@ describe('ServerHeaderRow identity rail', () => {
       expect.objectContaining({ width: 3, backgroundColor: '#ff6600' }),
     )
   })
+
+  it('keeps the identity rail colour when the server has failed', async () => {
+    const onRetry = jest.fn()
+    useServersStore.setState({
+      servers: {
+        s1: { id: 's1', url: 'http://one', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null, color: '#ff6600' },
+      },
+    })
+    const { getByTestId } = await render(
+      <DirectionRoot>
+        <ServerHeaderRow
+          serverId="s1"
+          serverLabel="studio-linux"
+          totalCount={6}
+          failed
+          onRetry={onRetry}
+          onDetails={() => {}}
+        />
+      </DirectionRoot>,
+    )
+    expect(StyleSheet.flatten(getByTestId('server-rail-s1').props.style)).toEqual(
+      expect.objectContaining({ width: 3, backgroundColor: '#ff6600' }),
+    )
+    expect(getByTestId('server-header-retry-s1')).toBeTruthy()
+    expect(getByTestId('server-failure-s1')).toBeTruthy()
+  })
 })
 
 describe('ServerHeaderRow direction', () => {

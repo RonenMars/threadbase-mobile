@@ -23,7 +23,6 @@ describe('StatusSheet accessibility', () => {
     useServersStore.setState({ servers: {} })
     useAlertStore.getState().upsert({
       id: 'messages',
-      viewport: 'global',
       cause: serverCause('messages'),
       level: 'error',
       title: 'Messages failed',
@@ -44,6 +43,7 @@ describe('StatusSheet accessibility', () => {
 
     getByTestId('status-sheet')
     getByTestId('error-sheet-row-messages')
+    getByTestId('status-sheet-server-status')
     getByTestId('error-sheet-close')
   })
 })

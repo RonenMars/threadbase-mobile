@@ -30,7 +30,6 @@ type Props = {
 
 export function Toast({ toast }: Props) {
   const { t } = useTranslation('common')
-  const openDetails = useAlertStore((s) => s.openDetails)
   const stickyDismiss = useAlertStore((s) => s.stickyDismiss)
   const theme = useTheme()
   const reduceMotion = useReduceMotion()
@@ -38,7 +37,6 @@ export function Toast({ toast }: Props) {
   const appearance = alertAppearance(toast.level, theme)
   const Icon = appearance.Icon
   const closeLabel = t('button.close')
-  const hasDetails = Boolean(toast.details || toast.message)
   const showClose = toast.hideCloseButton !== true
   const levelLabel = getAlertLevelLabel(toast.level, t)
   const accessibilityLabel = `${levelLabel}. ${toast.title}`
@@ -48,7 +46,7 @@ export function Toast({ toast }: Props) {
   const titleColor = toast.level === 'info'
     ? theme.text.secondary
     : theme.text.primary
-  const bodyRole = toast.onPress || hasDetails ? 'button' as const : undefined
+  const bodyRole = toast.onPress ? 'button' as const : undefined
 
   const translateY = useSharedValue(0)
   const opacity = useSharedValue(1)
@@ -130,11 +128,7 @@ export function Toast({ toast }: Props) {
   }))
 
   function handleBodyPress() {
-    if (toast.onPress) {
-      toast.onPress()
-      return
-    }
-    if (hasDetails) openDetails(toast.id)
+    toast.onPress?.()
   }
 
   return (
@@ -162,6 +156,9 @@ export function Toast({ toast }: Props) {
               </Text>
               {toast.message ? (
                 <Text style={styles.message}>{toast.message}</Text>
+              ) : null}
+              {toast.details ? (
+                <Text style={styles.message}>{toast.details}</Text>
               ) : null}
             </View>
           </TouchableOpacity>

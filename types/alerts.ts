@@ -17,10 +17,8 @@ export type AlertCause =
   | `host-pressure:${string}`
   | `cache:${string}`
   | 'servers:summary'
-  | 'terminal:raw-mode'
 
 export const CAUSE_SERVERS_SUMMARY: AlertCause = 'servers:summary'
-export const CAUSE_TERMINAL_RAW_MODE: AlertCause = 'terminal:raw-mode'
 
 export function serverCause(id: string): AlertCause {
   return `server:${id}`
@@ -84,7 +82,6 @@ export type AlertSpec = {
 
 export type AlertEntry = AlertSpec & {
   id: string
-  viewport: string
   raisedAt: number
 }
 

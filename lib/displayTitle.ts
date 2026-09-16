@@ -23,7 +23,7 @@ export interface DisplayTitle {
   /**
    * Which rung of the ladder produced the title. `command` (the work itself,
    * e.g. "git pull") and `untitled` (identity: project · branch) are the quiet
-   * rungs; a list may render those lighter but never hides them.
+   * rungs.
    */
   source: 'rename' | 'message' | 'assistant' | 'command' | 'untitled'
 }
@@ -50,6 +50,9 @@ const HEADING_MARKS = /^[ \t]*#{1,6}[ \t]+/gm
 const FENCED_CODE = /```[\s\S]*?(?:```|$)/g
 const IMAGE_TAG = /<image\b[^>]*>/gi
 const IMAGE_PLACEHOLDER = /\[Image #\d+\]/gi
+// Composer @/abs/path file refs (not @/alias imports). Path collapse would otherwise leave @file.
+const FILE_AT_PATH = /@\/(?:[^/\s]+\/){2,}[^\s]+/g
+const FILE_AT_BASENAME = /(?<![\w])@[\w.+~-]+\b/gi
 // Tags the CLIs inject around the user's own words; isCodexInjectedContext only classifies
 // whole messages, so the tag bodies have to be cut out here. The streamer slices a session
 // name to 80 chars, so a closing tag is routinely missing: an unclosed tag runs to the end.
@@ -132,10 +135,11 @@ export function stripMessageNoise(raw: string): string {
     .replace(FENCED_CODE, ' ')
     .replace(IMAGE_TAG, ' ')
     .replace(IMAGE_PLACEHOLDER, ' ')
+    .replace(FILE_AT_PATH, ' ')
     .replace(INJECTED_TAG, ' ')
   text = stripJsonBlobs(text)
   // URLs before paths: the path pass would otherwise eat a URL's path segment first.
-  text = text.replace(LS_LINE, '').replace(URL, '$1').replace(ABSOLUTE_PATH, '$1')
+  text = text.replace(LS_LINE, '').replace(URL, '$1').replace(ABSOLUTE_PATH, '$1').replace(FILE_AT_BASENAME, ' ')
   return collapseWhitespace(text)
 }
 

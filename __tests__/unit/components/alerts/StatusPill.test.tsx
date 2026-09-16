@@ -40,7 +40,6 @@ describe('HomeStatusPill', () => {
   it('hides an info-only store', async () => {
     useAlertStore.getState().upsert({
       id: 'info',
-      viewport: 'home',
       cause: serverCause('a'),
       level: 'info',
       title: 'Connecting',
@@ -52,10 +51,25 @@ describe('HomeStatusPill', () => {
     expect(queryByTestId('status-pill')).toBeNull()
   })
 
+  it('hides a claimed error cause', async () => {
+    useAlertStore.getState().upsert({
+      id: 'a',
+      cause: serverCause('a'),
+      level: 'error',
+      title: 'A down',
+      message: 'body',
+      timeout: null,
+    })
+    useAlertStore.getState().claimInline(serverCause('a'))
+    const { queryByTestId } = await renderWithI18n(
+      <HomeStatusPill onPress={() => {}} />,
+    )
+    expect(queryByTestId('status-pill')).toBeNull()
+  })
+
   it('counts distinct error causes', async () => {
     useAlertStore.getState().upsert({
       id: 'a',
-      viewport: 'home',
       cause: serverCause('a'),
       level: 'error',
       title: 'A down',
@@ -64,7 +78,6 @@ describe('HomeStatusPill', () => {
     })
     useAlertStore.getState().upsert({
       id: 'b',
-      viewport: 'home',
       cause: serverCause('b'),
       level: 'error',
       title: 'B down',

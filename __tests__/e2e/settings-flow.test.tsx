@@ -96,6 +96,13 @@ describe('Settings – server section', () => {
     expect(getByTestId('settings-add-server-btn')).toBeTruthy()
   })
 
+  it('opens Server Status from the servers section', async () => {
+    const { getByTestId, getAllByText } = await renderWithTheme(<SettingsScreen />)
+    expect(getByTestId('settings-server-status-row')).toBeTruthy()
+    await fireEvent.press(getByTestId('settings-server-status-row'))
+    expect(getAllByText('Server Status').length).toBeGreaterThan(0)
+  })
+
   it('opens add server modal from settings', async () => {
     const { getByTestId } = await renderWithTheme(<SettingsScreen />)
     // Pressing "+ Add Server" opens the native form instead of navigating away.

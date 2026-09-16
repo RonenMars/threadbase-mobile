@@ -30,7 +30,6 @@ async function upsertError(id: string, title: string) {
   await act(async () => {
     useAlertStore.getState().upsert({
       id,
-      viewport: 'home',
       cause: serverCause(id),
       level: 'error',
       title,
@@ -57,7 +56,6 @@ describe('AlertHost announcements', () => {
     await act(async () => {
       useAlertStore.getState().upsert({
         id: 'hp',
-        viewport: 'home',
         cause: 'host-pressure:s0',
         level: 'warning',
         title: 'Host under load',
@@ -97,6 +95,20 @@ describe('AlertHost announcements', () => {
     await waitFor(() => {
       expect(announce).toHaveBeenCalledTimes(1)
     })
-    expect(announce).toHaveBeenCalledWith('Error. Messages failed to load')
+    expect(announce).toHaveBeenCalledWith("Error. Messages didn't load.")
+  })
+
+  it('announces a blocking auth failure as critical', async () => {
+    await renderWithI18n(<AlertHost />)
+    announce.mockClear()
+    await act(async () => {
+      useLoadingStateStore.setState({
+        errors: [{ id: 'sessions', category: 'sessions', status: 401, message: 'expired' }],
+      })
+    })
+
+    await waitFor(() => {
+      expect(announce).toHaveBeenCalledWith('Critical. Your session has expired')
+    })
   })
 })

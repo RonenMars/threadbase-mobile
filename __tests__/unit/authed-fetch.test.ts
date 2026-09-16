@@ -105,7 +105,10 @@ describe('authedFetch', () => {
 
   it('translates 401 into AuthError', async () => {
     mockFetch({ status: 401, ok: false })
-    await expect(authedFetch(target(), '/api/info')).rejects.toBeInstanceOf(AuthError)
+    await expect(authedFetch(target(), '/api/info')).rejects.toMatchObject({
+      name: 'AuthError',
+      status: 401,
+    })
   })
 
   // The remedy differs by credential and only this module knows which was sent.

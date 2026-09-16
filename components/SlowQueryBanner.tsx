@@ -1,53 +1,26 @@
-import React from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAlertSync } from '@/hooks/useAlertSync'
 import { useLoadingStateStore } from '@/stores/loading-state'
-import { font, spacing, type Theme } from '@/constants/theme'
-import { useTheme } from '@/contexts/ThemeContext'
+import { queryCause, type AlertSpec } from '@/types/alerts'
 
-// ponytail: standard iOS/Android nav-bar row height; keeps the banner below the topbar back button
-const NAV_BAR_HEIGHT = 44
+const TOAST_ID = 'slow-query'
 
 export function SlowQueryBanner() {
   const { t } = useTranslation('sessions')
-  const theme = useTheme()
-  const styles = makeStyles(theme)
   const isSlow = useLoadingStateStore((s) => s.slowCounts.sessions > 0 || s.slowCounts.other > 0)
-  const insets = useSafeAreaInsets()
+  const spec = useMemo((): AlertSpec | null => {
+    if (!isSlow) return null
+    return {
+      cause: queryCause('slow'),
+      level: 'warning',
+      title: t('slowLoading.sessionsTitle'),
+      message: t('slowLoading.sessionsMessage'),
+      timeout: null,
+      hideCloseButton: true,
+    }
+  }, [isSlow, t])
 
-  if (!isSlow) return null
-
-  return (
-    <View style={[styles.strip, { top: insets.top + NAV_BAR_HEIGHT }]}>
-      <ActivityIndicator size="small" color={theme.text.warning} />
-      <Text style={styles.text}>
-        {t('slowLoading.sessions')}
-      </Text>
-    </View>
-  )
-}
-
-function makeStyles(theme: Theme) {
-  return StyleSheet.create({
-    strip: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      zIndex: 9999,
-      backgroundColor: theme.bg.secondary,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.text.warning,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-    },
-    text: {
-      color: theme.text.warning,
-      fontSize: font.sm,
-      flex: 1,
-    },
-  })
+  useAlertSync(TOAST_ID, spec)
+  return null
 }

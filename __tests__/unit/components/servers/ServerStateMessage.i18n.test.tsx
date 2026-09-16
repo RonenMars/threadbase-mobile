@@ -39,7 +39,6 @@ describe('ServerStateMessage localization', () => {
             [server.id]: { status: 'error', lastCheckedAt: Date.now() },
           }}
           wsConnectedCount={0}
-          onViewDetails={() => {}}
           onRetryFailed={() => {}}
           isRetrying={false}
         />
@@ -63,7 +62,6 @@ describe('ServerStateMessage localization', () => {
             [server.id]: { status: 'ok', lastCheckedAt: Date.now() },
           }}
           wsConnectedCount={0}
-          onViewDetails={() => {}}
           onRetryFailed={() => {}}
           isRetrying={false}
         />
