@@ -44,6 +44,7 @@ describe('StatusSheet accessibility', () => {
 
     getByTestId('status-sheet')
     getByTestId('error-sheet-row-messages')
+    getByTestId('status-sheet-server-status')
     getByTestId('error-sheet-close')
   })
 })
