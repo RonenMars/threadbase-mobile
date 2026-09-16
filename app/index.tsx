@@ -55,7 +55,8 @@ import { ServerOfflineBanner } from '@/components/sessions/banners/ServerOffline
 import { ServerWarmingBanner } from '@/components/sessions/banners/ServerWarmingBanner'
 import { ServerUnsupportedBanner } from '@/components/sessions/banners/ServerUnsupportedBanner'
 import { ToastViewport } from '@/components/ui/ToastViewport'
-import { brand, font, spacing, type Theme } from '@/constants/theme'
+import { PROVIDER_COLOR } from '@/constants/providers'
+import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -793,19 +794,19 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.codex}20`,
+    backgroundColor: `${PROVIDER_COLOR.codex}20`,
   },
   convCardClaudeBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.claude}20`,
+    backgroundColor: `${PROVIDER_COLOR.claude}20`,
   },
   convCardCursorBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.cursor}20`,
+    backgroundColor: `${PROVIDER_COLOR.cursor}20`,
   },
   fabToast: {
     position: 'absolute',

@@ -12,15 +12,26 @@ export type ProviderName = (typeof PROVIDER_NAMES)[number];
 
 export type ProviderLabelKey = "claude" | "codex" | "cursor";
 
+/** Claude fill matches lobe-icons `claude-color`; Codex/Cursor are the product tokens. */
+export const PROVIDER_COLOR = {
+  claude: "#D97757",
+  codex: "#7B5EA7",
+  cursor: "#3D8BFF",
+} as const satisfies Record<ProviderLabelKey, string>;
+
 export function isProviderName(value: string): value is ProviderName {
   return (PROVIDER_NAMES as readonly string[]).includes(value);
 }
 
-/** i18n key under `sessions:provider.*` and `brand.*` token. Unknown names read as Claude. */
+/** i18n key under `sessions:provider.*`. Unknown names read as Claude. */
 export function providerLabelKey(
   provider: string | undefined | null,
 ): ProviderLabelKey {
   if (provider === CODEX_CLI_PROVIDER) return "codex";
   if (provider === CURSOR_CLI_PROVIDER) return "cursor";
   return "claude";
+}
+
+export function providerColor(provider: string | undefined | null): string {
+  return PROVIDER_COLOR[providerLabelKey(provider)];
 }
