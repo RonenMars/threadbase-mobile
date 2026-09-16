@@ -32,6 +32,10 @@ if (RUNNER_INSTALLED[process.env.E2E_PLATFORM]) {
 // Set to reuse a build we know is stale (or can't prove is fresh) rather than
 // rebuilding — mirrors e2e/check-sim.js's E2E_ALLOW_UNSUPPORTED_IOS escape hatch.
 const ALLOW_STALE = process.env.E2E_ALLOW_STALE_BUILD === '1'
+// Promo capture (and any other local path that must not stop for a human)
+// rebuilds a stale .app with xcodebuild instead of failing or hanging in
+// `expo run:ios`, which holds Metro open after the compile.
+const REBUILD_STALE = process.env.E2E_REBUILD_STALE === '1'
 
 // `expo run:ios --configuration Release` may emit the .app either into a
 // project-local `ios/build/...` dir or (Expo's default) a hashed Xcode
@@ -97,7 +101,7 @@ function gitState() {
   try {
     const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim()
     const status = execFileSync('git', ['status', '--porcelain'], { cwd: REPO_ROOT, encoding: 'utf8' })
-    return { sha, dirty: status.trim().length > 0 }
+    return { sha, dirty: status.trim().length > 0, porcelain: status }
   } catch {
     return null
   }
@@ -117,8 +121,19 @@ function readStamp(appPath) {
   }
 }
 
-function writeStamp(appPath, sha) {
-  writeFileSync(stampPath(appPath), JSON.stringify({ sha, builtAt: new Date().toISOString() }, null, 2))
+function writeStamp(appPath, git) {
+  writeFileSync(
+    stampPath(appPath),
+    JSON.stringify(
+      {
+        sha: git.sha,
+        dirty: git.dirty ? git.porcelain : '',
+        builtAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+  )
 }
 
 // Pure decision function — no I/O — so the guard logic is unit-testable
@@ -129,7 +144,15 @@ function writeStamp(appPath, sha) {
 // exists to close — so a dirty tree is always treated as stale, never warned.
 function checkBuildFreshness({ git, stamp }) {
   if (!git) return { fresh: false, reason: 'could not determine git state (not a git repo, or git unavailable)' }
-  if (git.dirty) return { fresh: false, reason: 'working tree has uncommitted changes' }
+  if (git.dirty) {
+    // Default e2e still treats any dirty tree as stale (issue #598). Promo
+    // capture stamps the porcelain too, so a re-run against the same dirty
+    // tree can reuse the .app it just built.
+    if (REBUILD_STALE && stamp && stamp.sha === git.sha && stamp.dirty === git.porcelain) {
+      return { fresh: true, reason: `build matches HEAD (${git.sha.slice(0, 7)}) and the current dirty tree` }
+    }
+    return { fresh: false, reason: 'working tree has uncommitted changes' }
+  }
   if (!stamp) return { fresh: false, reason: 'existing build has no freshness stamp' }
   if (stamp.sha !== git.sha) {
     return { fresh: false, reason: `existing build was stamped for ${stamp.sha.slice(0, 7)}, HEAD is now ${git.sha.slice(0, 7)}` }
@@ -164,17 +187,68 @@ function resolveSentryEnv() {
   )
 }
 
+function ensureCocoaPods() {
+  const pods = path.join(REPO_ROOT, 'ios/Pods')
+  if (existsSync(pods)) return
+  console.log('ios/Pods is missing; running pod install...')
+  execFileSync('bundle', ['exec', 'pod', 'install'], {
+    cwd: path.join(REPO_ROOT, 'ios'),
+    stdio: 'inherit',
+  })
+}
+
+// CI's path: xcodebuild returns when the .app exists. `expo run:ios` does not.
+function buildWithXcode() {
+  const workspace = path.join(REPO_ROOT, 'ios/Threadbase.xcworkspace')
+  if (!existsSync(workspace)) {
+    console.error(
+      'Error: ios/Threadbase.xcworkspace not found.\nFix: npx expo prebuild --platform ios --no-clean',
+    )
+    process.exit(1)
+  }
+  ensureCocoaPods()
+  console.log('Building Release with xcodebuild (this may take a few minutes)...')
+  execFileSync(
+    'xcodebuild',
+    [
+      '-workspace',
+      'ios/Threadbase.xcworkspace',
+      '-scheme',
+      'Threadbase',
+      '-configuration',
+      'Release',
+      '-destination',
+      'generic/platform=iOS Simulator',
+      '-derivedDataPath',
+      'ios/build',
+      'ARCHS=arm64',
+      'build',
+    ],
+    {
+      cwd: REPO_ROOT,
+      stdio: 'inherit',
+      env: { ...process.env, ...resolveSentryEnv() },
+    },
+  )
+}
+
 // Only called for the true first-run case (no build found anywhere) — `npx expo
 // run:ios --configuration Release` is documented (docs/e2e-remaining-work.md,
 // "Environment gotchas") to hold Metro open and never return once it finishes
 // building, so it must not be reachable from the "stale" path, where a dirty
 // working tree makes it the common case rather than a rare first-run one.
+// E2E_REBUILD_STALE=1 uses xcodebuild for both first-run and stale so promo
+// capture can rebuild without hanging.
 function buildFresh() {
-  console.log('Building Release build now (this may take a few minutes)...')
-  execFileSync('npx', ['expo', 'run:ios', '--configuration', 'Release'], {
-    stdio: 'inherit',
-    env: { ...process.env, ...resolveSentryEnv() },
-  })
+  if (REBUILD_STALE) {
+    buildWithXcode()
+  } else {
+    console.log('Building Release build now (this may take a few minutes)...')
+    execFileSync('npx', ['expo', 'run:ios', '--configuration', 'Release'], {
+      stdio: 'inherit',
+      env: { ...process.env, ...resolveSentryEnv() },
+    })
+  }
 
   const appPath = findReleaseBuild()
   if (!appPath) {
@@ -191,7 +265,7 @@ function buildFresh() {
   }
 
   const git = gitState()
-  if (git && !git.dirty) writeStamp(appPath, git.sha)
+  if (git && (!git.dirty || REBUILD_STALE)) writeStamp(appPath, git)
   return appPath
 }
 
@@ -220,6 +294,9 @@ function main() {
         'E2E_ALLOW_STALE_BUILD=1 is set, so proceeding anyway — results may not reflect the current source tree.',
     )
     installAndLaunch(localAppPath)
+  } else if (REBUILD_STALE) {
+    console.log(`Release build is stale (${freshness.reason}). Rebuilding...`)
+    installAndLaunch(buildFresh())
   } else {
     // Issue #598 asks that a stale build fail loudly, not that this script fix
     // it for you: auto-rebuilding here would run the blocking `expo run:ios`

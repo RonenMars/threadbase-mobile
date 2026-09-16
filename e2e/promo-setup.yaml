@@ -1,0 +1,13 @@
+# Promo capture setup. Same as setup.yaml, but the Keychain is wiped first.
+#
+# expo-secure-store survives `launchApp: clearState` and even `simctl uninstall`.
+# Leftover pairings (this sim had localhost:7081 plus an extra :7072) skip
+# onboarding, so FAB opens the server picker instead of browse and search
+# talks to a dead host. Marketing shots need a single mock on :7071.
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- runFlow: setup.yaml
