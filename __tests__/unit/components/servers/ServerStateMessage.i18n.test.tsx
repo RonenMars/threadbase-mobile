@@ -67,7 +67,7 @@ describe('ServerStateMessage localization', () => {
           onRetryFailed={() => {}}
           isRetrying={false}
         />
-        <ToastViewport id="home" />
+        <HomeStatusStrip onPress={() => {}} />
       </>,
     )
 
