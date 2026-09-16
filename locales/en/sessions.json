@@ -170,16 +170,11 @@
     "worktree": "Worktree gone — can't resume"
   },
   "row": {
-    "quietTail_one": "{{count}} quiet session · nothing was asked",
-    "quietTail_other": "{{count}} quiet sessions · nothing was asked",
     "waitingFor": "waiting {{elapsed}}",
     "open": "Open"
   },
   "layout": {
     "now": "Now",
     "projects": "Projects"
-  },
-  "quiet": {
-    "screenTitle": "Quiet sessions"
   }
 }

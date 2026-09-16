@@ -30,7 +30,6 @@ import {
 } from '@/lib/sessionPresentation'
 import { useNavLockStore } from '@/stores/navLock'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
-import { useQuietTailStore } from '@/stores/quietTail'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
@@ -43,7 +42,6 @@ import { EarlierRow } from './EarlierRow'
 import { HistorySkeletonRow } from './HistorySkeletonRow'
 import { dominantProvider as findDominantProvider } from '@/lib/providerDominance'
 import { NeedsYouCard } from './NeedsYouCard'
-import { QuietTailRow } from './QuietTailRow'
 import { SectionEyebrow, type SectionTone } from './SectionEyebrow'
 import { WorkingCard } from './WorkingCard'
 import { mergedItemMatchesQuery, type MergedItem } from './mergedItems'
@@ -82,13 +80,9 @@ type FlatItem =
   | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number }
   | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number; failed: boolean }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
-  | { kind: 'quietTail'; key: string; entries: Entry[] }
   | { kind: 'skeleton'; key: string }
 
 const HISTORY_SKELETONS = 2
-
-/** More than ~5 quiet rows in one time group gather into a tail row. */
-const QUIET_TAIL_MIN = 6
 
 function entryKey(e: Entry): string {
   return `${e.item.kind}:${e.item.item.serverId}::${e.item.item.id}`
@@ -106,19 +100,6 @@ function appendSkeletons(out: FlatItem[], key: string) {
 
 function isWarmingConversation(entry: Entry, warming: Set<string>): boolean {
   return entry.item.kind === 'conversation' && warming.has(entry.item.item.serverId)
-}
-
-/**
- * Quiet titles (a command or only an identity) stay inline in time
- * order. Once a group holds QUIET_TAIL_MIN of them they leave the group
- * and one tail row sits at its end: never mid-list, never above real work.
- * Display-layer only. Can't-resume rows stay first-class.
- */
-function withQuietTail(bucket: Entry[], bucketKey: string): FlatItem[] {
-  const quiet = bucket.filter((e) => e.title.rung !== 'intent' && e.tier !== 'cantResume')
-  if (quiet.length < QUIET_TAIL_MIN) return bucket.map(toRow)
-  const loud = bucket.filter((e) => e.title.rung === 'intent' || e.tier === 'cantResume')
-  return [...loud.map(toRow), { kind: 'quietTail', key: `quiet-${bucketKey}`, entries: quiet }]
 }
 
 function CantResumeSessionRow({
@@ -216,7 +197,6 @@ export const NowList = React.memo(function NowList({
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
-  const setQuietTail = useQuietTailStore((s) => s.set)
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
   const multiServer = activeServerIds.length > 1
   const warming = useMemo(() => new Set(warmingServerIds), [warmingServerIds])
@@ -250,7 +230,7 @@ export const NowList = React.memo(function NowList({
       const projectOf = (e: Entry) =>
         e.item.kind === 'session' ? e.item.item.projectName : (basename(e.item.item.projectPath) ?? '')
       const byProject = (a: Entry, b: Entry) => projectOf(a).localeCompare(projectOf(b)) || byTime(a, b)
-      const flat = withQuietTail([...withoutWarmingHistory(entries)].sort(order === 'projectName' ? byProject : byTime), 'all')
+      const flat = [...withoutWarmingHistory(entries)].sort(order === 'projectName' ? byProject : byTime).map(toRow)
       const first = flat.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
       if (first && first.kind === 'row') first.isFirst = true
       if (warming.size > 0) appendSkeletons(flat, 'all')
@@ -290,7 +270,7 @@ export const NowList = React.memo(function NowList({
           failed: !allFailed && fetchStatuses[id]?.status === 'error',
         })
         if (collapsible && collapsedServers.includes(id)) continue
-        out.push(...withQuietTail(bucket, id))
+        out.push(...bucket.map(toRow))
         if (warming.has(id)) appendSkeletons(out, id)
       }
     } else {
@@ -299,11 +279,11 @@ export const NowList = React.memo(function NowList({
       const warmingHere = warming.size > 0
       if (today.length > 0) {
         out.push({ kind: 'eyebrow', key: 'eyebrow-today', tone: 'muted', label: t('live.headerEarlierToday'), count: today.length })
-        out.push(...withQuietTail(today, 'today'))
+        out.push(...today.map(toRow))
       }
       if (older.length > 0) {
         out.push({ kind: 'eyebrow', key: 'eyebrow-older', tone: 'muted', label: t('live.headerEarlier'), count: older.length })
-        out.push(...withQuietTail(older, 'older'))
+        out.push(...older.map(toRow))
       }
       if (warmingHere) {
         if (today.length === 0 && older.length === 0) {
@@ -317,11 +297,6 @@ export const NowList = React.memo(function NowList({
     if (first && first.kind === 'row') first.isFirst = true
     return out
   }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, warming, fetchStatuses, t])
-
-  const openQuietTail = useCallback((tail: Entry[]) => {
-    setQuietTail(tail.map((e) => ({ item: e.item, title: e.title.title })))
-    router.push('/quiet-sessions')
-  }, [setQuietTail, router])
 
   const highlight = searchQuery.trim() || undefined
 
@@ -344,8 +319,6 @@ export const NowList = React.memo(function NowList({
             onDetails={item.failed ? onOpenStatus : undefined}
           />
         )
-      case 'quietTail':
-        return <QuietTailRow count={item.entries.length} onPress={() => openQuietTail(item.entries)} />
       case 'skeleton':
         return <HistorySkeletonRow />
       case 'row': {
@@ -402,7 +375,7 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, openQuietTail, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus])
+  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">
