@@ -1,7 +1,7 @@
 # Integration summary — integration/2026-09-14-open-prs (real run) (2026-09-16)
 
 **Verdict:** published to origin; not landed
-**Branch:** `origin/integration/2026-09-14-open-prs` @ `d4a27a51` — stacked alerts through #1099, session-list #1094, #1100, #1101, INT follow-ups; 56 commits ahead of `main` @ `58bbd07a`
+**Branch:** `origin/integration/2026-09-14-open-prs` @ `62097272` plus docs — stacked alerts through #1099, session-list #1094, #1100, #1101, #1102, INT follow-ups
 **CI:** not triggered by this push (no PR opened). Last rehearsal targeted suites: `NowList|rowTitle|displayTitle` 70/70; `ProviderMark|providers.test` 5/5. Prior full checkpoint after #1094 wait-duration unique: lint + typecheck green, unit 2239, integration 522 / 71 suites, i18n 460 / 1 skipped.
 **Full log:** [2026-09-16-open-prs-refresh-real-log.md](2026-09-16-open-prs-refresh-real-log.md) — cites [2026-09-15-open-prs-refresh-rehearsal-log.md](2026-09-15-open-prs-refresh-rehearsal-log.md)
 
@@ -29,6 +29,7 @@ This run replayed the 2026-09-15 refresh rehearsal on **tb-mobile only**. `origi
 | #1094 | feat(sessions): close the session-list spec gaps | hub/now/tree spec gaps, title recovery, coloured marks, Needs-you wait duration, pathTail |
 | #1100 | feat(sessions): render command and identity titles as normal history rows | drop QuietRow and the quiet-tail fold |
 | #1101 | refactor(sessions): unify provider colors on PROVIDER_COLOR | one `PROVIDER_COLOR` object; theme.brand re-exports it |
+| #1102 | fix(sessions): drop composer @/path file refs from display titles | strip `@/abs/path` upload refs and title from the leftover question |
 | #1095 | feat(alerts): report in-scope failures inline first | inline server failure panels; stale-scope banner |
 | #1096 | feat(alerts): route blocking decisions through CriticalDialog | CriticalDialog for blocking decisions |
 | #1097 | feat(alerts): demote host-pressure, server status, and raw-mode | those surfaces become Status-sheet rows / toasts |
