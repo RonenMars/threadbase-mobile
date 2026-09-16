@@ -31,6 +31,7 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 | #1092 | feat(alerts): route errors and warnings to a header status pill | `d265535b` **new** | #1089 | no | MERGEABLE / CLEAN | stacked |
 | #1093 | feat(alerts): replace ErrorRecoverySheet with the Status sheet | `ed866281` **new** | #1092 | no | MERGEABLE / CLEAN | stacked |
 | #1094 | feat(sessions): close the session-list spec gaps | `2bb27339` **new** | main | no | MERGEABLE / BLOCKED | included anyway |
+| #1100 | feat(sessions): render command and identity titles as normal history rows | `8cc19a89` | #1094 | no | MERGEABLE / CLEAN | stacked; added 2026-09-16 |
 
 ### Deliberate exclusions
 
@@ -43,9 +44,9 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 
 ## 4. Order plan
 
-**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up
+**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up → `#1095`–`#1099` → `#1094` wait-duration unique → INT pathTail → `#1100`
 
-Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `ProviderMark` / `types/api.ts`.
+Stacked: #1093 on #1092 on #1089. #1100 (and #1101, not in this run) on #1094. #1091 before #1094 because both touch `ProviderMark` / `types/api.ts`.
 
 ## 5. Action log
 
@@ -142,6 +143,23 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 - lint green. typecheck green. Targeted `formatCoarseElapsed|NowList` 25/25. Unit 2239. Integration 522 / 71 suites. i18n 460 passed / 1 skipped. Scripts batch: 252 passed / 2 failed; isolated `run-maestro` pass (load flake); `ci-lint-shards` host-only (`expo-env.d.ts`, same as before).
 - Origin: `git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0**
 
+### later — INT pathTail follow-up (already on branch before #1100)
+
+- `ca078370` skip `split` when `conversation.projectPath` is null.
+- `9733ee0e` share `pathTail` (`pathSegments` / `basename` / `shortPath`) for the remaining unguarded splits.
+
+### 07:37 — #1100 rebase conflict (ledger 18)
+
+- GitHub head `8cc19a89` on `feat/unify-quiet-row-styling`, base `feat/session-list-spec-gaps` (#1094). MERGEABLE. GitHub CI all SUCCESS.
+- **Command:** `git rebase --onto integration/2026-09-14-open-prs origin/feat/session-list-spec-gaps` from `refs/integration/pr/1100` (`8cc19a89`)
+- **Result:** conflict in `components/sessions/now/NowList.tsx` (1 hunk) → ledger 18. Unique replayed as `d0177f1c`. Merge `f6561e51`.
+- Quiet tail folding (`withQuietTail`, ≥6) stays. QuietRow component and EarlierRow `quiet` prop are gone.
+
+### 07:40 — checkpoint
+
+- Targeted `NowList|rowTitle|displayTitle` 70/70 (3 suites). Full lint/typecheck/unit/integration/i18n not re-run for this unique.
+- Origin: `git ls-remote origin 'refs/heads/integration/*'` empty.
+
 ## 6. Per-PR record
 
 ### #1088 update
@@ -230,6 +248,15 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 | Integration SHA | `2d4e0295` |
 | GitHub CI | UNSTABLE |
 
+### #1100
+
+| Field | Value |
+|---|---|
+| Unique commits | `8cc19a89` → `d0177f1c` |
+| Conflicts | ledger 18 |
+| Integration SHA | `f6561e51` |
+| GitHub CI | all SUCCESS; MERGEABLE; stacked on #1094 |
+
 ## 7. Conflict ledger
 
 | # | PR | File | What collided | Resolution | Class |
@@ -248,6 +275,7 @@ Stacked: #1093 on #1092 on #1089. #1091 before #1094 because both touch `Provide
 | 15 | #1095 | `locales/{en,ar,he,ru}/sessions.json` + hashes | #1094 retry copy vs #1095 stale-scope copy | Take #1095 `Can't reach any…` / hashes | M |
 | 16 | #1095 | `NowList.test.tsx` | cant-resume/warming/empty vs failure-panel tests | Keep all five tests | M |
 | 17 | #1099 | `ServerErrorBanner.tsx` | INT lastError patch vs #1099 delete | Take the delete. Banner was unmounted; lastError lives on `ServerStateMessage` | J |
+| 18 | #1100 | `NowList.tsx` renderItem | #1095 stale opacity wrapper vs #1100 drop `quiet` | Keep wrapper; drop `quiet` | M |
 
 ### Judgment call 1 in full
 
@@ -273,4 +301,4 @@ Kept #1092's per-server `classifyServer` (that is the PR). Discarded the aggrega
 
 ## 10. Origin-absent proof
 
-`git ls-remote --heads origin | grep -c integration/2026-09-14-open-prs` → **0** (re-checked after #1094 wait-duration unique)
+`git ls-remote origin 'refs/heads/integration/*'` → **0** (re-checked after #1100)
