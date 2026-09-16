@@ -598,7 +598,7 @@ export default function ProjectsHub() {
       {/* Status overlays sit just below the chrome and never move the rows. */}
       <View style={[styles.belowChrome, { top: chromeHeight }]} pointerEvents="box-none">
         {allServersFailed ? null : <HomeStatusStrip onPress={openStatusSurface} />}
-        <ToastViewport id="home" />
+        <ToastViewport />
         <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
       </View>
 

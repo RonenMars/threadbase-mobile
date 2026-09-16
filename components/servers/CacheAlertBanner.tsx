@@ -8,7 +8,6 @@ interface Props {
   onPress: () => void
 }
 
-const VIEWPORT = 'home'
 const TOAST_ID = 'cache-alert'
 
 export function CacheAlertBanner({ onPress }: Props) {
@@ -36,6 +35,6 @@ export function CacheAlertBanner({ onPress }: Props) {
     }
   }, [cacheAlert, displayedServerIds, onPress, servers, t])
 
-  useAlertSync(TOAST_ID, spec, VIEWPORT)
+  useAlertSync(TOAST_ID, spec)
   return null
 }
