@@ -12,6 +12,21 @@ import { serverIdFromUrl } from '@/types/api'
 import { PAIR_PROLOGUE, beginPairHandshake, derivePairPsk } from '@/services/e2ee/pair-handshake'
 import { createNoiseResponder } from '@/test-utils/noise-responder'
 import vectors from '@/__tests__/fixtures/noise-ikpsk1-vectors.json'
+import recordVectors from '@/__tests__/fixtures/e2ee-record-vectors.json'
+import {
+  CHANNEL_REST_REQUEST,
+  CHANNEL_REST_RESPONSE,
+  DIRECTION_CLIENT_TO_SERVER,
+  DIRECTION_SERVER_TO_CLIENT,
+  createRecordState,
+  restTargetHash,
+} from '@/services/e2ee/record'
+import type { OpenContextArgs, TransportContext } from '@/services/e2ee/context'
+import {
+  _resetRestSessionsForTests,
+  _restLiveCount,
+  _setRestOpenForTests,
+} from '@/services/e2ee/rest-session'
 
 // Through `services/secure-store`, never `expo-secure-store` directly: the web
 // build swaps that module for a localStorage shim by Metro platform extension,
@@ -31,6 +46,14 @@ jest.mock('@/services/secure-store', () => ({
   deleteItemAsync: jest.fn(async (key: string) => {
     mockKeychain.delete(key)
   }),
+}))
+
+// Jest resolves the native device-key module, so the web browser capability is
+// answered here; the IndexedDB/WebCrypto half has its own suite.
+let mockCanHoldDeviceKey = true
+jest.mock('@/services/e2ee/device-key', () => ({
+  ...jest.requireActual('@/services/e2ee/device-key'),
+  canHoldDeviceStaticKey: jest.fn(async () => mockCanHoldDeviceKey),
 }))
 
 describe('classifyPairCredential', () => {
@@ -526,6 +549,7 @@ describe('exchangeToken — the pairing handshake', () => {
   beforeEach(() => {
     mockKeychain.clear()
     mockHasSecureKeychain = true
+    mockCanHoldDeviceKey = true
     jest.clearAllMocks()
   })
   afterEach(() => {
@@ -907,7 +931,7 @@ describe('exchangeToken — the pairing handshake', () => {
     expect(started.ok).toBe(true)
     if (!started.ok) return
 
-    expect(() => started.handshake.writeMessage1(new Uint8Array([1]))).toThrow(/X25519/)
+    await expect(started.handshake.writeMessage1(new Uint8Array([1]))).rejects.toThrow(/X25519/)
   })
 
   it('refuses a server key that is present but unusable rather than falling back', async () => {
@@ -1046,23 +1070,177 @@ describe('exchangeToken — the pairing handshake', () => {
     ).rejects.toBeInstanceOf(PairExchangeError)
   })
 
-  // ── GATE 6: web never stores a device key ─────────────────────────────────
+  // ── GATE 6: web pairs encrypted only with a capable browser AND server ────
+  //
+  // Browser capability is checked before the exchange. The server capability
+  // needs the credential the exchange mints, so it is a SEALED `GET /api/info`
+  // read after the exchange and before `exchangeToken` returns — callers only
+  // persist a server from a returned result. The REST opener is injected (the
+  // real `/open` is covered elsewhere); sealing, the record layer and unsealing
+  // below are real.
 
-  it('refuses an encrypted pairing where the store is not a keychain', async () => {
-    // The web SecureStore shim is localStorage, readable by any script that
-    // achieves XSS on the origin. Refusing is the whole remedy — there is
-    // deliberately no plaintext retry of this same exchange.
-    expect.assertions(3)
+  const restCtxId = Uint8Array.from(Buffer.from(recordVectors.ctxId, 'base64'))
+  const restKey = (k: string) => Uint8Array.from(Buffer.from(k, 'base64'))
+
+  function restContext(): TransportContext {
+    const send = createRecordState({
+      key: restKey(recordVectors.clientToServerKey),
+      ctxId: restCtxId,
+      direction: DIRECTION_CLIENT_TO_SERVER,
+      channel: CHANNEL_REST_REQUEST,
+    })
+    const recv = createRecordState({
+      key: restKey(recordVectors.serverToClientKey),
+      ctxId: restCtxId,
+      direction: DIRECTION_SERVER_TO_CLIENT,
+      channel: CHANNEL_REST_RESPONSE,
+    })
+    return {
+      ctxId: recordVectors.ctxIdBase64Url,
+      kind: 'rest',
+      expiresAt: Date.now() + 86_400_000,
+      provisional: false,
+      send,
+      recv,
+      destroy() {
+        send.destroy()
+        recv.destroy()
+      },
+    }
+  }
+
+  /**
+   * The exchange streamer, plus a sealed `/api/info` answering `info` — or
+   * rejecting the request outright, which is what a browser reports when an
+   * older streamer's CORS policy blocks the `X-TB-*` headers.
+   */
+  function withSealedInfo(exchange: typeof fetch, info: object | 'reject') {
+    const opens: OpenContextArgs[] = []
+    const calls: { url: string; headers: Record<string, string> }[] = []
+    _setRestOpenForTests(async (args) => {
+      opens.push(args)
+      return restContext()
+    })
+    const impl = jest.fn<Promise<Response>, [RequestInfo | URL, RequestInit?]>(async (input, init) => {
+      const url = String(input)
+      const headers: Record<string, string> = { ...(init?.headers as Record<string, string>) }
+      calls.push({ url, headers })
+      if (!url.endsWith('/api/info')) return exchange(input, init)
+      if (info === 'reject') throw new TypeError('Failed to fetch')
+      const server = createRecordState({
+        key: restKey(recordVectors.serverToClientKey),
+        ctxId: restCtxId,
+        direction: DIRECTION_SERVER_TO_CLIENT,
+        channel: CHANNEL_REST_RESPONSE,
+        initialCounter: BigInt(headers['X-TB-Seq']),
+      })
+      const frame = server.seal(
+        new TextEncoder().encode(JSON.stringify(info)),
+        restTargetHash('GET', '/api/info', ''),
+      )
+      return new Response(Uint8Array.from(frame), {
+        status: 200,
+        headers: { 'X-TB-E2EE': '1', 'Content-Type': 'application/octet-stream' },
+      })
+    })
+    return { fetch: impl, opens, calls }
+  }
+
+  const E2EE_ON = { supported: true, enabled: true, version: 1, required: false }
+  const CAPABLE_INFO = { e2ee: { ...E2EE_ON, wsTicketSubprotocol: true } }
+
+  afterEach(() => {
+    _resetRestSessionsForTests()
+  })
+
+  it('native pairs encrypted without reading /api/info', async () => {
+    const streamer = fakeStreamer()
+    const probe = withSealedInfo(streamer.fetch, CAPABLE_INFO)
+    global.fetch = probe.fetch
+
+    const result = await exchangeToken({
+      url: SERVER_URL,
+      token: PAIR_TOKEN,
+      serverPublicKey: SERVER_SPK,
+    })
+
+    expect(result.e2eeRequired).toBe(true)
+    expect(probe.calls.map((c) => c.url)).toEqual([`${SERVER_URL}/api/pair/exchange`])
+  })
+
+  it('web pairs when the sealed /api/info, read with the new pairing, advertises browser tickets', async () => {
+    // The positive control for both refusals below.
     mockHasSecureKeychain = false
     const streamer = fakeStreamer()
-    global.fetch = streamer.fetch
+    const probe = withSealedInfo(streamer.fetch, CAPABLE_INFO)
+    global.fetch = probe.fetch
+
+    const result = await exchangeToken({
+      url: SERVER_URL,
+      token: PAIR_TOKEN,
+      serverPublicKey: SERVER_SPK,
+    })
+
+    expect(result.e2eeRequired).toBe(true)
+    // Exchange first, then the capability read — never the other way round.
+    expect(probe.calls.map((c) => c.url)).toEqual([
+      `${SERVER_URL}/api/pair/exchange`,
+      `${SERVER_URL}/api/info`,
+    ])
+    // Sealed: record headers, no bearer, no `?key=`. A sealed request is
+    // authenticated by the context opened with the device key this pairing
+    // registered, for this server and this pinned key.
+    const info = probe.calls[1]
+    expect(info.headers['X-TB-E2EE']).toBe('1')
+    expect(info.headers['X-TB-Ctx']).toBe(recordVectors.ctxIdBase64Url)
+    expect(info.headers.Authorization).toBeUndefined()
+    expect(info.url).not.toContain('key=')
+    expect(probe.opens).toEqual([
+      expect.objectContaining({ serverId: serverIdFromUrl(SERVER_URL), serverPublicKey: SERVER_SPK }),
+    ])
+    // The device key the server just registered is kept.
+    expect(mockKeychain.has(DEVICE_KEY)).toBe(true)
+  })
+
+  it.each([
+    ['answers without the flag', { e2ee: E2EE_ON }],
+    ['answers false', { e2ee: { ...E2EE_ON, wsTicketSubprotocol: false } }],
+    ['answers a non-boolean', { e2ee: { ...E2EE_ON, wsTicketSubprotocol: 'true' } }],
+    ['rejects the sealed request (CORS / network)', 'reject' as const],
+  ])('web refuses, clears the new key and returns nothing when the server %s', async (_label, info) => {
+    expect.assertions(5)
+    mockHasSecureKeychain = false
+    const streamer = fakeStreamer()
+    const probe = withSealedInfo(streamer.fetch, info)
+    global.fetch = probe.fetch
+
+    await expect(
+      exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, serverPublicKey: SERVER_SPK }),
+    ).rejects.toMatchObject({ kind: 'e2ee-web-server-unsupported' })
+
+    // The exchange did happen: this refusal is after it, by design.
+    expect(streamer.seen.body?.e2ee?.v).toBe(1)
+    // Key cleared, and no credential of any kind left in the store — the
+    // caller gets no result, so there is nothing for it to persist.
+    expect(mockKeychain.size).toBe(0)
+    expect(_restLiveCount()).toBe(0)
+    // Never a plaintext retry: nothing after the one sealed read.
+    expect(probe.calls.filter((c) => c.url.endsWith('/api/info'))).toHaveLength(1)
+  })
+
+  it('web refuses before the exchange where the browser has no WebCrypto X25519 or IndexedDB', async () => {
+    expect.assertions(3)
+    mockHasSecureKeychain = false
+    mockCanHoldDeviceKey = false
+    const streamer = fakeStreamer()
+    const probe = withSealedInfo(streamer.fetch, CAPABLE_INFO)
+    global.fetch = probe.fetch
 
     await expect(
       exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, serverPublicKey: SERVER_SPK }),
     ).rejects.toMatchObject({ kind: 'e2ee-web-unsupported' })
-    // Nothing written anywhere, and nothing sent: the refusal is before both.
     expect(mockKeychain.size).toBe(0)
-    expect(streamer.seen.body).toBeUndefined()
+    expect(probe.fetch).not.toHaveBeenCalled()
   })
 
   it('still pairs a legacy no-spk QR where the store is not a keychain', async () => {

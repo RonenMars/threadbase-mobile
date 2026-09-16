@@ -77,6 +77,18 @@ Feature parity with iOS/Android has **not** been verified past onboarding.
   shown frozen. Reaching parity needs those two builder calls exposed upstream or
   a small native module.
 
+- **Encrypted pairing is possible on web.** It used to be refused outright, because
+  the only store was `localStorage`. The device static key now lives in IndexedDB as
+  a non-extractable WebCrypto X25519 key (`services/e2ee/device-key.web.ts`), and sealed
+  sockets carry their ticket as a WebSocket subprotocol
+  (`services/e2ee/ticketed-socket.web.ts`). Requirements: a browser with WebCrypto
+  X25519 and IndexedDB (checked before pairing), and a streamer that advertises
+  `e2ee.wsTicketSubprotocol` on `GET /api/info` (read sealed, right after the exchange,
+  before the server is saved). Either missing refuses encrypted pairing with a
+  translated message; there is no plaintext fallback. Details and the hosted-build
+  trust caveat: [`e2ee-client.md`](./e2ee-client.md) → "Web (browser) clients".
+  **Not yet verified in a real browser against a real streamer** — unit tests only.
+
 ### Known unverified blockers
 
 These libraries are native-only or partially supported on web and have not been

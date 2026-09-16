@@ -25,7 +25,7 @@ function serverLabel(id: string, servers: Record<string, ServerConfig>): string 
 
 type Severity = 'error' | 'warning' | 'info' | null
 
-type DetailKind = 'unreachable' | 'fetchFailed' | 'disconnected' | 'connecting' | 'indexing'
+type DetailKind = 'unreachable' | 'fetchFailed' | 'disconnected' | 'e2eeProtocolMismatch' | 'connecting' | 'indexing'
 
 function getDetailMessage(detail: DetailKind, t: TFunction<'servers'>): string {
   switch (detail) {
@@ -35,6 +35,8 @@ function getDetailMessage(detail: DetailKind, t: TFunction<'servers'>): string {
       return t('state.details.fetchFailed')
     case 'disconnected':
       return t('state.details.disconnected')
+    case 'e2eeProtocolMismatch':
+      return t('state.details.e2eeProtocolMismatch')
     case 'connecting':
       return t('state.details.connecting')
     case 'indexing':
@@ -71,17 +73,20 @@ export function ServerStateMessage({
     const unreachable: string[] = []
     const fetchFailed: string[] = []
     const disconnected: string[] = []
+    const protocolMismatch: string[] = []
     const connecting: string[] = []
     const indexing: string[] = []
 
     for (const id of activeServerIds) {
       const wsStatus = wsManager.status(id)
+      const lastError = wsManager.lastError(id)
       const fetchStatus = fetchStatuses[id]?.status ?? 'ok'
       const fetchOk = fetchStatus === 'ok'
       if (fetchStatus === 'warming_up') indexing.push(id)
       else if (wsStatus === 'connected' && fetchOk) healthy.push(id)
       else if (wsStatus === 'disconnected' && !fetchOk) unreachable.push(id)
       else if (wsStatus === 'connected' && !fetchOk) fetchFailed.push(id)
+      else if (wsStatus === 'disconnected' && fetchOk && lastError === 'e2ee_protocol_mismatch') protocolMismatch.push(id)
       else if (wsStatus === 'disconnected' && fetchOk) disconnected.push(id)
       else if (wsStatus === 'connecting') connecting.push(id)
     }
@@ -120,6 +125,15 @@ export function ServerStateMessage({
             : t('stateMessage.refreshFailedAll'),
         }
       }
+      if (protocolMismatch.length > 0) {
+        return {
+          severity: 'error',
+          detailKind: 'e2eeProtocolMismatch',
+          message: single
+            ? t('stateMessage.e2eeProtocolMismatchNamed', { server: label })
+            : t('stateMessage.e2eeProtocolMismatchAll'),
+        }
+      }
       if (disconnected.length > 0) {
         return {
           severity: 'warning',
@@ -142,7 +156,7 @@ export function ServerStateMessage({
     }
 
     // Some healthy, some degraded
-    const bad = [...unreachable, ...fetchFailed, ...disconnected]
+    const bad = [...unreachable, ...fetchFailed, ...protocolMismatch, ...disconnected]
     if (indexing.length > 0) {
       const indexingLabel = indexing.length === 1 ? serverLabel(indexing[0], servers) : null
       return {
@@ -171,6 +185,16 @@ export function ServerStateMessage({
         message: badLabel
           ? t('stateMessage.refreshFailedNamed', { server: badLabel })
           : t('stateMessage.refreshFailedSome'),
+      }
+    }
+    if (protocolMismatch.length > 0) {
+      const badLabel = protocolMismatch.length === 1 ? serverLabel(protocolMismatch[0], servers) : null
+      return {
+        severity: 'warning',
+        detailKind: 'e2eeProtocolMismatch',
+        message: badLabel
+          ? t('stateMessage.e2eeProtocolMismatchNamed', { server: badLabel })
+          : t('stateMessage.e2eeProtocolMismatchSome'),
       }
     }
     if (disconnected.length > 0) {

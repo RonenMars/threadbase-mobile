@@ -91,6 +91,30 @@ function dh(secretKey: Uint8Array, publicKey: Uint8Array): Uint8Array {
 }
 
 /**
+ * This device's static key, as the handshake needs it: the public half, and a
+ * Diffie-Hellman that never hands the private half out.
+ *
+ * Asynchronous because on web the private half is a non-extractable WebCrypto
+ * `CryptoKey` (`device-key.web.ts`) and `deriveBits` is promise-based. Only the
+ * static-key DH goes through this; the ephemeral stays synchronous stablelib.
+ *
+ * `dh` must reject an all-zero shared secret, as `sharedKey(…, true)` does.
+ */
+export interface StaticKey {
+  readonly publicKey: Uint8Array
+  dh(remotePublic: Uint8Array): Promise<Uint8Array>
+}
+
+/** The native static key: raw private bytes, `@stablelib/x25519`, as before. */
+export function staticKeyFromPrivate(secretKey: Uint8Array): StaticKey {
+  const pair = generateKeyPairFromSeed(secretKey)
+  return {
+    publicKey: pair.publicKey,
+    dh: async (remotePublic) => dh(pair.secretKey, remotePublic),
+  }
+}
+
+/**
  * The **handshake** nonce for a counter: 4 zero bytes, then the counter as
  * 64-bit little-endian, per Noise §12.3.
  *
@@ -218,7 +242,7 @@ export interface NoiseInitiatorConfig {
   pattern: NoisePattern
   /** The responder's static public key, known in advance — `IK`'s `<- s` pre-message. */
   serverStaticPublic: Uint8Array
-  clientStaticPrivate: Uint8Array
+  clientStatic: StaticKey
   /** Exactly 32 bytes on `IKpsk1`; must be absent on `IK`. */
   psk?: Uint8Array
   prologue: Uint8Array
@@ -235,8 +259,8 @@ export interface NoiseHandshakeResult {
 }
 
 export interface NoiseInitiator {
-  writeMessage1(payload: Uint8Array): Uint8Array
-  readMessage2(message: Uint8Array): NoiseHandshakeResult
+  writeMessage1(payload: Uint8Array): Promise<Uint8Array>
+  readMessage2(message: Uint8Array): Promise<NoiseHandshakeResult>
 }
 
 export function createNoiseInitiator(config: NoiseInitiatorConfig): NoiseInitiator {
@@ -271,12 +295,16 @@ export function createNoiseInitiator(config: NoiseInitiatorConfig): NoiseInitiat
   sym.mixHash(config.serverStaticPublic)
 
   const e = generateKeyPairFromSeed(config.ephemeralPrivate ?? randomBytes(32))
-  const s = generateKeyPairFromSeed(config.clientStaticPrivate)
+  const s = config.clientStatic
   let wroteMessage1 = false
+  // Separate from `wroteMessage1` because writing now awaits the static DH: a
+  // read that started while a write was still pending would interleave two
+  // mutations of one `SymmetricState`.
+  let message1Complete = false
   let readMessage2 = false
 
   return {
-    writeMessage1(payload: Uint8Array): Uint8Array {
+    async writeMessage1(payload: Uint8Array): Promise<Uint8Array> {
       if (wroteMessage1) throw new Error('Noise: message 1 was already written')
       wroteMessage1 = true
 
@@ -301,13 +329,15 @@ export function createNoiseInitiator(config: NoiseInitiatorConfig): NoiseInitiat
       sym.mixKey(e.publicKey)
       sym.mixKey(dh(e.secretKey, config.serverStaticPublic))
       const encryptedStatic = sym.encryptAndHash(s.publicKey)
-      sym.mixKey(dh(s.secretKey, config.serverStaticPublic))
+      sym.mixKey(await s.dh(config.serverStaticPublic))
       if (pattern === 'IKpsk1') sym.mixKeyAndHash(config.psk as Uint8Array)
-      return concatBytes(e.publicKey, encryptedStatic, sym.encryptAndHash(payload))
+      const message1 = concatBytes(e.publicKey, encryptedStatic, sym.encryptAndHash(payload))
+      message1Complete = true
+      return message1
     },
 
-    readMessage2(message: Uint8Array): NoiseHandshakeResult {
-      if (!wroteMessage1) throw new Error('Noise: message 2 arrived before message 1 was written')
+    async readMessage2(message: Uint8Array): Promise<NoiseHandshakeResult> {
+      if (!message1Complete) throw new Error('Noise: message 2 arrived before message 1 was written')
       // The state is spent once it has been split. A second read would mix a
       // second ephemeral into a chain that already produced traffic keys, and
       // today the AEAD happens to reject the result — but that is the cipher
@@ -327,7 +357,7 @@ export function createNoiseInitiator(config: NoiseInitiatorConfig): NoiseInitiat
       // patterns, and the vector pins that transcript.
       sym.mixKey(re)
       sym.mixKey(dh(e.secretKey, re))
-      sym.mixKey(dh(s.secretKey, re))
+      sym.mixKey(await s.dh(re))
       const payload = sym.decryptAndHash(message.subarray(PUBLIC_KEY_LENGTH))
 
       const [clientToServerKey, serverToClientKey] = sym.split()

@@ -406,7 +406,11 @@ describe('PairDeepLinkScreen', () => {
     ],
     [
       'e2ee-web-unsupported',
-      'Encrypted pairing needs the Threadbase app for iOS or Android. A browser cannot store the key that identifies this device.',
+      'This browser cannot keep an encryption key for this device. Try an up-to-date browser, or use the Threadbase app for iOS or Android.',
+    ],
+    [
+      'e2ee-web-server-unsupported',
+      'This streamer needs an update before a browser can connect to it with encryption. Update the streamer, or pair from the Threadbase app for iOS or Android.',
     ],
   ])('shows %s without offering to retry the same link', async (kind, message) => {
     setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP, spk: 'B'.repeat(43) })
