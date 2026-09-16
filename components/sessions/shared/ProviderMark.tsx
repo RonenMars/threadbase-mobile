@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Svg, { Path } from 'react-native-svg'
-import { providerLabelKey, type ProviderName, type ProviderLabelKey } from '@/constants/providers'
-import { brand, radius } from '@/constants/theme'
+import { PROVIDER_COLOR, providerLabelKey, type ProviderName, type ProviderLabelKey } from '@/constants/providers'
+import { radius } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 
 // Path data from assets/icons/providers/{claudecode,codex,cursor}.svg
@@ -27,18 +27,6 @@ type ProviderMarkProps = {
   variant?: 'mono' | 'color'
 }
 
-/** Claude uses lobe-icons claude-color; Codex/Cursor use `brand.*`. Detail header only. */
-function colorFill(key: ProviderLabelKey): string {
-  switch (key) {
-    case 'claude':
-      return '#D97757'
-    case 'codex':
-      return brand.codex
-    case 'cursor':
-      return brand.cursor
-  }
-}
-
 export function ProviderMark({ provider, size = TILE_SIZE, variant = 'mono' }: ProviderMarkProps) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
@@ -57,7 +45,7 @@ export function ProviderMark({ provider, size = TILE_SIZE, variant = 'mono' }: P
       break
   }
 
-  const fill = variant === 'color' ? colorFill(key) : theme.text.secondary
+  const fill = variant === 'color' ? PROVIDER_COLOR[key] : theme.text.secondary
 
   return (
     <View
