@@ -106,10 +106,10 @@ function isWarmingConversation(entry: Entry, warming: Set<string>): boolean {
 }
 
 /**
- * Quiet rows (a command or only an identity for a title) stay inline in time
- * order as light one-line rows. Once a group holds QUIET_TAIL_MIN of them they
- * leave the group and one tail row sits at its end: never mid-list, never
- * above real work. Display-layer only. Can't-resume rows stay first-class.
+ * Quiet titles (a command or only an identity) stay inline in time
+ * order. Once a group holds QUIET_TAIL_MIN of them they leave the group
+ * and one tail row sits at its end: never mid-list, never above real work.
+ * Display-layer only. Can't-resume rows stay first-class.
  */
 function withQuietTail(bucket: Entry[], bucketKey: string): FlatItem[] {
   const quiet = bucket.filter((e) => e.title.rung !== 'intent' && e.tier !== 'cantResume')
@@ -368,7 +368,6 @@ export const NowList = React.memo(function NowList({
           <EarlierRow
             item={item.entry.item}
             title={item.entry.title.title}
-            quiet={item.entry.title.rung !== 'intent'}
             isFirst={item.isFirst}
             highlight={highlight}
             dominantProvider={dominantProvider}
