@@ -26,13 +26,14 @@ import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { RecentDirsModal, type RecentDir } from '@/components/browse/RecentDirsModal'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
-import { font, radius, spacing, brand, type Theme } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import {
   CLAUDE_CODE_PROVIDER,
   CODEX_CLI_PROVIDER,
   CURSOR_PROVIDER,
+  PROVIDER_COLOR,
   PROVIDER_NAMES,
   type ProviderName,
 } from '@/constants/providers'
@@ -526,9 +527,9 @@ export default function BrowseScreen() {
                 </View>
               ))
             : ([
-            { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: brand.claude },
-            { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: brand.codex },
-            { value: CURSOR_PROVIDER, label: t('sessions:provider.cursor'), color: brand.cursor },
+            { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: PROVIDER_COLOR.claude },
+            { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: PROVIDER_COLOR.codex },
+            { value: CURSOR_PROVIDER, label: t('sessions:provider.cursor'), color: PROVIDER_COLOR.cursor },
           ]).map((option) => {
             const selected = selectedProvider === option.value
             const health = findProviderHealth(providerHealth?.providers, option.value)
