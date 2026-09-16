@@ -81,4 +81,43 @@ describe('conversationRowTitle', () => {
       'no git · 145h 30m',
     )
   })
+
+  it('uses the full first message when sessionName is the streamer 80-char cut', () => {
+    const first = `${'a '.repeat(40)}fix the splash screen so it only plays once`
+    expect(
+      conversationRowTitle(
+        {
+          ...conv,
+          sessionName: first.slice(0, 80),
+          firstMessage: { text: first, timestamp: '' },
+        },
+        {},
+      ),
+    ).toBe(first.charAt(0).toUpperCase() + first.slice(1))
+  })
+
+  it('walks to lastMessage when the first turn is only a pasted module', () => {
+    expect(
+      conversationRowTitle(
+        {
+          ...conv,
+          firstMessage: {
+            text: "import { Stack } from 'expo-router'\nexport default function RootLayout() {\n  return <Stack />\n}",
+            timestamp: '',
+          },
+          lastMessage: { text: 'Wire the splash so it only plays once', timestamp: '' },
+        },
+        {},
+      ),
+    ).toBe('Wire the splash so it only plays once')
+  })
+
+  it('treats a null projectPath as missing', () => {
+    expect(
+      conversationRowTitle(
+        { ...conv, projectPath: null, title: 'orphan', branch: undefined, firstMessage: { text: 'hi', timestamp: '' } },
+        {},
+      ),
+    ).toBe('orphan')
+  })
 })

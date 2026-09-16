@@ -26,7 +26,7 @@
     "empty": "Нет сессий",
     "emptySubtitle": "Запустите сессию Claude Code или Codex,\nчтобы увидеть её здесь",
     "allServersOffline": "Не удается подключиться к вашим серверам",
-    "allServersOfflineSubtitle": "Убедитесь, что телефон может обратиться к адресам серверов, затем используйте кнопку статуса серверов выше, чтобы повторить попытку или посмотреть детали.",
+    "allServersOfflineSubtitle": "Убедитесь, что телефон может обратиться к адресам серверов, затем повторите попытку или посмотрите детали.",
     "noResults": "Ничего не найдено",
     "noResultsSubtitle": "Ничего не соответствует \"{{query}}\"",
     "serverEmpty": "На этом сервере нет сессий",
@@ -62,6 +62,10 @@
     "activityLive_few": "Активных: {{count}}",
     "activityLive_many": "Активных: {{count}}",
     "activityLive_other": "Активных: {{count}}",
+    "activityNeedsYou_one": "{{count}} ждёт вас",
+    "activityNeedsYou_few": "{{count}} ждут вас",
+    "activityNeedsYou_many": "{{count}} ждут вас",
+    "activityNeedsYou_other": "{{count}} ждут вас",
     "activityToday": "Сегодня: {{total}}",
     "activityLast": "последняя: {{time}}",
     "timeNow": "сейчас",
@@ -171,14 +175,22 @@
     "channelName": "Активные сессии"
   },
   "tree": {
-    "unknownPath": "(неизвестно)"
+    "unknownPath": "(неизвестно)",
+    "folders": "ПАПКИ",
+    "here_one": "ЗДЕСЬ · {{count}} БЕСЕДА",
+    "here_few": "ЗДЕСЬ · {{count}} БЕСЕДЫ",
+    "here_many": "ЗДЕСЬ · {{count}} БЕСЕД",
+    "here_other": "ЗДЕСЬ · {{count}} БЕСЕД"
+  },
+  "unavailable": {
+    "worktree": "Рабочее дерево удалено — нельзя возобновить"
   },
   "row": {
-    "waitingFor": "ждёт {{elapsed}}",
     "quietTail_one": "{{count}} тихая сессия · ничего не спрашивали",
     "quietTail_few": "{{count}} тихие сессии · ничего не спрашивали",
     "quietTail_many": "{{count}} тихих сессий · ничего не спрашивали",
     "quietTail_other": "{{count}} тихих сессий · ничего не спрашивали",
+    "waitingFor": "ожидание {{elapsed}}",
     "open": "Открыть"
   },
   "layout": {

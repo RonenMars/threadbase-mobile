@@ -7,7 +7,7 @@ import { LiveDot } from './LiveDot'
 import { colorForToken } from './SessionStatusBadge'
 import { tierColorToken, type SessionTier } from '@/lib/sessionPresentation'
 
-/** The five words a list row may render. Detail screens keep the 15 `statusLabel` values. */
+/** The five words a list row or detail badge may render. */
 export function getSessionTierLabel(tier: SessionTier, t: TFunction<'sessions'>): string {
   switch (tier) {
     case 'needsYou':

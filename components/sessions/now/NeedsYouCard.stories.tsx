@@ -48,3 +48,28 @@ export const MultiServer: Story = {
     serverColor: '#58a6ff',
   },
 }
+
+export const JsonlFallback: Story = {
+  args: {
+    session: {
+      ...session,
+      statusUpdatedAt: undefined,
+      activity: { state: 'quiet', lastEventAt: new Date(Date.now() - 45_000).toISOString(), source: 'jsonl' },
+    },
+    title: 'Why sessions open in terminal view after resume',
+  },
+}
+
+export const NoWaitStamp: Story = {
+  args: {
+    session: { ...session, statusUpdatedAt: undefined },
+    title: 'Why sessions open in terminal view after resume',
+  },
+}
+
+export const WithoutProjectPath: Story = {
+  args: {
+    session: Object.assign({}, session, { projectPath: null }),
+    title: 'Why sessions open in terminal view after resume',
+  },
+}

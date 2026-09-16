@@ -1,3 +1,4 @@
+import { basename } from '@/components/sessions/shared/pathTail'
 import { resolveDisplayTitle, type DisplayTitle } from '@/lib/displayTitle'
 import { sessionKey, type NameOrigin } from '@/stores/sessionNames'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -16,10 +17,6 @@ export function storedNameFor(
 ): StoredName {
   const key = sessionKey(serverId, sessionId)
   return { name: names[key], origin: origins[key] }
-}
-
-function basename(path: string | null | undefined): string | undefined {
-  return path?.split('/').filter(Boolean).pop()
 }
 
 /**
@@ -62,14 +59,33 @@ export function resolveSessionRowTitle(
   return { title: title || session.projectName || session.projectPath, rung: rungOf(source) }
 }
 
+function conversationFirstMessage(
+  conv: Pick<MultiConversation, 'sessionName' | 'firstMessage'>,
+): string | undefined {
+  const named = conv.sessionName
+  const first = conv.firstMessage?.text
+  // The streamer slices session_name at 80 chars; the list still has the full first turn.
+  if (named && first && first.startsWith(named)) return first
+  return named ?? first
+}
+
 export function resolveConversationRowTitle(
-  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'projectPath' | 'branch' | 'firstMessage'>,
+  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'branch' | 'firstMessage' | 'lastMessage'> & {
+    projectPath?: string | null
+  },
   stored: StoredName,
 ): RowTitle {
   const { customName } = split(stored)
+  const firstMessage = conversationFirstMessage(conv)
+  const last = conv.lastMessage?.text
+  const laterUserMessages =
+    last && last !== firstMessage && last !== conv.sessionName && last !== conv.firstMessage?.text
+      ? [last]
+      : undefined
   const { title, source } = resolveDisplayTitle({
     customName,
-    firstMessage: conv.sessionName ?? conv.firstMessage?.text,
+    firstMessage,
+    laterUserMessages,
     projectName: basename(conv.projectPath),
     branch: conv.branch,
   })
@@ -84,7 +100,9 @@ export function sessionRowTitle(
 }
 
 export function conversationRowTitle(
-  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'projectPath' | 'branch' | 'firstMessage'>,
+  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'branch' | 'firstMessage' | 'lastMessage'> & {
+    projectPath?: string | null
+  },
   stored: StoredName,
 ): string {
   return resolveConversationRowTitle(conv, stored).title

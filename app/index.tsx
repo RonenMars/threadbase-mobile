@@ -37,6 +37,8 @@ import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { ListBottomScrim } from '@/components/sessions/shared/ListBottomScrim'
+import { useHideOnScrollDown } from '@/hooks/useHideOnScrollDown'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { MagnifyingGlass, SlidersHorizontal, Gear } from 'phosphor-react-native'
@@ -112,9 +114,8 @@ export default function ProjectsHub() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Connection status — a server is "healthy" only if WS is connected AND its
-  // last HTTP fetch (Hub list, search, eager pagination) didn't fail. Either
-  // signal flipping bad will degrade the dot from green to amber/red.
+  // Connection status. Banners and the servers modal AND-combine WS with the
+  // last HTTP fetch; the header no longer carries a status bell.
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const [wsConnectedCount, setWsConnectedCount] = useState(0)
   useEffect(() => {
@@ -131,6 +132,12 @@ export default function ProjectsHub() {
   }, [activeServerIds])
 
   const cacheAlert = useServersStore((s) => s.cacheAlert)
+
+  const warmingServerIds = useMemo(
+    () => activeServerIds.filter((id) => fetchStatuses[id]?.status === 'warming_up'),
+    [activeServerIds, fetchStatuses],
+  )
+  const { hidden: fabHidden, onScroll, reveal: revealFab } = useHideOnScrollDown()
 
   // Header controls
   const [searchOpen, setSearchOpen] = useState(false)
@@ -399,22 +406,12 @@ export default function ProjectsHub() {
     >
       <ChromeBackdrop />
       <View style={styles.header}>
-        {/* Left: brand */}
         <View style={styles.headerLeft}>
           <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
           <Text style={styles.headerTitle}>{t('shared:app.title')}</Text>
-          <Pressable
-            testID="hub-settings-btn"
-            onPress={() => router.push('/settings')}
-            hitSlop={8}
-            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
-            accessibilityLabel={t('settings:header.title')}
-          >
-            <Gear size={20} color={theme.text.secondary} />
-          </Pressable>
         </View>
 
-        {/* Right: actions */}
+        {/* Right: search, filter, settings */}
         <View style={styles.headerRight}>
           {/* Background-refetch fallback spinner — only with a single server,
               where no server-name row exists to anchor it */}
@@ -422,6 +419,7 @@ export default function ProjectsHub() {
             <ActivityIndicator size="small" color={theme.text.secondary} testID="header-background-refreshing" />
           ) : null}
           <HomeStatusPill onPress={openStatusSurface} />
+
           <Pressable
             onPress={() => setSearchOpen((v) => !v)}
             hitSlop={8}
@@ -441,6 +439,15 @@ export default function ProjectsHub() {
             <SlidersHorizontal size={20} color={isSheetActive ? theme.text.accent : theme.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
           </Pressable>
+          <Pressable
+            testID="hub-settings-btn"
+            onPress={() => router.push('/settings')}
+            hitSlop={8}
+            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
+            accessibilityLabel={t('settings:header.title')}
+          >
+            <Gear size={20} color={theme.text.secondary} />
+          </Pressable>
         </View>
       </View>
 
@@ -448,7 +455,7 @@ export default function ProjectsHub() {
       <View style={styles.segmentRow} accessibilityRole="tablist">
         <TouchableOpacity
           style={[styles.segmentTab, sessionsLayout === 'now' && styles.segmentTabActive]}
-          onPress={() => setSessionsLayout('now')}
+          onPress={() => { revealFab(); setSessionsLayout('now') }}
           accessibilityRole="tab"
           accessibilityState={{ selected: sessionsLayout === 'now' }}
           testID="layout-now"
@@ -457,7 +464,7 @@ export default function ProjectsHub() {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.segmentTab, sessionsLayout === 'projects' && styles.segmentTabActive]}
-          onPress={() => setSessionsLayout('projects')}
+          onPress={() => { revealFab(); setSessionsLayout('projects') }}
           accessibilityRole="tab"
           accessibilityState={{ selected: sessionsLayout === 'projects' }}
           testID="layout-projects"
@@ -561,6 +568,8 @@ export default function ProjectsHub() {
           isBackgroundRefreshing={isBackgroundRefreshing}
           topInset={chromeHeight}
           ListHeaderComponent={listHeader}
+          onNewSession={handleFABPress}
+          onScroll={onScroll}
         />
       ) : (
         <View style={styles.classicContainer}>
@@ -576,9 +585,13 @@ export default function ProjectsHub() {
             isBackgroundRefreshing={isBackgroundRefreshing}
             topInset={chromeHeight}
             ListHeaderComponent={listHeader}
+            warmingServerIds={warmingServerIds}
+            onNewSession={handleFABPress}
+            onScroll={onScroll}
           />
         </View>
       )}
+      <ListBottomScrim />
       </View>
 
       {chrome}
@@ -603,6 +616,7 @@ export default function ProjectsHub() {
       <FAB
         ref={fabRef}
         onPress={handleFABPress}
+        hidden={fabHidden}
       />
 
       {/* Modals & Sheets */}

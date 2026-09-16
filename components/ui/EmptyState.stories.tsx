@@ -21,3 +21,11 @@ export const WithSubtitle: Story = {
     subtitle: 'Start a session on a connected server to see it here.',
   },
 }
+
+export const WithAction: Story = {
+  args: {
+    title: 'No sessions',
+    subtitle: 'Start a Claude Code or Codex session to see it here',
+    action: { label: 'New session', onPress: () => {}, plus: true },
+  },
+}

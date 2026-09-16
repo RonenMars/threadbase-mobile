@@ -1,4 +1,5 @@
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { pathSegments } from '@/components/sessions/shared/pathTail'
 import {
   deriveSessionPresentation,
   isPresentationLive,
@@ -11,8 +12,8 @@ import i18n from '@/lib/i18n'
 
 // Brand palette for the tree leaf indicator. Live (running / waiting_input)
 // gets amber, the brand "now" colour. Idle gets blue, the brand "thread /
-// archive" colour. Matches SessionCard's spine and SessionStatusBadge dots
-// so the same node reads identically across hub, classic, and tree modes.
+// archive" colour. Matches the hub rail and SessionStatusBadge dots so the
+// same node reads identically across hub and tree.
 const TIER_COLOR: Record<SessionTier, string> = {
   needsYou: '#d29922',
   working: '#3fb950',
@@ -31,7 +32,7 @@ function splitPath(p: string | null | undefined): string[] {
   // Keep the drive letter as the first segment (e.g. "C:" → ["C:", "Users", ...])
   // so Windows paths stay isolated from Unix /Users/... paths.
   // Strip leading UNC "\\server" prefix down to just the server name.
-  return p.replace(/\\/g, '/').split('/').filter(Boolean)
+  return pathSegments(p.replace(/\\/g, '/'))
 }
 
 export function buildTree(
@@ -182,6 +183,38 @@ export function activeSessionColor(node: TreeNode): string | null {
  */
 export function hasLiveSession(node: TreeNode): boolean {
   return node.sessions.some(isPresentationLive)
+}
+
+function walkSubtree(node: TreeNode, visit: (n: TreeNode) => void) {
+  visit(node)
+  for (const child of node.children.values()) walkSubtree(child, visit)
+}
+
+/** Latest activity anywhere under this folder, including descendants. */
+export function subtreeLatestActivityMs(node: TreeNode): number {
+  let latest = 0
+  walkSubtree(node, (n) => {
+    latest = Math.max(latest, latestActivityMs(n))
+  })
+  return latest
+}
+
+/** Most urgent live colour anywhere under this folder. */
+export function subtreeActiveColor(node: TreeNode): string | null {
+  const tiers = new Set<SessionTier>()
+  walkSubtree(node, (n) => {
+    for (const session of n.sessions) tiers.add(deriveSessionPresentation(session).tier)
+  })
+  const tier = TIER_PRIORITY.find((candidate) => tiers.has(candidate))
+  return tier ? TIER_COLOR[tier] : null
+}
+
+export function subtreeHasLive(node: TreeNode): boolean {
+  let live = false
+  walkSubtree(node, (n) => {
+    if (hasLiveSession(n)) live = true
+  })
+  return live
 }
 
 /** The node a summary landed on, by the server's own project_path; falls back to the reassembled path. */

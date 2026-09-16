@@ -45,7 +45,7 @@ export type SessionColorToken = 'running' | 'waiting' | 'completed' | 'idle' | '
 
 /**
  * The five words a list row may render (docs/design/session-list). The 15
- * `SessionStatusLabel` values survive for detail-screen copy only.
+ * `SessionStatusLabel` values remain for filter sheets and other 15-word copy.
  */
 export type SessionTier = 'needsYou' | 'working' | 'resumable' | 'cantResume' | 'observed'
 

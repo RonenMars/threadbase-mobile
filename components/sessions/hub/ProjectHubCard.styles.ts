@@ -7,7 +7,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
   // Spine wrapper: a flex row that pins the brand-coloured thread spine to
   // the left edge of the card and lets the existing header / body fill the
-  // remaining width. Mirrors SessionCard's structure.
+  // remaining width. Matches the live-card rail.
   spineRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
