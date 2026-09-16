@@ -1,3 +1,4 @@
+import { basename } from '@/components/sessions/shared/pathTail'
 import { resolveDisplayTitle, type DisplayTitle } from '@/lib/displayTitle'
 import { sessionKey, type NameOrigin } from '@/stores/sessionNames'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -16,10 +17,6 @@ export function storedNameFor(
 ): StoredName {
   const key = sessionKey(serverId, sessionId)
   return { name: names[key], origin: origins[key] }
-}
-
-export function basename(path: string | null | undefined): string | undefined {
-  return path?.split('/').filter(Boolean).pop()
 }
 
 /**

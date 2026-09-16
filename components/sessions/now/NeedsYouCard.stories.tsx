@@ -66,3 +66,10 @@ export const NoWaitStamp: Story = {
     title: 'Why sessions open in terminal view after resume',
   },
 }
+
+export const WithoutProjectPath: Story = {
+  args: {
+    session: Object.assign({}, session, { projectPath: null }),
+    title: 'Why sessions open in terminal view after resume',
+  },
+}

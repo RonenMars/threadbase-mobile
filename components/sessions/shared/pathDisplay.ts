@@ -1,3 +1,5 @@
+import { pathSegments } from '@/components/sessions/shared/pathTail'
+
 // Path display helper for ConversationListItem and project cards.
 //
 // The list rows in this app are dominated by filesystem paths because most
@@ -46,7 +48,7 @@ function segments(path: string): string[] {
   if (p.endsWith('/')) p = p.slice(0, -1)
   if (p.startsWith('~/')) p = p.slice(2)
   if (p.startsWith('/')) p = p.slice(1)
-  return p.split('/').filter(Boolean)
+  return pathSegments(p)
 }
 
 /**

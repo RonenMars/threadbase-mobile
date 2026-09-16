@@ -12,8 +12,8 @@ import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
 import { isToday } from '@/components/sessions/hub/hubUtils'
+import { basename } from '@/components/sessions/shared/pathTail'
 import {
-  basename,
   resolveConversationRowTitle,
   resolveSessionRowTitle,
   type RowTitle,
