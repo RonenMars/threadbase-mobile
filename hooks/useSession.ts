@@ -141,6 +141,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
     nonce: number
   } | null>(null)
   const [preservedSessions, setPreservedSessions] = useState<MultiSession[]>([])
+  const lastGoodByServerRef = useRef<Map<string, MultiSession[]>>(new Map())
   const targetServerIds = fetchRequest?.serverIds ?? activeServerIds
 
   // Per-server progress map stored in a ref so queryFn mutations don't need
@@ -215,13 +216,14 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
               signal,
             )
             recordSuccess(serverId)
+            lastGoodByServerRef.current.set(serverId, sessions)
             return sessions
           } catch (err) {
             if (signal?.aborted) throw err
             const warmupState = getServerWarmupState(err)
             if (warmupState) recordWarmingUp(serverId, warmupState)
             else recordFailure(serverId, err)
-            return [] as MultiSession[]
+            return lastGoodByServerRef.current.get(serverId) ?? [] as MultiSession[]
           } finally {
             const slice = serverProgressRef.current.get(serverId)
             if (slice) {

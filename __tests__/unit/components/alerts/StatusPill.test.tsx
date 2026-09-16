@@ -52,6 +52,23 @@ describe('HomeStatusPill', () => {
     expect(queryByTestId('status-pill')).toBeNull()
   })
 
+  it('hides a claimed error cause', async () => {
+    useAlertStore.getState().upsert({
+      id: 'a',
+      viewport: 'home',
+      cause: serverCause('a'),
+      level: 'error',
+      title: 'A down',
+      message: 'body',
+      timeout: null,
+    })
+    useAlertStore.getState().claimInline(serverCause('a'))
+    const { queryByTestId } = await renderWithI18n(
+      <HomeStatusPill onPress={() => {}} />,
+    )
+    expect(queryByTestId('status-pill')).toBeNull()
+  })
+
   it('counts distinct error causes', async () => {
     useAlertStore.getState().upsert({
       id: 'a',

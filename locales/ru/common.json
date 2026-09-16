@@ -38,6 +38,18 @@
       "warningCount_other": "{{count}} предупреждения",
       "retryEverything": "Повторить всё",
       "technicalDetails": "Технические сведения"
+    },
+    "inline": {
+      "unreachableSince": "Недоступен с {{time}}",
+      "sessionsStale_one": "Сессия ниже последний раз загружалась {{ago}}. Проверьте, что компьютер включён и в той же сети.",
+      "sessionsStale_few": "{{count}} сессии ниже последний раз загружались {{ago}}. Проверьте, что компьютер включён и в той же сети.",
+      "sessionsStale_many": "{{count}} сессий ниже последний раз загружались {{ago}}. Проверьте, что компьютер включён и в той же сети.",
+      "sessionsStale_other": "{{count}} сессии ниже последний раз загружались {{ago}}. Проверьте, что компьютер включён и в той же сети.",
+      "loadedAgo_one": "{{count}} минуту назад",
+      "loadedAgo_few": "{{count}} минуты назад",
+      "loadedAgo_many": "{{count}} минут назад",
+      "loadedAgo_other": "{{count}} минуты назад",
+      "retryNow": "Повторить сейчас"
     }
   },
   "error": {

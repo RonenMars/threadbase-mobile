@@ -32,5 +32,23 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     color: theme.text.secondary,
     ...rtl.ltr,
   },
+  retry: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  retryText: {
+    fontSize: font.xs,
+    color: theme.status.failed,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  identity: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   })
 }
