@@ -4,11 +4,11 @@ import { Warning } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useToastSync } from '@/hooks/useToastSync'
+import { useAlertSync } from '@/hooks/useAlertSync'
 import { useServersStore } from '@/stores/servers'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { parseHostPressureOs, type HostPressureLevel } from '@/types/api'
-import type { AlertSpec } from '@/types/alerts'
+import { hostPressureCause, type AlertSpec } from '@/types/alerts'
 import {
   hostPressureDetectedReasons,
   hostPressureServerName,
@@ -76,8 +76,9 @@ export function HostPressureBanner() {
   const modalLead = t('hostPressure.modalLead')
 
   const spec = useMemo((): AlertSpec | null => {
-    if (!visible) return null
+    if (!visible || !alertServerId) return null
     return {
+      cause: hostPressureCause(alertServerId),
       // Critical stays amber like elevated: the stronger wording carries the
       // level, turning it red would read as an app error.
       level: 'warning',
@@ -91,9 +92,9 @@ export function HostPressureBanner() {
       buttonAction: () => setSheetOpen(true),
       testID: 'host-pressure-banner',
     }
-  }, [visible, bannerText, modalLead, detailsLabel, handleDismiss])
+  }, [visible, alertServerId, bannerText, modalLead, detailsLabel, handleDismiss])
 
-  useToastSync(TOAST_ID, spec, VIEWPORT)
+  useAlertSync(TOAST_ID, spec, VIEWPORT)
 
   if (!sheetOpen || !pressure || !alertServerId || hiddenForLevel) return null
 

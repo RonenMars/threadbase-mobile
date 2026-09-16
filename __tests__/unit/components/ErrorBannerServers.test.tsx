@@ -3,6 +3,7 @@ import { useLoadingStateStore } from '@/stores/loading-state'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
 import { useErrorSheetStore } from '@/stores/errorSheet'
+import { useAlertStore } from '@/stores/alerts'
 import { renderWithI18n } from '@/test-utils/render'
 import { queryClient } from '@/services/query-client'
 import { fireEvent, waitFor } from '@testing-library/react-native'
@@ -31,6 +32,7 @@ function seedFailures(count: number) {
 describe('ErrorBanner server rows', () => {
   beforeEach(() => {
     useErrorSheetStore.setState({ open: false })
+    useAlertStore.getState().reset()
     useLoadingStateStore.setState({ errors: [] })
     useServerFetchStatusStore.setState({ statuses: {} })
     useServersStore.setState({ servers: {} })
