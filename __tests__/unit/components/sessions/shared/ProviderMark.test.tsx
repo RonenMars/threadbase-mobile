@@ -3,7 +3,8 @@ import { I18nextProvider } from 'react-i18next'
 import renderer from 'react-test-renderer'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import { brand, dark } from '@/constants/theme'
+import { dark } from '@/constants/theme'
+import { PROVIDER_COLOR } from '@/constants/providers'
 import i18n from '@/test-utils/i18n-setup'
 
 function renderFill(element: ReactElement): string | undefined {
@@ -34,8 +35,8 @@ describe('ProviderMark', () => {
   })
 
   it('paints each provider in brand color on the detail header', () => {
-    expect(renderFill(<ProviderMark provider="claude-code" variant="color" />)).toBe('#D97757')
-    expect(renderFill(<ProviderMark provider="codex-cli" variant="color" />)).toBe(brand.codex)
-    expect(renderFill(<ProviderMark provider="cursor" variant="color" />)).toBe(brand.cursor)
+    expect(renderFill(<ProviderMark provider="claude-code" variant="color" />)).toBe(PROVIDER_COLOR.claude)
+    expect(renderFill(<ProviderMark provider="codex-cli" variant="color" />)).toBe(PROVIDER_COLOR.codex)
+    expect(renderFill(<ProviderMark provider="cursor" variant="color" />)).toBe(PROVIDER_COLOR.cursor)
   })
 })
