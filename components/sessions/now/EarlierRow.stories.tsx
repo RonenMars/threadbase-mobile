@@ -50,3 +50,18 @@ export const Resumable: Story = {
 export const OlderConversation: Story = {
   args: { item: { kind: 'conversation', ms: 0, item: gone }, title: 'int-2026-09-12 · tb-streamer worktree' },
 }
+
+export const QuietWithoutProject: Story = {
+  args: {
+    item: {
+      kind: 'conversation',
+      ms: 0,
+      item: Object.assign(
+        { ...gone, id: 'c-null', sessionName: 'hi', title: 'hi' },
+        { projectPath: null },
+      ),
+    },
+    title: 'hi',
+    quiet: true,
+  },
+}

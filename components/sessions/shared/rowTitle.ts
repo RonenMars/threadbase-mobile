@@ -18,7 +18,7 @@ export function storedNameFor(
   return { name: names[key], origin: origins[key] }
 }
 
-function basename(path: string | null | undefined): string | undefined {
+export function basename(path: string | null | undefined): string | undefined {
   return path?.split('/').filter(Boolean).pop()
 }
 
@@ -73,7 +73,9 @@ function conversationFirstMessage(
 }
 
 export function resolveConversationRowTitle(
-  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'projectPath' | 'branch' | 'firstMessage' | 'lastMessage'>,
+  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'branch' | 'firstMessage' | 'lastMessage'> & {
+    projectPath?: string | null
+  },
   stored: StoredName,
 ): RowTitle {
   const { customName } = split(stored)
@@ -101,7 +103,9 @@ export function sessionRowTitle(
 }
 
 export function conversationRowTitle(
-  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'projectPath' | 'branch' | 'firstMessage' | 'lastMessage'>,
+  conv: Pick<MultiConversation, 'title' | 'sessionName' | 'branch' | 'firstMessage' | 'lastMessage'> & {
+    projectPath?: string | null
+  },
   stored: StoredName,
 ): string {
   return resolveConversationRowTitle(conv, stored).title

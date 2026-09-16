@@ -195,6 +195,22 @@ describe('NowList', () => {
     expect(getByTestId('conversation-row-n0')).toBeTruthy()
   })
 
+  it('renders a quiet conversation when projectPath is null', async () => {
+    const ghost = conversation({ id: 'ghost', sessionName: 'hi', title: 'hi', branch: 'main' })
+    Object.assign(ghost, { projectPath: null })
+    const { getByTestId } = await renderList([asConv(ghost)])
+    expect(getByTestId('conversation-row-ghost')).toBeTruthy()
+  })
+
+  it('sorts by project when a conversation has no projectPath', async () => {
+    const ghost = conversation({ id: 'ghost', sessionName: 'Fix the resume collision copy' })
+    Object.assign(ghost, { projectPath: null })
+    const named = conversation({ id: 'named', sessionName: 'Scan all worktrees for stale ones' })
+    const { getByTestId } = await renderList([asConv(ghost), asConv(named)], 'projectName')
+    expect(getByTestId('conversation-row-ghost')).toBeTruthy()
+    expect(getByTestId('conversation-row-named')).toBeTruthy()
+  })
+
   it('renders a first-class cannot-resume row for a gone worktree', async () => {
     const gone = asConv(conversation({
       id: 'gone',
