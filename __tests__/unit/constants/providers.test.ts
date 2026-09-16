@@ -23,7 +23,7 @@ describe('provider helpers', () => {
   it('resolves every provider through PROVIDER_COLOR', () => {
     expect(providerColor('claude-code')).toBe(PROVIDER_COLOR.claude)
     expect(providerColor('codex-cli')).toBe(PROVIDER_COLOR.codex)
-    expect(providerColor(CURSOR_CLI_PROVIDER)).toBe(PROVIDER_COLOR.cursor)
+    expect(providerColor(CURSOR_PROVIDER)).toBe(PROVIDER_COLOR.cursor)
     expect(providerColor(undefined)).toBe(PROVIDER_COLOR.claude)
   })
 })
