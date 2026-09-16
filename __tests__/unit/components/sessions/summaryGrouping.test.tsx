@@ -1,4 +1,5 @@
 import { renderHook } from '@testing-library/react-native'
+import { basename } from '@/components/sessions/shared/pathTail'
 import { buildTree, compactTree } from '@/components/sessions/tree/treeUtils'
 import { useProjectGroups } from '@/components/sessions/hub/useProjectGroups'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
@@ -6,7 +7,7 @@ import type { MultiSession } from '@/types/api'
 
 const summary = (path: string, count: number, lastActivity: string): MultiProjectSummary => ({
   path,
-  name: path.split('/').filter(Boolean).pop() ?? path,
+  name: basename(path) ?? path,
   conversationCount: count,
   lastActivity,
   serverId: 'srv-1',

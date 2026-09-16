@@ -6,6 +6,7 @@ import { MONO_FONT } from '@/constants/mono'
 import { useTheme } from '@/contexts/ThemeContext'
 import { StateBadge, getSessionTierLabel } from '@/components/sessions/StateBadge'
 import { formatWaitSince, waitSinceIso } from '@/components/sessions/shared/formatCoarseElapsed'
+import { shortPath } from '@/components/sessions/shared/pathTail'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
@@ -31,11 +32,6 @@ interface Props {
   isFirst?: boolean
 }
 
-/** Last two path segments: `ai-tools/tb-mobile`. */
-function shortPath(path: string): string {
-  return path.split('/').filter(Boolean).slice(-2).join('/')
-}
-
 /**
  * The only row that earns a whole card and an action line: a live process
  * waiting on the user. The mono block is the raw terminal tail, not a parsed
@@ -52,6 +48,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const qualifier = wait ? t('row.waitingFor', { elapsed: wait }) : undefined
   const tierLabel = getSessionTierLabel('needsYou', t)
   const accessibilityLabel = qualifier ? `${title}, ${tierLabel}, ${qualifier}` : `${title}, ${tierLabel}`
+  const projectLabel = shortPath(session.projectPath)
 
   return (
     <LiveCard
@@ -73,10 +70,12 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
       ) : null}
       <View style={styles.footer}>
-        <Text style={styles.footerMono} numberOfLines={1}>{shortPath(session.projectPath)}</Text>
+        {projectLabel ? (
+          <Text style={styles.footerMono} numberOfLines={1}>{projectLabel}</Text>
+        ) : null}
         {session.branch ? (
           <>
-            <Text style={styles.footerSep}>·</Text>
+            {projectLabel ? <Text style={styles.footerSep}>·</Text> : null}
             <Text style={styles.footerMono} numberOfLines={1}>{session.branch}</Text>
           </>
         ) : null}

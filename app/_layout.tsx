@@ -41,6 +41,7 @@ import { markIntroSeen, resolveIntroVariant, type IntroVariant } from '@/service
 import { currentIntroVersion } from '@/services/intro-version'
 import { goBackOrHub } from '@/lib/goBackOrHub'
 import { AlertHost } from '@/components/alerts/AlertHost'
+import { basename } from '@/components/sessions/shared/pathTail'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -497,7 +498,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={({ route }) => {
           const params = route.params as { id?: string; path?: string }
           const fromPath = params.path
-            ? decodeURIComponent(params.path).split('/').filter(Boolean).pop()
+            ? basename(decodeURIComponent(params.path))
             : undefined
           return { title: fromPath ?? params.id ?? 'Project' }
         }}

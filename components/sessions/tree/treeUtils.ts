@@ -1,4 +1,5 @@
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { pathSegments } from '@/components/sessions/shared/pathTail'
 import {
   deriveSessionPresentation,
   isPresentationLive,
@@ -31,7 +32,7 @@ function splitPath(p: string | null | undefined): string[] {
   // Keep the drive letter as the first segment (e.g. "C:" → ["C:", "Users", ...])
   // so Windows paths stay isolated from Unix /Users/... paths.
   // Strip leading UNC "\\server" prefix down to just the server name.
-  return p.replace(/\\/g, '/').split('/').filter(Boolean)
+  return pathSegments(p.replace(/\\/g, '/'))
 }
 
 export function buildTree(
