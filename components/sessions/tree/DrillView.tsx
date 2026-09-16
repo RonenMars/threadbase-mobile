@@ -13,6 +13,7 @@ import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
+import { pathSegments } from '@/components/sessions/shared/pathTail'
 import { conversationRowTitle, sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { SectionEyebrow } from '@/components/sessions/now/SectionEyebrow'
 import { DrillFolderRow } from './DrillFolderRow'
@@ -40,7 +41,7 @@ type DrillFlat =
   | { kind: 'row'; key: string; item: DrillItem }
 
 function parentCrumb(fullPath: string): string {
-  const parts = fullPath.split('/').filter(Boolean)
+  const parts = pathSegments(fullPath)
   parts.pop()
   if (parts.length === 0) return '~'
   return `~/${parts[parts.length - 1]}`
