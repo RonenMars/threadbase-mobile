@@ -13,6 +13,7 @@ import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
 import { isToday } from '@/components/sessions/hub/hubUtils'
 import {
+  basename,
   resolveConversationRowTitle,
   resolveSessionRowTitle,
   type RowTitle,
@@ -241,7 +242,7 @@ export const NowList = React.memo(function NowList({
     const withoutWarmingHistory = (list: Entry[]) => list.filter((e) => !isWarmingConversation(e, warming))
     if (order !== 'state') {
       const projectOf = (e: Entry) =>
-        e.item.kind === 'session' ? e.item.item.projectName : (e.item.item.projectPath.split('/').filter(Boolean).pop() ?? '')
+        e.item.kind === 'session' ? e.item.item.projectName : (basename(e.item.item.projectPath) ?? '')
       const byProject = (a: Entry, b: Entry) => projectOf(a).localeCompare(projectOf(b)) || byTime(a, b)
       const flat = withQuietTail([...withoutWarmingHistory(entries)].sort(order === 'projectName' ? byProject : byTime), 'all')
       const first = flat.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')

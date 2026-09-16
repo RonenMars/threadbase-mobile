@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
+import { basename } from '@/components/sessions/shared/rowTitle'
 import { conversationHref } from '@/lib/conversationHref'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
@@ -110,7 +111,7 @@ function ConversationEarlierRow({ conv, ms, title, quiet, dimmed, highlight, pre
       <QuietRow
         testID={`conversation-row-${conv.id}`}
         label={title}
-        meta={quietMeta(conv.projectPath.split('/').filter(Boolean).pop(), conv.branch, title)}
+        meta={quietMeta(basename(conv.projectPath), conv.branch, title)}
         timestamp={ms}
         dimmed={dimmed}
         onPress={handlePress}
