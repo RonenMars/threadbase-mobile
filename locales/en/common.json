@@ -6,7 +6,6 @@
     "back": "Back",
     "close": "Close",
     "retry": "Retry",
-    "retryAll": "Retry all",
     "apply": "Apply",
     "openSettings": "Open Settings",
     "settings": "Settings",
@@ -23,6 +22,16 @@
       "degraded": "Degraded",
       "issues_one": "{{count}} issue",
       "issues_other": "{{count}} issues"
+    },
+    "status": {
+      "title": "Status",
+      "summaryBoth": "{{errors}} · {{warnings}}",
+      "errorCount_one": "{{count}} error",
+      "errorCount_other": "{{count}} errors",
+      "warningCount_one": "{{count}} warning",
+      "warningCount_other": "{{count}} warnings",
+      "retryEverything": "Retry everything",
+      "technicalDetails": "Technical details"
     }
   },
   "error": {
@@ -86,16 +95,13 @@
     "titleMessages": "Messages failed to load",
     "titleSessionDetail": "Session details failed to load",
     "titleOther": "Something went wrong",
-    "listTitle": "Some requests failed",
     "messageSessions": "Sessions refused to load. Worth a retry.",
     "messageConversations": "History didn't come through. Retry usually fixes it.",
     "messageMessages": "Messages hit a wall. Tap Retry to try again.",
     "messageSessionDetail": "Session details didn't come through. Retry usually fixes it.",
     "messageOther": "Something went wrong on our end. Retry or close and carry on.",
-    "messageConnection": "Can't reach {{label}}",
+    "messageConnection": "Nothing has loaded from this server. Sessions below may be stale.",
     "retrying": "Retrying…",
-    "retryAllRetrying_one": "Retrying {{count}} request…",
-    "retryAllRetrying_other": "Retrying {{count}} requests…",
     "codeLabel": "Error code",
     "rawLabel": "Raw error"
   },

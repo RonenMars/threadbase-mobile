@@ -1,9 +1,11 @@
 import React from 'react'
 import { fireEvent } from '@testing-library/react-native'
+import { AlertHost } from '@/components/alerts/AlertHost'
 import { HomeStatusPill } from '@/components/alerts/StatusPill'
 import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { useAlertStore } from '@/stores/alerts'
+import { useErrorSheetStore } from '@/stores/errorSheet'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
 
@@ -31,6 +33,7 @@ function Harness({ onPress }: { onPress: () => void }) {
   const open = useOpenStatusSurface()
   return (
     <>
+      <AlertHost />
       <CacheAlertBanner onPress={onPress} />
       <HomeStatusPill onPress={open} />
     </>
@@ -43,6 +46,7 @@ function renderBanner(onPress: () => void) {
 
 beforeEach(() => {
   useAlertStore.getState().reset()
+  useErrorSheetStore.setState({ open: false })
   useServersStore.setState({
     servers: {},
     activeServerIds: [],
@@ -88,7 +92,7 @@ describe('CacheAlertBanner', () => {
     )
   })
 
-  it('calls onPress from the status pill', async () => {
+  it('opens the status sheet from the pill and Review on the row calls onPress', async () => {
     const server = seedServer()
     useServersStore.getState().setCacheAlert(server.id, {
       fingerprint: 'fp1',
@@ -100,6 +104,8 @@ describe('CacheAlertBanner', () => {
     const onPress = jest.fn()
     const { findByTestId } = await renderBanner(onPress)
     fireEvent.press(await findByTestId('status-pill'))
+    expect(await findByTestId('status-sheet')).toBeTruthy()
+    fireEvent.press(await findByTestId('status-row-action-cache-alert'))
     expect(onPress).toHaveBeenCalled()
   })
 })

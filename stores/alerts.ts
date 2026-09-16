@@ -36,6 +36,10 @@ function renderSignature(entry: AlertSpec & { id: string; viewport: string }): s
     entry.buttonVariant ?? '',
     entry.hideCloseButton ? '1' : '',
     entry.testID ?? '',
+    entry.code ?? '',
+    entry.rawMessage ?? '',
+    entry.retryable ? '1' : '',
+    entry.retrying ? '1' : '',
     // Presence only: `onPress` decides whether the body is a button at all.
     entry.onPress ? '1' : '',
   ].join('\u0000')
