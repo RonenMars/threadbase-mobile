@@ -99,7 +99,7 @@ describe('NowList', () => {
     expect(queryByText('NEEDS YOU · 2')).toBeNull()
   })
 
-  it('keeps up to five quiet rows inline, in time order, as one-line rows', async () => {
+  it('keeps up to five quiet titles inline in time order', async () => {
     const quiet = ['hi', 'hey', 'Ahoy', 'yo', 'git pull'].map((name, i) =>
       asConv(conversation({ id: `n${i}`, sessionName: name, title: name, branch: 'main' }), NOW - 1000 * (i + 1)),
     )
@@ -109,10 +109,9 @@ describe('NowList', () => {
     expect(queryByTestId('quiet-tail')).toBeNull()
     expect(getByTestId('conversation-row-real')).toBeTruthy()
     for (let i = 0; i < 5; i += 1) expect(getByTestId(`conversation-row-n${i}`)).toBeTruthy()
-    // A greeting falls to the identity; a command keeps its own words with the identity beside it.
+    // A greeting falls to the identity; a command keeps its own words.
     expect(getAllByText('tb-mobile · main')).toHaveLength(4)
-    // The identity is a nested Text inside the label, so the row's text reads as one string.
-    expect(getByText(/^git pull/)).toBeTruthy()
+    expect(getByText('git pull')).toBeTruthy()
   })
 
   it('gathers six or more quiet rows into one tail at the end of their group', async () => {
