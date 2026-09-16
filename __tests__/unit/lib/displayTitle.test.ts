@@ -170,7 +170,7 @@ describe('resolveDisplayTitle', () => {
     ).toEqual({ title: 'review', source: 'command' })
   })
 
-  it('keeps a short command as the title, as typed, on the quiet rung', () => {
+  it('keeps a short command as the title, as typed', () => {
     expect(resolveDisplayTitle({ firstMessage: 'git pull', projectName: 'app', branch: 'main' })).toEqual({
       title: 'git pull',
       source: 'command',
