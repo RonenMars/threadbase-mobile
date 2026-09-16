@@ -10,7 +10,8 @@
     "placeholder": "e.g. Fix auth bug"
   },
   "slowLoading": {
-    "sessions": "Fetching sessions is taking longer than expected.\nHold still…",
+    "sessionsTitle": "Sessions are taking longer than expected.",
+    "sessionsMessage": "The list will fill in when the server answers.",
     "detailTitle": "Session details are taking their time…",
     "detailMessage": "Fetching the details — shouldn't be long."
   },

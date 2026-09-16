@@ -7,13 +7,10 @@ export type AlertInput = AlertSpec & {
 
 type AlertState = {
   alerts: AlertEntry[]
-  detailsId: string | null
   inlineClaims: Record<string, number>
   upsert: (entry: AlertInput) => void
   dismiss: (id: string) => void
   stickyDismiss: (id: string) => void
-  openDetails: (id: string) => void
-  closeDetails: () => void
   claimInline: (cause: AlertCause) => void
   releaseInline: (cause: AlertCause) => void
   reset: () => void
@@ -69,7 +66,6 @@ function withRaisedAt(entry: AlertInput, raisedAt: number): AlertEntry {
 
 export const useAlertStore = create<AlertState>((set, get) => ({
   alerts: [],
-  detailsId: null,
   inlineClaims: {},
   upsert: (entry) => {
     const fingerprint = alertFingerprint(entry)
@@ -104,25 +100,20 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   dismiss: (id) => {
     clearTimer(id)
     stickyFingerprints.delete(id)
-    const { alerts, detailsId } = get()
-    if (!alerts.some((alert) => alert.id === id) && detailsId !== id) return
+    const { alerts } = get()
+    if (!alerts.some((alert) => alert.id === id)) return
     set({
       alerts: alerts.filter((alert) => alert.id !== id),
-      detailsId: detailsId === id ? null : detailsId,
     })
   },
   stickyDismiss: (id) => {
     const alert = get().alerts.find((entry) => entry.id === id)
     if (alert) stickyFingerprints.set(id, alertFingerprint(alert))
     clearTimer(id)
-    const { alerts, detailsId } = get()
     set({
-      alerts: alerts.filter((entry) => entry.id !== id),
-      detailsId: detailsId === id ? null : detailsId,
+      alerts: get().alerts.filter((entry) => entry.id !== id),
     })
   },
-  openDetails: (id) => set({ detailsId: id }),
-  closeDetails: () => set({ detailsId: null }),
   claimInline: (cause) =>
     set((s) => ({
       inlineClaims: { ...s.inlineClaims, [cause]: (s.inlineClaims[cause] ?? 0) + 1 },
@@ -139,6 +130,6 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   reset: () => {
     for (const id of timers.keys()) clearTimer(id)
     stickyFingerprints.clear()
-    set({ alerts: [], detailsId: null, inlineClaims: {} })
+    set({ alerts: [], inlineClaims: {} })
   },
 }))

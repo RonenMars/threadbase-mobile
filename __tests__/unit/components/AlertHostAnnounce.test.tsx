@@ -95,7 +95,7 @@ describe('AlertHost announcements', () => {
     await waitFor(() => {
       expect(announce).toHaveBeenCalledTimes(1)
     })
-    expect(announce).toHaveBeenCalledWith('Error. Messages failed to load')
+    expect(announce).toHaveBeenCalledWith("Error. Messages didn't load.")
   })
 
   it('announces a blocking auth failure as critical', async () => {
