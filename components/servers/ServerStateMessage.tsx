@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { useAlertSync } from '@/hooks/useAlertSync'
+import { useAlertListSync } from '@/hooks/useAlertSync'
 import { wsManager } from '@/services/ws-client'
+import type { AlertInput } from '@/stores/alerts'
 import type { ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
-import { CAUSE_SERVERS_SUMMARY, serverCause, type AlertCause, type AlertLevel, type AlertSpec } from '@/types/alerts'
+import { serverCause, type AlertCause, type AlertLevel, type AlertSpec } from '@/types/alerts'
 import type { ServerConfig } from '@/types/api'
 
 type Props = {
@@ -13,7 +14,7 @@ type Props = {
   fetchStatuses: Record<string, ServerFetchStatusEntry>
   wsConnectedCount: number
   onViewDetails: () => void
-  onRetryFailed: () => void
+  onRetryFailed: (serverId: string) => void
   isRetrying: boolean
 }
 
@@ -23,7 +24,7 @@ function serverLabel(id: string, servers: Record<string, ServerConfig>): string 
   try { return new URL(cfg?.url ?? '').hostname } catch { return id }
 }
 
-type Severity = 'error' | 'warning' | 'info' | null
+type Severity = 'error' | 'warning' | 'info'
 
 type DetailKind = 'unreachable' | 'fetchFailed' | 'disconnected' | 'e2eeProtocolMismatch' | 'connecting' | 'indexing'
 
@@ -45,12 +46,109 @@ function getDetailMessage(detail: DetailKind, t: TFunction<'servers'>): string {
 }
 
 const VIEWPORT = 'home'
-const TOAST_ID = 'server-state'
+const INFO_DELAY_MS = 2000
 
-function toLevel(severity: Exclude<Severity, null>): AlertLevel {
+function toLevel(severity: Severity): AlertLevel {
   if (severity === 'error') return 'error'
   if (severity === 'warning') return 'warning'
   return 'info'
+}
+
+type ServerRow = {
+  id: string
+  severity: Severity
+  message: string
+  detailKind: DetailKind
+}
+
+function classifyServer(
+  id: string,
+  servers: Record<string, ServerConfig>,
+  fetchStatuses: Record<string, ServerFetchStatusEntry>,
+  t: TFunction<'servers'>,
+): ServerRow | null {
+  const wsStatus = wsManager.status(id)
+  const lastError = wsManager.lastError(id)
+  const fetchStatus = fetchStatuses[id]?.status ?? 'ok'
+  const fetchOk = fetchStatus === 'ok'
+  const label = serverLabel(id, servers)
+
+  if (fetchStatus === 'warming_up') {
+    return {
+      id,
+      severity: 'info',
+      detailKind: 'indexing',
+      message: t('stateMessage.buildingHistoryNamed', { server: label }),
+    }
+  }
+  if (wsStatus === 'connected' && fetchOk) return null
+  if (wsStatus === 'disconnected' && !fetchOk) {
+    return {
+      id,
+      severity: 'error',
+      detailKind: 'unreachable',
+      message: t('stateMessage.unreachableNamed', { server: label }),
+    }
+  }
+  if (wsStatus === 'connected' && !fetchOk) {
+    return {
+      id,
+      severity: 'error',
+      detailKind: 'fetchFailed',
+      message: t('stateMessage.refreshFailedNamed', { server: label }),
+    }
+  }
+  if (wsStatus === 'disconnected' && fetchOk && lastError === 'e2ee_protocol_mismatch') {
+    return {
+      id,
+      severity: 'error',
+      detailKind: 'e2eeProtocolMismatch',
+      message: t('stateMessage.e2eeProtocolMismatchNamed', { server: label }),
+    }
+  }
+  if (wsStatus === 'disconnected' && fetchOk) {
+    return {
+      id,
+      severity: 'warning',
+      detailKind: 'disconnected',
+      message: t('stateMessage.disconnectedNamed', { server: label }),
+    }
+  }
+  if (wsStatus === 'connecting') {
+    return {
+      id,
+      severity: 'info',
+      detailKind: 'connecting',
+      message: t('stateMessage.connectingNamed', { server: label }),
+    }
+  }
+  return null
+}
+
+function toSpec(
+  row: ServerRow,
+  t: TFunction<'servers'>,
+  onViewDetails: () => void,
+  onRetryFailed: (serverId: string) => void,
+  isRetrying: boolean,
+): AlertSpec {
+  const cause: AlertCause = serverCause(row.id)
+  const base = {
+    cause,
+    level: toLevel(row.severity),
+    title: row.message,
+    message: getDetailMessage(row.detailKind, t),
+    timeout: null as number | null,
+  }
+  const showAction = row.severity === 'error' || row.severity === 'warning'
+  if (!showAction) return base
+  if (isRetrying) return { ...base, message: t('stateMessage.retrying'), onPress: onViewDetails }
+  return {
+    ...base,
+    buttonText: t('action.retry'),
+    buttonAction: () => onRetryFailed(row.id),
+    onPress: onViewDetails,
+  }
 }
 
 export function ServerStateMessage({
@@ -64,213 +162,37 @@ export function ServerStateMessage({
 }: Props) {
   const { t } = useTranslation('servers')
   const [showInfo, setShowInfo] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { severity, message, detailKind, namedId } = useMemo((): { severity: Severity; message: string; detailKind: DetailKind | null; namedId: string | null } => {
-    if (activeServerIds.length === 0) return { severity: null, message: '', detailKind: null, namedId: null }
-
-    const healthy: string[] = []
-    const unreachable: string[] = []
-    const fetchFailed: string[] = []
-    const disconnected: string[] = []
-    const protocolMismatch: string[] = []
-    const connecting: string[] = []
-    const indexing: string[] = []
-
-    for (const id of activeServerIds) {
-      const wsStatus = wsManager.status(id)
-      const lastError = wsManager.lastError(id)
-      const fetchStatus = fetchStatuses[id]?.status ?? 'ok'
-      const fetchOk = fetchStatus === 'ok'
-      if (fetchStatus === 'warming_up') indexing.push(id)
-      else if (wsStatus === 'connected' && fetchOk) healthy.push(id)
-      else if (wsStatus === 'disconnected' && !fetchOk) unreachable.push(id)
-      else if (wsStatus === 'connected' && !fetchOk) fetchFailed.push(id)
-      else if (wsStatus === 'disconnected' && fetchOk && lastError === 'e2ee_protocol_mismatch') protocolMismatch.push(id)
-      else if (wsStatus === 'disconnected' && fetchOk) disconnected.push(id)
-      else if (wsStatus === 'connecting') connecting.push(id)
-    }
-
-    const single = activeServerIds.length === 1
-    const label = single ? serverLabel(activeServerIds[0], servers) : ''
-    const only = single ? activeServerIds[0] : null
-
-    // All servers unhealthy (indexing servers don't count as unreachable)
-    if (healthy.length === 0 && indexing.length === activeServerIds.length) {
-      const indexingLabel = indexing.length === 1 ? serverLabel(indexing[0], servers) : null
-      return {
-        severity: 'info',
-        detailKind: 'indexing',
-        namedId: only ?? (indexing.length === 1 ? indexing[0] : null),
-        message: indexingLabel
-          ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
-          : t('stateMessage.buildingHistory'),
-      }
-    }
-
-    if (healthy.length === 0) {
-      if (unreachable.length > 0) {
-        return {
-          severity: 'error',
-          detailKind: 'unreachable',
-          namedId: only,
-          message: single
-            ? t('stateMessage.unreachableNamed', { server: label })
-            : t('stateMessage.unreachableAll'),
-        }
-      }
-      if (fetchFailed.length > 0) {
-        return {
-          severity: 'error',
-          detailKind: 'fetchFailed',
-          namedId: only,
-          message: single
-            ? t('stateMessage.refreshFailedNamed', { server: label })
-            : t('stateMessage.refreshFailedAll'),
-        }
-      }
-      if (protocolMismatch.length > 0) {
-        return {
-          severity: 'error',
-          detailKind: 'e2eeProtocolMismatch',
-          namedId: only,
-          message: single
-            ? t('stateMessage.e2eeProtocolMismatchNamed', { server: label })
-            : t('stateMessage.e2eeProtocolMismatchAll'),
-        }
-      }
-      if (disconnected.length > 0) {
-        return {
-          severity: 'warning',
-          detailKind: 'disconnected',
-          namedId: only,
-          message: single
-            ? t('stateMessage.disconnectedNamed', { server: label })
-            : t('stateMessage.disconnectedAll'),
-        }
-      }
-      if (connecting.length > 0) {
-        return {
-          severity: 'info',
-          detailKind: 'connecting',
-          namedId: only,
-          message: single
-            ? t('stateMessage.connectingNamed', { server: label })
-            : t('stateMessage.connectingAll'),
-        }
-      }
-      return { severity: null, message: '', detailKind: null, namedId: null }
-    }
-
-    // Some healthy, some degraded
-    const bad = [...unreachable, ...fetchFailed, ...protocolMismatch, ...disconnected]
-    if (indexing.length > 0) {
-      const indexingLabel = indexing.length === 1 ? serverLabel(indexing[0], servers) : null
-      return {
-        severity: 'info',
-        detailKind: 'indexing',
-        namedId: indexing.length === 1 ? indexing[0] : null,
-        message: indexingLabel
-          ? t('stateMessage.buildingHistoryNamed', { server: indexingLabel })
-          : t('stateMessage.buildingHistory'),
-      }
-    }
-    if (unreachable.length > 0) {
-      const badLabel = unreachable.length === 1 ? serverLabel(unreachable[0], servers) : null
-      return {
-        severity: 'warning',
-        detailKind: 'unreachable',
-        namedId: unreachable.length === 1 ? unreachable[0] : null,
-        message: badLabel
-          ? t('stateMessage.partialUnreachableNamed', { server: badLabel })
-          : t('stateMessage.partialUnreachableSome'),
-      }
-    }
-    if (fetchFailed.length > 0) {
-      const badLabel = fetchFailed.length === 1 ? serverLabel(fetchFailed[0], servers) : null
-      return {
-        severity: 'warning',
-        detailKind: 'fetchFailed',
-        namedId: fetchFailed.length === 1 ? fetchFailed[0] : null,
-        message: badLabel
-          ? t('stateMessage.refreshFailedNamed', { server: badLabel })
-          : t('stateMessage.refreshFailedSome'),
-      }
-    }
-    if (protocolMismatch.length > 0) {
-      const badLabel = protocolMismatch.length === 1 ? serverLabel(protocolMismatch[0], servers) : null
-      return {
-        severity: 'warning',
-        detailKind: 'e2eeProtocolMismatch',
-        namedId: protocolMismatch.length === 1 ? protocolMismatch[0] : null,
-        message: badLabel
-          ? t('stateMessage.e2eeProtocolMismatchNamed', { server: badLabel })
-          : t('stateMessage.e2eeProtocolMismatchSome'),
-      }
-    }
-    if (disconnected.length > 0) {
-      const badLabel = bad.length === 1 ? serverLabel(bad[0], servers) : null
-      return {
-        severity: 'warning',
-        detailKind: 'disconnected',
-        namedId: bad.length === 1 ? bad[0] : null,
-        message: badLabel
-          ? t('stateMessage.disconnectedNamed', { server: badLabel })
-          : t('stateMessage.disconnectedSome'),
-      }
-    }
-    if (connecting.length > 0) {
-      const connectingLabel = connecting.length === 1 ? serverLabel(connecting[0], servers) : null
-      return {
-        severity: 'info',
-        detailKind: 'connecting',
-        namedId: connecting.length === 1 ? connecting[0] : null,
-        message: connectingLabel
-          ? t('stateMessage.connectingNamed', { server: connectingLabel })
-          : t('stateMessage.connectingAll'),
-      }
-    }
-
-    return { severity: null, message: '', detailKind: null, namedId: null }
+  const rows = useMemo((): ServerRow[] => {
+    return activeServerIds.flatMap((id) => {
+      const row = classifyServer(id, servers, fetchStatuses, t)
+      return row ? [row] : []
+    })
     // wsConnectedCount triggers recompute when WS state flips
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, fetchStatuses, wsConnectedCount, servers, t])
 
+  const hasInfo = rows.some((row) => row.severity === 'info')
   useEffect(() => {
-    if (severity === 'info') {
-      timerRef.current = setTimeout(() => setShowInfo(true), 2000)
-    } else {
-      if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => setShowInfo(false), 0)
+    if (!hasInfo) {
+      const clear = setTimeout(() => setShowInfo(false), 0)
+      return () => clearTimeout(clear)
     }
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [severity])
+    const timer = setTimeout(() => setShowInfo(true), INFO_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [hasInfo])
 
-  const visible = Boolean(severity) && !(severity === 'info' && !showInfo)
-  const showAction = severity === 'error' || severity === 'warning'
+  const entries = useMemo((): AlertInput[] => {
+    return rows.flatMap((row) => {
+      if (row.severity === 'info' && !showInfo) return []
+      return [{
+        ...toSpec(row, t, onViewDetails, onRetryFailed, isRetrying),
+        id: `server-state:${row.id}`,
+        viewport: VIEWPORT,
+      }]
+    })
+  }, [rows, showInfo, t, onViewDetails, onRetryFailed, isRetrying])
 
-  const spec = useMemo((): AlertSpec | null => {
-    if (!visible || !severity || !detailKind) return null
-    const cause: AlertCause = namedId ? serverCause(namedId) : CAUSE_SERVERS_SUMMARY
-    const base = {
-      cause,
-      level: toLevel(severity),
-      title: message,
-      message: getDetailMessage(detailKind, t),
-      timeout: null,
-    }
-    if (!showAction) return base
-    if (isRetrying) return { ...base, message: t('stateMessage.retrying'), onPress: onViewDetails }
-    return {
-      ...base,
-      buttonText: t('action.retry'),
-      buttonAction: onRetryFailed,
-      onPress: onViewDetails,
-    }
-  }, [visible, severity, detailKind, namedId, message, showAction, isRetrying, onRetryFailed, onViewDetails, t])
-
-  useAlertSync(TOAST_ID, spec, VIEWPORT)
+  useAlertListSync(entries)
   return null
 }

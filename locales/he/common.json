@@ -18,6 +18,12 @@
       "error": "שגיאה",
       "warning": "אזהרה",
       "info": "מידע"
+    },
+    "pill": {
+      "degraded": "ירידה",
+      "issues_one": "בעיה אחת",
+      "issues_two": "{{count}} בעיות",
+      "issues_other": "{{count}} בעיות"
     }
   },
   "error": {
@@ -93,10 +99,7 @@
     "retryAllRetrying_two": "מנסה שוב {{count}} בקשות…",
     "retryAllRetrying_other": "מנסה שוב {{count}} בקשות…",
     "codeLabel": "קוד שגיאה",
-    "rawLabel": "שגיאה מקורית",
-    "issuesIndicator_one": "בעיה אחת",
-    "issuesIndicator_two": "{{count}} בעיות",
-    "issuesIndicator_other": "{{count}} בעיות"
+    "rawLabel": "שגיאה מקורית"
   },
   "errorPolicy": {
     "sessionExpired": "הסשן שלך פג",
