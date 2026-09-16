@@ -51,6 +51,7 @@ Precondition re-verification: `gh pr view` / `git fetch origin pull/<n>/head` ag
 | #1099 | `56d36b94` | `eb211b9b` | **moved** — see below |
 | #1100 | `789cb7a5` | `789cb7a5` | yes |
 | #1101 | `2498cf94` | `2498cf94` | yes |
+| #1102 | — (opened after Flow C) | `635f5ba9` | added after publish |
 
 #1095–#1099 heads moved because origin published INT follow-ups onto the stacked alert branches, which rewrote every child SHA. Unique feat patch-ids: #1096 `bedf9169` ≡ INT `a4efa150`; #1097 `3153aa01` ≡ INT `17d35c4a`; #1098 `4d0e3fab` ≡ INT `035b13b4`. #1095 feat and #1099 unique differ by patch-id because the rehearsal already resolved ledgers 8–16 and 17 onto INT. New origin follow-ups (`1dbd16ea` lastError shard, `0852d3e5` AuthError mock, #1094 `e2bce5e4`/`b235b662` pathTail) are already on INT (`f00e79ea`, `ca078370`, `9733ee0e`). No unique was missing, so nothing was re-rebased.
 
@@ -73,7 +74,7 @@ Precondition re-verification: `gh pr view` / `git fetch origin pull/<n>/head` ag
 
 Unchanged from the rehearsal. See `docs/integration/2026-09-15-open-prs-refresh-rehearsal-log.md` §4.
 
-**Final order:** `#1088 unique → #1091 unique → #1092 → #1093 → #1094 → INT follow-up → #1095 → #1096 → INT follow-up → #1097 → #1098 → #1099 → INT follow-up → #1094 wait-duration unique → INT pathTail → #1100 → #1101 → #1100 quiet-tail unique`
+**Final order:** `#1088 unique → #1091 unique → #1092 → #1093 → #1094 → INT follow-up → #1095 → #1096 → INT follow-up → #1097 → #1098 → #1099 → INT follow-up → #1094 wait-duration unique → INT pathTail → #1100 → #1101 → #1100 quiet-tail unique → #1102`
 
 ### Order changes made mid-run
 
@@ -117,6 +118,11 @@ Unchanged from the rehearsal. See `docs/integration/2026-09-15-open-prs-refresh-
 
 - **Command:** `git ls-remote --heads origin integration/2026-09-14-open-prs`
 - **Result:** `d4a27a513496f612f7bf96d3fe41896874704924	refs/heads/integration/2026-09-14-open-prs`
+
+### 10:50 — add #1102 after publish
+
+- **Command:** `git cherry-pick 635f5ba9` then `git merge --no-ff`
+- **Result:** clean. Unique `273317f5`. Merge `62097272`. No conflict. Fast-forward push after docs.
 
 ---
 

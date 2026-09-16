@@ -1,17 +1,17 @@
 # Integration summary — integration/2026-09-14-open-prs (2026-09-15 refresh) — REHEARSAL
 
 **Verdict:** locally composable; #1094 BLOCKED and #1095–#1099 UNSTABLE on GitHub; #1100 quiet-tail unique pending Unit aggregator (shards green); #1101 green; #952/#1039 still out
-**Branch:** `integration/2026-09-14-open-prs` @ `a2f56bf9` — 2026-09-15 refresh plus stacked alerts through #1099 plus #1094 wait-duration unique plus INT pathTail plus #1100 plus #1101 plus #1100 quiet-tail unique
-**CI:** not run on this branch. After #1100 quiet-tail unique: targeted `NowList|rowTitle|displayTitle` 70/70. After #1101: targeted `ProviderMark|providers.test` 5/5. Prior full checkpoint (wait-duration unique): lint + typecheck green. Unit 2239. Integration 522 / 71 suites. i18n 460 passed / 1 skipped.
+**Branch:** `integration/2026-09-14-open-prs` @ `62097272` — 2026-09-15 refresh plus stacked alerts through #1099 plus #1094 wait-duration unique plus INT pathTail plus #1100 plus #1101 plus #1100 quiet-tail unique plus #1102
+**CI:** not run on this branch. After #1102: targeted `displayTitle.test|rowTitle.test` 54/54. After #1100 quiet-tail unique: targeted `NowList|rowTitle|displayTitle` 70/70. After #1101: targeted `ProviderMark|providers.test` 5/5. Prior full checkpoint (wait-duration unique): lint + typecheck green. Unit 2239. Integration 522 / 71 suites. i18n 460 passed / 1 skipped.
 **Full log:** [2026-09-15-open-prs-refresh-rehearsal-log.md](2026-09-15-open-prs-refresh-rehearsal-log.md)
 
-Refresh of [2026-09-14-open-prs-rehearsal-summary.md](2026-09-14-open-prs-rehearsal-summary.md). Stacked alerts #1089→#1099, session-list #1094, quiet-row unify #1100, provider-color unify #1101. Standing exclusions #952 and #1039 unchanged. Nothing pushed.
+Refresh of [2026-09-14-open-prs-rehearsal-summary.md](2026-09-14-open-prs-rehearsal-summary.md). Stacked alerts #1089→#1099, session-list #1094, quiet-row unify #1100, provider-color unify #1101, @/path title strip #1102. Standing exclusions #952 and #1039 unchanged. Published in Flow C; #1102 added after that push.
 
 ## 1. Final refs
 
 | What | Ref | SHA |
 |---|---|---|
-| Integration branch | `integration/2026-09-14-open-prs` | `a2f56bf9` plus docs |
+| Integration branch | `integration/2026-09-14-open-prs` | `62097272` plus docs |
 | Cut from | `origin/main` | `58bbd07a` (#1090 already on main) |
 | Worktree | `../tb-mobile-worktrees/int-2026-09-14` | restored from `14ab6248` after directory loss |
 
@@ -27,6 +27,7 @@ Refresh of [2026-09-14-open-prs-rehearsal-summary.md](2026-09-14-open-prs-rehear
 | #1094 | feat(sessions): close the session-list spec gaps | hub/now/tree spec gaps, title recovery, coloured marks, Needs-you wait duration |
 | #1100 | feat(sessions): render command and identity titles as normal history rows | drop QuietRow and the quiet-tail fold; every command/identity title stays a compact EarlierRow |
 | #1101 | refactor(sessions): unify provider colors on PROVIDER_COLOR | one `PROVIDER_COLOR` object; theme.brand re-exports it |
+| #1102 | fix(sessions): drop composer @/path file refs from display titles | strip `@/abs/path` upload refs (any or no extension) and title from the leftover question |
 | #1095 | feat(alerts): report in-scope failures inline first | inline server failure panels; stale-scope banner; drop ServerOfflineBanner |
 | #1096 | feat(alerts): route blocking decisions through CriticalDialog | CriticalDialog for blocking decisions |
 | #1097 | feat(alerts): demote host-pressure, server status, and raw-mode | those surfaces become Status-sheet rows / toasts |
@@ -41,7 +42,7 @@ Refresh of [2026-09-14-open-prs-rehearsal-summary.md](2026-09-14-open-prs-rehear
 
 ## 3. The order that actually worked
 
-`#1088 unique → #1091 unique → #1092 → #1093 → #1094 → INT follow-up → #1095 → #1096 → INT follow-up → #1097 → #1098 → #1099 → INT follow-up → #1094 wait-duration unique → INT pathTail → #1100 → #1101 → #1100 quiet-tail unique`
+`#1088 unique → #1091 unique → #1092 → #1093 → #1094 → INT follow-up → #1095 → #1096 → INT follow-up → #1097 → #1098 → #1099 → INT follow-up → #1094 wait-duration unique → INT pathTail → #1100 → #1101 → #1100 quiet-tail unique → #1102`
 
 ## 4. Conflicts that mattered
 

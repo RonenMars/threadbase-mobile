@@ -33,6 +33,7 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 | #1094 | feat(sessions): close the session-list spec gaps | `2bb27339` **new** | main | no | MERGEABLE / BLOCKED | included anyway |
 | #1100 | feat(sessions): render command and identity titles as normal history rows | `789cb7a5` (was `8cc19a89`) | #1094 | no | MERGEABLE / UNSTABLE | stacked; second unique added 2026-09-16 |
 | #1101 | refactor(sessions): unify provider colors on PROVIDER_COLOR | `2498cf94` | #1094 | no | MERGEABLE / CLEAN | stacked; added 2026-09-16 |
+| #1102 | fix(sessions): drop composer @/path file refs from display titles | `635f5ba9` | #1094 | no | MERGEABLE | stacked; added 2026-09-16 after Flow C |
 
 ### Deliberate exclusions
 
@@ -45,9 +46,9 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 
 ## 4. Order plan
 
-**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up → `#1095`–`#1099` → `#1094` wait-duration unique → INT pathTail → `#1100` → `#1101` → `#1100` quiet-tail unique
+**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up → `#1095`–`#1099` → `#1094` wait-duration unique → INT pathTail → `#1100` → `#1101` → `#1100` quiet-tail unique → `#1102`
 
-Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 because both touch `ProviderMark` / `types/api.ts`.
+Stacked: #1093 on #1092 on #1089. #1100, #1101, and #1102 on #1094. #1091 before #1094 because both touch `ProviderMark` / `types/api.ts`.
 
 ## 5. Action log
 
@@ -185,6 +186,13 @@ Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 b
 - Targeted `NowList|rowTitle|displayTitle` 70/70 (3 suites). Full lint/typecheck/unit/integration/i18n not re-run for this unique.
 - Origin: `git ls-remote origin 'refs/heads/integration/*'` empty.
 
+### 10:50 — #1102 unique (clean)
+
+- GitHub head `635f5ba9` on `fix/strip-at-path-title-refs`, base `feat/session-list-spec-gaps` (#1094). Added after Flow C published INT.
+- **Command:** `git cherry-pick 635f5ba9` on a side branch from INT `477009fb`, then `git merge --no-ff`.
+- **Result:** clean auto-merge of `lib/displayTitle.ts` and the unit test. Unique replayed as `273317f5`. Merge `62097272`. No ledger row.
+- Targeted `displayTitle.test|rowTitle.test` 54/54.
+
 ## 6. Per-PR record
 
 ### #1088 update
@@ -290,6 +298,15 @@ Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 b
 | Conflicts | ledger 19–23; silent leftover in `providers.test.ts` |
 | Integration SHA | merge `14b7cded`; follow-up `f341bc57` |
 | GitHub CI | all SUCCESS; MERGEABLE; stacked on #1094 |
+
+### #1102
+
+| Field | Value |
+|---|---|
+| Unique commits | `635f5ba9` → `273317f5` |
+| Conflicts | none |
+| Integration SHA | merge `62097272` |
+| GitHub CI | stacked on #1094; added after Flow C |
 
 ## 7. Conflict ledger
 
