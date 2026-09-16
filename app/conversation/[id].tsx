@@ -33,14 +33,14 @@ import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { createApiForServer, AuthError, ConversationBusyError, NotFoundError } from '@/services/api-client'
-import { CODEX_CLI_PROVIDER, providerLabelKey } from '@/constants/providers'
+import { CODEX_CLI_PROVIDER, providerColor } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
-import { brand, font, spacing, type Theme } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
 import { InfoModal } from '@/components/shared/InfoModal'
@@ -904,8 +904,8 @@ export default function ConversationDetailScreen() {
   // `resumable` is absent on older servers — treat undefined as resumable. The
   // server's flag is authoritative for both providers (streamer resumes codex
   // via `codex resume` and reports real availability).
-  const providerColor = brand[providerLabelKey(conversation.provider)]
-  const providerDot = <View style={[styles.providerDot, { backgroundColor: providerColor }]} />
+  const tint = providerColor(conversation.provider)
+  const providerDot = <View style={[styles.providerDot, { backgroundColor: tint }]} />
   const notResumable = conversation.resumable === false
   const unavailableMessage = notResumable
     ? conversation.unavailableReason === 'worktree_removed'
