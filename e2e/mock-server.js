@@ -171,7 +171,7 @@ async function handleRequest(req, res) {
 
   // Search-target resolver: HTTP QUERY (RFC 10008) — the query travels as a
   // JSON body ({ q }) instead of a URL param, matching the real streamer.
-  // The search-anchor e2e flow's fixture conversation resolves "wombat" to
+  // The search-anchor e2e flow's fixture conversation resolves "idempotency" to
   // message_index 210 (the last of two matches). Everything else 404s with
   // the real streamer's error shape.
   const searchTargetMatch = p.match(/^\/api\/conversations\/([^/]+)\/search-target$/)
@@ -194,7 +194,7 @@ async function handleRequest(req, res) {
       return json(res, 422, { error: 'Missing or empty query field: q', code: 'invalid_query' })
     }
     res.setHeader('Accept-Query', 'application/json')
-    if (searchTargetMatch[1] === 'conv-search-anchor' && q === 'wombat') {
+    if (searchTargetMatch[1] === 'conv-search-anchor' && q === 'idempotency') {
       return json(res, 200, readFixture('conv-search-target.json'))
     }
     return json(res, 404, { error: 'No message body matches query', code: 'search_target_not_found' })
@@ -289,7 +289,7 @@ async function handleRequest(req, res) {
       // sends anchor_index) get an empty-but-valid tail so the screen doesn't
       // depend on this fixture outside the search-anchor flow.
       return json(res, 200, {
-        meta: { id: conversationMatch[1], project_name: 'Search anchor e2e fixture', message_count: 250 },
+        meta: { id: conversationMatch[1], project_name: 'ledger-api', message_count: 250 },
         messages: [],
         message_pagination: { total: 250, before_index: 250, from_index: 250, has_more_older: false, next_before_index: null },
       })
@@ -346,7 +346,7 @@ async function handleRequest(req, res) {
   if (method === 'GET' && p === '/api/info') {
     return json(res, 200, {
       version: '0.0.0-mock',
-      machineName: 'mock-machine',
+      machineName: 'ci-linux-eu-west-2',
       platform: 'linux',
       activeSessions: 1,
       // Without this the grouped views treat the mock as a pre-summary

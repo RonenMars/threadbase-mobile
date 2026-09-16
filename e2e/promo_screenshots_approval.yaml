@@ -80,7 +80,7 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "chat-message-input"
 
-- inputText: "npm run build && npm test"
+- inputText: "pnpm --filter storefront test:e2e && pnpm --filter storefront build"
 
 - waitForAnimationToEnd
 

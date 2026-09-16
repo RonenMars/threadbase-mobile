@@ -1,12 +1,12 @@
 # Maestro E2E — Anchored search navigation with keyword highlight
 #
 # Validates the search → anchored-open → highlight → prev/next flow:
-#   - Searching "wombat" surfaces the fixture conversation (metadata-only
+#   - Searching "idempotency" surfaces the fixture conversation (metadata-only
 #     match — /api/search never returns a message index).
 #   - Tapping the result resolves the target via /search-target (message_index
 #     210, the LAST of two matches) and opens the conversation with a single
 #     anchored request (window [150,250) — never a sequential tail-then-page
-#     crawl), landing directly on the far-from-tail match with the "wombat"
+#     crawl), landing directly on the far-from-tail match with the "idempotency"
 #     keyword highlighted.
 #   - The match-nav bar shows "2 of 2" (starts on the last match) and stepping
 #     Previous moves to "1 of 2" and re-anchors to the earlier match (index 15,
@@ -35,7 +35,7 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "hub-search-input"
 
-- inputText: "wombat"
+- inputText: "idempotency"
 
 - extendedWaitUntil:
     visible:
@@ -72,7 +72,7 @@ appId: com.ronenmars.threadbase
 # Wrapped in `.*`: a Maestro text selector is a regex that has to match the
 # whole node, and the keyword sits mid-sentence in a 55-character bubble.
 # Unwrapped it fails while the text is plainly on screen and highlighted.
-- assertVisible: ".*wombat timeout.*"
+- assertVisible: ".*idempotency key survive.*"
 
 - takeScreenshot: e2e/_artifacts/screenshots/search-anchor-02-highlighted.png
 
@@ -87,7 +87,7 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 
 - extendedWaitUntil:
-    visible: ".*wombat mascot.*"
+    visible: ".*idempotency middleware.*"
     timeout: 8000
 
 - takeScreenshot: e2e/_artifacts/screenshots/search-anchor-03-prev-match.png

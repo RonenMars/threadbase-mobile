@@ -19,8 +19,8 @@ const response = http.request(`${mockUrl}/__test__/gate`, {
   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer mock-key-123' },
   body: JSON.stringify({
     sessionId: 'session-abc123',
-    prompt: 'Run this command?',
-    detail: 'Bash command\nnpm run build && npm test',
+    prompt: 'Run the checkout release verification?',
+    detail: 'Bash command\npnpm --filter storefront test:e2e && pnpm --filter storefront build',
   }),
 })
 if (response.status !== 200) {

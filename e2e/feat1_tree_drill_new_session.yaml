@@ -8,7 +8,7 @@
 #
 # Without this feature the FAB pushes /browse?server=<id> with no path, and
 # the breadcrumb would render only `~`. With the feature the breadcrumb
-# container testID becomes `browse-cwd-/home/user/my-project`.
+# container testID becomes `browse-cwd-/workspace/northstar-commerce/apps/storefront`.
 #
 # Requires: mock server running on localhost:7071
 # Usage: node e2e/run-maestro.js test e2e/feat1_tree_drill_new_session.yaml (or via npm run test:e2e:mock)
@@ -25,28 +25,28 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "layout-projects"
 
-# Fixture has three sessions under /home/user/my-project, so the hub renders
+# Fixture has three sessions under /workspace/northstar-commerce/apps/storefront, so the hub renders
 # one card for it. Open the card, then drill into its directory.
 - extendedWaitUntil:
     visible:
-      id: "hub-project-my-project"
+      id: "hub-project-storefront"
     timeout: 8000
 
 - tapOn:
-    id: "hub-project-my-project"
+    id: "hub-project-storefront"
 
 - extendedWaitUntil:
     visible:
-      id: "hub-browse-path-/home/user/my-project"
+      id: "hub-browse-path-/workspace/northstar-commerce/apps/storefront"
     timeout: 5000
 
 - tapOn:
-    id: "hub-browse-path-/home/user/my-project"
+    id: "hub-browse-path-/workspace/northstar-commerce/apps/storefront"
 
 # DrillView mounts with a testID that encodes the drilled cwd. This is the
 # signal the FAB will read from the treeDrill store.
 - assertVisible:
-    id: "drill-cwd-/home/user/my-project"
+    id: "drill-cwd-/workspace/northstar-commerce/apps/storefront"
 
 # Tap the FAB to start a new session.
 - tapOn:
@@ -56,5 +56,5 @@ appId: com.ronenmars.threadbase
 # would be `browse-cwd-~` (the server default).
 - extendedWaitUntil:
     visible:
-      id: "browse-cwd-/home/user/my-project"
+      id: "browse-cwd-/workspace/northstar-commerce/apps/storefront"
     timeout: 5000

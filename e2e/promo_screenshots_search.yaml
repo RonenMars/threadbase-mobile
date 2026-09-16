@@ -3,7 +3,7 @@
 #
 # Not a test. Mirrors the first steps of e2e/06_search_anchor.yaml (kept
 # separate rather than editing that test's screenshot names, since it's a
-# real regression test): search "wombat" against
+# real regression test): search "idempotency" against
 # e2e/fixtures/conv-search-anchor.json and screenshot the results list with
 # its matched snippet.
 #
@@ -26,7 +26,7 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "hub-search-input"
 
-- inputText: "wombat"
+- inputText: "idempotency"
 
 - extendedWaitUntil:
     visible:
