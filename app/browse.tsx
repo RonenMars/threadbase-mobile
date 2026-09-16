@@ -16,6 +16,7 @@ import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder, X } from 'phosphor-react-native'
+import { basename } from '@/components/sessions/shared/pathTail'
 import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
@@ -106,7 +107,7 @@ export default function BrowseScreen() {
         continue
       }
       seen.add(path)
-      const name = path.split('/').filter(Boolean).pop() ?? path
+      const name = basename(path) ?? path
       dirs.push({
         path,
         name,

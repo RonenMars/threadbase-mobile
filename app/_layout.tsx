@@ -40,6 +40,7 @@ import { SplashAnimation } from '@/components/SplashAnimation'
 import { markIntroSeen, resolveIntroVariant, type IntroVariant } from '@/services/intro-splash'
 import { currentIntroVersion } from '@/services/intro-version'
 import { goBackOrHub } from '@/lib/goBackOrHub'
+import { basename } from '@/components/sessions/shared/pathTail'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { ErrorBanner } from '@/components/ErrorBanner'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
@@ -498,7 +499,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={({ route }) => {
           const params = route.params as { id?: string; path?: string }
           const fromPath = params.path
-            ? decodeURIComponent(params.path).split('/').filter(Boolean).pop()
+            ? basename(decodeURIComponent(params.path))
             : undefined
           return { title: fromPath ?? params.id ?? 'Project' }
         }}

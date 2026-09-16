@@ -12,6 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { useDebounce } from 'use-debounce'
 import { ConversationList } from '@/components/conversation/ConversationList'
+import { basename } from '@/components/sessions/shared/pathTail'
 import { useProjectConversations } from '@/hooks/useProjectConversations'
 import { useConversationSearch } from '@/hooks/useConversations'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -34,9 +35,7 @@ export default function ProjectDetailScreen() {
   const { t } = useTranslation('browse')
   const params = useLocalSearchParams<{ id: string; path?: string; server?: string }>()
   const projectPath = params.path ? decodeURIComponent(params.path) : ''
-  const projectName = projectPath
-    ? projectPath.split('/').filter(Boolean).pop() ?? projectPath
-    : params.id ?? ''
+  const projectName = basename(projectPath) ?? params.id ?? ''
 
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
