@@ -51,7 +51,7 @@ export const OlderConversation: Story = {
   args: { item: { kind: 'conversation', ms: 0, item: gone }, title: 'int-2026-09-12 · tb-streamer worktree' },
 }
 
-export const QuietWithoutProject: Story = {
+export const WithoutProject: Story = {
   args: {
     item: {
       kind: 'conversation',
@@ -61,7 +61,6 @@ export const QuietWithoutProject: Story = {
         { projectPath: null },
       ),
     },
-    title: 'hi',
-    quiet: true,
+    title: 'tb-mobile · main',
   },
 }

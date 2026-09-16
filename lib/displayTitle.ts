@@ -23,7 +23,7 @@ export interface DisplayTitle {
   /**
    * Which rung of the ladder produced the title. `command` (the work itself,
    * e.g. "git pull") and `untitled` (identity: project · branch) are the quiet
-   * rungs; a list may render those lighter but never hides them.
+   * rungs.
    */
   source: 'rename' | 'message' | 'assistant' | 'command' | 'untitled'
 }

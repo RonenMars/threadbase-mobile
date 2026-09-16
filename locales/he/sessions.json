@@ -178,17 +178,11 @@
     "worktree": "עץ העבודה נעלם — אי אפשר להמשיך"
   },
   "row": {
-    "quietTail_one": "סשן שקט אחד · לא נשאל דבר",
-    "quietTail_two": "שני סשנים שקטים · לא נשאל דבר",
-    "quietTail_other": "{{count}} סשנים שקטים · לא נשאל דבר",
     "waitingFor": "ממתין {{elapsed}}",
     "open": "פתח"
   },
   "layout": {
     "now": "עכשיו",
     "projects": "פרויקטים"
-  },
-  "quiet": {
-    "screenTitle": "סשנים שקטים"
   }
 }
