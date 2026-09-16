@@ -31,7 +31,7 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 | #1092 | feat(alerts): route errors and warnings to a header status pill | `d265535b` **new** | #1089 | no | MERGEABLE / CLEAN | stacked |
 | #1093 | feat(alerts): replace ErrorRecoverySheet with the Status sheet | `ed866281` **new** | #1092 | no | MERGEABLE / CLEAN | stacked |
 | #1094 | feat(sessions): close the session-list spec gaps | `2bb27339` **new** | main | no | MERGEABLE / BLOCKED | included anyway |
-| #1100 | feat(sessions): render command and identity titles as normal history rows | `8cc19a89` | #1094 | no | MERGEABLE / CLEAN | stacked; added 2026-09-16 |
+| #1100 | feat(sessions): render command and identity titles as normal history rows | `789cb7a5` (was `8cc19a89`) | #1094 | no | MERGEABLE / UNSTABLE | stacked; second unique added 2026-09-16 |
 | #1101 | refactor(sessions): unify provider colors on PROVIDER_COLOR | `2498cf94` | #1094 | no | MERGEABLE / CLEAN | stacked; added 2026-09-16 |
 
 ### Deliberate exclusions
@@ -45,7 +45,7 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 
 ## 4. Order plan
 
-**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up → `#1095`–`#1099` → `#1094` wait-duration unique → INT pathTail → `#1100` → `#1101`
+**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up → `#1095`–`#1099` → `#1094` wait-duration unique → INT pathTail → `#1100` → `#1101` → `#1100` quiet-tail unique
 
 Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 because both touch `ProviderMark` / `types/api.ts`.
 
@@ -173,6 +173,18 @@ Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 b
 - Targeted `ProviderMark|providers.test` 5/5 after the follow-up. Full lint/typecheck/unit/integration/i18n not re-run for this unique.
 - Origin: `git ls-remote origin 'refs/heads/integration/*'` empty.
 
+### 08:03 — #1100 quiet-tail unique (ledger 24)
+
+- GitHub head `789cb7a5` (`feat(sessions): drop the quiet-tail fold so every session stays in the list`). MERGEABLE. GitHub CI UNSTABLE only because the Unit tests aggregator was still pending; shards already SUCCESS. Included anyway.
+- **Command:** `git rebase --onto INT 8cc19a89` from `refs/integration/pr/1100`
+- **Result:** conflict in `NowList.tsx` renderItem deps (1 hunk) → ledger 24. Unique replayed as `bf688cf1`. Merge `a2f56bf9`.
+- Deletes QuietTailRow, quiet-sessions screen/store, and the ≥6 fold. Command/identity titles stay inline as EarlierRow.
+
+### 08:06 — checkpoint
+
+- Targeted `NowList|rowTitle|displayTitle` 70/70 (3 suites). Full lint/typecheck/unit/integration/i18n not re-run for this unique.
+- Origin: `git ls-remote origin 'refs/heads/integration/*'` empty.
+
 ## 6. Per-PR record
 
 ### #1088 update
@@ -265,10 +277,10 @@ Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 b
 
 | Field | Value |
 |---|---|
-| Unique commits | `8cc19a89` → `d0177f1c` |
-| Conflicts | ledger 18 |
-| Integration SHA | `f6561e51` |
-| GitHub CI | all SUCCESS; MERGEABLE; stacked on #1094 |
+| Unique commits | `8cc19a89` → `d0177f1c`; later unique `789cb7a5` → `bf688cf1` |
+| Conflicts | ledger 18 on the first unique; ledger 24 on the quiet-tail unique |
+| Integration SHA | first unique merge `f6561e51`; quiet-tail merge `a2f56bf9` |
+| GitHub CI | first unique all SUCCESS; quiet-tail unique UNSTABLE only on pending Unit tests aggregator |
 
 ### #1101
 
@@ -303,6 +315,7 @@ Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 b
 | 21 | #1101 | `browse.tsx` chips | `brand` + `CURSOR_PROVIDER` vs `PROVIDER_COLOR` + `CURSOR_CLI_PROVIDER` | `PROVIDER_COLOR` + `CURSOR_PROVIDER` | M |
 | 22 | #1101 | `conversation/[id].tsx` imports | INT `AuthError` / `providerLabelKey` vs #1101 `providerColor` | keep `AuthError` + `providerColor`; drop unused `providerLabelKey` | M |
 | 23 | #1101 | `app/index.tsx` imports | alert imports + `brand` vs `PROVIDER_COLOR` | keep alerts + `PROVIDER_COLOR`; drop `brand` | M |
+| 24 | #1100 | `NowList.tsx` renderItem deps | #1095 `fetchStatuses`/`onRetry`/`onOpenStatus` vs drop `openQuietTail` | drop `openQuietTail`; keep #1095 deps | M |
 
 ### Judgment call 1 in full
 
@@ -329,4 +342,4 @@ Kept #1092's per-server `classifyServer` (that is the PR). Discarded the aggrega
 
 ## 10. Origin-absent proof
 
-`git ls-remote origin 'refs/heads/integration/*'` → **0** (re-checked after #1101)
+`git ls-remote origin 'refs/heads/integration/*'` → **0** (re-checked after #1100 quiet-tail unique)
