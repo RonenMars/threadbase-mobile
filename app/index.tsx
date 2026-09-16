@@ -58,7 +58,8 @@ import { InlineError } from '@/components/alerts/InlineError'
 import { useClaimInline } from '@/hooks/useClaimInline'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { serverCause } from '@/types/alerts'
-import { brand, font, spacing, type Theme } from '@/constants/theme'
+import { PROVIDER_COLOR } from '@/constants/providers'
+import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -782,19 +783,19 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.codex}20`,
+    backgroundColor: `${PROVIDER_COLOR.codex}20`,
   },
   convCardClaudeBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.claude}20`,
+    backgroundColor: `${PROVIDER_COLOR.claude}20`,
   },
   convCardCursorBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.cursor}20`,
+    backgroundColor: `${PROVIDER_COLOR.cursor}20`,
   },
   fabToast: {
     position: 'absolute',
