@@ -32,6 +32,7 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 | #1093 | feat(alerts): replace ErrorRecoverySheet with the Status sheet | `ed866281` **new** | #1092 | no | MERGEABLE / CLEAN | stacked |
 | #1094 | feat(sessions): close the session-list spec gaps | `2bb27339` **new** | main | no | MERGEABLE / BLOCKED | included anyway |
 | #1100 | feat(sessions): render command and identity titles as normal history rows | `8cc19a89` | #1094 | no | MERGEABLE / CLEAN | stacked; added 2026-09-16 |
+| #1101 | refactor(sessions): unify provider colors on PROVIDER_COLOR | `2498cf94` | #1094 | no | MERGEABLE / CLEAN | stacked; added 2026-09-16 |
 
 ### Deliberate exclusions
 
@@ -44,9 +45,9 @@ Final 2026-09-14 checkpoint at `d9918adb`: lint green, typecheck green, unit 218
 
 ## 4. Order plan
 
-**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up → `#1095`–`#1099` → `#1094` wait-duration unique → INT pathTail → `#1100`
+**Planned / actual:** `#1088` unique → `#1091` unique → `#1092` → `#1093` → `#1094` → INT follow-up → `#1095`–`#1099` → `#1094` wait-duration unique → INT pathTail → `#1100` → `#1101`
 
-Stacked: #1093 on #1092 on #1089. #1100 (and #1101, not in this run) on #1094. #1091 before #1094 because both touch `ProviderMark` / `types/api.ts`.
+Stacked: #1093 on #1092 on #1089. #1100 and #1101 on #1094. #1091 before #1094 because both touch `ProviderMark` / `types/api.ts`.
 
 ## 5. Action log
 
@@ -160,6 +161,18 @@ Stacked: #1093 on #1092 on #1089. #1100 (and #1101, not in this run) on #1094. #
 - Targeted `NowList|rowTitle|displayTitle` 70/70 (3 suites). Full lint/typecheck/unit/integration/i18n not re-run for this unique.
 - Origin: `git ls-remote origin 'refs/heads/integration/*'` empty.
 
+### 07:46 — #1101 rebase conflict (ledger 19–23)
+
+- GitHub head `2498cf94` on `feat/unify-provider-colors`, base `feat/session-list-spec-gaps` (#1094). MERGEABLE. GitHub CI all SUCCESS.
+- **Command:** `git rebase --onto integration/2026-09-14-open-prs origin/feat/session-list-spec-gaps` from `refs/integration/pr/1101` (`2498cf94`)
+- **Result:** conflicts in ProviderMark test, `browse.tsx` (2 hunks), `conversation/[id].tsx`, `app/index.tsx` → ledger 19–23. Unique replayed as `47067dfe`. Merge `14b7cded`.
+- Auto-merged `providers.test.ts` still named `CURSOR_CLI_PROVIDER` in the new color case → INT follow-up `f341bc57`.
+
+### 07:50 — checkpoint
+
+- Targeted `ProviderMark|providers.test` 5/5 after the follow-up. Full lint/typecheck/unit/integration/i18n not re-run for this unique.
+- Origin: `git ls-remote origin 'refs/heads/integration/*'` empty.
+
 ## 6. Per-PR record
 
 ### #1088 update
@@ -257,6 +270,15 @@ Stacked: #1093 on #1092 on #1089. #1100 (and #1101, not in this run) on #1094. #
 | Integration SHA | `f6561e51` |
 | GitHub CI | all SUCCESS; MERGEABLE; stacked on #1094 |
 
+### #1101
+
+| Field | Value |
+|---|---|
+| Unique commits | `2498cf94` → `47067dfe` |
+| Conflicts | ledger 19–23; silent leftover in `providers.test.ts` |
+| Integration SHA | merge `14b7cded`; follow-up `f341bc57` |
+| GitHub CI | all SUCCESS; MERGEABLE; stacked on #1094 |
+
 ## 7. Conflict ledger
 
 | # | PR | File | What collided | Resolution | Class |
@@ -276,6 +298,11 @@ Stacked: #1093 on #1092 on #1089. #1100 (and #1101, not in this run) on #1094. #
 | 16 | #1095 | `NowList.test.tsx` | cant-resume/warming/empty vs failure-panel tests | Keep all five tests | M |
 | 17 | #1099 | `ServerErrorBanner.tsx` | INT lastError patch vs #1099 delete | Take the delete. Banner was unmounted; lastError lives on `ServerStateMessage` | J |
 | 18 | #1100 | `NowList.tsx` renderItem | #1095 stale opacity wrapper vs #1100 drop `quiet` | Keep wrapper; drop `quiet` | M |
+| 19 | #1101 | `ProviderMark.test.tsx` | INT `cursor` id vs #1101 `PROVIDER_COLOR` + `cursor-cli` | `PROVIDER_COLOR` + `cursor` | M |
+| 20 | #1101 | `browse.tsx` imports | `CURSOR_PROVIDER` vs `CURSOR_CLI_PROVIDER` + `PROVIDER_COLOR` | `CURSOR_PROVIDER` + `PROVIDER_COLOR` | M |
+| 21 | #1101 | `browse.tsx` chips | `brand` + `CURSOR_PROVIDER` vs `PROVIDER_COLOR` + `CURSOR_CLI_PROVIDER` | `PROVIDER_COLOR` + `CURSOR_PROVIDER` | M |
+| 22 | #1101 | `conversation/[id].tsx` imports | INT `AuthError` / `providerLabelKey` vs #1101 `providerColor` | keep `AuthError` + `providerColor`; drop unused `providerLabelKey` | M |
+| 23 | #1101 | `app/index.tsx` imports | alert imports + `brand` vs `PROVIDER_COLOR` | keep alerts + `PROVIDER_COLOR`; drop `brand` | M |
 
 ### Judgment call 1 in full
 
@@ -290,6 +317,7 @@ Kept #1092's per-server `classifyServer` (that is the PR). Discarded the aggrega
 - #1095 new `home-inline-failures.test.tsx` was not in `ci-integration-test-shards.json`. INT follow-up.
 - Host: gitignored `expo-env.d.ts` (mtime 2026-09-15 08:58) makes `ci-lint-shards` fail locally; not from these PRs; left alone.
 - #1097 ∩ INT i18n test: `onViewDetails` removed from `ServerStateMessage` props; INT protocol-mismatch case still passed it. Follow-up drops the prop.
+- #1101 ∩ #1091 `providers.test.ts`: auto-merge kept `CURSOR_PROVIDER` import and left `CURSOR_CLI_PROVIDER` in the new color case. INT follow-up `f341bc57`.
 
 ### Judgment call 2 in full
 
@@ -301,4 +329,4 @@ Kept #1092's per-server `classifyServer` (that is the PR). Discarded the aggrega
 
 ## 10. Origin-absent proof
 
-`git ls-remote origin 'refs/heads/integration/*'` → **0** (re-checked after #1100)
+`git ls-remote origin 'refs/heads/integration/*'` → **0** (re-checked after #1101)
