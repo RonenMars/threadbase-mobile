@@ -67,13 +67,14 @@ function writeStub(binDir, name, body) {
 const tmpDirs = [];
 
 /** Runs the copied script as a real subprocess with xcrun/npx stubbed and git real. */
-function runScript(repo, { allowStale = false, platform } = {}) {
+function runScript(repo, { allowStale = false, platform, rebuildStale = false } = {}) {
   const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'ensure-release-bin-'));
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ensure-release-home-'));
   tmpDirs.push(bin, home);
 
   const xcrunLog = path.join(bin, 'xcrun.log');
   const npxLog = path.join(bin, 'npx.log');
+  const xcodebuildLog = path.join(bin, 'xcodebuild.log');
 
   writeStub(bin, 'xcrun', 'echo "$@" >> "$XCRUN_LOG"');
   writeStub(
@@ -88,15 +89,28 @@ function runScript(repo, { allowStale = false, platform } = {}) {
       'fi',
     ].join('\n'),
   );
+  writeStub(
+    bin,
+    'xcodebuild',
+    [
+      'echo "$@" >> "$XCODEBUILD_LOG"',
+      'echo "SENTRY_DISABLE_AUTO_UPLOAD=$SENTRY_DISABLE_AUTO_UPLOAD" >> "$XCODEBUILD_LOG"',
+      'mkdir -p "$APP_DIR"',
+      'echo fake > "$APP_DIR/Info.plist"',
+    ].join('\n'),
+  );
+  writeStub(bin, 'bundle', 'echo "$@" >> "$XCODEBUILD_LOG"');
 
   const env = {
     PATH: [bin, path.dirname(GIT), '/usr/bin', '/bin'].join(path.delimiter),
     HOME: home,
     XCRUN_LOG: xcrunLog,
     NPX_LOG: npxLog,
+    XCODEBUILD_LOG: xcodebuildLog,
     APP_DIR: appDirFor(repo),
   };
   if (allowStale) env.E2E_ALLOW_STALE_BUILD = '1';
+  if (rebuildStale) env.E2E_REBUILD_STALE = '1';
   if (platform) env.E2E_PLATFORM = platform;
 
   const result = spawnSync(process.execPath, [path.join(repo, 'e2e/ensure-release-build.js')], {
@@ -111,6 +125,7 @@ function runScript(repo, { allowStale = false, platform } = {}) {
     stderr: result.stderr || '',
     xcrunLog: fs.existsSync(xcrunLog) ? fs.readFileSync(xcrunLog, 'utf8') : '',
     npxLog: fs.existsSync(npxLog) ? fs.readFileSync(npxLog, 'utf8') : '',
+    xcodebuildLog: fs.existsSync(xcodebuildLog) ? fs.readFileSync(xcodebuildLog, 'utf8') : '',
   };
 }
 
@@ -230,6 +245,31 @@ test('no existing build at all still builds fresh, same as before the staleness 
   const second = runScript(repo);
   expect(second.npxLog).toBe('');
   expect(second.stdout).toMatch(/current/i);
+});
+
+test('E2E_REBUILD_STALE=1 rebuilds a dirty tree with xcodebuild, not expo run:ios', () => {
+  const made = makeRepo();
+  repo = made.repo;
+  fs.mkdirSync(appDirFor(repo), { recursive: true });
+  fs.writeFileSync(stampPathFor(repo), JSON.stringify({ sha: made.sha }));
+  fs.writeFileSync(path.join(repo, 'package.json'), '{"name":"fixture","dirty":true}\n');
+  fs.mkdirSync(path.join(repo, 'ios/Threadbase.xcworkspace'), { recursive: true });
+  fs.mkdirSync(path.join(repo, 'ios/Pods'), { recursive: true });
+
+  const result = runScript(repo, { rebuildStale: true });
+
+  expect(result.status).toBe(0);
+  expect(result.npxLog).toBe('');
+  expect(result.xcodebuildLog).toContain('-workspace ios/Threadbase.xcworkspace');
+  expect(result.xcodebuildLog).toContain('-configuration Release');
+  expect(result.xcodebuildLog).toContain('SENTRY_DISABLE_AUTO_UPLOAD=true');
+  expect(result.stdout).toMatch(/Rebuilding/);
+  expect(result.xcrunLog).toContain(`simctl install booted ${appDirFor(repo)}`);
+
+  const second = runScript(repo, { rebuildStale: true });
+  expect(second.status).toBe(0);
+  expect(second.xcodebuildLog).toBe('');
+  expect(second.stdout).toMatch(/current dirty tree/i);
 });
 
 test('Android CI leaves build and installation to the workflow', () => {

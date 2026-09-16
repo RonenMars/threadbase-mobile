@@ -13,7 +13,7 @@
 
 appId: com.ronenmars.threadbase
 ---
-- runFlow: setup.yaml
+- runFlow: promo-setup.yaml
 
 - extendedWaitUntil:
     visible:
