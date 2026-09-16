@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'expo-router'
 import type { TFunction } from 'i18next'
 import { useLoadingStateStore, type QueryCategory, type QueryError } from '@/stores/loading-state'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
@@ -66,6 +67,7 @@ export function useRequestFailureAlerts() {
   const statuses = useServerFetchStatusStore((s) => s.statuses)
   const servers = useServersStore((s) => s.servers)
   const { t } = useTranslation('common')
+  const router = useRouter()
   const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set())
 
   const sheetErrors = useMemo(
@@ -73,6 +75,15 @@ export function useRequestFailureAlerts() {
       errors.filter((e): e is QueryError & { category: SheetCategory } => {
         if (!isSheetCategory(e.category)) return false
         return classifyError({ status: e.status, code: e.code }, t).presentation === 'recovery-sheet'
+      }),
+    [errors, t],
+  )
+
+  const blockingErrors = useMemo(
+    (): (QueryError & { category: SheetCategory })[] =>
+      errors.filter((e): e is QueryError & { category: SheetCategory } => {
+        if (!isSheetCategory(e.category)) return false
+        return classifyError({ status: e.status, code: e.code }, t).presentation === 'blocking'
       }),
     [errors, t],
   )
@@ -153,8 +164,35 @@ export function useRequestFailureAlerts() {
       }
     })
 
-    return failedServerIds.length > 0 ? serverRows : categoryRows
-  }, [failedServerIds, sheetErrors, servers, statuses, retryingIds, t, dismissError])
+    const blockingRows: AlertInput[] = blockingErrors.map((error): AlertInput => {
+      const classified = classifyError({ status: error.status, code: error.code }, t)
+      const close = () => {
+        useLoadingStateStore.getState().dismissError(error.id, true)
+      }
+      return {
+        id: `blocking:${error.id}`,
+        viewport: VIEWPORT,
+        cause: queryCause(error.id),
+        level: 'critical',
+        title: classified.description ?? t('errorPolicy.sessionExpired'),
+        message: t('errorPolicy.blockingHint'),
+        code: classified.code,
+        rawMessage: error.message,
+        retryable: false,
+        timeout: null,
+        buttonText: t('button.openSettings'),
+        buttonAction: () => {
+          close()
+          router.push('/settings')
+        },
+        buttonVariant: 'primary',
+        onClose: close,
+      }
+    })
+
+    const rest = failedServerIds.length > 0 ? serverRows : categoryRows
+    return [...blockingRows, ...rest]
+  }, [failedServerIds, sheetErrors, blockingErrors, servers, statuses, retryingIds, t, dismissError, router])
 
   useAlertListSync(entries)
 }

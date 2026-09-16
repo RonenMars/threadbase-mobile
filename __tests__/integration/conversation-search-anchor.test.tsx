@@ -49,8 +49,9 @@ const mockRequestedPaths: string[] = []
 const mockQueryCalls: { path: string; body: unknown }[] = []
 
 jest.mock('@/services/api-client', () => {
-  const { NotFoundError } = jest.requireActual('@/services/api-client')
+  const { AuthError, NotFoundError } = jest.requireActual('@/services/api-client')
   return {
+    AuthError,
     NotFoundError,
     createApiForServer: () => ({
       get: (path: string) => {
