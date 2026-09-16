@@ -44,7 +44,7 @@ describe('sessionRowTitle', () => {
     )
   })
 
-  it('reports the ladder rung so a list can fold quiet titles', () => {
+  it('reports the ladder rung for command and identity titles', () => {
     expect(resolveSessionRowTitle({ ...session, sessionName: 'rebase and merge PR 903' }, {}).rung).toBe('intent')
     expect(resolveSessionRowTitle({ ...session, sessionName: 'git pull' }, {}).rung).toBe('command')
     expect(resolveSessionRowTitle({ ...session, sessionName: 'hey' }, {}).rung).toBe('untitled')
