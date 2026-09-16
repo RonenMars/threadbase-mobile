@@ -27,7 +27,7 @@ export default function QuietSessionsScreen() {
       <FlatList
         data={entries}
         keyExtractor={keyOf}
-        renderItem={({ item }) => <EarlierRow item={item.item} title={item.title} quiet dimmed={false} />}
+        renderItem={({ item }) => <EarlierRow item={item.item} title={item.title} />}
         contentContainerStyle={{ paddingHorizontal: spacing.sm + 2, paddingBottom: insets.bottom + spacing.lg }}
       />
     </View>
