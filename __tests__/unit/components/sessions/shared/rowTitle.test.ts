@@ -111,4 +111,13 @@ describe('conversationRowTitle', () => {
       ),
     ).toBe('Wire the splash so it only plays once')
   })
+
+  it('treats a null projectPath as missing', () => {
+    expect(
+      conversationRowTitle(
+        { ...conv, projectPath: null, title: 'orphan', branch: undefined, firstMessage: { text: 'hi', timestamp: '' } },
+        {},
+      ),
+    ).toBe('orphan')
+  })
 })
