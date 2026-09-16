@@ -32,11 +32,9 @@ import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
-import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
-import { EmptyState } from '@/components/ui/EmptyState'
 import { ListBottomScrim } from '@/components/sessions/shared/ListBottomScrim'
 import { useHideOnScrollDown } from '@/hooks/useHideOnScrollDown'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
@@ -51,14 +49,17 @@ import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
 import { CacheAlertModal } from '@/components/servers/CacheAlertModal'
 import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
-import { ServerOfflineBanner } from '@/components/sessions/banners/ServerOfflineBanner'
 import { ServerWarmingBanner } from '@/components/sessions/banners/ServerWarmingBanner'
 import { ServerUnsupportedBanner } from '@/components/sessions/banners/ServerUnsupportedBanner'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { HomeStatusPill } from '@/components/alerts/StatusPill'
 import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
+import { InlineError } from '@/components/alerts/InlineError'
+import { useClaimInline } from '@/hooks/useClaimInline'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
-import { brand, font, spacing, type Theme } from '@/constants/theme'
+import { serverCause } from '@/types/alerts'
+import { PROVIDER_COLOR } from '@/constants/providers'
+import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
@@ -142,24 +143,15 @@ export default function ProjectsHub() {
   // Header controls
   const [searchOpen, setSearchOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [statusModalOpen, setStatusModalOpen] = useState(false)
   const [browseErrorServerId, setBrowseErrorServerId] = useState<string | null>(null)
   const [pickerVisible, setPickerVisible] = useState(false)
   const [fabNoServerToast, setFabNoServerToast] = useState(false)
-  const [manualCacheAlertServerId, setManualCacheAlertServerId] = useState<string | null>(null)
+  const [cacheAlertModalServerId, setCacheAlertModalServerId] = useState<string | null>(null)
   const [cacheAlertToast, setCacheAlertToast] = useState<string | null>(null)
-  const openStatusSurface = useOpenStatusSurface(() => setStatusModalOpen(true))
-
-  // Auto-open for a pending high-severity alert (derived, not stateful); the
-  // low-severity banner can also open the modal manually via setCacheAlertModalServerId.
-  // Both auto-close once the store no longer has an alert for that server
-  // (e.g. resolved from another surface) since neither branch is sticky state.
-  const highSeverityCacheAlertServerId = displayedServerIds.find(
-    (id) => cacheAlert[id]?.severity === 'high',
-  ) ?? null
-  const cacheAlertModalServerId = highSeverityCacheAlertServerId
-    ?? (manualCacheAlertServerId && cacheAlert[manualCacheAlertServerId] ? manualCacheAlertServerId : null)
-  const setCacheAlertModalServerId = setManualCacheAlertServerId
+  const openStatusSurface = useOpenStatusSurface()
+  if (cacheAlertModalServerId && !cacheAlert[cacheAlertModalServerId]) {
+    setCacheAlertModalServerId(null)
+  }
 
   // Order and filters. Tier, agent and recency filter client-side: the wire
   // only knows three statuses, and an empty status list used to mean "all".
@@ -287,6 +279,8 @@ export default function ProjectsHub() {
     activeServerIds.length > 0 &&
     sessionsDone &&
     activeServerIds.every((serverId) => fetchStatuses[serverId]?.status === 'error')
+  const failedServerIds = activeServerIds.filter((id) => fetchStatuses[id]?.status === 'error')
+  useClaimInline(allServersFailed ? [] : failedServerIds.map(serverCause))
 
   // Sessions cluster to the top of the merged list under the LIVE header
   // (running / waiting_input first, then idle), regardless of conversation
@@ -384,12 +378,12 @@ export default function ProjectsHub() {
 
   const fabRef = useRef<View>(null)
 
-  // One banner per unhealthy host, so the other machines keep rendering below.
-  // When every host is down the empty state above says so instead.
+  // Warming / upgrade banners stay in the scrolling header. Fetch errors
+  // belong on the section (1c) or the all-down stale banner (1a).
   const serverBanners = activeServerIds.map((id) => {
     const label = servers[id]?.label ?? id
     const status = fetchStatuses[id]?.status
-    if (status === 'error') return <ServerOfflineBanner key={id} serverLabel={label} onRetry={() => retryFailed()} />
+    if (status === 'error') return null
     if (status === 'warming_up') return <ServerWarmingBanner key={id} serverLabel={label} />
     if (unsupportedServerIds.includes(id)) return <ServerUnsupportedBanner key={id} serverLabel={label} />
     return null
@@ -418,7 +412,7 @@ export default function ProjectsHub() {
           {isBackgroundRefreshing && activeServerIds.length <= 1 ? (
             <ActivityIndicator size="small" color={theme.text.secondary} testID="header-background-refreshing" />
           ) : null}
-          <HomeStatusPill onPress={openStatusSurface} />
+          {allServersFailed ? null : <HomeStatusPill onPress={openStatusSurface} />}
 
           <Pressable
             onPress={() => setSearchOpen((v) => !v)}
@@ -501,11 +495,7 @@ export default function ProjectsHub() {
 
       <EncryptionRefusalBanner />
 
-      <CacheAlertBanner onPress={() => {
-        const lowSeverityId = displayedServerIds.find((id) => cacheAlert[id]?.severity === 'low')
-        if (lowSeverityId) setCacheAlertModalServerId(lowSeverityId)
-      }}
-      />
+      <CacheAlertBanner onPress={(serverId) => setCacheAlertModalServerId(serverId)} />
 
       <HostPressureBanner />
 
@@ -514,10 +504,20 @@ export default function ProjectsHub() {
         servers={servers}
         fetchStatuses={fetchStatuses}
         wsConnectedCount={wsConnectedCount}
-        onViewDetails={() => setStatusModalOpen(true)}
         onRetryFailed={(serverId) => retryFailed([serverId])}
         isRetrying={isRetryingFailedServers}
       />
+
+      {allServersFailed ? (
+        <InlineError
+          testID="stale-scope-banner"
+          title={t('sessions:list.allServersOffline')}
+          message={t('sessions:list.allServersOfflineSubtitle')}
+          onRetry={() => retryFailed()}
+          onDetails={openStatusSurface}
+          detailsLabel={t('servers:action.details')}
+        />
+      ) : null}
 
       {serverBanners}
 
@@ -539,21 +539,6 @@ export default function ProjectsHub() {
         <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
           <NoServersWelcome />
         </View>
-      ) : allServersFailed ? (
-        <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
-          <EmptyState
-            title={t('sessions:list.allServersOffline')}
-            subtitle={t('sessions:list.allServersOfflineSubtitle')}
-            action={{
-              label: t('servers:action.details'),
-              onPress: () => setStatusModalOpen(true),
-            }}
-            secondaryAction={{
-              label: t('servers:action.retry'),
-              onPress: () => retryFailed(),
-            }}
-          />
-        </View>
       ) : sessionsLayout === 'projects' ? (
         <ProjectHubList
           sessions={filteredSessions}
@@ -570,6 +555,8 @@ export default function ProjectsHub() {
           ListHeaderComponent={listHeader}
           onNewSession={handleFABPress}
           onScroll={onScroll}
+          onRetryServer={(serverId) => retryFailed([serverId])}
+          onOpenStatus={openStatusSurface}
         />
       ) : (
         <View style={styles.classicContainer}>
@@ -588,6 +575,8 @@ export default function ProjectsHub() {
             warmingServerIds={warmingServerIds}
             onNewSession={handleFABPress}
             onScroll={onScroll}
+            onRetryServer={(serverId) => retryFailed([serverId])}
+            onOpenStatus={openStatusSurface}
           />
         </View>
       )}
@@ -597,8 +586,8 @@ export default function ProjectsHub() {
       {chrome}
       {/* Status overlays sit just below the chrome and never move the rows. */}
       <View style={[styles.belowChrome, { top: chromeHeight }]} pointerEvents="box-none">
-        <HomeStatusStrip onPress={openStatusSurface} />
-        <ToastViewport id="home" />
+        {allServersFailed ? null : <HomeStatusStrip onPress={openStatusSurface} />}
+        <ToastViewport />
         <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
       </View>
 
@@ -620,11 +609,6 @@ export default function ProjectsHub() {
       />
 
       {/* Modals & Sheets */}
-      <ServersStatusModal
-        visible={statusModalOpen}
-        onClose={() => setStatusModalOpen(false)}
-        onRetrySessions={(serverId) => retryFailed([serverId])}
-      />
       <FilterSortSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
@@ -800,19 +784,19 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.codex}20`,
+    backgroundColor: `${PROVIDER_COLOR.codex}20`,
   },
   convCardClaudeBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.claude}20`,
+    backgroundColor: `${PROVIDER_COLOR.claude}20`,
   },
   convCardCursorBadge: {
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: `${brand.cursor}20`,
+    backgroundColor: `${PROVIDER_COLOR.cursor}20`,
   },
   fabToast: {
     position: 'absolute',

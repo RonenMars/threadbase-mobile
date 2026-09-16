@@ -139,6 +139,21 @@ describe('resolveDisplayTitle', () => {
     ).toEqual({ title: 'Fix the login flow', subtitle: 'Sure, looking now.', source: 'message' })
   })
 
+  it('strips @/abs/path upload refs and titles from the leftover question', () => {
+    expect(
+      resolveDisplayTitle({
+        firstMessage: [
+          '@/Users/ronen/dev/tb-mobile/.threadbase-uploads/abc/17869536367230-up_30b03fe74d3014fa-shot.jpg',
+          '@/Users/ronen/dev/tb-mobile/.threadbase-uploads/abc/17869536367231-up_abcdef1234567890-notes',
+          'Why new codex session is opened in terminal mode?',
+        ].join(' '),
+      }),
+    ).toEqual({
+      title: 'Why new codex session is opened in terminal mode?',
+      source: 'message',
+    })
+  })
+
   it('falls back to the first assistant sentence when the message is rejected', () => {
     expect(
       resolveDisplayTitle({
@@ -170,7 +185,7 @@ describe('resolveDisplayTitle', () => {
     ).toEqual({ title: 'review', source: 'command' })
   })
 
-  it('keeps a short command as the title, as typed, on the quiet rung', () => {
+  it('keeps a short command as the title, as typed', () => {
     expect(resolveDisplayTitle({ firstMessage: 'git pull', projectName: 'app', branch: 'main' })).toEqual({
       title: 'git pull',
       source: 'command',

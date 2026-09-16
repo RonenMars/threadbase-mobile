@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next'
 
-/** How a classified error should be surfaced. `blocking` (401/403) is an
- * exclusion from the Status sheet; the critical dialog is step 5. */
+/** How a classified error should be surfaced. `blocking` (401/403) is
+ * excluded from the Status sheet and raised as a CriticalDialog. */
 export type ErrorPresentation = 'inline' | 'recovery-sheet' | 'blocking'
 
 export interface ClassifiedError {

@@ -33,7 +33,7 @@ function split(stored: StoredName): { customName?: string } {
   return { customName: stored.name }
 }
 
-/** `intent` is a title the user or assistant wrote; the other two are the quiet rungs of the ladder. */
+/** `intent` is a title the user or assistant wrote; the other two are command and identity. */
 export type TitleRung = 'intent' | 'command' | 'untitled'
 
 export interface RowTitle {

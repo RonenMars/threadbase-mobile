@@ -3,10 +3,9 @@ import { StyleSheet, Text } from 'react-native'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
-import { fireEvent } from '@testing-library/react-native'
 import { renderWithI18n } from '@/test-utils/render'
-import { useQuietTailStore } from '@/stores/quietTail'
 import { useServersStore } from '@/stores/servers'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -98,37 +97,30 @@ describe('NowList', () => {
     expect(queryByText('NEEDS YOU · 2')).toBeNull()
   })
 
-  it('keeps up to five quiet rows inline, in time order, as one-line rows', async () => {
+  it('keeps command and identity titles inline in time order', async () => {
     const quiet = ['hi', 'hey', 'Ahoy', 'yo', 'git pull'].map((name, i) =>
       asConv(conversation({ id: `n${i}`, sessionName: name, title: name, branch: 'main' }), NOW - 1000 * (i + 1)),
     )
     const real = asConv(conversation({ id: 'real', sessionName: 'Fix the resume collision copy' }), NOW - 500)
-    const { getByText, getAllByText, queryByTestId, getByTestId } = await renderList([real, ...quiet])
+    const { getByText, getAllByText, getByTestId } = await renderList([real, ...quiet])
 
-    expect(queryByTestId('quiet-tail')).toBeNull()
     expect(getByTestId('conversation-row-real')).toBeTruthy()
     for (let i = 0; i < 5; i += 1) expect(getByTestId(`conversation-row-n${i}`)).toBeTruthy()
-    // A greeting falls to the identity; a command keeps its own words with the identity beside it.
     expect(getAllByText('tb-mobile · main')).toHaveLength(4)
-    // The identity is a nested Text inside the label, so the row's text reads as one string.
-    expect(getByText(/^git pull/)).toBeTruthy()
+    expect(getByText('git pull')).toBeTruthy()
   })
 
-  it('gathers six or more quiet rows into one tail at the end of their group', async () => {
+  it('never folds command or identity titles out of the list', async () => {
     const quiet = ['hi', 'hey', 'Ahoy', 'yo', 'sup', 'hello'].map((name, i) =>
       asConv(conversation({ id: `n${i}`, sessionName: name, title: name }), NOW - 1000 * (i + 1)),
     )
     const real = asConv(conversation({ id: 'real', sessionName: 'Fix the resume collision copy' }), NOW - 3500)
-    const { getByText, getByTestId, queryByTestId } = await renderList([...quiet, real])
+    const { getByTestId, queryByTestId, queryByText } = await renderList([...quiet, real])
 
-    expect(getByText('6 quiet sessions · nothing was asked')).toBeTruthy()
+    expect(queryByText('6 quiet sessions · nothing was asked')).toBeNull()
+    expect(queryByTestId('quiet-tail')).toBeNull()
     expect(getByTestId('conversation-row-real')).toBeTruthy()
-    expect(queryByTestId('conversation-row-n0')).toBeNull()
-    const data = getByTestId('now-list-scroll').props.data as { kind: string }[]
-    expect(data[data.length - 1].kind).toBe('quietTail')
-
-    fireEvent.press(getByTestId('quiet-tail'))
-    expect(useQuietTailStore.getState().entries.map((e) => e.item.item.id)).toEqual(['n0', 'n1', 'n2', 'n3', 'n4', 'n5'])
+    for (let i = 0; i < 6; i += 1) expect(getByTestId(`conversation-row-n${i}`)).toBeTruthy()
   })
 
   it('keeps Needs you above every server group when two servers are active', async () => {
@@ -268,5 +260,53 @@ describe('NowList', () => {
     const onNewSession = jest.fn()
     const { getByTestId } = await renderList([], 'state', { onNewSession })
     expect(getByTestId('empty-state-action')).toBeTruthy()
+  })
+
+  it('puts a failure panel on a down server and keeps the other host healthy', async () => {
+    useServersStore.setState({
+      activeServerIds: ['server-1', 'server-2'],
+      servers: {
+        'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+        'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+    useServerFetchStatusStore.getState().recordFailure('server-1', new Error('offline'))
+    try {
+      const older1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
+      const older2 = asConv(conversation({ id: 'c2', serverId: 'server-2', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 1000)
+      const { getByTestId, queryByTestId } = await renderList([older1, older2])
+      expect(getByTestId('server-failure-server-1')).toBeTruthy()
+      expect(getByTestId('server-header-retry-server-1')).toBeTruthy()
+      expect(queryByTestId('server-failure-server-2')).toBeNull()
+      expect(queryByTestId('server-offline-banner')).toBeNull()
+      expect(getByTestId('conversation-row-c1')).toBeTruthy()
+    } finally {
+      useServerFetchStatusStore.getState().reset()
+      useServersStore.setState({ activeServerIds: [], servers: {} })
+    }
+  })
+
+  it('does not paint per-server failure panels when every host is down', async () => {
+    useServersStore.setState({
+      activeServerIds: ['server-1', 'server-2'],
+      servers: {
+        'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+        'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+    useServerFetchStatusStore.getState().recordFailure('server-1', new Error('offline'))
+    useServerFetchStatusStore.getState().recordFailure('server-2', new Error('offline'))
+    try {
+      const older1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
+      const older2 = asConv(conversation({ id: 'c2', serverId: 'server-2', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 1000)
+      const { getByTestId, queryByTestId } = await renderList([older1, older2])
+      expect(queryByTestId('server-failure-server-1')).toBeNull()
+      expect(queryByTestId('server-failure-server-2')).toBeNull()
+      expect(getByTestId('conversation-row-c1')).toBeTruthy()
+      expect(getByTestId('now-list-scroll')).toBeTruthy()
+    } finally {
+      useServerFetchStatusStore.getState().reset()
+      useServersStore.setState({ activeServerIds: [], servers: {} })
+    }
   })
 })

@@ -10,7 +10,8 @@
     "placeholder": "למשל, תיקון באג באימות"
   },
   "slowLoading": {
-    "sessions": "אחזור הסשנים אורך יותר מהצפוי.\nרק עוד רגע…",
+    "sessionsTitle": "אחזור הסשנים אורך יותר מהצפוי.",
+    "sessionsMessage": "הרשימה תתמלא כשהשרת יענה.",
     "detailTitle": "פרטי הסשן מתעכבים…",
     "detailMessage": "מביאים את הפרטים — זה לא אמור לקחת עוד הרבה זמן."
   },
@@ -25,14 +26,13 @@
   "list": {
     "empty": "אין סשנים",
     "emptySubtitle": "התחילו סשן Claude Code או Codex\nכדי לראות אותו כאן",
-    "allServersOffline": "לא ניתן להתחבר לשרתים שלך",
-    "allServersOfflineSubtitle": "בדקו שהטלפון יכול להגיע לכתובות השרתים, ואז נסו שוב או הציגו פרטים.",
+    "allServersOffline": "לא ניתן להגיע לאף אחד מהשרתים שלך",
+    "allServersOfflineSubtitle": "הסשנים למטה עשויים להיות לא מעודכנים.",
     "noResults": "אין תוצאות",
     "noResultsSubtitle": "שום דבר לא התאים ל-\"{{query}}\"",
     "serverEmpty": "אין סשנים בשרת זה",
     "serverEmptySubtitle": "התחל סשן כאן או החלף שרת.",
     "serverOffline": "השרת לא זמין",
-    "serverOfflineSubtitle": "מוצגים שרתים אחרים. נסה שוב כשהמארח יחזור.",
     "serverWarming": "השרת מתחמם",
     "serverWarmingSubtitle": "ההיסטוריה תופיע כשהאינדוקס יסתיים.",
     "serverNeedsUpgrade": "השרת דורש עדכון",
@@ -178,17 +178,11 @@
     "worktree": "עץ העבודה נעלם — אי אפשר להמשיך"
   },
   "row": {
-    "quietTail_one": "סשן שקט אחד · לא נשאל דבר",
-    "quietTail_two": "שני סשנים שקטים · לא נשאל דבר",
-    "quietTail_other": "{{count}} סשנים שקטים · לא נשאל דבר",
     "waitingFor": "ממתין {{elapsed}}",
     "open": "פתח"
   },
   "layout": {
     "now": "עכשיו",
     "projects": "פרויקטים"
-  },
-  "quiet": {
-    "screenTitle": "סשנים שקטים"
   }
 }

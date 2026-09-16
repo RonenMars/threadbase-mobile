@@ -540,8 +540,4 @@ export const font = {
 
 export const TABLET_BREAKPOINT = 768
 
-export const brand = {
-  claude: '#E8622A',
-  codex: '#7B5EA7',
-  cursor: '#3D8BFF',
-} as const
+export { PROVIDER_COLOR as brand } from './providers'
