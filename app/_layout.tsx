@@ -467,10 +467,6 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
         options={{ title: t('sessions:manageFavorites.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
-        name="quiet-sessions"
-        options={{ title: t('sessions:quiet.screenTitle'), headerShown: true }}
-      />
-      <Stack.Screen
         name="help-feedback"
         options={{ title: i18n.t('feedback:screenTitle'), headerShown: true }}
       />
