@@ -325,6 +325,10 @@ export function FilterSortSheet({
       backgroundStyle={[styles.sheetBg, isGlass && styles.sheetBgGlass]}
       backgroundComponent={glassBackground}
       handleIndicatorStyle={styles.handle}
+      // Hub chrome (zIndex 2) and the FAB (zIndex 2 / elevation 8) sit above a
+      // sheet with no stacking value; without this the Now|Projects bar and
+      // "+ New session" pill paint over the drawer when it expands.
+      containerStyle={styles.sheetContainer}
     >
       <View style={styles.flex}>
         {isEditingOrder ? (
@@ -366,6 +370,8 @@ export function FilterSortSheet({
 function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
   return StyleSheet.create({
     flex: { flex: 1 },
+    // Above hub chrome (2) and FAB (2 / elevation 8); below splash overlays.
+    sheetContainer: { zIndex: 10, elevation: 10 },
     sheetBg: { backgroundColor: theme.bg.secondary },
     sheetBgGlass: { backgroundColor: 'transparent' },
     handle: { backgroundColor: theme.border },
