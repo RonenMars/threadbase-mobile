@@ -1,6 +1,10 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native'
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet'
 import { NestableScrollContainer } from 'react-native-draggable-flatlist'
 import { Check, LockSimple, LockSimpleOpen, Gear } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -46,11 +50,12 @@ interface Props {
   resultCount: number
 }
 
-const SNAP_POINTS = ['65%', '90%']
 const ORDER_OPTIONS: readonly SortBy[] = ['state', 'lastActivity', 'projectName']
 const WITHIN_OPTIONS: readonly ActiveWithin[] = ['any', 'today', '7d', '30d']
 const DEFAULT_ORDER: SortBy = 'state'
 const DEFAULT_DIRECTION: SortOrder = 'desc'
+/** Cap so a long Servers list still scrolls instead of covering the whole screen. */
+const MAX_SHEET_HEIGHT_RATIO = 0.9
 
 function getProviderLabel(provider: ProviderName, t: TFunction<['servers', 'settings', 'sessions']>): string {
   switch (providerLabelKey(provider)) {
@@ -95,6 +100,8 @@ export function FilterSortSheet({
   const isGlass = useIsGlass()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { height: windowHeight } = useWindowDimensions()
+  const maxDynamicContentSize = Math.round(windowHeight * MAX_SHEET_HEIGHT_RATIO)
   const glassBackground = useGlassSheetBackground()
   const { t, i18n } = useTranslation(['servers', 'settings', 'sessions'])
   const { t: tSessions } = useTranslation('sessions')
@@ -134,6 +141,32 @@ export function FilterSortSheet({
 
   const eyebrow = (text: string) => text.toLocaleUpperCase(i18n.language)
   const primaryLabel = noResults ? t('servers:filter.noResults') : t('servers:filter.showResults', { count: resultCount })
+
+  // Footer rides in the scroll content so a short filter list does not leave a
+  // dead band above a sheet-pinned action row (the old 65% snap + flex fill).
+  const footer = (
+    <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
+      <TouchableOpacity
+        style={[styles.resetButton, atDefault && styles.resetButtonDisabled]}
+        onPress={handleReset}
+        disabled={atDefault}
+        accessibilityRole="button"
+        testID="filter-reset"
+      >
+        <Text style={styles.resetText}>{t('servers:filter.resetDefaults')}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.applyButton, noResults && styles.applyButtonDisabled]}
+        onPress={onClose}
+        disabled={noResults}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: noResults }}
+        testID="filter-apply"
+      >
+        <Text style={[styles.applyText, noResults && styles.applyTextDisabled]} numberOfLines={1}>{primaryLabel}</Text>
+      </TouchableOpacity>
+    </View>
+  )
 
   const sheetContent = (
     <>
@@ -317,7 +350,8 @@ export function FilterSortSheet({
 
   return (
     <BottomSheet
-      snapPoints={SNAP_POINTS}
+      enableDynamicSizing
+      maxDynamicContentSize={maxDynamicContentSize}
       index={0}
       enablePanDownToClose={!isEditingOrder}
       onClose={onClose}
@@ -330,52 +364,33 @@ export function FilterSortSheet({
       // "+ New session" pill paint over the drawer when it expands.
       containerStyle={styles.sheetContainer}
     >
-      <View style={styles.flex}>
-        {isEditingOrder ? (
+      {isEditingOrder ? (
+        // NestableScrollContainer does not report size to the sheet; wrap so
+        // dynamic sizing still measures the reorder layout.
+        <BottomSheetView>
           <NestableScrollContainer contentContainerStyle={styles.content} testID="filter-sort-sheet">
             {sheetContent}
+            {footer}
           </NestableScrollContainer>
-        ) : (
-          <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
-            {sheetContent}
-          </BottomSheetScrollView>
-        )}
-        {/* Sticky footer: a peer Reset and one primary action that always says what it keeps. */}
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-          <TouchableOpacity
-            style={[styles.resetButton, atDefault && styles.resetButtonDisabled]}
-            onPress={handleReset}
-            disabled={atDefault}
-            accessibilityRole="button"
-            testID="filter-reset"
-          >
-            <Text style={styles.resetText}>{t('servers:filter.resetDefaults')}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.applyButton, noResults && styles.applyButtonDisabled]}
-            onPress={onClose}
-            disabled={noResults}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: noResults }}
-            testID="filter-apply"
-          >
-            <Text style={[styles.applyText, noResults && styles.applyTextDisabled]} numberOfLines={1}>{primaryLabel}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        </BottomSheetView>
+      ) : (
+        <BottomSheetScrollView contentContainerStyle={styles.content} testID="filter-sort-sheet">
+          {sheetContent}
+          {footer}
+        </BottomSheetScrollView>
+      )}
     </BottomSheet>
   )
 }
 
 function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
   return StyleSheet.create({
-    flex: { flex: 1 },
     // Above hub chrome (2) and FAB (2 / elevation 8); below splash overlays.
     sheetContainer: { zIndex: 10, elevation: 10 },
     sheetBg: { backgroundColor: theme.bg.secondary },
     sheetBgGlass: { backgroundColor: 'transparent' },
     handle: { backgroundColor: theme.border },
-    content: { padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xl },
+    content: { padding: spacing.md, gap: spacing.lg, paddingBottom: 0 },
     titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
     titleActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -441,7 +456,6 @@ function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
     footer: {
       flexDirection: 'row',
       gap: spacing.sm + 2,
-      paddingHorizontal: spacing.md,
       paddingTop: spacing.md,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: theme.border,
