@@ -1,9 +1,9 @@
 {
   "meta": {
     "id": "conv-111",
-    "project_name": "Initial setup",
-    "project_path": "/home/user/my-project",
-    "git_branch": "main",
+    "project_name": "storefront",
+    "project_path": "/workspace/northstar-commerce/apps/storefront",
+    "git_branch": "release/2026-09-checkout",
     "message_count": 2,
     "last_updated_at": "2026-05-01T10:00:00.000Z"
   },
@@ -13,14 +13,14 @@
       "role": "user",
       "message_index": 0,
       "timestamp": "2026-05-01T10:00:00.000Z",
-      "text": "Hello from the historical session."
+      "text": "Can you summarize the checkout retry telemetry before the release?"
     },
     {
       "uuid": "msg-2",
       "role": "assistant",
       "message_index": 1,
       "timestamp": "2026-05-01T10:00:30.000Z",
-      "text": "Hi there. This is the assistant reply."
+      "text": "The retry dashboard is ready and the rollback path is documented."
     }
   ],
   "message_pagination": {

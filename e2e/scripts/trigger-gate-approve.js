@@ -15,8 +15,8 @@ const response = http.request(`${mockUrl}/__test__/gate`, {
   headers: { 'Content-Type': 'application/json', Authorization: 'Bearer mock-key-123' },
   body: JSON.stringify({
     sessionId: 'session-abc123',
-    prompt: 'Merge this pull request?',
-    detail: 'PR #482 → main\nAll checks green',
+    prompt: 'Approve the release branch for production?',
+    detail: 'release/2026-09-checkout → production\nCanary checks and rollback plan verified',
   }),
 })
 if (response.status !== 200) {

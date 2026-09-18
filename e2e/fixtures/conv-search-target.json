@@ -1,8 +1,8 @@
 {
-  "query": "wombat",
+  "query": "idempotency",
   "message_index": 210,
   "uuid": "uuid-210",
-  "snippet": "…set the wombat timeout for the retry loop?",
+  "snippet": "…does the idempotency key survive the ledger retry path?",
   "match_indexes": [
     15,
     210

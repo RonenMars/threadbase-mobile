@@ -2,12 +2,12 @@
   "meta": {
     "id": "conv-search-anchor",
     "profile_id": "default",
-    "project_name": "Search anchor e2e fixture",
-    "project_path": "/home/user/search-anchor-fixture",
+    "project_name": "ledger-api",
+    "project_path": "/workspace/helios-payments/services/ledger-api",
     "last_updated_at": "2026-05-20T11:00:00.000Z",
     "message_count": 250,
-    "git_branch": "main",
-    "last_prompt": "Where did we set the wombat timeout for the retry loop?"
+    "git_branch": "feat/idempotent-reconciliation",
+    "last_prompt": "Where does the idempotency key survive the ledger retry path?"
   },
   "messages": [
     {
@@ -210,11 +210,11 @@
       "uuid": "uuid-15",
       "role": "assistant",
       "timestamp": "2026-05-20T10:00:15.000Z",
-      "text": "The wombat mascot art lives in assets/brand, next to the retry docs.",
+      "text": "The idempotency middleware is configured in services/ledger-api/src/retry/reconcile.ts.",
       "content": [
         {
           "type": "text",
-          "text": "The wombat mascot art lives in assets/brand, next to the retry docs."
+          "text": "The idempotency middleware is configured in services/ledger-api/src/retry/reconcile.ts."
         }
       ]
     },
@@ -2745,11 +2745,11 @@
       "uuid": "uuid-210",
       "role": "user",
       "timestamp": "2026-05-20T10:03:30.000Z",
-      "text": "Where did we set the wombat timeout for the retry loop?",
+      "text": "Where does the idempotency key survive the ledger retry path?",
       "content": [
         {
           "type": "text",
-          "text": "Where did we set the wombat timeout for the retry loop?"
+          "text": "Where does the idempotency key survive the ledger retry path?"
         }
       ]
     },

@@ -10,9 +10,6 @@
 # server's root row.
 #
 # Requires: mock server on BOTH ports — MOCK_PORTS=7071,7072 node e2e/mock-server.js
-# Seed the mock token onto the booted simulator pasteboard before the flow
-# (the API Key field is filled via server-form-paste-key, not inputText):
-#   printf 'mock-key-123' | xcrun simctl pbcopy <udid>
 # Usage: node scripts/record-simulator-flow.js e2e/promo_screenshots_multi_machine.yaml
 
 appId: com.ronenmars.threadbase
@@ -45,7 +42,7 @@ appId: com.ronenmars.threadbase
 
 - runFlow:
     when:
-      notVisible: ".*localhost:7072.*"
+      notVisible: "http://localhost:7072"
     commands:
       - tapOn: ".*Add Server"
 
@@ -66,22 +63,19 @@ appId: com.ronenmars.threadbase
 
       - waitForAnimationToEnd
 
-      # The paste-key button fills API Key without focusing the text field.
-      # Seed the mock token onto the simulator pasteboard first:
-      #   printf 'mock-key-123' | xcrun simctl pbcopy <udid>
+      # Typed entry is deterministic on fresh iOS simulators. The pasteboard
+      # permission sheet can acknowledge a paste without filling this field.
+      - scrollUntilVisible:
+          element:
+            id: "server-edit-key-input"
+          direction: DOWN
+
       - tapOn:
-          id: "server-form-paste-key"
+          id: "server-edit-key-input"
 
-      - extendedWaitUntil:
-          visible: "Allow Paste"
-          timeout: 3000
-          optional: true
+      - inputText: "mock-key-123"
 
-      - runFlow:
-          when:
-            visible: "Allow Paste"
-          commands:
-            - tapOn: "Allow Paste"
+      - pressKey: Enter
 
       - waitForAnimationToEnd
 
@@ -132,7 +126,7 @@ appId: com.ronenmars.threadbase
           timeout: 3000
 
 - extendedWaitUntil:
-    visible: ".*localhost:7072.*"
+    visible: "http://localhost:7072"
     timeout: 15000
 
 # --- Back to the hub, then the Projects layout ------------------------------

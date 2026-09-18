@@ -1,8 +1,8 @@
 {
   "meta": {
     "id": "conv-codex-1",
-    "project_name": "Codex task",
-    "project_path": "/home/user/codex-project",
+    "project_name": "deployments",
+    "project_path": "/workspace/atlas-platform/infra/deployments",
     "message_count": 2,
     "last_updated_at": "2026-06-18T20:22:04.000Z",
     "provider": "codex-cli",
@@ -14,14 +14,14 @@
       "role": "user",
       "message_index": 0,
       "timestamp": "2026-06-18T20:22:00.000Z",
-      "text": "Write a hello world in Python."
+      "text": "Validate the production manifest before the regional rollout."
     },
     {
       "uuid": "codex-msg-2",
       "role": "assistant",
       "message_index": 1,
       "timestamp": "2026-06-18T20:22:04.000Z",
-      "text": "print('Hello, world!')"
+      "text": "The manifest schema passes validation and the canary target is configured."
     }
   ],
   "message_pagination": {
