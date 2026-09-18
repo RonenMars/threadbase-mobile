@@ -15,7 +15,7 @@ import { useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { Message, MessageContent } from '@/types/api'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
-import type { RtlStyleKit } from '@/lib/rtl'
+import { layoutDirectionStyle, type RtlStyleKit } from '@/lib/rtl'
 
 function useBubbleStyles() {
   return useThemedStyles(makeStyles)
@@ -425,7 +425,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       borderRadius: 3,
     },
     codeBlock: {
-      direction: 'ltr',
+      ...layoutDirectionStyle('ltr'),
       backgroundColor: theme.bg.primary,
       borderRadius: radius.sm,
       overflow: 'hidden',

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { PagerDots } from './components/PagerDots'
 import { colors, fonts } from './theme'
+import { layoutDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   index: number
@@ -68,13 +69,13 @@ export function OnboardingShell({
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <View
         testID="onboarding-shell-chrome"
-        style={[styles.chrome, { direction: localeDirection }]}
+        style={[styles.chrome, layoutDirectionStyle(localeDirection)]}
       >
         {showBack ? (
           <Pressable
             testID="onboarding-shell-back"
             onPress={onBack}
-            style={[styles.chromeBtn, { direction: localeDirection }]}
+            style={[styles.chromeBtn, layoutDirectionStyle(localeDirection)]}
             hitSlop={10}
           >
             {localeDirection === 'rtl' ? (
@@ -103,7 +104,7 @@ export function OnboardingShell({
           <Pressable
             testID="onboarding-shell-skip"
             onPress={onSkip}
-            style={[styles.chromeBtn, { direction: localeDirection }]}
+            style={[styles.chromeBtn, layoutDirectionStyle(localeDirection)]}
             hitSlop={10}
           >
             <Text style={styles.chromeSkip}>{getSkipLabel(skipLabel, t)}</Text>

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
+import { Platform, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native'
 
 const THRESHOLD = 6
 const TOP = 16
@@ -10,6 +10,9 @@ export function useHideOnScrollDown() {
   const [hidden, setHidden] = useState(false)
 
   const onScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    // A desktop window has room for the control, and a mouse user has no
+    // scroll-up gesture habit to get it back — keep it put on web.
+    if (Platform.OS === 'web') return
     const y = event.nativeEvent.contentOffset.y
     const dy = y - lastY.current
     lastY.current = y
