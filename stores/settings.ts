@@ -219,7 +219,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         // a second hydrate() before the first assignment finishes persisting)
         // > a fresh 40/60 assignment. EXPO_PUBLIC_FORCE_DIAGNOSTICS_VARIANT=1
         // pins the treatment arm so the onboarding toggle can be exercised on a
-        // device without reinstalling until the 40% draw lands.
+        // device without reinstalling until the 40% draw lands. To show the
+        // consent UI after that assignment is already persisted, use
+        // EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI=1 in a __DEV__ bundle
+        // (render-time, not persist-time; inert in Release).
         onboardingDiagnosticsExperimentVariant:
           parsed.onboardingDiagnosticsExperimentVariant ??
           state.onboardingDiagnosticsExperimentVariant ??
