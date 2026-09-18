@@ -2,7 +2,7 @@ import 'react-native-get-random-values'
 import '../global.css'
 import React, { useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { AccessibilityInfo, Platform, Pressable, View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native'
+import { AccessibilityInfo, Platform, Pressable, View, Text, TouchableOpacity, StyleSheet, Linking, useWindowDimensions } from 'react-native'
 import { useBiometricLock } from '@/hooks/useBiometricLock'
 import {
   Stack,
@@ -313,8 +313,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds])
 
-  // Handle notification taps
+  // Handle notification taps (native only — expo-notifications has no web API)
   useEffect(() => {
+    if (Platform.OS === 'web') return
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const target = sessionRouteFromNotificationData(
         response.notification.request.content.data as { sessionId?: string; serverId?: string },
@@ -338,10 +339,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
     let cancelled = false
     void (async () => {
-      const [url, response] = await Promise.all([
-        Linking.getInitialURL(),
-        Notifications.getLastNotificationResponseAsync(),
-      ])
+      const url = await Linking.getInitialURL()
+      const response =
+        Platform.OS === 'web' ? null : await Notifications.getLastNotificationResponseAsync()
       if (cancelled) return
       const target = resolveColdStartRoute({
         url,
@@ -505,6 +505,44 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
   return <NavThemeProvider value={navTheme}>{stack}</NavThemeProvider>
 }
 
+// Web only: the layout is phone-first, so on a wide browser window it keeps a
+// tablet-width card centered instead of stretching rows and the FAB edge to edge.
+// Narrower windows get the plain full-bleed phone layout.
+const WEB_MAX_CONTENT_WIDTH = 768
+const WEB_FRAME_GUTTER = 24
+
+function WebFrame({ children }: { children: React.ReactNode }) {
+  const theme = useTheme()
+  const { width } = useWindowDimensions()
+  if (Platform.OS !== 'web') return <>{children}</>
+  const framed = width > WEB_MAX_CONTENT_WIDTH
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        backgroundColor: theme.bg.secondary,
+        paddingVertical: framed ? WEB_FRAME_GUTTER : 0,
+      }}
+    >
+      <View
+        style={{
+          flex: 1,
+          width: '100%',
+          maxWidth: WEB_MAX_CONTENT_WIDTH,
+          backgroundColor: theme.bg.primary,
+          borderWidth: framed ? StyleSheet.hairlineWidth : 0,
+          borderColor: theme.border,
+          borderRadius: framed ? 16 : 0,
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </View>
+    </View>
+  )
+}
+
 function ThemedStatusBar() {
   const theme = useTheme()
   return <StatusBar style={theme.colorMode === 'light' ? 'dark' : 'light'} />
@@ -552,6 +590,7 @@ function RootLayout() {
       <RootErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
       <DirectionRoot>
+        <WebFrame>
         <KeyboardProvider>
         <SafeAreaProvider>
           {!splashDone && <SplashAnimation variant={introVariant ?? 'hold'} onComplete={handleSplashComplete} />}
@@ -579,6 +618,7 @@ function RootLayout() {
           </PersistQueryClientProvider>
         </SafeAreaProvider>
         </KeyboardProvider>
+        </WebFrame>
       </DirectionRoot>
       </GestureHandlerRootView>
       </RootErrorBoundary>

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite'
 import { View } from 'react-native'
 
+import { layoutDirectionStyle } from '@/lib/rtl'
 import { SplashAnimation } from './SplashAnimation'
 
 const meta: Meta<typeof SplashAnimation> = {
@@ -8,7 +9,7 @@ const meta: Meta<typeof SplashAnimation> = {
   component: SplashAnimation,
   decorators: [
     (Story) => (
-      <View style={{ direction: 'rtl', flex: 1, minHeight: 700 }}>
+      <View style={[layoutDirectionStyle('rtl'), { flex: 1, minHeight: 700 }]}>
         <Story />
       </View>
     ),

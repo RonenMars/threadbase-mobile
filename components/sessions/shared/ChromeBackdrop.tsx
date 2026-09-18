@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native'
+import { Platform, StyleSheet, View, type ViewStyle } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { GlassView as NativeGlassView, isLiquidGlassAvailable } from 'expo-glass-effect'
 import { useReduceTransparency } from '@/hooks/useAccessibilitySettings'
@@ -27,6 +27,7 @@ export function ChromeBackdrop() {
           testID="chrome-glass"
         />
       ) : null}
+      {Platform.OS === 'web' ? <View style={[StyleSheet.absoluteFill, webBlur]} testID="chrome-web-blur" /> : null}
       <LinearGradient
         colors={[theme.bg.primary, `${theme.bg.primary}00`]}
         style={StyleSheet.absoluteFill}
@@ -36,6 +37,11 @@ export function ChromeBackdrop() {
     </View>
   )
 }
+
+// Web has no Liquid Glass, and the scrim alone fades to clear, so rows read
+// sharp through the tabs. CSS backdrop blur stands in for the glass; RN's
+// ViewStyle doesn't declare it, react-native-web passes it through.
+const webBlur = { backdropFilter: 'blur(16px)' } as ViewStyle
 
 const styles = StyleSheet.create({
   hairline: {

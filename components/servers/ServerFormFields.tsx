@@ -5,7 +5,7 @@ import { Eye, EyeSlash, CaretDown, ClipboardText } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
-import { ltrContentStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
+import { ltrContentStyle, layoutDirectionStyle, textDirectionStyle, useAppDirection } from '@/lib/rtl'
 
 export function splitUrl(full: string): { protocol: 'http' | 'https'; host: string } {
   if (full.startsWith('https://')) return { protocol: 'https', host: full.slice(8).replace(/\/+$/, '') }
@@ -241,7 +241,7 @@ function makeStyles(theme: Theme) {
     },
     urlRow: {
       flexDirection: 'row',
-      direction: 'ltr',
+      ...layoutDirectionStyle('ltr'),
       alignItems: 'flex-start',
       gap: spacing.sm,
       zIndex: 1,
@@ -290,7 +290,7 @@ function makeStyles(theme: Theme) {
     },
     apiKeyRow: {
       flexDirection: 'row',
-      direction: 'ltr',
+      ...layoutDirectionStyle('ltr'),
       alignItems: 'center',
       gap: spacing.sm,
     },

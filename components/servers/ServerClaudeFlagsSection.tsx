@@ -16,7 +16,7 @@ import { useClaudeFlags, useUpdateClaudeFlags } from '@/hooks/useClaudeFlags'
 import { claudeFlagValueRisk } from '@/types/api'
 import type { ClaudeFlagDefinition, ClaudeFlagValue, ClaudeFlagValues } from '@/types/api'
 import { confirmDangerousChange } from '@/utils/confirmDangerousChange'
-import type { RtlStyleKit } from '@/lib/rtl'
+import { layoutDirectionStyle, type RtlStyleKit } from '@/lib/rtl'
 
 interface Props {
   serverId: string
@@ -171,7 +171,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
                 testID={`claude-flag-${def.id}`}
               />
             ) : def.valueType === 'enum' ? (
-              <View style={[styles.enumRow, { direction: 'ltr' }]}>
+              <View style={[styles.enumRow, layoutDirectionStyle('ltr')]}>
                 {(def.enumValues ?? []).map((option) => {
                   const selected = value === option
                   return (
@@ -196,7 +196,7 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
               // shared with the per-session model sheet.
               <View style={styles.modelField}>
                 {stringInput}
-                <View style={[styles.modelAliasRow, { direction: 'ltr' }]}>
+                <View style={[styles.modelAliasRow, layoutDirectionStyle('ltr')]}>
                   {MODEL_ALIASES.map((alias) => {
                     const selected = value === alias
                     return (

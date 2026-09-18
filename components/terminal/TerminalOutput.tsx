@@ -17,7 +17,7 @@ import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
 import { spacing, type Theme } from '@/constants/theme'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
-import { ltrContentStyle, type RtlStyleKit } from '@/lib/rtl'
+import { ltrContentStyle, layoutDirectionStyle, type RtlStyleKit } from '@/lib/rtl'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { TerminalLine } from '@/hooks/useTerminalStream'
 import { isCodexTrustQuitOption, parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   lineRow: {
-    direction: 'ltr',
+    ...layoutDirectionStyle('ltr'),
     flexDirection: 'row',
     paddingHorizontal: 8,
     paddingVertical: 1,

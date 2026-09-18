@@ -22,6 +22,7 @@ import { classifyPairCredential, parsePairUri, type ExchangeResult } from '@/ser
 import { isServerUrlAlreadyAdded } from '@/stores/servers'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { isValidHttpServerUrl } from '@/lib/serverUrl'
+import { layoutDirectionStyle, textDirectionStyle as makeTextDirectionStyle } from '@/lib/rtl'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { TerminalCard } from '../components/TerminalCard'
 import { InfoTooltip } from '../components/InfoTooltip'
@@ -203,7 +204,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     <TouchableOpacity
       testID="onboarding-connect-back-to-choose"
       onPress={() => setMode('choose')}
-      style={[styles.linkBtnTop, { direction: localeDirection }]}
+      style={[styles.linkBtnTop, layoutDirectionStyle(localeDirection)]}
     >
       {localeDirection === 'rtl' ? (
         <ArrowRight
@@ -230,7 +231,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     return (
       <View
         testID="onboarding-connect-root"
-        style={[styles.root, { direction: localeDirection }]}
+        style={[styles.root, layoutDirectionStyle(localeDirection)]}
       >
         <Text style={[styles.eyebrow, textDirectionStyle]}>{t('connect.eyebrow')}</Text>
         <Text style={[styles.headline, textDirectionStyle]}>{t('connect.headline')}</Text>
@@ -245,7 +246,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           accessibilityRole="button"
           accessibilityLabel={t('connect.scanQr')}
         >
-          <View style={[styles.modeCardHeader, { direction: localeDirection }]}>
+          <View style={[styles.modeCardHeader, layoutDirectionStyle(localeDirection)]}>
             <Text style={[styles.modeCardTitle, textDirectionStyle]}>{t('connect.scanQr')}</Text>
             <Text style={[styles.recommendedBadge, textDirectionStyle]}>{t('connect.recommended')}</Text>
           </View>
@@ -271,7 +272,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     return (
       <View
         testID="onboarding-connect-root"
-        style={[styles.root, { direction: localeDirection }]}
+        style={[styles.root, layoutDirectionStyle(localeDirection)]}
       >
         {backToOptionsControl}
         <Text style={[styles.eyebrow, textDirectionStyle]}>{t('connect.qrEyebrow')}</Text>
@@ -309,8 +310,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     <View style={styles.root}>
     <KeyboardAwareScrollView
       testID="onboarding-connect-root"
-      style={[styles.flex, { direction: localeDirection }]}
-      contentContainerStyle={[styles.rootContent, { direction: localeDirection }]}
+      style={[styles.flex, layoutDirectionStyle(localeDirection)]}
+      contentContainerStyle={[styles.rootContent, layoutDirectionStyle(localeDirection)]}
       keyboardShouldPersistTaps="handled"
       bottomOffset={16}
     >
@@ -460,8 +461,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 22, paddingTop: 4 },
   rootContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 4 },
-  textLtr: { direction: 'ltr', writingDirection: 'ltr', textAlign: 'auto' },
-  textRtl: { direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto' },
+  textLtr: makeTextDirectionStyle('ltr'),
+  textRtl: makeTextDirectionStyle('rtl'),
   eyebrow: {
     color: colors.amber400,
     fontFamily: fonts.mono,
