@@ -256,6 +256,29 @@ describe('NowList', () => {
     expect(getAllByTestId('history-skeleton', { includeHiddenElements: true })).toHaveLength(2)
   })
 
+  it('does not repeat a live waiting session as an earlier conversation row', async () => {
+    const id = 'f67ed637-2e11-4591-ba72-3ad6331e85f0'
+    const name = 'Check do we have an endpoint to kill a session'
+    const waiting = session({
+      id,
+      conversationId: id,
+      status: 'waiting_input',
+      ptyAttached: true,
+      lifecycle: 'attached',
+      sessionName: name,
+    })
+    const transcript = conversation({ id, sessionName: name, title: name })
+    const { getByTestId, queryByTestId, getByText, queryByText } = await renderList([
+      asItem(waiting, NOW - 8 * 60_000),
+      asConv(transcript, NOW - 6 * 60_000),
+    ])
+
+    expect(getByTestId(`session-row-${id}`)).toBeTruthy()
+    expect(queryByTestId(`conversation-row-${id}`)).toBeNull()
+    expect(getByText('NEEDS YOU · 1')).toBeTruthy()
+    expect(queryByText('EARLIER TODAY')).toBeNull()
+  })
+
   it('offers New session on an empty list', async () => {
     const onNewSession = jest.fn()
     const { getByTestId } = await renderList([], 'state', { onNewSession })
