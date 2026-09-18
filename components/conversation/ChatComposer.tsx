@@ -29,7 +29,7 @@ import {
 import type { UploadedFile } from '@/services/uploads'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { layoutDirectionStyle, ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 export interface ChatComposerProps {
   value: string
@@ -368,7 +368,7 @@ export function ChatComposer({
 function makeStyles(theme: Theme) {
   // WhatsApp-style chrome: iOS keeps send/mic on the physical right; Android
   // inherits RTL so they sit on the left. TextInput still uses `inputDirection`.
-  const iosComposerChrome = Platform.OS === 'ios' ? ({ direction: 'ltr' } as const) : {}
+  const iosComposerChrome = Platform.OS === 'ios' ? layoutDirectionStyle('ltr') : {}
 
   return StyleSheet.create({
     flex: { flex: 1 },
@@ -435,7 +435,7 @@ function makeStyles(theme: Theme) {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    chipsRow: { flexDirection: 'row', direction: 'ltr', gap: spacing.xs, paddingVertical: spacing.xs },
+    chipsRow: { flexDirection: 'row', ...layoutDirectionStyle('ltr'), gap: spacing.xs, paddingVertical: spacing.xs },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',

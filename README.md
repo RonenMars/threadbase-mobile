@@ -72,7 +72,7 @@ npm run android
 
 For physical devices or off-network dev, see `docs/dev-on-physical-device-ios.md`, `docs/dev-on-physical-device-android.md`, and `docs/remote-dev-tunnel.md`.
 
-**Web (early spike, not full parity):** `npx expo start --web`. See [docs/expo-web-support.md](docs/expo-web-support.md) for status and known blockers.
+**Web (early spike, not full parity):** `npm run web`. See [docs/expo-web-support.md](docs/expo-web-support.md) for status and known blockers.
 
 **Component catalog (laptop, Chrome):** `npm run storybook` opens an isolated-component
 Storybook at `http://localhost:6006` via Vite — unrelated to the Web target above. See

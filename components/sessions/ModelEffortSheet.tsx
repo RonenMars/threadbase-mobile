@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { EFFORT_LEVELS, MODEL_ALIASES, MODEL_NAME_RE } from '@/constants/models'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { layoutDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 import { isRouteMissingError, isUnsupportedProviderError } from '@/lib/modelEffortSupport'
 import { NetworkError } from '@/services/api-client'
 
@@ -97,7 +97,7 @@ export function ModelEffortSheet({
               placeholderTextColor={theme.text.secondary}
               testID="session-model-input"
             />
-            <View style={[styles.chipRow, { direction: 'ltr' }]}>
+            <View style={[styles.chipRow, layoutDirectionStyle('ltr')]}>
               {MODEL_ALIASES.map((alias) => (
                 <TouchableOpacity
                   key={alias}
@@ -126,7 +126,7 @@ export function ModelEffortSheet({
                 {t('session.effortCurrent', { effort })}
               </Text>
             ) : null}
-            <View style={[styles.chipRow, { direction: 'ltr' }]}>
+            <View style={[styles.chipRow, layoutDirectionStyle('ltr')]}>
               {EFFORT_LEVELS.map((level) => {
                 const selected = (effortDraft ?? effort) === level
                 return (

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Check } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { getSupportedLocaleLabel, isRTLLocale, SUPPORTED_LOCALES } from '@/lib/locale'
-import { localeDirection } from '@/lib/rtl'
+import { blockTextDirectionStyle, layoutDirectionStyle, localeDirection } from '@/lib/rtl'
 import type { SupportedLocale } from '@/lib/locale'
 import { useSettingsStore } from '@/stores/settings'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -54,7 +54,7 @@ export function LanguageStep({ onContinue, busy = false, error }: Props) {
               onBlur={() => setFocusedLocale((focused) => focused === option.code ? null : focused)}
               style={[
                 styles.option,
-                { direction: optionDirection },
+                layoutDirectionStyle(optionDirection),
                 selected && styles.optionSelected,
                 focusedLocale === option.code && styles.optionFocused,
               ]}
@@ -100,8 +100,8 @@ export function LanguageStep({ onContinue, busy = false, error }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 22, paddingTop: 20 },
-  headingLtr: { direction: 'ltr', writingDirection: 'ltr', textAlign: 'auto', width: '100%' },
-  headingRtl: { direction: 'rtl', writingDirection: 'rtl', textAlign: 'auto', width: '100%' },
+  headingLtr: blockTextDirectionStyle('ltr'),
+  headingRtl: blockTextDirectionStyle('rtl'),
   eyebrow: {
     color: colors.blue400,
     fontFamily: fonts.mono,
