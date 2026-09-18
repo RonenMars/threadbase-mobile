@@ -52,6 +52,7 @@ props, so this repo carries no Sentry account details. `app.config.js` forwards
 | `EXPO_PUBLIC_SENTRY_DSN` | `.env` | Runtime DSN the app sends events to. Public by design (not a secret). |
 | `EXPO_PUBLIC_SENTRY_ALLOW_DEV` | `.env` | Optional local QA override. Set to `1` only when you want a development build to transmit Sentry events. |
 | `EXPO_PUBLIC_SENTRY_DEBUG` | `.env` | Optional SDK troubleshooting flag. Set to `1` only when you need verbose Sentry SDK logs in Metro. |
+| `EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI` | `.env` / `.env.local` | Development/QA-only override that forces diagnostics-consent UI surfaces (hub banner + onboarding toggle) to render regardless of the persisted onboarding experiment assignment. It does not enable diagnostics, modify persisted consent, or bypass Sentry transmission gates. Honoured only in a `__DEV__` Metro bundle; production builds ignore it. |
 | `SENTRY_ORG` | `.env` / shell env / EAS env | Org slug. Silences the Expo plugin warning and is used at build time to upload source maps. |
 | `SENTRY_PROJECT` | `.env` / shell env / EAS env | Project slug. Same as `SENTRY_ORG`. |
 | `SENTRY_AUTH_TOKEN` | shell env / EAS env (**sensitive**) | Secret. Authenticates the source-map upload. Never committed. |

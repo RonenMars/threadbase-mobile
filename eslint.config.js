@@ -142,6 +142,7 @@ module.exports = defineConfig([
       "e2e/**/*.{js,ts}",
       "plugins/**/*.{js,ts}",
       "jest.setup.js",
+      "app.config.js",
     ],
     rules: {
       "i18next/no-literal-string": "off",

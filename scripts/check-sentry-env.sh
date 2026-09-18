@@ -45,6 +45,14 @@ case "$APP_ENV" in
       echo "Set them in the build environment, or use APP_ENV=development to skip the source-map upload." >&2
       exit 1
     fi
+    # Defense-in-depth only — the runtime __DEV__ gate in
+    # lib/diagnosticsConsentFlag.ts already makes this inert in a Release
+    # bundle. Printed to stderr so stdout's KEY=value contract stays intact.
+    if [[ "${EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI:-0}" == "1" ]]; then
+      echo "::error::QA diagnostics consent UI override must not be enabled in production" >&2
+      exit 1
+    fi
+    echo "Diagnostics QA UI override: disabled" >&2
     ;;
   *)
     echo "APP_ENV must be 'production' or 'development' (got '$APP_ENV')" >&2
