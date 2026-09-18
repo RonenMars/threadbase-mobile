@@ -18,6 +18,7 @@ import Svg, {
 } from 'react-native-svg'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
+import { isQaForceDiagnosticsConsentUi } from '@/lib/diagnosticsConsentFlag'
 import { useSettingsStore } from '@/stores/settings'
 
 interface Props {
@@ -37,11 +38,15 @@ export function DoneStep({ onEnter, serverHost, serverPort, serverLabel }: Props
   // Onboarding Anonymous Diagnostics experiment (spec §7): only the 40%
   // treatment arm sees the toggle; control gets no prompt at all. Leaving it
   // OFF here is neutral and never suppresses the later post-feedback
-  // suggestion or the Settings control.
+  // suggestion or the Settings control. The __DEV__-only
+  // EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI flag forces the toggle
+  // visible so QA can exercise the prompt without rewriting the persisted
+  // assignment.
   const experimentVariant = useSettingsStore((s) => s.onboardingDiagnosticsExperimentVariant)
   const anonymousDiagnosticsEnabled = useSettingsStore((s) => s.anonymousDiagnosticsEnabled)
   const setAnonymousDiagnosticsEnabled = useSettingsStore((s) => s.setAnonymousDiagnosticsEnabled)
-  const showDiagnosticsToggle = experimentVariant === 'treatment'
+  const showDiagnosticsToggle =
+    experimentVariant === 'treatment' || isQaForceDiagnosticsConsentUi()
 
   const handleDiagnosticsLearnMore = () => {
     Alert.alert(t('done.diagnosticsTitle'), t('done.diagnosticsLearnMoreBody'))
