@@ -44,7 +44,7 @@ import { dominantProvider as findDominantProvider } from '@/lib/providerDominanc
 import { NeedsYouCard } from './NeedsYouCard'
 import { SectionEyebrow, type SectionTone } from './SectionEyebrow'
 import { WorkingCard } from './WorkingCard'
-import { mergedItemMatchesQuery, type MergedItem } from './mergedItems'
+import { mergedItemMatchesQuery, omitConversationsCoveredByLiveSessions, type MergedItem } from './mergedItems'
 
 interface Props {
   items: MergedItem[]
@@ -204,7 +204,7 @@ export const NowList = React.memo(function NowList({
   const entries = useMemo((): Entry[] => {
     const q = searchQuery.trim().toLowerCase()
     const visible = q ? items.filter((it) => mergedItemMatchesQuery(it, q, conversationsFromServer)) : items
-    return visible.map((item) => {
+    return omitConversationsCoveredByLiveSessions(visible).map((item) => {
       const stored = storedNameFor(names, nameOrigins, item.item.serverId, item.item.id)
       if (item.kind === 'session') {
         const presentation = deriveSessionPresentation(item.item)
