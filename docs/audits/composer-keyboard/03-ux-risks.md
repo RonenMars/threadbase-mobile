@@ -3,7 +3,7 @@
 [1. Events and conditions](01-keyboard-events-and-conditions.md) · [2. Interaction scenarios](02-interaction-scenarios.md) · Part 3 of 4 · [4. Refactor proposal](04-refactor-proposal.md)
 
 Every user-visible risk found in parts 1–2, ordered by severity.
-The **Fix** column points to the step in part 4 that removes it.
+The **Fix** column points to the step in part 4 that removes it, as planned after decisions D1–D7 ([answers](keyboard-ux-dilemmas-answers.md)).
 
 **Severity:**
 
@@ -28,8 +28,8 @@ Confidence tags are defined in part 1. **Device** means a screenshot or recordin
 | R3 | iOS: **closing** the keyboard, whether by sending, tapping a message, or switching to the emoji keyboard, also takes the reader to the bottom. Every open scrolls twice. | S2, S7, S32 | iOS | Medium | Often | `keyboardDidChangeFrame` listener (`:397`). RN Android doesn't emit it. iOS posts it for show, hide and height changes. | Code + Lib + OS | P3 |
 | R11 | Typing `/` opens the command list, but the keyboard covers most of it. Only the header and a couple of rows are visible, so they can't see the commands they're filtering. | S20 | iOS | Medium | Often (every slash use) | Full-screen transparent `Modal`, sheet bottom-anchored with `maxHeight: '55%'` and no keyboard avoidance (`SlashCommandBoard.tsx:44-53`, `:127-136`) | Code + OS; Device | P11 (interim: P11a) |
 | R18 | With the raw-keys panel open, tapping the composer makes it float a panel-height above the keyboard while the panel hides behind the keyboard. At rest, there is a double gap (composer safe-area padding above a panel that has none). | S26 | Both | Medium | Sometimes | The panel renders below the live body (`session/[id].tsx:1185`). This breaks `useKeyboardInset`'s "spans to the screen's bottom edge" precondition (`hooks/useKeyboardInset.ts:16`). `RemoteKeyboardControls` has no inset handling. | Code | P8, P12 |
-| R20 | While dictating, the keyboard covers half the screen. Once words appear, the inline mic turns into Send, so there is no way to stop dictation inline. After sending, a late recognition result can **refill the cleared composer** with the old words. | S12, S33 | Both (device) | Medium | Sometimes | Send never calls `voice.stop()` (`useComposerState.ts:112-124`). Continuous mode with a 30 s silence timeout (`useVoiceInput.ts:14`, `:74-81`). The trailing button swaps on `hasContent` (`ChatComposer.tsx:194-227`). | Code | P4 |
-| R21 | There's no clean way to just put the keyboard away and read. No swipe-down; tapping the transcript closes it but also swallows that tap. | S5 | Both | Medium | Often | No `keyboardDismissMode` on the transcript, and the H5 behavior | Code | P1 |
+| R20 | While dictating, the keyboard covers half the screen. Once words appear, the inline mic turns into Send, so there is no way to stop dictation inline. After sending, a late recognition result can **refill the cleared composer** with the old words. | S12, S33 | Both (device) | Medium | Sometimes | Send never calls `voice.stop()` (`useComposerState.ts:112-124`). Continuous mode with a 30 s silence timeout (`useVoiceInput.ts:14`, `:74-81`). The trailing button swaps on `hasContent` (`ChatComposer.tsx:194-227`). | Code | P16, P4 |
+| R21 | There's no clean way to just put the keyboard away and read. No swipe-down; tapping the transcript closes it but also swallows that tap. | S5 | Both | Medium | Often | No `keyboardDismissMode` on the transcript, and the H5 behavior | Code | P1, P10 |
 | R13 | Keyboard behavior after sending depends on how they sent. A plain message closes it. A no-arg slash command leaves it open. An arg command closes it and leaves the composer unfocused. | S7, S10, S11 | Both | Medium | Sometimes | `Keyboard.dismiss()` exists only in `ChatComposer.handleSend` (`:120-124`). The slash paths go through `useComposerState.ts:147-162`. | Code | P4 |
 | R14 | After closing the expanded editor, the arg modal, or the rename or model sheet, they must tap the composer again to keep typing | S11, S22, S24 | Both | Medium | Often | Nothing refocuses the composer on H3, H6 or H7 (part 1) | Code | P5 |
 | R22 | On iOS, going back while typing can show the leave-session dialog with the keyboard still up, covering its buttons | S28 | iOS | Medium | Sometimes | `CriticalDialog` is a centered transparent `Modal` with no keyboard handling (`components/alerts/CriticalDialog.tsx:67-69`). Nothing dismisses the keyboard before it opens. | Code + OS; Device | P5 |
@@ -60,12 +60,12 @@ Confidence tags are defined in part 1. **Device** means a screenshot or recordin
 
 ## 2. Adjacent findings (not keyboard, found on the way)
 
-| ID | Finding | Evidence | Why it matters here |
-|---|---|---|---|
-| A1 | `PromptQueueSheet` is unreachable: nothing sets `queueVisible` to true | grep of `app`, `components`, `hooks` for `setQueueVisible(true` is empty. The only callers pass `false`. | It carries a `@gorhom/bottom-sheet` keyboard config (`keyboardBehavior="extend"`, `PromptQueueSheet.tsx:96-97`). Inside a root that is already keyboard-padded, that config would lift twice if re-enabled. |
-| A2 | Cancelling the slash-arg modal clears the composer text but not the stored draft, so `/cmd` reappears on the next mount | `setInputText('')` at `useComposerState.ts:150`. `clearDraft` runs only in `resetComposer` (`:105-110`). | Draft restore is what R6 relies on |
-| A3 | Dictated text bypasses `handleInputChange`, so it is never saved as a draft and never opens the slash board | `onTranscript: (text) => setInputText(text)` (`useComposerState.ts:70`) | A remount (R4, R5) during dictation loses the dictated text entirely |
-| A4 | The whole composer stack is duplicated per surface: `ChatComposer`, `SlashCommandBoard`, `SlashCommandArgModal`, `PromptQueueSheet`, and a separate `useComposerState` | `LiveConversationView.tsx:339-355`, `:490-532` vs `TerminalView.tsx:153`, `:220-262` | The structural cause of R4, R5 and R6 |
+| ID | Finding | Evidence | Why it matters here | Fix |
+|---|---|---|---|---|
+| A1 | `PromptQueueSheet` is unreachable: nothing sets `queueVisible` to true | grep of `app`, `components`, `hooks` for `setQueueVisible(true` is empty. The only callers pass `false`. | It carries a `@gorhom/bottom-sheet` keyboard config (`keyboardBehavior="extend"`, `PromptQueueSheet.tsx:96-97`). Inside a root that is already keyboard-padded, that config would lift twice if re-enabled. | P18 (deleted, D7) |
+| A2 | Cancelling the slash-arg modal clears the composer text but not the stored draft, so `/cmd` reappears on the next mount | `setInputText('')` at `useComposerState.ts:150`. `clearDraft` runs only in `resetComposer` (`:105-110`). | Draft restore is what R6 relies on | P11 |
+| A3 | Dictated text bypasses `handleInputChange`, so it is never saved as a draft and never opens the slash board | `onTranscript: (text) => setInputText(text)` (`useComposerState.ts:70`) | A remount (R4, R5) during dictation loses the dictated text entirely | P16 |
+| A4 | The whole composer stack is duplicated per surface: `ChatComposer`, `SlashCommandBoard`, `SlashCommandArgModal`, `PromptQueueSheet`, and a separate `useComposerState` | `LiveConversationView.tsx:339-355`, `:490-532` vs `TerminalView.tsx:153`, `:220-262` | The structural cause of R4, R5 and R6 | P9 |
 
 ---
 
