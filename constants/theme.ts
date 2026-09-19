@@ -39,7 +39,7 @@ export const dark = {
   },
   text: {
     primary: '#e6edf3',
-    secondary: '#7d8590',
+    secondary: '#858d97',
     accent: '#58a6ff',
     onAccent: '#0d1117',
     highlight: '#f2cc60',
@@ -113,7 +113,7 @@ export const catppuccin = {
     waiting: '#fab387',
     failed: '#f38ba8',
     completed: '#cba6f7',
-    idle: '#6c7086',
+    idle: '#777b92',
   },
 } as const satisfies Theme
 
@@ -126,7 +126,7 @@ export const nord = {
   },
   text: {
     primary: '#eceff4',
-    secondary: '#4c566a',
+    secondary: '#a7b1c4',
     accent: '#88c0d0',
     onAccent: '#2e3440',
     highlight: '#ebcb8b',
@@ -142,7 +142,7 @@ export const nord = {
     waiting: '#ebcb8b',
     failed: '#bf616a',
     completed: '#88c0d0',
-    idle: '#4c566a',
+    idle: '#818da5',
   },
 } as const satisfies Theme
 
@@ -162,17 +162,17 @@ export const catppuccinLatte = {
     highlight: '#df8e1d',
     onHighlight: '#eff1f5',
     danger: '#d20f39',
-    warning: '#df8e1d',
+    warning: '#b27117',
     success: '#40a02b',
-    beta: '#df8e1d',
+    beta: '#b27117',
   },
   border: '#bcc0cc',
   status: {
     running: '#40a02b',
-    waiting: '#df8e1d',
+    waiting: '#b27117',
     failed: '#d20f39',
     completed: '#8839ef',
-    idle: '#9ca0b0',
+    idle: '#797e94',
   },
 } as const satisfies Theme
 
@@ -186,7 +186,7 @@ export const oneDark = {
   },
   text: {
     primary: '#abb2bf',
-    secondary: '#5c6370',
+    secondary: '#9299a5',
     accent: '#61afef',
     onAccent: '#282c34',
     highlight: '#e5c07b',
@@ -202,7 +202,7 @@ export const oneDark = {
     waiting: '#e5c07b',
     failed: '#e06c75',
     completed: '#61afef',
-    idle: '#5c6370',
+    idle: '#727b8b',
   },
 } as const satisfies Theme
 
@@ -232,7 +232,7 @@ export const oneLight = {
     waiting: '#986801',
     failed: '#e45649',
     completed: '#4078f2',
-    idle: '#a0a1a7',
+    idle: '#888991',
   },
 } as const satisfies Theme
 
@@ -305,7 +305,7 @@ export const solarizedDark = {
   },
   text: {
     primary: '#839496',
-    secondary: '#586e75',
+    secondary: '#859ca3',
     accent: '#268bd2',
     onAccent: '#001b24',
     highlight: '#b58900',
@@ -321,7 +321,7 @@ export const solarizedDark = {
     waiting: '#b58900',
     failed: '#dc322f',
     completed: '#268bd2',
-    idle: '#586e75',
+    idle: '#657e86',
   },
 } as const satisfies Theme
 
@@ -335,23 +335,23 @@ export const solarizedLight = {
   },
   text: {
     primary: '#657b83',
-    secondary: '#93a1a1',
+    secondary: '#5d6b6b',
     accent: '#268bd2',
     onAccent: '#001b24',
     highlight: '#e0b000',
     onHighlight: '#002b36',
     danger: '#dc322f',
-    warning: '#b58900',
+    warning: '#a87f00',
     success: '#859900',
-    beta: '#b58900',
+    beta: '#a87f00',
   },
   border: '#eee8d5',
   status: {
     running: '#859900',
-    waiting: '#b58900',
+    waiting: '#a87f00',
     failed: '#dc322f',
     completed: '#268bd2',
-    idle: '#93a1a1',
+    idle: '#768888',
   },
 } as const satisfies Theme
 
@@ -365,7 +365,7 @@ export const rosePine = {
   },
   text: {
     primary: '#e0def4',
-    secondary: '#6e6a86',
+    secondary: '#8d89a2',
     accent: '#c4a7e7',
     onAccent: '#191724',
     highlight: '#f6c177',
@@ -382,7 +382,7 @@ export const rosePine = {
     waiting: '#f6c177',
     failed: '#eb6f92',
     completed: '#c4a7e7',
-    idle: '#6e6a86',
+    idle: '#706c89',
   },
 } as const satisfies Theme
 
@@ -396,24 +396,24 @@ export const rosePineDawn = {
   },
   text: {
     primary: '#575279',
-    secondary: '#9893a5',
+    secondary: '#6c667b',
     accent: '#907aa9',
     onAccent: '#191724',
     highlight: '#ea9d34',
     onHighlight: '#575279',
     danger: '#b4637a',
-    warning: '#ea9d34',
+    warning: '#be7614',
     success: '#286983',
-    beta: '#ea9d34',
+    beta: '#be7614',
   },
   border: '#dfdad9',
   status: {
     // Working must read as green, not the pine accent — see docs/design/session-list.
     running: '#1a7f37',
-    waiting: '#ea9d34',
+    waiting: '#be7614',
     failed: '#b4637a',
     completed: '#907aa9',
-    idle: '#9893a5',
+    idle: '#898498',
   },
 } as const satisfies Theme
 
@@ -427,7 +427,7 @@ export const tokyoNight = {
   },
   text: {
     primary: '#c0caf5',
-    secondary: '#565f89',
+    secondary: '#878fb4',
     accent: '#7aa2f7',
     onAccent: '#1a1b26',
     highlight: '#e0af68',
@@ -443,7 +443,7 @@ export const tokyoNight = {
     waiting: '#e0af68',
     failed: '#f7768e',
     completed: '#7aa2f7',
-    idle: '#565f89',
+    idle: '#66709f',
   },
 } as const satisfies Theme
 
@@ -457,7 +457,7 @@ export const tokyoNightLight = {
   },
   text: {
     primary: '#343b58',
-    secondary: '#8f8fa8',
+    secondary: '#55556d',
     accent: '#2959aa',
     onAccent: '#d5d6db',
     highlight: '#d9a521',
@@ -473,7 +473,7 @@ export const tokyoNightLight = {
     waiting: '#8f5e15',
     failed: '#8c4351',
     completed: '#2959aa',
-    idle: '#8f8fa8',
+    idle: '#6f6f8f',
   },
 } as const satisfies Theme
 
