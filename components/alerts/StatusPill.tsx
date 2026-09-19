@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
+import { Bell, GlobeSimple } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { globalSurface } from '@/lib/alertArbitration'
 import { getAlertLevelLabel, getStatusPillCaption } from '@/lib/alertLabels'
 import { useArbitratedAlerts } from '@/hooks/useArbitratedAlerts'
-
-const TARGET = 44
+import { useErrorSheetStore } from '@/stores/errorSheet'
 
 type StatusPillSurface = 'error' | 'warning'
 
@@ -27,54 +27,72 @@ export function StatusPill({ surface, issueCount, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
+      hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       testID="status-pill"
-      style={({ pressed }) => [styles.pill, { opacity: pressed ? 0.7 : 1 }]}
+      style={({ pressed }) => [styles.button, { opacity: pressed ? 0.5 : 1 }]}
     >
-      <View style={styles.dot} />
-      <Text style={styles.label}>{caption}</Text>
+      <Bell size={20} color={theme.text.secondary} />
+      <View style={styles.badge} testID="status-pill-badge" />
     </Pressable>
   )
 }
 
-export function HomeStatusPill({ onPress }: { onPress: () => void }) {
+// Bell while something is wrong; otherwise a globe that opens Server Status.
+export function HomeStatusPill({
+  onPress,
+  suppressAlerts = false,
+}: {
+  onPress: () => void
+  suppressAlerts?: boolean
+}) {
+  const { t } = useTranslation('servers')
+  const theme = useTheme()
+  const styles = useMemo(() => makeStyles(theme, 'warning'), [theme])
   const arb = useArbitratedAlerts()
+  const setServersStatusOpen = useErrorSheetStore((s) => s.setServersStatusOpen)
   const surface = globalSurface(arb)
-  if (surface !== 'error' && surface !== 'warning') return null
+  if (!suppressAlerts && (surface === 'error' || surface === 'warning')) {
+    return (
+      <StatusPill
+        surface={surface}
+        issueCount={arb.global.length}
+        onPress={onPress}
+      />
+    )
+  }
   return (
-    <StatusPill
-      surface={surface}
-      issueCount={arb.global.length}
-      onPress={onPress}
-    />
+    <Pressable
+      onPress={() => setServersStatusOpen(true)}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={t('statusModal.titleSingle')}
+      testID="header-server-status-btn"
+      style={({ pressed }) => [styles.button, { opacity: pressed ? 0.5 : 1 }]}
+    >
+      <GlobeSimple size={20} color={theme.text.secondary} />
+    </Pressable>
   )
 }
 
 function makeStyles(theme: Theme, surface: StatusPillSurface) {
-  const accent = surface === 'error' ? theme.status.failed : theme.status.waiting
   return StyleSheet.create({
-    pill: {
-      minHeight: TARGET,
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.full,
-      borderWidth: 1,
-      borderColor: accent,
-      backgroundColor: `${accent}24`,
-      flexDirection: 'row',
+    button: {
+      width: 32,
+      height: 32,
       alignItems: 'center',
-      gap: spacing.sm,
+      justifyContent: 'center',
+      borderRadius: 8,
     },
-    dot: {
-      width: 7,
-      height: 7,
+    badge: {
+      position: 'absolute',
+      top: 4,
+      end: 4,
+      width: 8,
+      height: 8,
       borderRadius: 4,
-      backgroundColor: accent,
-    },
-    label: {
-      color: accent,
-      fontSize: font.sm,
-      fontWeight: '600',
+      backgroundColor: surface === 'error' ? theme.status.failed : theme.status.waiting,
     },
   })
 }

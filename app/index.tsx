@@ -413,7 +413,7 @@ export default function ProjectsHub() {
           {isBackgroundRefreshing && activeServerIds.length <= 1 ? (
             <ActivityIndicator size="small" color={theme.text.secondary} testID="header-background-refreshing" />
           ) : null}
-          {allServersFailed ? null : <HomeStatusPill onPress={openStatusSurface} />}
+          <HomeStatusPill onPress={openStatusSurface} suppressAlerts={allServersFailed} />
 
           <Pressable
             onPress={() => setSearchOpen((v) => !v)}

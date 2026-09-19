@@ -34,7 +34,8 @@
       "warningCount_two": "{{count}} אזהרות",
       "warningCount_other": "{{count}} אזהרות",
       "retryEverything": "נסה הכול שוב",
-      "technicalDetails": "פרטים טכניים"
+      "technicalDetails": "פרטים טכניים",
+      "dismiss": "סגור"
     },
     "inline": {
       "unreachableSince": "לא ניתן להגיע מאז {{time}}",

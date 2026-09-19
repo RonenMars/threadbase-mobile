@@ -43,7 +43,8 @@
       "warningCount_many": "{{count}} تحذيراً",
       "warningCount_other": "{{count}} تحذير",
       "retryEverything": "إعادة محاولة الكل",
-      "technicalDetails": "التفاصيل التقنية"
+      "technicalDetails": "التفاصيل التقنية",
+      "dismiss": "إغلاق"
     },
     "inline": {
       "unreachableSince": "تعذّر الوصول منذ {{time}}",

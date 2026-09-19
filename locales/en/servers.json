@@ -178,8 +178,7 @@
       "linux": "On this Linux machine, quit heavy editors, browsers, or VMs. System Monitor or top shows what's using RAM and CPU.",
       "win32": "On this Windows PC, quit Cursor, Chrome, or any VMs you don't need. Task Manager shows what's using RAM and CPU.",
       "generic": "On the computer, quit Cursor, Chrome, or any VMs you don't need, then check RAM and CPU."
-    },
-    "dismiss": "Dismiss"
+    }
   },
   "claudeFlags": {
     "title": "Claude CLI flags",

@@ -80,8 +80,7 @@ export function HostPressureBanner() {
       details,
       timeout: null,
       hideCloseButton: true,
-      buttonText: t('hostPressure.dismiss'),
-      buttonAction: handleDismiss,
+      onClose: handleDismiss,
       testID: 'host-pressure-banner',
     }
   }, [visible, alertServerId, pressure, servers, handleDismiss, t])

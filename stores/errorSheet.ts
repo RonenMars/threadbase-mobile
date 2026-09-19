@@ -10,10 +10,14 @@ interface ErrorSheetState {
   open: boolean
   openSheet: () => void
   closeSheet: () => void
+  serversStatusOpen: boolean
+  setServersStatusOpen: (open: boolean) => void
 }
 
 export const useErrorSheetStore = create<ErrorSheetState>((set) => ({
   open: false,
   openSheet: () => set({ open: true }),
   closeSheet: () => set({ open: false }),
+  serversStatusOpen: false,
+  setServersStatusOpen: (serversStatusOpen) => set({ serversStatusOpen }),
 }))
