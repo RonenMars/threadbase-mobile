@@ -1,4 +1,4 @@
-import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
+import { mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
 import type { Message } from '@/types/api'
 
 function historical(index: number, uuid: string, text: string): Message {
@@ -76,5 +76,59 @@ describe('mergeLiveMessages', () => {
     const middle = [{ ...live('opt', 'typing…', 'user'), id: 'optimistic-1', uuid: null, timestamp: '2026-07-24T00:00:01.000Z' }]
     const liveMsgs = [{ ...live('L0', 'reply'), timestamp: '2026-07-24T00:00:00.000Z' }]
     expect(texts(mergeLiveMessages(hist, liveMsgs, middle))).toEqual(['first', 'typing…', 'reply'])
+  })
+
+  // REST Cursor messages carry uuid: null; live lines carry cursor-<role>-<hex>.
+  // Only the shared message_index / seq numbering ties the two copies together.
+  describe('Cursor (REST uuid is null)', () => {
+    const cursorRest = (index: number, text: string): Message => ({ ...historical(index, '', text), uuid: null })
+    const cursorLive = (uuid: string, text: string, messageIndex?: number): Message => ({
+      ...live(uuid, text),
+      messageIndex,
+    })
+
+    it('drops a live message whose messageIndex history already holds', () => {
+      const hist = [cursorRest(0, 'fix the header'), cursorRest(1, 'Reading the file.')]
+      const liveMsgs = [cursorLive('cursor-assistant-9f3c1a7be2d04c86', 'Reading the file.', 1)]
+      expect(texts(mergeLiveMessages(hist, liveMsgs))).toEqual(['fix the header', 'Reading the file.'])
+    })
+
+    it('keeps a live message with a new messageIndex', () => {
+      const hist = [cursorRest(0, 'fix the header'), cursorRest(1, 'Reading the file.')]
+      const liveMsgs = [cursorLive('cursor-assistant-4b8e0d2f6a1c9e37', 'Done.', 2)]
+      expect(texts(mergeLiveMessages(hist, liveMsgs))).toEqual(['fix the header', 'Reading the file.', 'Done.'])
+    })
+
+    it('keeps a live message with no messageIndex and no uuid match (bind replay)', () => {
+      const hist = [cursorRest(0, 'fix the header')]
+      const liveMsgs = [cursorLive('cursor-assistant-7d2a5e9c0f1b3864', 'Replayed line.')]
+      expect(texts(mergeLiveMessages(hist, liveMsgs))).toEqual(['fix the header', 'Replayed line.'])
+    })
+  })
+})
+
+describe('resolveToolNames', () => {
+  const msg = (id: string, content: Message['content']): Message => ({
+    id,
+    uuid: id,
+    role: 'assistant',
+    content,
+    timestamp: '2026-09-19T08:12:03.411Z',
+    is_sidechain: false,
+    parent_uuid: null,
+  })
+
+  it('names a result after its call in an earlier message', () => {
+    const call = msg('m0', [{ type: 'tool_use', id: 'call_A', name: 'exec_command', input: { cmd: 'ls' } }])
+    const result = msg('m1', [{ type: 'tool_result', toolUseId: 'call_A', toolName: 'Tool', content: 'a.ts' }])
+    const [, resolved] = resolveToolNames([call, result])
+    expect(resolved.content[0]).toMatchObject({ toolName: 'exec_command' })
+    expect(result.content[0]).toMatchObject({ toolName: 'Tool' })
+  })
+
+  it('keeps the fallback label when the call is outside the loaded window', () => {
+    const result = msg('m1', [{ type: 'tool_result', toolUseId: 'call_paged_out', toolName: 'Tool', content: 'a.ts' }])
+    const [resolved] = resolveToolNames([result])
+    expect(resolved).toBe(result)
   })
 })

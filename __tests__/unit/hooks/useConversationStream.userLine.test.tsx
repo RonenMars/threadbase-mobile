@@ -59,3 +59,51 @@ describe('useConversationStream – user line parsing', () => {
     })
   })
 })
+
+// Lines as streamer 1.98.0's toClaudeShapedLine emits them for a Codex
+// exec_command call and its output (separate messages, paired by call_id).
+describe('useConversationStream – Codex tool call pairing', () => {
+  it('keeps the tool_use id and the tool_result tool_use_id', async () => {
+    const { result } = await setup()
+
+    const call = JSON.stringify({
+      type: 'assistant',
+      uuid: 'fc_0a1b2c3d4e5f60718293a4b5',
+      timestamp: '2026-09-19T08:12:03.411Z',
+      message: {
+        role: 'assistant',
+        content: [
+          {
+            type: 'tool_use',
+            id: 'call_Xk2mP9qR4tV7wY1zB3dF6hJ8',
+            name: 'exec_command',
+            input: { cmd: 'npm run typecheck', workdir: '/Users/dev/tb-mobile' },
+          },
+        ],
+      },
+    })
+    const output = JSON.stringify({
+      type: 'user',
+      uuid: 'fco_0a1b2c3d4e5f60718293a4b6',
+      timestamp: '2026-09-19T08:12:09.027Z',
+      message: {
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: 'call_Xk2mP9qR4tV7wY1zB3dF6hJ8',
+            content: '> threadbase-mobile@1.0.0 typecheck\n> tsc --noEmit\n',
+            is_error: false,
+          },
+        ],
+      },
+    })
+    await act(() => __wsTest.emit('conversation_event', { type: 'conversation_event', sessionId: 'sess-1', line: call }))
+    await act(() => __wsTest.emit('conversation_event', { type: 'conversation_event', sessionId: 'sess-1', line: output }))
+
+    expect(result.current.liveMessages.map((m) => m.content[0])).toEqual([
+      expect.objectContaining({ type: 'tool_use', id: 'call_Xk2mP9qR4tV7wY1zB3dF6hJ8', name: 'exec_command' }),
+      expect.objectContaining({ type: 'tool_result', toolUseId: 'call_Xk2mP9qR4tV7wY1zB3dF6hJ8' }),
+    ])
+  })
+})
