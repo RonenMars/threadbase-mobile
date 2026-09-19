@@ -40,6 +40,7 @@ jest.mock('react-native-keyboard-controller', () => ({
     const state = { isVisible: false, height: 0 }
     return selector ? selector(state) : state
   },
+  useKeyboardHandler: () => {},
 }))
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }: { children: unknown }) => children,

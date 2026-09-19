@@ -4,11 +4,11 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  Keyboard,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native'
-import Reanimated from 'react-native-reanimated'
+import Reanimated, { runOnJS } from 'react-native-reanimated'
+import { useKeyboardHandler } from 'react-native-keyboard-controller'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { useQueryClient } from '@tanstack/react-query'
 import * as Haptics from 'expo-haptics'
@@ -81,7 +81,8 @@ function userMessageText(m: Message): string {
 // up → don't.
 const CHAT_ANCHOR = { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true } as const
 
-// Distance from the tail, in px, past which a reader counts as having left it.
+// Distance from the end, in px, within which the reader counts as following the
+// conversation rather than reading back through it.
 const FOLLOW_TAIL_THRESHOLD_PX = 100
 
 let optimisticSeq = 0
@@ -118,6 +119,9 @@ export function LiveConversationView({
   const leaveToHome = useCallback(() => router.replace('/'), [router])
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
   const keyboardInset = useKeyboardInset()
+  // The list opens pinned to the end (useInitialScrollToEnd).
+  const followingTailRef = useRef(true)
+  const wasFollowingTailRef = useRef(true)
 
   // Optimistic user turns: shown immediately on send so the bubble doesn't
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
@@ -389,38 +393,45 @@ export function LiveConversationView({
       ? { label: tTerminal('answer.sendEscape'), onPress: () => sendKeys.mutate('\x1b') }
       : null
 
-  // Auto-scroll to bottom when keyboard opens or app resumes with keyboard already up.
-  // New-message/thinking-bubble scrolling is left to FlashList's native
-  // maintainVisibleContentPosition bottom-anchoring below — a JS scrollToEnd
-  // fired from an effect races FlashList's cell measurement for the new row,
-  // landing short until a manual scroll forces a re-layout (see
-  // ConversationHistoryList's comment on this same hand-rolled machinery).
-  useEffect(() => {
-    const onShow = () => listRef.current?.scrollToEnd({ animated: true })
-    const subShow = Keyboard.addListener('keyboardDidShow', onShow)
-    const subChange = Keyboard.addListener('keyboardDidChangeFrame', onShow)
-    return () => { subShow.remove(); subChange.remove() }
-  }, [])
-
   const jumpToLatest = useCallback(() => {
     listRef.current?.scrollToEnd({ animated: true })
     setShowJumpToLatest(false)
   }, [])
 
+  // One definition of "following the latest" for the screen: it drives the
+  // jump-to-latest FAB and the keyboard's follow decision below.
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
+    const atEnd =
+      contentSize.height - contentOffset.y - layoutMeasurement.height <= FOLLOW_TAIL_THRESHOLD_PX
+    followingTailRef.current = atEnd
+    setShowJumpToLatest(!atEnd)
+  }, [])
+
+  // Taken when the keyboard starts moving, not when it settles: the lift shrinks
+  // the viewport as it animates, so by then the tail has left the screen and a
+  // follower would read as someone who had scrolled away.
+  const snapshotFollowing = useCallback(() => {
+    wasFollowingTailRef.current = followingTailRef.current
+  }, [])
+  const followIfWasAtTail = useCallback(() => {
+    if (wasFollowingTailRef.current) jumpToLatest()
+  }, [jumpToLatest])
+
   // A question card renders as the list's ListFooterComponent, and flash-list's
   // autoscroll cannot see it: `getChildContainerDimensions()` excludes header and
-  // footer (RecyclerViewManager.ts), so the card counts towards neither the
+  // footer (RecyclerViewManager.ts:160), so the card counts towards neither the
   // content length `checkBounds` measures nor the `contentHeight` that re-runs
   // that check (useBoundDetection.ts). Nothing scrolls, and a card landing while
   // the keyboard is up opens with its lower options behind the composer, out of
   // reach — the transcript will not scroll far enough to expose them.
   //
-  // The verdict has to come from before the card arrived. Measuring after is
-  // useless: one option label is a whole command line, so appending the card
-  // instantly puts the tail hundreds of px away and any distance rule declines.
-  // Re-pinning unconditionally would yank a reader who had deliberately scrolled
-  // up, which is the one thing this surface must never do under a moving finger.
-  const followingTailRef = useRef(true)
+  // Same snapshot idiom as the keyboard above, on a different event: the verdict
+  // comes from `followingTailRef` as it stood *before* the card arrived. Measuring
+  // after is useless — one option label is a whole command line, so appending the
+  // card instantly puts the tail hundreds of px away and any distance rule
+  // declines. Re-pinning rather than firing one `scrollToEnd` is what lands on the
+  // true bottom: the card lays out over several frames.
   const hadQuestionRef = useRef(false)
   useEffect(() => {
     const hasQuestion = activeQuestion !== null
@@ -429,14 +440,21 @@ export function LiveConversationView({
     if (arrived && followingTailRef.current) repin()
   }, [activeQuestion, repin])
 
-  // Drives the jump-to-latest FAB, and records the follow state the card-arrival
-  // effect above reads — same rule as ConversationHistoryList.
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
-    const distanceFromTail = contentSize.height - contentOffset.y - layoutMeasurement.height
-    followingTailRef.current = distanceFromTail <= FOLLOW_TAIL_THRESHOLD_PX
-    setShowJumpToLatest(distanceFromTail > FOLLOW_TAIL_THRESHOLD_PX)
-  }, [])
+  // The keyboard changes layout; it never decides scroll position. Only a reader
+  // who was already at the tail is carried along, and only when the keyboard is
+  // opening. Both hops land on the JS thread in the order they were queued, so
+  // the snapshot still precedes anything the animation causes. New-message
+  // scrolling stays with FlashList's maintainVisibleContentPosition (CHAT_ANCHOR).
+  useKeyboardHandler({
+    onStart: () => {
+      'worklet'
+      runOnJS(snapshotFollowing)()
+    },
+    onEnd: (e) => {
+      'worklet'
+      if (e.height > 0) runOnJS(followIfWasAtTail)()
+    },
+  }, [snapshotFollowing, followIfWasAtTail])
 
   return (
     <Reanimated.View style={[styles.container, keyboardInset]}>
