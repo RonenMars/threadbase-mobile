@@ -83,6 +83,8 @@ const NUMBERED_PREFIX_RE = /^\d+\.\s+/
 const QUESTION_SUFFIX_RE = /\?$/
 // A Codex picker row: optional `>`/`›`/`❯` cursor, then `1. label`.
 const NUMBERED_OPTION_RE = /^([>›❯])?\s*(\d+)\.\s+(.+?)$/
+// The footer a real picker paints under its options. Prose never carries it.
+const MENU_FOOTER_RE = /Enter to select|to navigate|Esc to cancel/i
 
 // Permission-gate option labels (Yes / No …). A Claude gate is handled by the
 // structured `permission` WS event, not as a radio QuestionCard — reject it
@@ -151,6 +153,7 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
     const optionNumbers: number[] = []
     let selectedIndex = 0
     let sawPermission = false
+    let sawCursor = false
 
     for (let i = q + 1; i < inner.length; i++) {
       const line = inner[i]
@@ -166,7 +169,10 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
         break
       }
       if (/\s+\|\s+~\//.test(label) || /^@\//.test(label) || /^\/Users\//.test(label)) break
-      if (m[1]) selectedIndex = options.length // ❯ cursor
+      if (m[1]) {
+        selectedIndex = options.length // ❯ cursor
+        sawCursor = true
+      }
       options.push({ label })
       optionNumbers.push(Number(m[2]))
     }
@@ -178,7 +184,12 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
     // item 6 — so the "menu" starts at 6, and tapping an option types "6" into the
     // live session. Trade-off: this also rejects a real menu whose first rows have
     // scrolled off the top of the screen; widen only if that is ever observed.
-    if (options.length >= 2 && optionNumbers.every((n, i) => n === i + 1)) {
+    // Numbering alone is not enough either: an assistant reply ending "What would
+    // you like next? 1. … 2. … 3. …" enumerates 1..n too, and tapping an option
+    // sends Enter to an idle prompt (observed 2026-09-19, nothing happened, card
+    // stayed). A live picker always paints a ❯ cursor or its Enter/Esc footer.
+    const hasMenuChrome = sawCursor || inner.slice(q + 1).some((l) => MENU_FOOTER_RE.test(l))
+    if (options.length >= 2 && hasMenuChrome && optionNumbers.every((n, i) => n === i + 1)) {
       return {
         source: 'pty',
         questions: [{ question: questionText, multiSelect: false, options }],

@@ -253,6 +253,7 @@ describe('parseQuestionBlock', () => {
       '  2. iOS / Safari',
       '  3. Android',
       '  4. Chat about this',
+      'Enter to select · Tab/Arrow keys to navigate · Esc to cancel',
     ]
     const result = parseQuestionBlock(lines)
     expect(result).not.toBeNull()
@@ -283,6 +284,7 @@ describe('parseQuestionBlock', () => {
       '│ Which area are you focused on?        │',
       '│   1. macOS / Chrome                   │',
       '│   2. iOS / Safari                     │',
+      '│ Enter to select · Esc to cancel       │',
       '╰──────────────────────────────────────╯',
     ]
     const q = parseQuestionBlock(lines)!.questions[0]
@@ -358,5 +360,29 @@ describe('parseQuestionBlock', () => {
       "  7. plan_ready deletion timing. 4b's removal commit is independent of 4a's findings.",
     ]
     expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('returns null for an assistant reply ending in a question plus a 1..n list (no cursor, no footer)', () => {
+    // Observed 2026-09-19: Claude's prose "What would you like next?" followed by
+    // three numbered choices was carded; tapping sent Enter to an idle prompt.
+    const lines = [
+      "  I changed nothing. What would you like next?",
+      '  1. Fix the false waiting_input flip in the streamer, in a worktree with a test.',
+      '  2. Look for why the app relaunched, starting with the iOS crash log.',
+      '  3. Investigate the blank rows and ragged wrapping in the terminal view.',
+      '✻ Baked for 3m 47s · done 7:32 PM',
+      '❯ Fix the false waiting_input flip in a worktree',
+    ]
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('parses a ?-suffixed 1..n menu that has the Enter/Esc footer but no ❯ cursor', () => {
+    const lines = [
+      'Which area?',
+      '  1. macOS',
+      '  2. iOS',
+      'Enter to select · Esc to cancel',
+    ]
+    expect(parseQuestionBlock(lines)!.questions[0].options.map(o => o.label)).toEqual(['macOS', 'iOS'])
   })
 })
