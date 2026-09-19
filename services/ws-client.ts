@@ -26,6 +26,9 @@ export type WSMessage =
   // trusting raw WS arrival order.
   | { type: 'terminal_output'; sessionId: string; data: string; seq?: number }
   | { type: 'session_list'; sessions: Session[] }
+  // Scoped to the session's subscribers. `text` is always present; null means
+  // "no suggestion / cleared". Additive; old streamers never send it.
+  | { type: 'prompt_suggestion'; sessionId: string; text: string | null; updatedAt: string }
   // Liveness only. Carries nothing to render; its job is to reset the silence
   // watchdog in useTerminalStream on an otherwise idle socket (#946).
   | { type: 'ping'; ts: number }

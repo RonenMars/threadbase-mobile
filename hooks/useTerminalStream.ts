@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useFocusEffect } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { wsManager } from '@/services/ws-client'
@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { QUERY_GC_TIME } from '@/services/query-client'
 import { VirtualTerminal } from '@/services/virtual-terminal'
+import { dropGhostPromptLine } from '@/lib/terminalChrome'
 import type { ProviderName } from '@/constants/providers'
 import type { ParseConfidence } from '@/lib/renderConfidence'
 
@@ -36,6 +37,7 @@ export function useTerminalStream(
   sessionId: string,
   skipLiveStream = false,
   provider?: ProviderName | string | null,
+  promptSuggestion?: string | null,
 ) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
   const [lines, setLines] = useState<TerminalLine[]>([])
@@ -346,8 +348,13 @@ export function useTerminalStream(
     setParseConfidence('high')
   }, [])
 
+  const visibleLines = useMemo(
+    () => dropGhostPromptLine(lines, promptSuggestion),
+    [lines, promptSuggestion],
+  )
+
   return {
-    lines,
+    lines: visibleLines,
     isStreaming,
     userMessageTexts,
     parseConfidence,

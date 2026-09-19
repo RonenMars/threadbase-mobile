@@ -3,6 +3,7 @@ import {
   CODEX_CLI_PROVIDER,
   type ProviderName,
 } from '@/constants/providers'
+import { stripAnsi } from '@/utils/stripAnsi'
 
 /**
  * Provider-specific filters for PTY chrome that should not appear as
@@ -92,4 +93,25 @@ export function getTerminalChromeFilter(
 /** Keep line when the chrome filter says it is NOT chrome. */
 export function keepTranscriptLine(line: string, filter: TerminalChromeFilter): boolean {
   return !filter(line)
+}
+
+/**
+ * Claude Code paints its dim "suggested next prompt" into the input line, and
+ * VirtualTerminal ignores SGR dim, so it arrives as an ordinary `❯ <text>` row.
+ * Drops the last `❯` row, and only when its text is exactly `suggestion`: the
+ * live input row is always below any earlier user message, so an old message
+ * with the same text is not the one removed. Anything else keeps every line.
+ */
+export function dropGhostPromptLine(
+  lines: string[],
+  suggestion: string | null | undefined,
+): string[] {
+  if (!suggestion) return lines
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const row = stripAnsi(lines[i]).trim()
+    if (!row.startsWith('❯')) continue
+    if (row.slice(1).trim() !== suggestion.trim()) return lines
+    return [...lines.slice(0, i), ...lines.slice(i + 1)]
+  }
+  return lines
 }

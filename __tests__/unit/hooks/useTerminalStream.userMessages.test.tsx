@@ -120,4 +120,22 @@ describe('useTerminalStream – userMessageTexts', () => {
 
     expect(result.current.userMessageTexts.size).toBe(0)
   })
+
+  it('hides the ghost prompt row only while the suggestion matches it exactly', async () => {
+    const ghost = 'add type hints and a docstring'
+    const replay = { type: 'terminal_replay', sessionId: 'sess-1', lines: ['⏺ Done.', `❯ ${ghost}`] }
+    const { result, rerender } = await renderHook(
+      (props: { suggestion: string | null }) =>
+        useTerminalStream('srv-1', 'sess-1', false, undefined, props.suggestion),
+      { wrapper: createWrapper(), initialProps: { suggestion: ghost as string | null } },
+    )
+    await act(() => __wsTest.emit(replay))
+    expect(result.current.lines).toEqual(['⏺ Done.'])
+
+    await rerender({ suggestion: 'something else' })
+    expect(result.current.lines).toEqual(['⏺ Done.', `❯ ${ghost}`])
+
+    await rerender({ suggestion: null })
+    expect(result.current.lines).toEqual(['⏺ Done.', `❯ ${ghost}`])
+  })
 })
