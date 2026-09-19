@@ -137,7 +137,11 @@ focusManager.setEventListener((handleFocus) => {
 })
 
 queryClient.getQueryCache().subscribe((event) => {
-  if (!event) return
+  // Only 'updated' carries a fetch/state transition. Observer events fire
+  // synchronously while a component renders (useQuery builds its observer in
+  // render), and writing the loading store from them updates AlertHost
+  // mid-render of another screen.
+  if (event?.type !== 'updated') return
   const { query } = event
   const hash = query.queryHash
   const category = categoryForHash(hash)
