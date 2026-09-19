@@ -18,7 +18,8 @@
   "provider": {
     "codex": "Codex",
     "claude": "Claude",
-    "cursor": "Cursor"
+    "cursor": "Cursor",
+    "unknown": "לא ידוע"
   },
   "filter": {
     "label": "סנן ומיין"
@@ -184,5 +185,21 @@
   "layout": {
     "now": "עכשיו",
     "projects": "פרויקטים"
+  },
+  "info": {
+    "sessionId": "מזהה סשן Threadbase",
+    "conversationId": "מזהה שיחה",
+    "providerId": "מזהה ספק",
+    "provider": "ספק",
+    "resumedFrom": "הומשך מ",
+    "forkedFrom": "פוצל מ",
+    "parentConversation": "שיחת אב",
+    "sessionName": "שם סשן",
+    "projectName": "שם פרויקט",
+    "projectPath": "נתיב פרויקט",
+    "filePath": "נתיב קובץ",
+    "account": "חשבון",
+    "messageCount": "מספר הודעות",
+    "lastActivity": "פעילות אחרונה"
   }
 }

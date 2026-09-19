@@ -18,7 +18,8 @@
   "provider": {
     "codex": "Codex",
     "claude": "Claude",
-    "cursor": "Cursor"
+    "cursor": "Cursor",
+    "unknown": "Unknown"
   },
   "filter": {
     "label": "Filter & Sort"
@@ -176,5 +177,21 @@
   "layout": {
     "now": "Now",
     "projects": "Projects"
+  },
+  "info": {
+    "sessionId": "Threadbase Session ID",
+    "conversationId": "Conversation ID",
+    "providerId": "Provider ID",
+    "provider": "Provider",
+    "resumedFrom": "Resumed From",
+    "forkedFrom": "Forked From",
+    "parentConversation": "Parent Conversation",
+    "sessionName": "Session Name",
+    "projectName": "Project Name",
+    "projectPath": "Project Path",
+    "filePath": "File Path",
+    "account": "Account",
+    "messageCount": "Message Count",
+    "lastActivity": "Last Activity"
   }
 }

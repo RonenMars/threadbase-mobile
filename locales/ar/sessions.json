@@ -18,7 +18,8 @@
   "provider": {
     "codex": "Codex",
     "claude": "Claude",
-    "cursor": "Cursor"
+    "cursor": "Cursor",
+    "unknown": "غير معروف"
   },
   "filter": {
     "label": "تصفية وفرز"
@@ -208,5 +209,21 @@
   "layout": {
     "now": "الآن",
     "projects": "المشاريع"
+  },
+  "info": {
+    "sessionId": "معرّف جلسة Threadbase",
+    "conversationId": "معرّف المحادثة",
+    "providerId": "معرّف المزوّد",
+    "provider": "المزوّد",
+    "resumedFrom": "استُؤنفت من",
+    "forkedFrom": "متفرعة من",
+    "parentConversation": "المحادثة الأصل",
+    "sessionName": "اسم الجلسة",
+    "projectName": "اسم المشروع",
+    "projectPath": "مسار المشروع",
+    "filePath": "مسار الملف",
+    "account": "الحساب",
+    "messageCount": "عدد الرسائل",
+    "lastActivity": "آخر نشاط"
   }
 }
