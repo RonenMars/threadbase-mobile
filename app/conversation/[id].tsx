@@ -43,6 +43,7 @@ import { useServersStore } from '@/stores/servers'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAppDirection } from '@/lib/rtl'
+import { buildSharedInfoFields, conversationInfoSubject } from '@/lib/infoFields'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { LivePauseControl } from '@/components/conversation/LivePauseControl'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
@@ -1028,19 +1029,9 @@ export default function ConversationDetailScreen() {
           testID: 'export-action',
         }}
         fields={[
-          { label: 'ID', value: conversation.id },
+          ...buildSharedInfoFields(conversationInfoSubject(conversation)),
+          // Client-derived: session_name, else project_name, else a fallback.
           { label: 'Title', value: conversation.title },
-          { label: 'Session Name', value: conversation.sessionName },
-          { label: 'Project Path', value: conversation.projectPath },
-          { label: 'Repo URL', value: conversation.repoUrl },
-          { label: 'File Path', value: conversation.filePath },
-          { label: 'Branch', value: conversation.branch },
-          { label: 'Account', value: conversation.account },
-          { label: 'Provider', value: conversation.provider ?? 'claude-code' },
-          { label: 'Model', value: conversation.model },
-          { label: 'Message Count', value: String(conversation.messageCount) },
-          { label: 'Total Tokens', value: conversation.totalTokens != null ? String(conversation.totalTokens) : undefined },
-          { label: 'Last Activity', value: conversation.lastActivity },
         ]}
       />
       <CriticalDialog

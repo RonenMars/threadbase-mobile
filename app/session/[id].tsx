@@ -52,6 +52,7 @@ import { LiveConversationView } from '@/components/conversation/LiveConversation
 import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
+import { buildSharedInfoFields, sessionInfoSubject } from '@/lib/infoFields'
 import { useSessionLeaveGuard } from '@/hooks/useSessionLeaveGuard'
 import {
   evictStaleSessionFavorite,
@@ -819,14 +820,15 @@ export default function SessionDetailScreen() {
       onClose={() => setInfoVisible(false)}
       title={t('session.infoTitle')}
       fields={[
-        { label: 'ID', value: session?.id ?? id },
+        ...(session
+          ? buildSharedInfoFields(sessionInfoSubject(session))
+          : [{ label: t('sessions:info.sessionId'), value: id }]),
+        // Client-derived: the server this screen is connected to, and the pairing's host name.
         { label: 'Server', value: serverId },
-        { label: 'Project Name', value: session?.projectName },
-        { label: 'Project Path', value: session?.projectPath },
-        { label: 'Repo URL', value: session?.repoUrl },
-        { label: 'Branch', value: session?.branch },
         { label: 'Machine', value: session?.machineName },
+        { label: 'Branch', value: session?.branch },
         { label: 'Status', value: session?.status ?? (isLoading ? 'loading…' : 'not found') },
+        { label: 'Lifecycle', value: session?.lifecycle },
         { label: 'Model', value: session?.model },
         { label: 'Effort', value: session?.effort },
         { label: 'Permission Mode', value: session?.permissionMode },

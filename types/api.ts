@@ -102,6 +102,15 @@ export interface Session {
    * session.id). Prefer this for REST conversation history when present.
    */
   boundConversationId?: string | null
+  /** Set when this session was started as a fork of another conversation. */
+  forkedFromConversationId?: string
+  /** Subagent transcripts only: the conversation that spawned this one. */
+  parentConversationId?: string | null
+  /** Transcript file on the server; absent until the provider has written one. */
+  filePath?: string
+  account?: string
+  messageCount?: number
+  lastActivityAt?: string
   /**
    * OS process id of the underlying CLI. The server sends this for discovered
    * external processes; absent for managed PTY sessions and historical shapes.
@@ -161,7 +170,11 @@ export interface Conversation {
   id: string
   title: string
   sessionName?: string
+  /** Detail response only (`project_name`); list rows fold it into `title`. */
+  projectName?: string
   filePath?: string
+  /** Subagent transcripts only: the conversation that spawned this one. */
+  parentConversationId?: string | null
   /** Stable backend identity. Optional during migration; will be required. */
   projectId?: string
   projectPath: string
