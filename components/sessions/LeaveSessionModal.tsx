@@ -120,6 +120,7 @@ export function LeaveSessionModal({
       visible={open}
       title={t('terminal:leaveSession.title')}
       message={message}
+      level="warning"
       busy={showPending}
       dismissable={!showPending}
       onRequestClose={showError ? onDismissError : onCancel}

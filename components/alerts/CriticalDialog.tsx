@@ -15,7 +15,7 @@ import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { alertAppearance } from '@/lib/alertAppearance'
 import { getAlertLevelLabel } from '@/lib/alertLabels'
 import { blockTextDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
-import type { AlertButtonVariant } from '@/types/alerts'
+import type { AlertButtonVariant, AlertLevel } from '@/types/alerts'
 
 const TARGET = 44
 
@@ -37,6 +37,7 @@ type Props = {
   testID?: string
   dismissable?: boolean
   busy?: boolean
+  level?: AlertLevel
 }
 
 export function CriticalDialog({
@@ -50,6 +51,7 @@ export function CriticalDialog({
   testID = 'critical-dialog',
   dismissable = true,
   busy = false,
+  level = 'critical',
 }: Props) {
   const { t } = useTranslation('common')
   const theme = useTheme()
@@ -59,9 +61,9 @@ export function CriticalDialog({
   const { direction } = useAppDirection()
   const copyStyle = blockTextDirectionStyle(direction)
   const labelStyle = textDirectionStyle(direction)
-  const appearance = alertAppearance('critical', theme)
+  const appearance = alertAppearance(level, theme)
   const Icon = appearance.Icon
-  const accessibilityLabel = `${getAlertLevelLabel('critical', t)}. ${title}`
+  const accessibilityLabel = `${getAlertLevelLabel(level, t)}. ${title}`
 
   return (
     <Modal
