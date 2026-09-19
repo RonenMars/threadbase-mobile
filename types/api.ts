@@ -67,6 +67,12 @@ export interface Session {
    */
   subStatus: AgentPhase | null
   /**
+   * Claude Code's ghost "next prompt" suggestion while the session is
+   * `waiting_input`. `null` or absent both mean none — absent is a server too
+   * old to have the feature. Additive.
+   */
+  promptSuggestion?: string | null
+  /**
    * ISO timestamp of the last `status` change, stamped by every runner. While
    * `status` is `waiting_input` this is when the wait began. Additive; older
    * servers omit it.

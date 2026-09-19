@@ -57,7 +57,9 @@
     "placeholder": "Send a message…",
     "attachLabel": "Attach file",
     "expandLabel": "Expand input",
-    "minimizeLabel": "Minimize input"
+    "minimizeLabel": "Minimize input",
+    "suggestionLabel": "Send suggestion: {{text}}",
+    "suggestionHint": "Hold to edit before sending"
   },
   "session": {
     "infoTitle": "Session Info",

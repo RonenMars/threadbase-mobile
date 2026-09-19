@@ -4,6 +4,7 @@ import Reanimated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
+import { usePromptSuggestion } from '@/hooks/usePromptSuggestion'
 import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -46,11 +47,13 @@ export function TerminalView({
   const { t } = useTranslation('terminal')
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
+  const { suggestion, chipSuggestion, dismiss: dismissSuggestion } = usePromptSuggestion(serverId, sessionId)
   const { lines, isStreaming, userMessageTexts, parseConfidence } = useTerminalStream(
     serverId,
     sessionId,
     false,
     provider,
+    suggestion,
   )
   const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
@@ -239,6 +242,15 @@ export function TerminalView({
         voice={voice}
         micGranted={micGranted}
         onToggleMic={handleToggleMic}
+        promptSuggestion={chipSuggestion}
+        onSendSuggestion={(text) => {
+          dismissSuggestion()
+          handleSend(text)
+        }}
+        onFillSuggestion={(text) => {
+          dismissSuggestion()
+          handleInputChange(text)
+        }}
       />
 
       <SlashCommandBoard

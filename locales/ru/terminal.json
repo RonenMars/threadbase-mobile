@@ -57,7 +57,9 @@
     "placeholder": "Отправить сообщение…",
     "attachLabel": "Прикрепить файл",
     "expandLabel": "Развернуть поле ввода",
-    "minimizeLabel": "Свернуть поле ввода"
+    "minimizeLabel": "Свернуть поле ввода",
+    "suggestionLabel": "Отправить подсказку: {{text}}",
+    "suggestionHint": "Удерживайте, чтобы изменить перед отправкой"
   },
   "session": {
     "infoTitle": "Информация о сессии",
