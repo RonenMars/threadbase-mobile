@@ -32,6 +32,7 @@ import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib
 import { isHostPressureLevel, parseHostPressureOs, parseHostPressureReasons, type Session } from '@/types/api'
 import { authToken } from '@/services/authed-fetch'
 import { registerPushTokenForAll } from '@/services/push'
+import { useNotificationPrefsSync } from '@/hooks/useNotificationPrefsSync'
 import {
   adoptRunningActivities,
   reconcile as reconcileLiveActivity,
@@ -120,6 +121,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const clearCacheAlert = useServersStore((s) => s.clearCacheAlert)
   const setHostPressure = useServersStore((s) => s.setHostPressure)
   const clearHostPressure = useServersStore((s) => s.clearHostPressure)
+  useNotificationPrefsSync()
 
   useEffect(() => {
     hydrateSettings().then(() => {

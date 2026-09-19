@@ -20,7 +20,8 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { usePushHealth } from '@/hooks/usePushHealth'
 import { formatEpoch } from '@/services/push-health'
-import { isInQuietHours, registerPushToken } from '@/services/push'
+import { registerPushToken } from '@/services/push'
+import { isQuietNow } from '@/lib/notification-prefs'
 import type { PushTokenHealth, PushTokenState } from '@/types/push-health'
 
 export default function NotificationHealthScreen() {
@@ -56,9 +57,7 @@ export default function NotificationHealthScreen() {
   const [reregistering, setReregistering] = useState(false)
   const [actionMsg, setActionMsg] = useState<string | null>(null)
 
-  const quietPreview = notifications.quietHoursEnabled
-    ? isInQuietHours(notifications.quietHoursFrom, notifications.quietHoursTo)
-    : false
+  const quietPreview = isQuietNow(notifications)
 
   const quietPreviewLabel = quietPreview
     ? t('settings:notificationHealth.quietActive')

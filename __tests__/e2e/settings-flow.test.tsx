@@ -57,13 +57,11 @@ beforeEach(() => {
     terminalMaxLines: 5000,
     notifications: {
       waitingInput: true,
-      sessionComplete: true,
       sessionFailed: true,
-      diffReady: false,
       quietHoursEnabled: false,
       quietHoursFrom: '22:00',
       quietHoursTo: '08:00',
-      showBadge: true,
+      quietHoursDays: {},
     },
   })
 })
@@ -126,14 +124,19 @@ describe('Settings – server section', () => {
 // ── Notifications section ────────────────────────────────────────���────────────
 
 describe('Settings – notifications section', () => {
-  it('shows all notification toggle labels', async () => {
+  it('shows the notification toggles the server can act on', async () => {
     const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText('Waiting for Input')).toBeTruthy()
-    expect(getByText('Session Completed')).toBeTruthy()
     expect(getByText('Session Failed')).toBeTruthy()
-    expect(getByText('Diff Ready')).toBeTruthy()
-    expect(getByText('Show Badge Count')).toBeTruthy()
     expect(getByText('Quiet Hours')).toBeTruthy()
+  })
+
+  it('no longer offers the toggles that have no server event behind them', async () => {
+    const { queryByText, getByText } = await renderWithTheme(<SettingsScreen />)
+    expect(getByText('Session Failed')).toBeTruthy()
+    expect(queryByText('Session Completed')).toBeNull()
+    expect(queryByText('Diff Ready')).toBeNull()
+    expect(queryByText('Show Badge Count')).toBeNull()
   })
 
   it('shows Send Test Notification button', async () => {
@@ -150,6 +153,126 @@ describe('Settings – notifications section', () => {
     })
 
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalled()
+  })
+})
+
+// ── Server-enforced notification preferences ──────────────────────────────────
+
+describe('Settings – notification preferences on a server that enforces them', () => {
+  const QUIET_ON = {
+    waitingInput: true,
+    sessionFailed: true,
+    quietHoursEnabled: true,
+    quietHoursFrom: '22:00',
+    quietHoursTo: '08:00',
+    quietHoursDays: {},
+  }
+
+  const pairServer = (push: { preferences?: boolean } | undefined) => {
+    useServersStore.setState({
+      servers: {
+        srv_test: {
+          id: 'srv_test',
+          url: 'http://my-server.local:7070',
+          apiKey: 'live-key',
+          label: 'Dev Mac',
+          isConnected: true,
+          serverInfo: push ? { ...SERVER_INFO, push } : SERVER_INFO,
+          connectionError: null,
+        },
+      },
+      activeServerIds: ['srv_test'],
+      isLoading: false,
+    })
+  }
+
+  const edit = async (input: Parameters<typeof fireEvent.changeText>[0], text: string) => {
+    await fireEvent(input, 'focus')
+    await fireEvent.changeText(input, text)
+    await fireEvent(input, 'blur')
+  }
+
+  it('hides the schedule editor on a server that does not enforce preferences', async () => {
+    pairServer(undefined)
+    useSettingsStore.setState({ notifications: QUIET_ON })
+    const { queryByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(queryByTestId('quiet-hours-editor')).toBeNull()
+  })
+
+  it('shows the schedule editor once quiet hours is on and a server enforces them', async () => {
+    pairServer({ preferences: true })
+    useSettingsStore.setState({ notifications: QUIET_ON })
+    const { queryByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(queryByTestId('quiet-hours-editor')).toBeTruthy()
+  })
+
+  it('keeps the schedule editor away while quiet hours is off', async () => {
+    pairServer({ preferences: true })
+    const { queryByTestId } = await renderWithTheme(<SettingsScreen />)
+    expect(queryByTestId('quiet-hours-editor')).toBeNull()
+  })
+
+  it('stores an edited window and rejects a malformed one', async () => {
+    pairServer({ preferences: true })
+    useSettingsStore.setState({ notifications: QUIET_ON })
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+
+    await edit(getByTestId('quiet-hours-global-from'), '23:15')
+    expect(useSettingsStore.getState().notifications.quietHoursFrom).toBe('23:15')
+
+    await edit(getByTestId('quiet-hours-global-to'), '99:99')
+    expect(useSettingsStore.getState().notifications.quietHoursTo).toBe('08:00')
+  })
+
+  it('switches a weekday off as null and back on by dropping the override', async () => {
+    pairServer({ preferences: true })
+    useSettingsStore.setState({ notifications: QUIET_ON })
+    const { getByTestId } = await renderWithTheme(<SettingsScreen />)
+
+    await fireEvent.press(getByTestId('quiet-hours-by-day-toggle'))
+    await fireEvent(getByTestId('quiet-hours-day-tue-switch'), 'valueChange', false)
+    expect(useSettingsStore.getState().notifications.quietHoursDays).toEqual({ tue: null })
+
+    await fireEvent(getByTestId('quiet-hours-day-tue-switch'), 'valueChange', true)
+    expect(useSettingsStore.getState().notifications.quietHoursDays).toEqual({})
+  })
+
+  it('sends a real test push instead of a local notification', async () => {
+    const push = require('@/services/push')
+    const Notifications = require('expo-notifications')
+    const sendTestPush = jest
+      .spyOn(push, 'sendTestPush')
+      .mockResolvedValue({ ok: true, attempted: 1, succeeded: 1, state: 'healthy' })
+    pairServer({ preferences: true })
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
+
+    await act(async () => {
+      await fireEvent.press(getByText('Send Test Notification'))
+    })
+
+    expect(sendTestPush).toHaveBeenCalledWith('srv_test')
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled()
+    expect(alert).not.toHaveBeenCalled()
+  })
+
+  it('says so when the server could not deliver the test push', async () => {
+    const push = require('@/services/push')
+    jest
+      .spyOn(push, 'sendTestPush')
+      .mockResolvedValue({ ok: false, attempted: 1, succeeded: 0, state: 'failing' })
+    pairServer({ preferences: true })
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
+
+    await act(async () => {
+      await fireEvent.press(getByText('Send Test Notification'))
+    })
+
+    expect(alert).toHaveBeenCalledWith(
+      'Test notification not delivered',
+      expect.stringContaining('Delivery health'),
+    )
   })
 })
 

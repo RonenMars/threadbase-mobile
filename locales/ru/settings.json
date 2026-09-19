@@ -52,12 +52,27 @@
   "notifications": {
     "whenAddingServer": "При добавлении нового сервера",
     "waitingForInput": "Ожидание ввода",
-    "sessionCompleted": "Сессия завершена",
     "sessionFailed": "Ошибка сессии",
-    "diffReady": "Diff готов",
-    "showBadgeCount": "Показывать счётчик значков",
     "quietHours": "Тихие часы",
-    "sendTest": "Отправить тестовое уведомление"
+    "sendTest": "Отправить тестовое уведомление",
+    "quietEveryDay": "Каждый день",
+    "quietFrom": "С",
+    "quietTo": "До",
+    "quietByDay": "Часы по дням",
+    "quietShow": "Показать",
+    "quietHide": "Скрыть",
+    "quietDayOff": "Выкл.",
+    "weekday": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
+    "testFailedTitle": "Тестовое уведомление не доставлено",
+    "testFailedBody": "Сервер не смог связаться с этим устройством. Подробности — в разделе «Состояние доставки»."
   },
   "notification": {
     "testTitle": "Тестовое уведомление",

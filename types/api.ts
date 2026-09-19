@@ -508,6 +508,13 @@ export interface ServerInfo {
   hostPressure?: true
   /** Additive: POST /api/sessions/:id/raw-key accepts constrained picker controls. */
   rawKeys?: true
+  /**
+   * Additive: what push this server can deliver. `preferences` is true when it
+   * stores and enforces per-device notification preferences
+   * (`PATCH /api/push/preferences`, `POST /api/push/test`). Absent on an older
+   * server, which must be read as unsupported, never as "turned off".
+   */
+  push?: { preferences?: boolean }
 }
 
 /**
@@ -668,15 +675,36 @@ export interface NotificationEvent {
   message?: string
 }
 
+export type Weekday = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+
+export interface QuietWindow {
+  from: string
+  to: string
+}
+
 export interface NotificationPreferences {
   waitingInput: boolean
-  sessionComplete: boolean
   sessionFailed: boolean
-  diffReady: boolean
   quietHoursEnabled: boolean
   quietHoursFrom: string
   quietHoursTo: string
-  showBadge: boolean
+  /**
+   * A weekday listed here replaces the global window for the window that STARTS
+   * that day; `null` means no quiet hours that day.
+   */
+  quietHoursDays: Partial<Record<Weekday, QuietWindow | null>>
+}
+
+/** What the streamer stores per push token — `notificationPrefs` on register, `prefs` on PATCH. */
+export interface WireNotificationPrefs {
+  waitingInput: boolean
+  sessionFailed: boolean
+  quietHours?: {
+    enabled: boolean
+    tz: string
+    default: QuietWindow
+    days?: Partial<Record<Weekday, QuietWindow | null>>
+  }
 }
 
 export interface PushRegisterPayload {
@@ -694,6 +722,14 @@ export interface PushRegisterPayload {
    * Older streamers ignore the field and send English.
    */
   locale?: string
+  notificationPrefs: WireNotificationPrefs
+}
+
+export interface PushTestResult {
+  ok: boolean
+  attempted: number
+  succeeded: number
+  state: string
 }
 
 // ── Browse types ────────────────────────────────────────────────────
