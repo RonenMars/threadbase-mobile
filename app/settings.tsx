@@ -240,7 +240,7 @@ export default function SettingsScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const insets = useSafeAreaInsets()
-  const { t } = useTranslation('settings')
+  const { t } = useTranslation(['settings', 'servers', 'feedback'])
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, addServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
@@ -463,7 +463,7 @@ await refreshServerInfo(serverId)
           onPress={() => setEditServerId('new')}
         >
           <GlassFill />
-          <Text style={s.addServerText}>{'+ ' + i18n.t('servers:action.add')}</Text>
+          <Text style={s.addServerText}>{'+ ' + t('servers:action.add')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           testID="settings-scan-qr-btn"
@@ -480,10 +480,10 @@ await refreshServerInfo(serverId)
           style={[s.scanQrBtn, { justifyContent: 'space-between' }, isGlass && s.cardGlass]}
           onPress={() => setServersStatusOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel={i18n.t('servers:statusModal.titleSingle')}
+          accessibilityLabel={t('servers:statusModal.titleSingle')}
         >
           <GlassFill />
-          <Text style={s.scanQrText}>{i18n.t('servers:statusModal.titleSingle')}</Text>
+          <Text style={s.scanQrText}>{t('servers:statusModal.titleSingle')}</Text>
           <SettingsChevron />
         </TouchableOpacity>
 
@@ -887,7 +887,7 @@ await refreshServerInfo(serverId)
             onPress={() => router.push('/help-feedback')}
             testID="settings-help-feedback-row"
           >
-            <Text style={s.rowLabel}>{i18n.t('feedback:screenTitle')}</Text>
+            <Text style={s.rowLabel}>{t('feedback:screenTitle')}</Text>
             <SettingsChevron />
           </TouchableOpacity>
           <TouchableOpacity style={s.row} onPress={() => router.push('/onboarding?mode=review')}>
