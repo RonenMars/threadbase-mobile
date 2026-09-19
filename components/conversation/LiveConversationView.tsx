@@ -326,10 +326,9 @@ export function LiveConversationView({
         setPendingSends((prev) => prev.filter((m) => m.id !== optimisticId))
       }
       // A prompt is open and the server refused the text. The card is the
-      // list footer, so jump back to it (the composer already dropped the
-      // keyboard on send); the server's message shows inline via sendError.
-      // No alert: a modal would take the focus this is trying to hand to the
-      // card. The rethrow keeps the draft.
+      // list footer, so jump back to it; the server's message shows inline via
+      // sendError. No alert: a modal would take the focus this is trying to
+      // hand to the card. The rethrow keeps the draft.
       if (isPromptPendingError(err instanceof Error ? err : null)) {
         jumpToLatest()
         throw err

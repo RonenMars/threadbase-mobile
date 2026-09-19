@@ -31,8 +31,9 @@ jest.mock('@/hooks/useSessionName', () => ({
   useRenameSession: () => ({ mutate: jest.fn() }),
 }))
 
+const mockVoice = { listening: false, start: jest.fn(), stop: jest.fn(), cancel: jest.fn() }
 jest.mock('@/hooks/useVoiceInput', () => ({
-  useVoiceInput: () => ({ listening: false, start: jest.fn(), stop: jest.fn() }),
+  useVoiceInput: () => mockVoice,
 }))
 
 jest.mock('expo-speech-recognition', () => ({
@@ -68,7 +69,10 @@ async function renderComposer(onSend = jest.fn()) {
 describe('useComposerState', () => {
   const previousSlashCommandsFlag = process.env.EXPO_PUBLIC_SLASH_COMMANDS
 
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockVoice.listening = false
+  })
   afterEach(() => {
     if (previousSlashCommandsFlag === undefined) delete process.env.EXPO_PUBLIC_SLASH_COMMANDS
     else process.env.EXPO_PUBLIC_SLASH_COMMANDS = previousSlashCommandsFlag
@@ -86,6 +90,17 @@ describe('useComposerState', () => {
     process.env.EXPO_PUBLIC_SLASH_COMMANDS = '1'
     await act(() => { result.current.handleInputChange('/usage') })
     expect(result.current.slashBoardVisible).toBe(true)
+  })
+
+  it('handleSend cancels a running dictation instead of stopping it', async () => {
+    mockVoice.listening = true
+    const onSend = jest.fn().mockResolvedValue(undefined)
+    const { result } = await renderComposer(onSend)
+    await act(() => { result.current.handleInputChange('dictated words') })
+    await act(async () => { await result.current.handleSend() })
+    expect(onSend).toHaveBeenCalledWith('dictated words', 'dictated words')
+    expect(mockVoice.cancel).toHaveBeenCalledTimes(1)
+    expect(mockVoice.stop).not.toHaveBeenCalled()
   })
 
   it('handleInputChange updates inputText and shows slash board when text starts with /', async () => {
