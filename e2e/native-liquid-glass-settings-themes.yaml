@@ -74,22 +74,6 @@ appId: com.ronenmars.threadbase
     id: "settings-theme-oneDark"
 - waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-one-dark
-- tapOn:
-    id: "settings-theme-githubDark"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-primer-dark
-- tapOn:
-    id: "settings-theme-solarizedDark"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-solarized-dark
-- tapOn:
-    id: "settings-theme-rosePine"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-rose-pine
-- tapOn:
-    id: "settings-theme-tokyoNight"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-tokyo-night
 
 # Light palettes
 - tapOn:
@@ -103,18 +87,6 @@ appId: com.ronenmars.threadbase
     id: "settings-theme-catppuccinLatte"
 - waitForAnimationToEnd
 - takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-latte
-- tapOn:
-    id: "settings-theme-oneLight"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-one-light
-- tapOn:
-    id: "settings-theme-githubLight"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-primer-light
-- tapOn:
-    id: "settings-theme-solarizedLight"
-- waitForAnimationToEnd
-- takeScreenshot: e2e/_artifacts/screenshots/native-liquid-glass-settings-solarized-light
 - tapOn:
     id: "settings-theme-rosePineDawn"
 - waitForAnimationToEnd

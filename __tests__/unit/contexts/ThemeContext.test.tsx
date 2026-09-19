@@ -7,8 +7,6 @@ import {
   catppuccin,
   nord,
   light,
-  githubDark,
-  githubLight,
 } from '@/constants/theme'
 
 // Use the real ThemeContext so the provider/hook contract tests remain meaningful
@@ -48,15 +46,6 @@ describe('useTheme', () => {
     expect(result.current.text.accent).toBe(light.text.accent)
   })
 
-  it.each([
-    ['githubDark', githubDark],
-    ['githubLight', githubLight],
-  ] as const)('returns %s when selected', async (colorScheme, expectedTheme) => {
-    useSettingsStore.setState({ colorScheme })
-    const { result } = await renderHook(() => useTheme(), { wrapper })
-    expect(result.current).toBe(expectedTheme)
-  })
-
   it('resolves system to light when OS scheme is light', async () => {
     jest.mocked(require('react-native').useColorScheme).mockReturnValue('light')
     useSettingsStore.setState({ colorScheme: 'system' })
@@ -72,7 +61,7 @@ describe('useTheme', () => {
   })
 
   it('uses native glass presentation with every selected palette', async () => {
-    useSettingsStore.setState({ colorScheme: 'githubDark' })
+    useSettingsStore.setState({ colorScheme: 'nord' })
     const { result } = await renderHook(() => useIsGlass(), { wrapper })
     expect(result.current).toBe(true)
   })

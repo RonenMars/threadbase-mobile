@@ -206,186 +206,6 @@ export const oneDark = {
   },
 } as const satisfies Theme
 
-// One Light — Atom's light sibling of One Dark (MIT)
-export const oneLight = {
-  colorMode: 'light' as const,
-  bg: {
-    primary: '#fafafa',
-    secondary: '#f0f0f0',
-    card: '#ffffff',
-  },
-  text: {
-    primary: '#383a42',
-    secondary: '#696c77',
-    accent: '#4078f2',
-    onAccent: '#0d1117',
-    highlight: '#eab700',
-    onHighlight: '#383a42',
-    danger: '#e45649',
-    warning: '#986801',
-    success: '#50a14f',
-    beta: '#986801',
-  },
-  border: '#d3d3d3',
-  status: {
-    running: '#50a14f',
-    waiting: '#986801',
-    failed: '#e45649',
-    completed: '#4078f2',
-    idle: '#888991',
-  },
-} as const satisfies Theme
-
-// Primer color primitives (MIT) — GitHub-inspired neutral developer palettes.
-export const githubDark = {
-  colorMode: 'dark' as const,
-  bg: {
-    primary: '#0d1117',
-    secondary: '#161b22',
-    card: '#21262d',
-  },
-  text: {
-    primary: '#f0f6fc',
-    secondary: '#8b949e',
-    accent: '#58a6ff',
-    onAccent: '#0d1117',
-    highlight: '#d29922',
-    onHighlight: '#0d1117',
-    danger: '#ff7b72',
-    warning: '#d29922',
-    success: '#3fb950',
-    beta: '#d29922',
-  },
-  border: '#30363d',
-  status: {
-    running: '#3fb950',
-    waiting: '#d29922',
-    failed: '#ff7b72',
-    completed: '#58a6ff',
-    idle: '#8b949e',
-  },
-} as const satisfies Theme
-
-export const githubLight = {
-  colorMode: 'light' as const,
-  bg: {
-    primary: '#ffffff',
-    secondary: '#f6f8fa',
-    card: '#ffffff',
-  },
-  text: {
-    primary: '#1f2328',
-    secondary: '#59636e',
-    accent: '#0969da',
-    onAccent: '#ffffff',
-    highlight: '#bf8700',
-    onHighlight: '#ffffff',
-    danger: '#cf222e',
-    warning: '#9a6700',
-    success: '#1a7f37',
-    beta: '#9a6700',
-  },
-  border: '#d0d7de',
-  status: {
-    running: '#1a7f37',
-    waiting: '#9a6700',
-    failed: '#cf222e',
-    completed: '#0969da',
-    idle: '#59636e',
-  },
-} as const satisfies Theme
-
-// Solarized Dark — Ethan Schoonover's precision palette (MIT)
-export const solarizedDark = {
-  colorMode: 'dark' as const,
-  bg: {
-    primary: '#002b36',
-    secondary: '#073642',
-    card: '#073642',
-  },
-  text: {
-    primary: '#839496',
-    secondary: '#859ca3',
-    accent: '#268bd2',
-    onAccent: '#001b24',
-    highlight: '#b58900',
-    onHighlight: '#fdf6e3',
-    danger: '#dc322f',
-    warning: '#b58900',
-    success: '#859900',
-    beta: '#b58900',
-  },
-  border: '#073642',
-  status: {
-    running: '#859900',
-    waiting: '#b58900',
-    failed: '#dc322f',
-    completed: '#268bd2',
-    idle: '#657e86',
-  },
-} as const satisfies Theme
-
-// Solarized Light — light sibling of Solarized Dark (MIT)
-export const solarizedLight = {
-  colorMode: 'light' as const,
-  bg: {
-    primary: '#fdf6e3',
-    secondary: '#eee8d5',
-    card: '#fdf6e3',
-  },
-  text: {
-    primary: '#657b83',
-    secondary: '#5d6b6b',
-    accent: '#268bd2',
-    onAccent: '#001b24',
-    highlight: '#e0b000',
-    onHighlight: '#002b36',
-    danger: '#dc322f',
-    warning: '#a87f00',
-    success: '#859900',
-    beta: '#a87f00',
-  },
-  border: '#eee8d5',
-  status: {
-    running: '#859900',
-    waiting: '#a87f00',
-    failed: '#dc322f',
-    completed: '#268bd2',
-    idle: '#768888',
-  },
-} as const satisfies Theme
-
-// Rosé Pine — muted, warm dark theme (MIT)
-export const rosePine = {
-  colorMode: 'dark' as const,
-  bg: {
-    primary: '#191724',
-    secondary: '#1f1d2e',
-    card: '#26233a',
-  },
-  text: {
-    primary: '#e0def4',
-    secondary: '#8d89a2',
-    accent: '#c4a7e7',
-    onAccent: '#191724',
-    highlight: '#f6c177',
-    onHighlight: '#191724',
-    danger: '#eb6f92',
-    warning: '#f6c177',
-    success: '#31748f',
-    beta: '#f6c177',
-  },
-  border: '#403d52',
-  status: {
-    // Working must read as green, not the pine accent — see docs/design/session-list.
-    running: '#3fb950',
-    waiting: '#f6c177',
-    failed: '#eb6f92',
-    completed: '#c4a7e7',
-    idle: '#706c89',
-  },
-} as const satisfies Theme
-
 // Rosé Pine Dawn — light sibling of Rosé Pine (MIT)
 export const rosePineDawn = {
   colorMode: 'light' as const,
@@ -414,36 +234,6 @@ export const rosePineDawn = {
     failed: '#b4637a',
     completed: '#907aa9',
     idle: '#898498',
-  },
-} as const satisfies Theme
-
-// Tokyo Night — cool blue-purple dark theme (MIT)
-export const tokyoNight = {
-  colorMode: 'dark' as const,
-  bg: {
-    primary: '#1a1b26',
-    secondary: '#16161e',
-    card: '#24283b',
-  },
-  text: {
-    primary: '#c0caf5',
-    secondary: '#878fb4',
-    accent: '#7aa2f7',
-    onAccent: '#1a1b26',
-    highlight: '#e0af68',
-    onHighlight: '#1a1b26',
-    danger: '#f7768e',
-    warning: '#e0af68',
-    success: '#9ece6a',
-    beta: '#e0af68',
-  },
-  border: '#292e42',
-  status: {
-    running: '#9ece6a',
-    waiting: '#e0af68',
-    failed: '#f7768e',
-    completed: '#7aa2f7',
-    idle: '#66709f',
   },
 } as const satisfies Theme
 
@@ -485,14 +275,7 @@ export type ThemeId =
   | 'catppuccinLatte'
   | 'nord'
   | 'oneDark'
-  | 'oneLight'
-  | 'githubDark'
-  | 'githubLight'
-  | 'solarizedDark'
-  | 'solarizedLight'
-  | 'rosePine'
   | 'rosePineDawn'
-  | 'tokyoNight'
   | 'tokyoNightLight'
 
 export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
@@ -502,14 +285,7 @@ export const THEMES: Record<Exclude<ThemeId, 'system'>, Theme> = {
   catppuccinLatte,
   nord,
   oneDark,
-  oneLight,
-  githubDark,
-  githubLight,
-  solarizedDark,
-  solarizedLight,
-  rosePine,
   rosePineDawn,
-  tokyoNight,
   tokyoNightLight,
 }
 
