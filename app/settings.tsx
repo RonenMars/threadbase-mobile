@@ -182,14 +182,7 @@ const THEME_LABELS: Record<Exclude<ThemeId, 'system'>, string> = {
   catppuccinLatte: 'Latte',
   nord: 'Nord',
   oneDark: 'One Dark',
-  oneLight: 'One Light',
-  githubDark: 'Primer Dark',
-  githubLight: 'Primer Light',
-  solarizedDark: 'Solarized Dark',
-  solarizedLight: 'Solarized Light',
-  rosePine: 'Rosé Pine',
   rosePineDawn: 'Rosé Pine Dawn',
-  tokyoNight: 'Tokyo Night',
   tokyoNightLight: 'Tokyo Night Light',
 }
 

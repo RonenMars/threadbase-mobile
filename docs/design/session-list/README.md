@@ -235,9 +235,9 @@ spacing 4 / 8 / 12 / 16 / 24 / 32      radius 6 / 10 / 16 / 9999
 font 11 / 13 / 15 / 17 / 20 / 24 (xs → xxl)
 ```
 
-Two required overrides: `rosePine.status.running` is `#31748f` and `rosePineDawn.status.running` is `#286983` — both blue-teal, which would put **Working** next to the accent colour. Give those two themes an explicit green for this semantic. (`THEMES` has **15** entries; `ThemeId` has 16 because it includes `'system'`, which `THEMES` excludes.)
+One required override: `rosePineDawn.status.running` is `#286983`, a blue-teal that would put **Working** next to the accent colour, so it needs an explicit green for this semantic. (The former `rosePine` had the same problem and has been removed. `THEMES` has **8** entries; `ThemeId` has 9 because it includes `'system'`, which `THEMES` excludes.)
 
-Contrast: prefer `#8b949e` (shipped as `githubDark.text.secondary`) over `#7d8590` for 11–12px secondary text on cards — `#7d8590` on `bg.card` is ≈4.0:1, under AA at that size.
+Contrast: prefer `#8b949e` (the value the retired `githubDark` theme used) over `#7d8590` for 11–12px secondary text on cards — `#7d8590` on `bg.card` is ≈4.0:1, under AA at that size.
 
 Motion (from the design system): standard easing `cubic-bezier(.2,.7,.2,1)`; durations 120 / 180 / 280ms; live pulse 0.4→1→0.4 over 1.6s; **no bounces, nothing overshoots**.
 
