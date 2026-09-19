@@ -20,12 +20,16 @@ const fireAppState = (s: string) => appStateListeners.forEach((l) => l(s))
 // useKeyboardInset reads the keyboard height; a mutable mock lets a test open
 // the keyboard under the expanded editor.
 const mockKeyboardHeight = { value: 0 }
+// The keyboard's progress drives the composer's bottom gap; a mutable mock lets a
+// test read the gap part-way through the animation. Safe-area bottom is non-zero
+// so the resting pad and the open gap are distinguishable.
+const mockKeyboardProgress = { value: 0 }
 jest.mock('react-native-keyboard-controller', () => ({
-  useReanimatedKeyboardAnimation: () => ({ height: mockKeyboardHeight, progress: { value: 0 } }),
-  useKeyboardState: (selector?: (s: { isVisible: boolean; height: number }) => unknown) => {
-    const state = { isVisible: false, height: 0 }
-    return selector ? selector(state) : state
-  },
+  useReanimatedKeyboardAnimation: () => ({ height: mockKeyboardHeight, progress: mockKeyboardProgress }),
+}))
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children }: { children: unknown }) => children,
+  useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
 }))
 
 function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProps {
@@ -66,6 +70,7 @@ describe('ChatComposer', () => {
   })
 
   afterEach(async () => {
+    mockKeyboardProgress.value = 0
     jest.restoreAllMocks()
     await i18n.changeLanguage('en')
   })
@@ -102,6 +107,30 @@ describe('ChatComposer', () => {
     const container = screen.getByTestId('expanded-composer-container')
     expect(StyleSheet.flatten(container.props.style).paddingBottom).toBe(300)
     mockKeyboardHeight.value = 0
+  })
+  // The gap used to switch discretely on keyboard visibility, jumping 26 pt at
+  // the start of every open and the end of every close while the lift animated.
+  describe('bottom gap', () => {
+    const padOf = () =>
+      StyleSheet.flatten(screen.getByTestId('composer-input-area').props.style).paddingBottom
+
+    it('clears the home indicator while the keyboard is away', async () => {
+      mockKeyboardProgress.value = 0
+      await renderComposer()
+      expect(padOf()).toBe(34)
+    })
+
+    it('shrinks to a small gap once the keyboard is fully open', async () => {
+      mockKeyboardProgress.value = 1
+      await renderComposer()
+      expect(padOf()).toBe(8)
+    })
+
+    it('moves with the keyboard rather than snapping', async () => {
+      mockKeyboardProgress.value = 0.5
+      await renderComposer()
+      expect(padOf()).toBe(21)
+    })
   })
 
   it('renders the text input and forwards typing', async () => {
