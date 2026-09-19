@@ -134,9 +134,9 @@ const styles = StyleSheet.create({
     // iOS shadow
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
-    shadowRadius: 12,
+    shadowRadius: 6,
     // Android elevation
-    elevation: 8,
+    elevation: 4,
     zIndex: 2,
   },
   hitWrap: {
@@ -156,10 +156,10 @@ const styles = StyleSheet.create({
   },
   glow: {
     position: 'absolute',
-    top: -4,
-    bottom: -4,
-    left: -4,
-    right: -4,
-    borderRadius: (FAB_HEIGHT + 8) / 2,
+    top: -2,
+    bottom: -2,
+    left: -2,
+    right: -2,
+    borderRadius: (FAB_HEIGHT + 4) / 2,
   },
 })
