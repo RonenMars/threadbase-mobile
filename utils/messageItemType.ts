@@ -1,5 +1,12 @@
 import type { Message } from '@/types/api'
 
+// A text answer past this length is split into its own type. One 8,000-char
+// answer measures ~5,600pt against ~60pt for a one-line reply; sharing an
+// average makes FlashList estimate every unmeasured short row as huge, so it
+// mounts a row or two per layout commit and React aborts the chain with
+// "Maximum update depth exceeded". ~1,200 chars is ~25 lines at phone width.
+export const LONG_TEXT_CHARS = 1200
+
 // Item type drives two FlashList v2 mechanisms: the recycling pool AND the
 // per-type running-average height used to place rows that haven't been
 // measured yet. Real conversations span ~46pt (collapsed Reasoning header)
@@ -20,5 +27,8 @@ export function messageItemType(item: Message): string {
   if (hasDiff) return 'diff'
   if (hasTool) return 'tool'
   if (hasThinking) return 'thinking'
-  return item.role === 'user' ? 'user' : 'assistant'
+  const textLength = item.content.reduce((n, b) => (b.type === 'text' ? n + b.text.length : n), 0)
+  const isLong = textLength > LONG_TEXT_CHARS
+  if (item.role === 'user') return isLong ? 'userLong' : 'user'
+  return isLong ? 'assistantLong' : 'assistant'
 }
