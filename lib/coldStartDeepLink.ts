@@ -35,13 +35,22 @@ export function sessionRouteFromUrl(url: string | null | undefined): SessionRout
   return route(sessionId, new URLSearchParams(match[2] ?? '').get('server'))
 }
 
-/** Notification payloads carry the same identity as fields rather than a URL. */
-export function sessionRouteFromNotificationData(data: {
-  sessionId?: string
-  serverId?: string
-}): SessionRoute | null {
+/**
+ * Notification payloads carry the same identity as fields rather than a URL.
+ *
+ * `isKnownServer` drops a `serverId` this app has no entry for. A streamer that
+ * predates the id echo (see `PushRegisterPayload.serverId`) sends its own
+ * hostname there, which `api-client` rejects as `Unknown server` before any
+ * request is made — and the session screen then reads that as "Session not
+ * found". Without the server param the screen uses the default server instead.
+ */
+export function sessionRouteFromNotificationData(
+  data: { sessionId?: string; serverId?: string },
+  isKnownServer?: (serverId: string) => boolean,
+): SessionRoute | null {
   if (!data.sessionId) return null
-  return route(data.sessionId, data.serverId)
+  const serverId = data.serverId && isKnownServer && !isKnownServer(data.serverId) ? undefined : data.serverId
+  return route(data.sessionId, serverId)
 }
 
 /** What the OS hands back when the app is launched by a tap. */
@@ -55,11 +64,14 @@ export interface ColdStartLaunch {
  * a Live Activity tap always carries one, and if both are somehow present the
  * URL is the more specific signal.
  */
-export function resolveColdStartRoute(launch: ColdStartLaunch): SessionRoute | null {
+export function resolveColdStartRoute(
+  launch: ColdStartLaunch,
+  isKnownServer?: (serverId: string) => boolean,
+): SessionRoute | null {
   return (
     sessionRouteFromUrl(launch.url) ??
     (launch.notificationData
-      ? sessionRouteFromNotificationData(launch.notificationData)
+      ? sessionRouteFromNotificationData(launch.notificationData, isKnownServer)
       : null)
   )
 }

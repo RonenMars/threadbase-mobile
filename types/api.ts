@@ -684,6 +684,12 @@ export interface PushRegisterPayload {
   token: string
   platform: 'ios' | 'android'
   deviceId?: string
+  /**
+   * The id this app files the receiving server under. The server stores it with
+   * the token and echoes it back as `data.serverId` in the push, so a tap opens
+   * the server that sent it. Older streamers ignore the field.
+   */
+  serverId?: string
 }
 
 // ── Browse types ────────────────────────────────────────────────────
