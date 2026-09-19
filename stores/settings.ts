@@ -17,6 +17,25 @@ function isValidThemeId(v: unknown): v is ThemeId {
   return typeof v === 'string' && VALID_THEME_IDS.has(v)
 }
 
+// Retired palettes, each mapped to the closest one that is kept.
+const LEGACY_THEME_IDS = {
+  appleGlass: 'dark',
+  dracula: 'dark',
+  githubDark: 'dark',
+  githubLight: 'light',
+  oneLight: 'light',
+  solarizedDark: 'dark',
+  solarizedLight: 'light',
+  rosePine: 'catppuccin',
+  tokyoNight: 'catppuccin',
+} as const satisfies Record<string, ThemeId>
+
+type LegacyThemeId = keyof typeof LEGACY_THEME_IDS
+
+function isLegacyThemeId(v: unknown): v is LegacyThemeId {
+  return typeof v === 'string' && v in LEGACY_THEME_IDS
+}
+
 export type AddServerAction = 'ask' | 'add' | 'replace' | 'keep'
 export type { SessionLeaveAction }
 
@@ -99,8 +118,8 @@ const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
 }
 
 interface PersistedSettings {
-  // appleGlass and dracula are retired; hydrate maps both to dark.
-  colorScheme: ThemeId | 'appleGlass' | 'dracula'
+  // Retired ids are mapped by LEGACY_THEME_IDS on hydrate.
+  colorScheme: ThemeId | LegacyThemeId
   notifications: NotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
@@ -191,8 +210,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       const raw = await AsyncStorage.getItem(ASYNC_KEY_SETTINGS)
       const parsed = raw ? (JSON.parse(raw) as Partial<PersistedSettings>) : {}
       set((state) => ({
-        colorScheme: parsed.colorScheme === 'appleGlass' || parsed.colorScheme === 'dracula'
-          ? 'dark'
+        colorScheme: isLegacyThemeId(parsed.colorScheme)
+          ? LEGACY_THEME_IDS[parsed.colorScheme]
           : isValidThemeId(parsed.colorScheme)
             ? parsed.colorScheme
             : state.colorScheme,

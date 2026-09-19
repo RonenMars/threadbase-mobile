@@ -42,7 +42,7 @@ Settings, selects Nord, and opens the Add Server sheet.
 ## Settings palette gallery
 
 [`e2e/native-liquid-glass-settings-themes.yaml`](../../native-liquid-glass-settings-themes.yaml)
-opens Settings and screenshots every retained palette (8 dark, 7 light). That
+opens Settings and screenshots every retained palette (4 dark, 4 light). That
 matches `THEME_LABELS` in `app/settings.tsx`, excluding `system`.
 
 Committed baselines live in `themes/`. Maestro still writes fresh captures to
@@ -54,15 +54,8 @@ Committed baselines live in `themes/`. Maestro still writes fresh captures to
 | `themes/native-liquid-glass-settings-catppuccin.png` | Mocha |
 | `themes/native-liquid-glass-settings-nord.png` | Nord |
 | `themes/native-liquid-glass-settings-one-dark.png` | One Dark |
-| `themes/native-liquid-glass-settings-primer-dark.png` | Primer Dark |
-| `themes/native-liquid-glass-settings-solarized-dark.png` | Solarized Dark |
-| `themes/native-liquid-glass-settings-rose-pine.png` | Rosé Pine |
-| `themes/native-liquid-glass-settings-tokyo-night.png` | Tokyo Night |
 | `themes/native-liquid-glass-settings-light.png` | Light |
 | `themes/native-liquid-glass-settings-latte.png` | Latte |
-| `themes/native-liquid-glass-settings-one-light.png` | One Light |
-| `themes/native-liquid-glass-settings-primer-light.png` | Primer Light |
-| `themes/native-liquid-glass-settings-solarized-light.png` | Solarized Light |
 | `themes/native-liquid-glass-settings-rose-pine-dawn.png` | Rosé Pine Dawn |
 | `themes/native-liquid-glass-settings-tokyo-night-light.png` | Tokyo Night Light |
 
