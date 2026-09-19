@@ -514,9 +514,6 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         url: normalised,
         apiKey: patch.apiKey,
         label: patch.label,
-        isConnected: false,
-        serverInfo: null,
-        connectionError: null,
         // Device key, pinned server key and pin move as one. They describe a
         // single pairing: keeping the pin after the identity it was proved
         // against is gone leaves a demand pointing at nothing, and keeping the
@@ -524,8 +521,15 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         // Replacing the identity here is itself the deliberate act §6.1 asks
         // for, so this is not the silent downgrade that clearing it on a rename
         // would have been.
+        //
+        // Connection state goes with them, and only with them. A rename keeps
+        // the socket open (WSClient.connect no-ops on an unchanged destination),
+        // so no status event would come to set `isConnected` back to true.
         ...(identityReplaced
           ? {
+              isConnected: false,
+              serverInfo: null,
+              connectionError: null,
               deviceId: undefined,
               deviceToken: undefined,
               deviceCapabilities: undefined,
