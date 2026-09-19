@@ -25,6 +25,7 @@ import {
   MicrophoneSlash,
   ArrowsOut,
   ArrowsIn,
+  Sparkle,
 } from 'phosphor-react-native'
 import type { UploadedFile } from '@/services/uploads'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -59,6 +60,12 @@ export interface ChatComposerProps {
   voice: { listening: boolean; start: () => Promise<void>; stop: () => void }
   micGranted: boolean
   onToggleMic: () => void
+  /** Ghost next-prompt suggestion. Null or absent renders no chip. */
+  promptSuggestion?: string | null
+  /** Tap on the chip: send the suggestion as-is. */
+  onSendSuggestion?: (text: string) => void
+  /** Long-press on the chip: put the suggestion in the input instead of sending. */
+  onFillSuggestion?: (text: string) => void
 }
 
 export function ChatComposer({
@@ -78,6 +85,9 @@ export function ChatComposer({
   voice,
   micGranted,
   onToggleMic,
+  promptSuggestion = null,
+  onSendSuggestion,
+  onFillSuggestion,
 }: ChatComposerProps) {
   const { t } = useTranslation('terminal')
   const theme = useTheme()
@@ -122,6 +132,32 @@ export function ChatComposer({
     Keyboard.dismiss()
     onSend()
   }
+
+  const suggestionChip =
+    promptSuggestion !== null &&
+    !hasContent &&
+    !disabled &&
+    !sendDisabled &&
+    onSendSuggestion !== undefined &&
+    onFillSuggestion !== undefined ? (
+      <TouchableOpacity
+        testID="prompt-suggestion-chip"
+        style={styles.suggestionChip}
+        onPress={() => onSendSuggestion(promptSuggestion)}
+        onLongPress={() => {
+          onFillSuggestion(promptSuggestion)
+          inputRef.current?.focus()
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={t('input.suggestionLabel', { text: promptSuggestion })}
+        accessibilityHint={t('input.suggestionHint')}
+      >
+        <Sparkle size={14} color={theme.text.accent} />
+        <Text style={[styles.suggestionText, inputDirection]} numberOfLines={1}>
+          {promptSuggestion}
+        </Text>
+      </TouchableOpacity>
+    ) : null
 
   const chips =
     attachments.length > 0 ? (
@@ -230,6 +266,7 @@ export function ChatComposer({
     <View style={[styles.inputArea, { paddingBottom: inputAreaPaddingBottom }]}>
       {errors}
       {chips}
+      {suggestionChip}
       <View style={styles.inputRow}>
         {attachButton}
         {Platform.OS === 'android' ? (
@@ -449,6 +486,20 @@ function makeStyles(theme: Theme) {
       maxWidth: 200,
     },
     chipText: { color: theme.text.primary, fontSize: font.xs, flexShrink: 1 },
+    suggestionChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      backgroundColor: theme.bg.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.border,
+      maxWidth: '100%',
+    },
+    suggestionText: { color: theme.text.secondary, fontSize: font.sm, flexShrink: 1 },
     disabled: { opacity: 0.4 },
   })
 }

@@ -90,6 +90,14 @@ describe('useComposerState', () => {
     expect(result.current.inputText).toBe('')
   })
 
+  it('handleSend(text) sends that text through the same path, not the composer text', async () => {
+    const onSend = jest.fn().mockResolvedValue(undefined)
+    const { result } = await renderComposer(onSend)
+    await act(async () => { await result.current.handleSend('add type hints and a docstring') })
+    expect(onSend).toHaveBeenCalledWith('add type hints and a docstring', 'add type hints and a docstring')
+    expect(result.current.inputText).toBe('')
+  })
+
   it('handleSend keeps the input and attachments when onSend rejects', async () => {
     ;(pickFromCamera as jest.Mock).mockResolvedValue({
       uri: 'file:///tmp/photo.jpg',
