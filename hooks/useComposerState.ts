@@ -27,7 +27,8 @@ export interface UseComposerStateOptions {
 export interface ComposerState {
   inputText: string
   handleInputChange: (text: string) => void
-  handleSend: () => void
+  /** `text` overrides the composer's own text (used to send a prompt suggestion as-is). */
+  handleSend: (text?: string) => void
   slashBoardVisible: boolean
   setSlashBoardVisible: (v: boolean) => void
   pendingArgCommand: SlashCommand | null
@@ -129,8 +130,8 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     setSlashBoardVisible(/^\/.{0,30}$/.test(text))
   }
 
-  const handleSend = () => {
-    const text = inputText.trim()
+  const handleSend = (override?: string) => {
+    const text = (override ?? inputText).trim()
     const payload = buildPayload(text)
     if (!payload) return
     if (autoNameFromMessage && !autoNameTriedRef.current && !getName(serverId, sessionId)) {

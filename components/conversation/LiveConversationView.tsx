@@ -22,6 +22,7 @@ import { useQuestionCancel } from '@/hooks/useQuestionCancel'
 import { isPromptPendingError } from '@/services/api-client'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
+import { usePromptSuggestion } from '@/hooks/usePromptSuggestion'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { MessageItem } from '@/components/conversation/MessageItem'
@@ -203,11 +204,13 @@ export function LiveConversationView({
   }, [serverId, sessionId, qc])
 
   // PTY lines shown inside the thinking bubble while agent is running
+  const { suggestion, chipSuggestion, dismiss: dismissSuggestion } = usePromptSuggestion(serverId, sessionId)
   const { lines: ptyLines, isStreaming, parseConfidence } = useTerminalStream(
     serverId,
     sessionId,
     false,
     provider,
+    suggestion,
   )
 
   useEffect(() => {
@@ -509,6 +512,15 @@ export function LiveConversationView({
         voice={voice}
         micGranted={micGranted}
         onToggleMic={handleToggleMic}
+        promptSuggestion={chipSuggestion}
+        onSendSuggestion={(text) => {
+          dismissSuggestion()
+          handleSend(text)
+        }}
+        onFillSuggestion={(text) => {
+          dismissSuggestion()
+          handleInputChange(text)
+        }}
       />
 
       <SlashCommandBoard
