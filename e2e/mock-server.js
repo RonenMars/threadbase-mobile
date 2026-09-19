@@ -637,7 +637,9 @@ for (const port of PORTS) {
     })
   })
 
-  server.listen(port, () => {
+  // Bind IPv4 only. listen(port) dual-stacks on macOS and fires this callback
+  // twice (once per family), which reads as two servers per port.
+  server.listen(port, '127.0.0.1', () => {
     console.log(`Mock server listening on http://localhost:${port}`)
   })
 }
