@@ -3,6 +3,7 @@ import { Platform } from 'react-native'
 import { createApiForServer } from './api-client'
 import { getDeviceClientId } from './device-id'
 import type { PushRegisterPayload } from '@/types/api'
+import i18n from '@/lib/i18n'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -51,6 +52,9 @@ export async function registerPushToken(serverId: string): Promise<RegisterPushR
     // arrives with no other hint of which one sent it. The streamer's own name
     // for itself is not a key we can look up.
     serverId,
+    // The in-app choice, not the device's: the two differ when the user picks
+    // a language in Settings, and the push should match the screen it opens.
+    locale: i18n.resolvedLanguage ?? i18n.language,
   }
 
   const api = createApiForServer(serverId)
