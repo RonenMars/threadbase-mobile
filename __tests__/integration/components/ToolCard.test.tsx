@@ -12,26 +12,43 @@ const bashResult: ToolResult = { type: 'tool_result', toolName: 'Bash', content:
 const bashError: ToolResult = { type: 'tool_result', toolName: 'Bash', content: 'command not found', isError: true }
 const emptyResult: ToolResult = { type: 'tool_result', toolName: 'Read', content: '' }
 
+// Render each Phosphor icon as its name so a test can tell which one a tool got.
+jest.mock('phosphor-react-native', () => {
+  const { Text } = jest.requireActual('react-native')
+  const names = [
+    'Eye', 'FilePlus', 'Files', 'Globe', 'Image', 'ListChecks',
+    'MagnifyingGlass', 'PencilSimple', 'Plug', 'Robot', 'Terminal', 'Wrench',
+  ]
+  return Object.fromEntries(names.map((n) => [n, () => <Text>{`icon:${n}`}</Text>]))
+})
+
 describe('ToolCard – tool names and icons', () => {
   const iconMap: [string, string][] = [
-    ['Edit', '✏️'],
-    ['Bash', '💻'],
-    ['Read', '👁'],
-    ['Write', '🖊'],
-    ['Glob', '🔍'],
-    ['Grep', '🔎'],
+    ['Edit', 'PencilSimple'],
+    ['Bash', 'Terminal'],
+    ['Read', 'Eye'],
+    ['Write', 'FilePlus'],
+    ['Glob', 'Files'],
+    ['Grep', 'MagnifyingGlass'],
+    ['exec_command', 'Terminal'],
+    ['Shell', 'Terminal'],
+    ['StrReplace', 'PencilSimple'],
+    ['apply_patch', 'PencilSimple'],
+    ['web_search', 'Globe'],
+    ['CallMcpTool', 'Plug'],
+    ['spawn_agent', 'Robot'],
   ]
 
-  test.each(iconMap)('shows "%s" icon for tool "%s"', async (name, icon) => {
+  test.each(iconMap)('shows the icon for tool "%s"', async (name, icon) => {
     const block: ToolUse = { type: 'tool_use', name, input: {} }
     const { getByText } = await render(<ToolCard block={block} />)
-    expect(getByText(icon)).toBeTruthy()
+    expect(getByText(`icon:${icon}`)).toBeTruthy()
   })
 
-  it('shows default 🔧 icon for unknown tools', async () => {
+  it('shows the default icon for unknown tools', async () => {
     const block: ToolUse = { type: 'tool_use', name: 'Agent', input: {} }
     const { getByText } = await render(<ToolCard block={block} />)
-    expect(getByText('🔧')).toBeTruthy()
+    expect(getByText('icon:Wrench')).toBeTruthy()
   })
 
   it('renders tool name', async () => {
@@ -110,8 +127,9 @@ describe('ToolCard – search highlight', () => {
   })
 
   it('highlights a match inside a tool_use JSON body', async () => {
-    const { getByText } = await render(<ToolCard block={bashUse} highlight="ls -la" activeMatch />)
-    const match = getByText('ls -la')
+    const { getAllByText } = await render(<ToolCard block={bashUse} highlight="ls -la" activeMatch />)
+    // The header summary shows the command too; the body's match renders last.
+    const match = getAllByText('ls -la').at(-1)!
     expect(StyleSheet.flatten(match.props.style)).toEqual(
       expect.objectContaining({ backgroundColor: expect.any(String) }),
     )
@@ -138,5 +156,43 @@ describe('ToolCard – accessibility', () => {
   it('accessibility label includes tool name', async () => {
     const { getByLabelText } = await render(<ToolCard block={bashUse} />)
     expect(getByLabelText('Bash tool expand')).toBeTruthy()
+  })
+})
+
+describe('ToolCard – Codex and Cursor inputs', () => {
+  const summaries: [string, Record<string, unknown>, string][] = [
+    ['exec_command', { cmd: 'npm run typecheck', workdir: '/Users/dev/tb-mobile', justification: 'verify' }, 'npm run typecheck'],
+    ['Shell', { command: 'git status --short', description: 'Check tree' }, 'git status --short'],
+    ['Read', { path: 'components/conversation/ToolCard.tsx', limit: 200 }, 'components/conversation/ToolCard.tsx'],
+    ['Grep', { pattern: 'resolveToolName', glob: '**/*.ts' }, 'resolveToolName'],
+    ['CallMcpTool', { server: 'github', toolName: 'list_pull_requests', arguments: { state: 'open' } }, 'github · list_pull_requests'],
+  ]
+
+  test.each(summaries)('summarises %s in the collapsed header', async (name, input, summary) => {
+    const { getByText } = await render(<ToolCard block={{ type: 'tool_use', name, input }} />)
+    expect(getByText(summary)).toBeTruthy()
+  })
+
+  it('renders exec input as source text, not a JSON-escaped string', async () => {
+    const source = 'const r = await tools.exec_command({ cmd: "ls" })\nconsole.log(r.output)'
+    const { getByText, getByLabelText } = await render(
+      <ToolCard block={{ type: 'tool_use', name: 'exec', input: { input: source } }} />,
+    )
+    await fireEvent.press(getByLabelText('exec tool expand'))
+    expect(getByText(source)).toBeTruthy()
+  })
+
+  it('falls back to JSON for an unknown tool', async () => {
+    const input = { foo: 'bar' }
+    const { getByText, getByLabelText } = await render(
+      <ToolCard block={{ type: 'tool_use', name: 'SomethingNew', input }} />,
+    )
+    await fireEvent.press(getByLabelText('SomethingNew tool expand'))
+    expect(getByText(JSON.stringify(input, null, 2))).toBeTruthy()
+  })
+
+  it('labels an unnamed live result with the fallback', async () => {
+    const { getByText } = await render(<ToolCard block={{ type: 'tool_result', toolName: '', content: 'ok' }} />)
+    expect(getByText('Tool')).toBeTruthy()
   })
 })

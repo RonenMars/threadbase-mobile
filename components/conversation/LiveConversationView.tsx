@@ -31,7 +31,7 @@ import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { messageItemType } from '@/utils/messageItemType'
-import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
+import { dropSeenLive, mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
@@ -151,10 +151,9 @@ export function LiveConversationView({
       return ai - bi
     })
 
-    // Deduplicate live messages against historical by uuid (id never matches
-    // across REST/WS: REST uses index-based ids, WS uses uuid/timestamp).
-    const seenUuids = new Set(orderedHistorical.map((m) => m.uuid).filter(Boolean))
-    const newLive = liveMessages.filter((m) => !m.uuid || !seenUuids.has(m.uuid))
+    // Deduplicate live messages against historical by uuid, then messageIndex
+    // (id never matches across REST/WS: REST uses index-based ids, WS uses uuid/timestamp).
+    const newLive = dropSeenLive(orderedHistorical, liveMessages)
 
     // Drop optimistic turns whose echo has landed — matched one-for-one by text.
     const allStreamed = [...orderedHistorical, ...newLive]
@@ -169,9 +168,9 @@ export function LiveConversationView({
     })()
 
     // Order: historical → optimistic user bubble → live WS messages. Dedup by
-    // uuid then id (shared with the read-only conversation view). newLive above is
-    // recomputed inside the helper — kept local here only for the echo matching.
-    return mergeLiveMessages(orderedHistorical, liveMessages, stillPending)
+    // uuid, messageIndex, then id (shared with the read-only conversation view).
+    // newLive above is recomputed inside the helper — kept local here only for the echo matching.
+    return resolveToolNames(mergeLiveMessages(orderedHistorical, liveMessages, stillPending))
   }, [data?.messages, liveMessages, pendingSends])
 
   // Session status for thinking indicator
