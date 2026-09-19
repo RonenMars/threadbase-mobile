@@ -617,6 +617,35 @@ describe('addServer – e2ee material', () => {
     expect(deleteItemAsync).not.toHaveBeenCalledWith(`threadbase_device_token_${id}`)
   })
 
+  const INFO = { version: '1.2.3', machineName: 'studio', platform: 'darwin', activeSessions: 0 }
+
+  it('keeps connection state on a label-only edit', async () => {
+    // The socket survives a rename, so no status event follows it; resetting
+    // isConnected here left the card showing a live server as offline.
+    const id = await addPinnedServer()
+    useServersStore.getState().setConnected(id, true, INFO)
+
+    await useServersStore.getState().editServer(id, { url: URL, apiKey: 'key-abc', label: 'New name' })
+
+    const server = useServersStore.getState().getServer(id)
+    expect(server?.isConnected).toBe(true)
+    expect(server?.serverInfo).toEqual(INFO)
+  })
+
+  it.each([
+    ['a new api key', { url: URL, apiKey: 'key-different' }],
+    ['a new url', { url: 'http://192.168.68.126:8766', apiKey: 'key-abc' }],
+  ])('resets connection state on %s', async (_label, patch) => {
+    const id = await addPinnedServer()
+    useServersStore.getState().setConnected(id, true, INFO)
+
+    await useServersStore.getState().editServer(id, patch)
+
+    const server = useServersStore.getState().getServer(useServersStore.getState().activeServerIds[0])
+    expect(server?.isConnected).toBe(false)
+    expect(server?.serverInfo).toBeNull()
+  })
+
   it.each([
     ['a new api key', { url: URL, apiKey: 'key-different' }],
     ['a new url', { url: 'http://192.168.68.126:8766', apiKey: 'key-abc' }],
