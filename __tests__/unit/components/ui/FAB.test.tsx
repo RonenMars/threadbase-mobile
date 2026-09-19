@@ -1,6 +1,6 @@
 import React from 'react'
 import { StyleSheet } from 'react-native'
-import { render, screen } from '@testing-library/react-native'
+import { fireEvent, render, screen } from '@testing-library/react-native'
 import { FAB } from '@/components/ui/FAB'
 
 describe('FAB', () => {
@@ -13,5 +13,12 @@ describe('FAB', () => {
     const style = StyleSheet.flatten(anchor.props.style)
     expect(style).toEqual(expect.objectContaining({ position: 'absolute', right: 20 }))
     expect(style.end).toBeUndefined()
+  })
+
+  it('stays pressable when collapsed to icon-only', async () => {
+    const onPress = jest.fn()
+    await render(<FAB onPress={onPress} collapsed />)
+    fireEvent.press(screen.getByTestId('fab-new-session'))
+    expect(onPress).toHaveBeenCalledTimes(1)
   })
 })
