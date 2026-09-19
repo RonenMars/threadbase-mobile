@@ -251,6 +251,13 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(list!.props.maintainVisibleContentPosition.disabled).toBeFalsy()
   })
 
+  // RN's default ('never') spends the first tap on dismissing the keyboard, so a
+  // question card in the footer needed two taps while the user was typing.
+  it('lets transcript controls take the first tap while the keyboard is up', async () => {
+    await renderView()
+    expect(screen.getByTestId('live-conversation-list')!.props.keyboardShouldPersistTaps).toBe('handled')
+  })
+
   it('pins to the true bottom on first load until the user drags', async () => {
     mockHistorical = [
       { id: 'history-1', uuid: 'history-1', role: 'assistant', content: [{ type: 'text', text: 'Earlier message' }], timestamp: '', is_sidechain: false, parent_uuid: null },

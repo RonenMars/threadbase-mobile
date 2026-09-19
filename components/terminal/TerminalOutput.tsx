@@ -367,6 +367,7 @@ export function TerminalOutput({
     <View style={styles.container} onLayout={handleContainerLayout} testID="terminal-output">
       <FlashList
         ref={listRef}
+        testID="terminal-output-list"
         data={collapsedLines}
         // Remount once the first PTY rows exist so startRenderingFromBottom
         // measures against real content, not the empty waking list.
@@ -383,6 +384,7 @@ export function TerminalOutput({
           autoscrollToBottomThreshold: 0.2,
         }}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
       />
 
       {activeQuestion ? (

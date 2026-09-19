@@ -435,6 +435,10 @@ export function LiveConversationView({
         // (Shopify/flash-list#2136) and bounces the reader back to the tail.
         drawDistance={2000}
         maintainVisibleContentPosition={CHAT_ANCHOR}
+        // The question card is the list footer. With RN's default ('never') the
+        // first tap on it while the keyboard is up only dismisses the keyboard.
+        // 'handled' lets controls act at once; a tap on empty space still dismisses.
+        keyboardShouldPersistTaps="handled"
         onScroll={handleScroll}
         scrollEventThrottle={16}
         onLoad={stickToEnd}
