@@ -63,7 +63,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
-import { DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, isDefaultFilters, type ListFilters } from '@/lib/sessionFilters'
+import { DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
 
 
 // Stable empty reference so a memo/child does not see a fresh [] each render
@@ -521,7 +521,8 @@ export default function ProjectsHub() {
 
       {serverBanners}
 
-      {sessionsLayout === 'now' ? (
+      {/* Nothing needs you → the presets have nothing to offer; keep them while the preset is on so it can be undone. */}
+      {sessionsLayout === 'now' && (tierCounts.needsYou > 0 || isNeedsMePreset(filters)) ? (
         <View style={styles.presets}>
           <FilterPresets filters={filters} onChange={setFilters} />
         </View>
