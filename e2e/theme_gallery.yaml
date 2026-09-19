@@ -1,0 +1,121 @@
+# Theme gallery — hub screenshots (Now + Projects tabs) of every palette, with
+# the mock server's demo content, so contrast can be eyeballed per theme.
+#
+# Not a test. Complements native-liquid-glass-settings-themes.yaml, which shoots
+# the empty Settings picker (no demo content) for the same palettes.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node e2e/run-maestro.js test e2e/theme_gallery.yaml
+# Output: e2e/_artifacts/screenshots/theme-gallery-<theme>-{now,projects}.png (30 files)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "dark"
+      NAME: "dark"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "catppuccin"
+      NAME: "catppuccin"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "nord"
+      NAME: "nord"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "oneDark"
+      NAME: "one-dark"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "githubDark"
+      NAME: "primer-dark"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "solarizedDark"
+      NAME: "solarized-dark"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "rosePine"
+      NAME: "rose-pine"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "dark"
+      THEME_ID: "tokyoNight"
+      NAME: "tokyo-night"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "light"
+      THEME_ID: "light"
+      NAME: "light"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "light"
+      THEME_ID: "catppuccinLatte"
+      NAME: "latte"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "light"
+      THEME_ID: "oneLight"
+      NAME: "one-light"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "light"
+      THEME_ID: "githubLight"
+      NAME: "primer-light"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "light"
+      THEME_ID: "solarizedLight"
+      NAME: "solarized-light"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "light"
+      THEME_ID: "rosePineDawn"
+      NAME: "rose-pine-dawn"
+
+- runFlow:
+    file: theme_gallery_shot.yaml
+    env:
+      TAB: "light"
+      THEME_ID: "tokyoNightLight"
+      NAME: "tokyo-night-light"
