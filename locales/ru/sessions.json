@@ -18,7 +18,8 @@
   "provider": {
     "codex": "Codex",
     "claude": "Claude",
-    "cursor": "Cursor"
+    "cursor": "Cursor",
+    "unknown": "Неизвестно"
   },
   "filter": {
     "label": "Фильтр и сортировка"
@@ -192,5 +193,21 @@
   "layout": {
     "now": "Сейчас",
     "projects": "Проекты"
+  },
+  "info": {
+    "sessionId": "ID сессии Threadbase",
+    "conversationId": "ID беседы",
+    "providerId": "ID провайдера",
+    "provider": "Провайдер",
+    "resumedFrom": "Продолжено из",
+    "forkedFrom": "Ответвлено от",
+    "parentConversation": "Родительская беседа",
+    "sessionName": "Название сессии",
+    "projectName": "Название проекта",
+    "projectPath": "Путь проекта",
+    "filePath": "Путь к файлу",
+    "account": "Аккаунт",
+    "messageCount": "Число сообщений",
+    "lastActivity": "Последняя активность"
   }
 }
