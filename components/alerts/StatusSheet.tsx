@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
@@ -32,7 +32,8 @@ export function StatusSheet() {
   const rows = statusRows(arb.all)
   const sheetOpen = useErrorSheetStore((s) => s.open)
   const closeSheet = useErrorSheetStore((s) => s.closeSheet)
-  const [serversStatusOpen, setServersStatusOpen] = useState(false)
+  const serversStatusOpen = useErrorSheetStore((s) => s.serversStatusOpen)
+  const setServersStatusOpen = useErrorSheetStore((s) => s.setServersStatusOpen)
   const visible = sheetOpen && rows.length > 0 && arb.critical == null
   const summary = getStatusSummary(arb.errors.length, arb.warnings.length, t)
   const title = t('alert.status.title')

@@ -31,7 +31,8 @@
       "warningCount_one": "{{count}} warning",
       "warningCount_other": "{{count}} warnings",
       "retryEverything": "Retry everything",
-      "technicalDetails": "Technical details"
+      "technicalDetails": "Technical details",
+      "dismiss": "Dismiss"
     },
     "inline": {
       "unreachableSince": "Unreachable since {{time}}",
