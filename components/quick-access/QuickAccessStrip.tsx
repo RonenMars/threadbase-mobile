@@ -93,7 +93,7 @@ export function QuickAccessStrip() {
       if (activeItem.type === 'dir') {
         pinItem({ type: 'dir', id: activeItem.id, label: activeItem.label, serverId: activeItem.serverId })
       } else if (activeItem.type === 'session' && activeItem.serverId) {
-        const [, sessionId] = activeItem.id.split('::')
+        const sessionId = activeItem.id.split('::').pop()
         pinItem({ type: 'session', id: activeItem.id, label: activeItem.label, serverId: activeItem.serverId, sessionId })
       }
     }
@@ -120,7 +120,7 @@ export function QuickAccessStrip() {
     if (activeItem.type === 'conversation') {
       router.push(`/conversation/${activeItem.conversationId}?server=${activeItem.serverId}`)
     } else {
-      const [, id] = activeItem.id.split('::')
+      const id = activeItem.id.split('::').pop()
       router.push(`/session/${id}?server=${activeItem.serverId}`)
     }
     setActiveItem(null)
