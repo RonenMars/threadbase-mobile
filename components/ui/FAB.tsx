@@ -10,15 +10,20 @@ import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 interface Props {
   onPress: () => void
   onLayout?: () => void
-  hidden?: boolean
+  /** Scroll-down compact mode: icon only, label hidden. */
+  collapsed?: boolean
 }
 
-export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout, hidden = false }, ref) {
+const EXPANDED_PAD = 18
+const COLLAPSED_PAD = 14
+const LABEL_MAX = 160
+
+export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout, collapsed = false }, ref) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const [glowAnim] = useState(() => new Animated.Value(0.08))
-  const hideAnim = useRef(new Animated.Value(0)).current
+  const collapseAnim = useRef(new Animated.Value(0)).current
   const reduceMotion = useReduceMotion()
 
   useEffect(() => {
@@ -41,24 +46,24 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout, hid
   }, [glowAnim, reduceMotion])
 
   useEffect(() => {
-    Animated.timing(hideAnim, {
-      toValue: hidden ? 1 : 0,
+    Animated.timing(collapseAnim, {
+      toValue: collapsed ? 1 : 0,
       duration: reduceMotion ? 0 : 180,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start()
-  }, [hidden, hideAnim, reduceMotion])
+  }, [collapsed, collapseAnim, reduceMotion])
+
+  const label = t('fab.newSession')
 
   return (
     <Animated.View
-      pointerEvents={hidden ? 'none' : 'box-none'}
+      pointerEvents="box-none"
       style={[
         styles.fab,
         {
           bottom: FAB_BOTTOM + insets.bottom,
           backgroundColor: theme.text.accent,
           shadowColor: theme.text.accent,
-          opacity: hideAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-          transform: [{ translateY: hideAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 16] }) }],
         },
       ]}
     >
@@ -67,19 +72,43 @@ export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout, hid
         onPress={onPress}
         onLayout={onLayout}
         activeOpacity={0.75}
-        accessibilityLabel={t('fab.newSession')}
+        accessibilityLabel={label}
         accessibilityRole="button"
-        accessibilityElementsHidden={hidden}
         testID="fab-new-session"
-        style={styles.hit}
+        style={styles.hitWrap}
       >
-        {/* glow halo */}
         <Animated.View
-          pointerEvents="none"
-          style={[styles.glow, { opacity: glowAnim, backgroundColor: theme.text.accent }]}
-        />
-        <Plus size={16} color={theme.bg.primary} weight="bold" />
-        <Text style={[styles.label, { color: theme.bg.primary }]}>{t('fab.newSession')}</Text>
+          style={[
+            styles.hit,
+            {
+              paddingHorizontal: collapseAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [EXPANDED_PAD, COLLAPSED_PAD],
+              }),
+            },
+          ]}
+        >
+          {/* glow halo */}
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.glow, { opacity: glowAnim, backgroundColor: theme.text.accent }]}
+          />
+          <Plus size={16} color={theme.bg.primary} weight="bold" />
+          <Animated.View
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+            style={{
+              opacity: collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+              maxWidth: collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [LABEL_MAX, 0] }),
+              marginStart: collapseAnim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }),
+              overflow: 'hidden',
+            }}
+          >
+            <Text style={[styles.label, { color: theme.bg.primary }]} numberOfLines={1}>
+              {label}
+            </Text>
+          </Animated.View>
+        </Animated.View>
       </TouchableOpacity>
     </Animated.View>
   )
@@ -110,14 +139,16 @@ const styles = StyleSheet.create({
     elevation: 8,
     zIndex: 2,
   },
+  hitWrap: {
+    height: FAB_HEIGHT,
+    borderRadius: FAB_HEIGHT / 2,
+  },
   hit: {
     height: FAB_HEIGHT,
-    paddingHorizontal: 18,
     borderRadius: FAB_HEIGHT / 2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
   },
   label: {
     fontSize: font.sm,
@@ -130,6 +161,5 @@ const styles = StyleSheet.create({
     left: -10,
     right: -10,
     borderRadius: (FAB_HEIGHT + 20) / 2,
-    // no pointer events needed — purely decorative
   },
 })
