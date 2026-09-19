@@ -22,6 +22,7 @@
     "dev:metro": "node scripts/dev-metro.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
+    "web": "expo start --web",
     "test": "jest --watchAll",
     "test:ci": "jest --ci --forceExit",
     "test:unit": "jest --ci --forceExit --testPathPattern='__tests__/unit'",

@@ -30,7 +30,7 @@ import {
   type ListFilters,
 } from '@/lib/sessionFilters'
 import type { SortBy, SortOrder } from '@/types/ui'
-import { useAppDirection } from '@/lib/rtl'
+import { useAppDirection, textDirectionStyle } from '@/lib/rtl'
 import { FilterPresets } from './FilterPresets'
 import { getActiveWithinLabel, getSortByLabel, getSortOrderLabel } from './filterSortLabels'
 
@@ -408,9 +408,7 @@ function makeStyles(theme: Theme, localeDirection: 'ltr' | 'rtl') {
     },
     standaloneSectionTitle: {
       width: '100%',
-      direction: localeDirection,
-      writingDirection: localeDirection,
-      textAlign: 'auto',
+      ...textDirectionStyle(localeDirection),
     },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     chip: {

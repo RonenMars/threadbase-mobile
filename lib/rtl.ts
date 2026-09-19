@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Platform, type TextStyle, type ViewStyle } from 'react-native';
 import i18next from 'i18next';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +12,10 @@ import { useTranslation } from 'react-i18next';
  * `changeLanguage` immediately. The app therefore never calls `forceRTL` or
  * `allowRTL`; the resolved direction is painted as a Yoga `direction` style on
  * the app root (see `app/_layout.tsx`), which Yoga inherits down the tree.
+ *
+ * React Native Web rejects Yoga's `direction` style prop and maps
+ * `writingDirection` to CSS `direction` instead — use `layoutDirectionStyle`
+ * / `textDirectionStyle` so native and web stay in sync.
  */
 
 export type Direction = 'ltr' | 'rtl';
@@ -20,6 +25,14 @@ export type AppDirection = {
   direction: Direction;
   isRTL: boolean;
 };
+
+/** Layout direction style: Yoga `direction` on native, `writingDirection` on web. */
+export function layoutDirectionStyle(direction: Direction): ViewStyle & Pick<TextStyle, 'writingDirection'> {
+  if (Platform.OS === 'web') {
+    return { writingDirection: direction };
+  }
+  return { direction };
+}
 
 /**
  * Direction of an explicit language tag, or of the active language when the
@@ -46,27 +59,30 @@ export function useAppDirection(): AppDirection {
 }
 
 /**
- * A memoised `{ direction }` style for subtrees Yoga cannot reach from the app
- * root: React Native's `<Modal>` renders its children into `RCTModalHostView`,
- * a separate native host whose Yoga root direction comes from `I18nManager`
- * (see `Modal.js`, which even hard-codes `const side = I18nManager.getConstants().isRTL ? 'right' : 'left'`
- * at module load). Compose it onto the modal's *outermost* view —
+ * A memoised layout-direction style for subtrees Yoga cannot reach from the
+ * app root: React Native's `<Modal>` renders its children into
+ * `RCTModalHostView`, a separate native host whose Yoga root direction comes
+ * from `I18nManager` (see `Modal.js`, which even hard-codes
+ * `const side = I18nManager.getConstants().isRTL ? 'right' : 'left'` at module
+ * load). Compose it onto the modal's *outermost* view —
  * `style={[styles.overlay, directionStyle]}` — so the whole overlay, not just
  * one content box, follows the selected language.
  */
-export function useDirectionStyle(): { direction: Direction } {
+export function useDirectionStyle(): ViewStyle & Pick<TextStyle, 'writingDirection'> {
   const { direction } = useAppDirection();
-  return useMemo(() => ({ direction }), [direction]);
+  return useMemo(() => layoutDirectionStyle(direction), [direction]);
 }
 
 export type TextDirectionStyle = {
-  direction: Direction;
+  /** Absent on web: React Native Web rejects Yoga `direction`. */
+  direction?: Direction;
   writingDirection: Direction;
   textAlign: 'auto';
 };
 
 /** Runtime text/input direction. Apply at the presentation boundary. */
 export function textDirectionStyle(direction: Direction): TextDirectionStyle {
+  if (Platform.OS === 'web') return { writingDirection: direction, textAlign: 'auto' };
   return { direction, writingDirection: direction, textAlign: 'auto' };
 }
 
@@ -97,7 +113,7 @@ export type RtlStyleKit = {
   copy: TextDirectionStyle;
   block: TextDirectionStyle & { width: '100%' };
   ltr: TextDirectionStyle;
-  overlay: { direction: Direction };
+  overlay: ViewStyle;
 };
 
 export function rtlStyleKit(direction: Direction): RtlStyleKit {
@@ -107,7 +123,7 @@ export function rtlStyleKit(direction: Direction): RtlStyleKit {
     copy: textDirectionStyle(direction),
     block: blockTextDirectionStyle(direction),
     ltr: ltrContentStyle,
-    overlay: { direction },
+    overlay: layoutDirectionStyle(direction),
   };
 }
 
