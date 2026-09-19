@@ -184,8 +184,7 @@
       "linux": "במחשב Linux הזה סגרו עורכים כבדים, דפדפנים או מכונות וירטואליות. System Monitor או top מראים מה צורך RAM ומעבד.",
       "win32": "במחשב Windows הזה סגרו את Cursor, Chrome או מכונות וירטואליות שאינן נחוצות. Task Manager מראה מה צורך RAM ומעבד.",
       "generic": "במחשב סגרו את Cursor, Chrome או מכונות וירטואליות שאינן נחוצות, ואז בדקו RAM ומעבד."
-    },
-    "dismiss": "סגור"
+    }
   },
   "claudeFlags": {
     "title": "דגלי Claude CLI",
