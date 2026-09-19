@@ -99,5 +99,21 @@ describe('Anonymous Diagnostics — end-to-end transmission proof', () => {
     expect(sdk.close).not.toHaveBeenCalled() // the client is never torn down — only the gate flips
     expect(beforeSend({ event_id: 'e5', level: 'error' })).toBeNull() // ZERO further envelopes
     expect(beforeBreadcrumb({ category: 'app.lifecycle', message: 'app_started' })).toBeNull()
+
+    // ---- 8. QA UI OVERRIDE ON — still zero coupling to the transmission gate ----
+    // isQaForceDiagnosticsConsentUi() only ever gates JSX render output in
+    // AnonymousDiagnosticsConsentBanner/DoneStep; services/sentry.ts (this
+    // module) never imports it, so there is no code path for it to reach.
+    const globalWithDev = global as typeof global & { __DEV__: boolean }
+    const previousDev = globalWithDev.__DEV__
+    const setUserCallsBefore = scope.setUser.mock.calls.length
+    globalWithDev.__DEV__ = true
+    process.env.EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI = '1'
+    expect(mod.isAnonymousDiagnosticsEnabled()).toBe(false)
+    expect(beforeSend({ event_id: 'e6', level: 'error' })).toBeNull()
+    expect(beforeBreadcrumb({ category: 'app.lifecycle', message: 'app_started' })).toBeNull()
+    expect(scope.setUser.mock.calls.length).toBe(setUserCallsBefore) // no new identity call
+    delete process.env.EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI
+    globalWithDev.__DEV__ = previousDev
   })
 })

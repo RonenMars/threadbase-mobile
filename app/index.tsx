@@ -51,6 +51,7 @@ import { HostPressureBanner } from '@/components/servers/HostPressureBanner'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { ServerWarmingBanner } from '@/components/sessions/banners/ServerWarmingBanner'
 import { ServerUnsupportedBanner } from '@/components/sessions/banners/ServerUnsupportedBanner'
+import { AnonymousDiagnosticsConsentBanner } from '@/components/diagnostics/AnonymousDiagnosticsConsentBanner'
 import { ToastViewport } from '@/components/ui/ToastViewport'
 import { HomeStatusPill } from '@/components/alerts/StatusPill'
 import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
@@ -482,6 +483,8 @@ export default function ProjectsHub() {
           />
         </View>
       ) : null}
+
+      <AnonymousDiagnosticsConsentBanner />
     </View>
   )
 
