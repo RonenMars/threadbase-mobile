@@ -132,6 +132,22 @@ describe('SettingsStore – colorScheme', () => {
     expect(useSettingsStore.getState().colorScheme).toBe('dark')
   })
 
+  it.each([
+    ['githubDark', 'dark'],
+    ['githubLight', 'light'],
+    ['oneLight', 'light'],
+    ['solarizedDark', 'dark'],
+    ['solarizedLight', 'light'],
+    ['rosePine', 'catppuccin'],
+    ['tokyoNight', 'catppuccin'],
+  ])('migrates a persisted %s selection to %s', async (retired, kept) => {
+    const stored = JSON.stringify({ colorScheme: retired, notifications: DEFAULT_NOTIFICATIONS })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(stored)
+    useSettingsStore.setState({ colorScheme: 'nord' })
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().colorScheme).toBe(kept)
+  })
+
   it('migrates a persisted Dracula selection to dark', async () => {
     const stored = JSON.stringify({
       colorScheme: 'dracula',

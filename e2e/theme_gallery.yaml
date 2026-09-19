@@ -6,7 +6,7 @@
 #
 # Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
 # Usage: node e2e/run-maestro.js test e2e/theme_gallery.yaml
-# Output: e2e/_artifacts/screenshots/theme-gallery-<theme>-{now,projects}.png (30 files)
+# Output: e2e/_artifacts/screenshots/theme-gallery-<theme>-{now,projects}.png (16 files)
 
 appId: com.ronenmars.threadbase
 ---
@@ -43,33 +43,9 @@ appId: com.ronenmars.threadbase
       THEME_ID: "oneDark"
       NAME: "one-dark"
 
-- runFlow:
-    file: theme_gallery_shot.yaml
-    env:
-      TAB: "dark"
-      THEME_ID: "githubDark"
-      NAME: "primer-dark"
 
-- runFlow:
-    file: theme_gallery_shot.yaml
-    env:
-      TAB: "dark"
-      THEME_ID: "solarizedDark"
-      NAME: "solarized-dark"
 
-- runFlow:
-    file: theme_gallery_shot.yaml
-    env:
-      TAB: "dark"
-      THEME_ID: "rosePine"
-      NAME: "rose-pine"
 
-- runFlow:
-    file: theme_gallery_shot.yaml
-    env:
-      TAB: "dark"
-      THEME_ID: "tokyoNight"
-      NAME: "tokyo-night"
 
 - runFlow:
     file: theme_gallery_shot.yaml
@@ -85,26 +61,8 @@ appId: com.ronenmars.threadbase
       THEME_ID: "catppuccinLatte"
       NAME: "latte"
 
-- runFlow:
-    file: theme_gallery_shot.yaml
-    env:
-      TAB: "light"
-      THEME_ID: "oneLight"
-      NAME: "one-light"
 
-- runFlow:
-    file: theme_gallery_shot.yaml
-    env:
-      TAB: "light"
-      THEME_ID: "githubLight"
-      NAME: "primer-light"
 
-- runFlow:
-    file: theme_gallery_shot.yaml
-    env:
-      TAB: "light"
-      THEME_ID: "solarizedLight"
-      NAME: "solarized-light"
 
 - runFlow:
     file: theme_gallery_shot.yaml
