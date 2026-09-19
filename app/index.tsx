@@ -138,7 +138,7 @@ export default function ProjectsHub() {
     () => activeServerIds.filter((id) => fetchStatuses[id]?.status === 'warming_up'),
     [activeServerIds, fetchStatuses],
   )
-  const { hidden: fabHidden, onScroll, reveal: revealFab } = useHideOnScrollDown()
+  const { hidden: fabCollapsed, onScroll, reveal: revealFab } = useHideOnScrollDown()
 
   // Header controls
   const [searchOpen, setSearchOpen] = useState(false)
@@ -605,7 +605,7 @@ export default function ProjectsHub() {
       <FAB
         ref={fabRef}
         onPress={handleFABPress}
-        hidden={fabHidden}
+        collapsed={fabCollapsed}
       />
 
       {/* Modals & Sheets */}

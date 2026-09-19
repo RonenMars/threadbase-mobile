@@ -4,7 +4,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 const THRESHOLD = 6
 const TOP = 16
 
-/** Hides a floating control while the list is scrolling down; shows it again on up or at the top. */
+/** Flags a floating control as compact while scrolling down; clears on up or at the top. */
 export function useHideOnScrollDown() {
   const lastY = useRef(0)
   const [hidden, setHidden] = useState(false)
