@@ -59,6 +59,9 @@ import { ONBOARDING_RESUME_KEY, parseOnboardingResume } from '@/lib/onboarding-r
 import { useAppDirection } from '@/lib/rtl'
 import { DirectionRoot } from '@/lib/direction-root'
 
+/** Read at tap time, not render time: the store may have changed since the push arrived. */
+const isKnownServer = (serverId: string) => useServersStore.getState().getServer(serverId) !== undefined
+
 installClientLogCapture()
 clientLog.info('boot', 'app module loaded')
 recordDiagnosticEvent('app_started')
@@ -318,6 +321,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const target = sessionRouteFromNotificationData(
         response.notification.request.content.data as { sessionId?: string; serverId?: string },
+        isKnownServer,
       )
       if (target) router.push(target.path)
     })
@@ -343,15 +347,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         Notifications.getLastNotificationResponseAsync(),
       ])
       if (cancelled) return
-      const target = resolveColdStartRoute({
-        url,
-        notificationData: response
-          ? (response.notification.request.content.data as {
-              sessionId?: string
-              serverId?: string
-            })
-          : null,
-      })
+      const target = resolveColdStartRoute(
+        {
+          url,
+          notificationData: response
+            ? (response.notification.request.content.data as {
+                sessionId?: string
+                serverId?: string
+              })
+            : null,
+        },
+        isKnownServer,
+      )
       if (!target) return
       router.push(target.path)
     })()

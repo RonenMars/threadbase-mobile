@@ -45,6 +45,36 @@ describe('sessionRouteFromNotificationData', () => {
     })
   })
 
+  // A streamer that predates the id echo sends its own hostname. The app keys
+  // servers by a hash of the URL and cannot resolve it: `Unknown server`, which
+  // the session screen renders as "Session not found".
+  it('drops a server id this app has no entry for, so the default server is used', () => {
+    expect(
+      sessionRouteFromNotificationData(
+        { sessionId: 'abc', serverId: 'my-host.local' },
+        (id) => id === 'srv_known',
+      ),
+    ).toEqual({ sessionId: 'abc', path: '/session/abc' })
+  })
+
+  it('keeps a server id the app does know', () => {
+    expect(
+      sessionRouteFromNotificationData(
+        { sessionId: 'abc', serverId: 'srv_known' },
+        (id) => id === 'srv_known',
+      )?.path,
+    ).toBe('/session/abc?server=srv_known')
+  })
+
+  it('applies the same check on a cold start', () => {
+    expect(
+      resolveColdStartRoute(
+        { url: null, notificationData: { sessionId: 'abc', serverId: 'my-host.local' } },
+        () => false,
+      )?.path,
+    ).toBe('/session/abc')
+  })
+
   it('returns null without a session id', () => {
     expect(sessionRouteFromNotificationData({})).toBeNull()
     expect(sessionRouteFromNotificationData({ serverId: 'srv-1' })).toBeNull()

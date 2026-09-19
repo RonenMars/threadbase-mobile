@@ -47,6 +47,10 @@ export async function registerPushToken(serverId: string): Promise<RegisterPushR
     token,
     platform: Platform.OS as 'ios' | 'android',
     deviceId: await getDeviceClientId(),
+    // The same token is registered with every paired server, and the push
+    // arrives with no other hint of which one sent it. The streamer's own name
+    // for itself is not a key we can look up.
+    serverId,
   }
 
   const api = createApiForServer(serverId)
