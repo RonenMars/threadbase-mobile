@@ -34,6 +34,8 @@ interface RawSessionMeta {
   project_name?: string
   session_name?: string
   project_path?: string
+  file_path?: string
+  parentConversationId?: string | null
   last_updated_at?: string
   message_count?: number
   preview?: string
@@ -421,6 +423,11 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
     id: convId,
     title: first.meta.session_name?.trim() || first.meta.project_name || i18n.t('conversation:header.titleFallback'),
     projectPath: first.meta.project_path ?? '',
+    projectName: first.meta.project_name,
+    sessionName: first.meta.session_name,
+    filePath: first.meta.file_path,
+    account: first.meta.profile_id,
+    parentConversationId: first.meta.parentConversationId,
     branch: first.meta.git_branch,
     messageCount: first.meta.message_count ?? messages.length,
     lastActivity: first.meta.last_updated_at ?? '',
