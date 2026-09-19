@@ -30,4 +30,18 @@ describe('CriticalDialog', () => {
     )
     expect(queryByTestId('critical-dialog')).toBeNull()
   })
+
+  it('labels the dialog as critical by default', async () => {
+    const { getByTestId } = await renderWithI18n(
+      <CriticalDialog visible title="Heads up" onRequestClose={() => {}} />,
+    )
+    expect(getByTestId('critical-dialog').props.accessibilityLabel).toBe('Critical. Heads up')
+  })
+
+  it('labels the dialog by the level it is given', async () => {
+    const { getByTestId } = await renderWithI18n(
+      <CriticalDialog visible level="warning" title="Heads up" onRequestClose={() => {}} />,
+    )
+    expect(getByTestId('critical-dialog').props.accessibilityLabel).toBe('Warning. Heads up')
+  })
 })
