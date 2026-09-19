@@ -7,6 +7,7 @@
       "__tests__/integration/components/SessionScreen.endedRedirect.test.tsx",
       "__tests__/integration/components/SessionScreen.externalGate.test.tsx",
       "__tests__/integration/components/SessionScreen.holdOnBackground.test.tsx",
+      "__tests__/integration/components/SessionScreen.infoModal.test.tsx",
       "__tests__/integration/components/SessionScreen.leavePolicy.test.tsx",
       "__tests__/integration/components/SessionScreen.pending.test.tsx",
       "__tests__/integration/components/SessionScreen.stopButton.test.tsx",
@@ -22,7 +23,8 @@
       "__tests__/integration/components/ConnectStepManual.test.tsx",
       "__tests__/integration/components/BackupRestoreAuthRemedy.test.tsx",
       "__tests__/integration/components/PairDeepLinkScreen.test.tsx",
-      "__tests__/integration/components/BrowseDisabledOnError.test.tsx"
+      "__tests__/integration/components/BrowseDisabledOnError.test.tsx",
+      "__tests__/integration/conversation-info-modal.test.tsx"
     ]
   },
   "3": {
