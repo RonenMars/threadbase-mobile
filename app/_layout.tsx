@@ -402,7 +402,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
   const theme = useTheme()
   const isGlass = useIsGlass()
   const { isRTL } = useAppDirection()
-  const { t } = useTranslation(['common', 'browse', 'settings', 'sessions'])
+  const { t } = useTranslation(['common', 'browse', 'settings', 'sessions', 'servers', 'feedback'])
   // expo-router 57.0.4 paints the native screen container with the
   // react-navigation theme's `colors.background`. Its default is opaque light
   // grey; feed it the palette's canvas. The canvas is flat on every theme —
@@ -474,27 +474,27 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       />
       <Stack.Screen
         name="help-feedback"
-        options={{ title: i18n.t('feedback:screenTitle'), headerShown: true }}
+        options={{ title: t('feedback:screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="diagnostics"
-        options={{ title: i18n.t('feedback:diagnostics.screenTitle'), headerShown: true }}
+        options={{ title: t('feedback:diagnostics.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="server-health"
-        options={{ title: i18n.t('servers:health.screenTitle'), headerShown: true }}
+        options={{ title: t('servers:health.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="notification-health"
-        options={{ title: i18n.t('settings:notificationHealth.screenTitle'), headerShown: true }}
+        options={{ title: t('settings:notificationHealth.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="paired-devices"
-        options={{ title: i18n.t('settings:pairedDevices.screenTitle'), headerShown: true }}
+        options={{ title: t('settings:pairedDevices.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="backup-restore"
-        options={{ title: i18n.t('settings:backup.screenTitle'), headerShown: true }}
+        options={{ title: t('settings:backup.screenTitle'), headerShown: true }}
       />
       <Stack.Screen
         name="project/[id]"
