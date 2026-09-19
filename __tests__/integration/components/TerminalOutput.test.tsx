@@ -18,6 +18,11 @@ describe('TerminalOutput – rendering', () => {
     await render(<TerminalOutput lines={[]} isStreaming={false} />)
   })
 
+  it('lets list controls take the first tap while the keyboard is up', async () => {
+    const { getByTestId } = await render(<TerminalOutput lines={['hello world']} isStreaming={false} />)
+    expect(getByTestId('terminal-output-list').props.keyboardShouldPersistTaps).toBe('handled')
+  })
+
   it('pins PTY lines to LTR while the chrome follows the selected language', async () => {
     await i18n.changeLanguage('he')
     const { getByText, getByTestId } = await render(
