@@ -696,6 +696,11 @@ export interface PushRegisterPayload {
    * the server that sent it. Older streamers ignore the field.
    */
   serverId?: string
+  /**
+   * The app's display language, so the streamer writes notifications in it.
+   * Older streamers ignore the field and send English.
+   */
+  locale?: string
 }
 
 // ── Browse types ────────────────────────────────────────────────────

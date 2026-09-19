@@ -296,10 +296,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       clearHostPressure(msg.serverId)
     })
 
-    // Register push tokens for all servers
+    // Register push tokens for all servers, and again whenever the display
+    // language changes — the registration carries it, and the streamer writes
+    // notifications in it. Settings hydration changes it once after boot too.
     registerPushTokenForAll(activeServerIds).catch(() => {})
+    const reregisterOnLanguage = () => {
+      registerPushTokenForAll(activeServerIds).catch(() => {})
+    }
+    i18n.on('languageChanged', reregisterOnLanguage)
 
     return () => {
+      i18n.off('languageChanged', reregisterOnLanguage)
       unsubUpdate()
       unsubConvUpdated()
       unsubReady()
