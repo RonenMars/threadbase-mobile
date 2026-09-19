@@ -365,25 +365,47 @@ export function TerminalOutput({
 
   return (
     <View style={styles.container} onLayout={handleContainerLayout} testID="terminal-output">
-      <FlashList
-        ref={listRef}
-        data={collapsedLines}
-        // Remount once the first PTY rows exist so startRenderingFromBottom
-        // measures against real content, not the empty waking list.
-        key={collapsedLines.length === 0 ? 'empty' : 'ready'}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        ListHeaderComponent={listHeader}
-        onScroll={handleScroll}
-        onLoad={stickToBottom}
-        onContentSizeChange={handleContentSizeChange}
-        scrollEventThrottle={100}
-        maintainVisibleContentPosition={{
-          startRenderingFromBottom: true,
-          autoscrollToBottomThreshold: 0.2,
-        }}
-        contentContainerStyle={styles.listContent}
-      />
+      <View style={styles.listArea}>
+        <FlashList
+          ref={listRef}
+          data={collapsedLines}
+          // Remount once the first PTY rows exist so startRenderingFromBottom
+          // measures against real content, not the empty waking list.
+          key={collapsedLines.length === 0 ? 'empty' : 'ready'}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          ListHeaderComponent={listHeader}
+          onScroll={handleScroll}
+          onLoad={stickToBottom}
+          onContentSizeChange={handleContentSizeChange}
+          scrollEventThrottle={100}
+          maintainVisibleContentPosition={{
+            startRenderingFromBottom: true,
+            autoscrollToBottomThreshold: 0.2,
+          }}
+          contentContainerStyle={styles.listContent}
+        />
+
+        <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
+          <TouchableOpacity
+            onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
+            accessibilityLabel={t('nav.scrollToTop')}
+            style={styles.jumpBtnInner}
+          >
+            <Text style={chrome.jumpBtnText}>{t('nav.top')}</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        <Animated.View style={[styles.jumpBtn, bottomBtnStyle]} pointerEvents="box-none">
+          <TouchableOpacity
+            onPress={jumpToBottom}
+            accessibilityLabel={t('nav.scrollToBottom')}
+            style={styles.jumpBtnInner}
+          >
+            <Text style={chrome.jumpBtnText}>{t('nav.bottom')}</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
 
       {activeQuestion ? (
         <QuestionCard
@@ -400,26 +422,6 @@ export function TerminalOutput({
           onCancel={() => onSendKeys('\x1b')}
         />
       ) : null}
-
-      <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
-        <TouchableOpacity
-          onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
-          accessibilityLabel={t('nav.scrollToTop')}
-          style={styles.jumpBtnInner}
-        >
-          <Text style={chrome.jumpBtnText}>{t('nav.top')}</Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-      <Animated.View style={[styles.jumpBtn, bottomBtnStyle]} pointerEvents="box-none">
-        <TouchableOpacity
-          onPress={jumpToBottom}
-          accessibilityLabel={t('nav.scrollToBottom')}
-          style={styles.jumpBtnInner}
-        >
-          <Text style={chrome.jumpBtnText}>{t('nav.bottom')}</Text>
-        </TouchableOpacity>
-      </Animated.View>
     </View>
   )
 }
@@ -435,6 +437,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#21262d',
+  },
+  // Anchors the jump pills to the list only, so they never float over the
+  // QuestionCard rendered beneath it.
+  listArea: {
+    flex: 1,
   },
   listContent: {
     paddingVertical: 8,
