@@ -25,7 +25,10 @@ jest.mock('@/stores/servers', () => {
     isLoading: false,
     servers: {
       'server-1': { id: 'server-1', url: 'http://localhost:8766', apiKey: 'token' },
-    },
+    } as Record<string, unknown>,
+    // The notification-tap handler asks whether the pushed server id is one this
+    // app knows before it routes with it.
+    getServer: (id: string) => state.servers[id],
     loadPersistedServers: jest.fn(),
     setConnected: jest.fn(),
     setScanProgress: jest.fn(),
