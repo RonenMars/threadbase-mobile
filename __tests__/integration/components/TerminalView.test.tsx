@@ -136,7 +136,6 @@ jest.mock('@/hooks/useComposerState', () => ({
     attachError: null,
     handleAttach: jest.fn(),
     removeAttachment: jest.fn(),
-    queueVisible: false,
     setQueueVisible: jest.fn(),
     voice: { listening: false, start: jest.fn(), stop: jest.fn() },
     micGranted: true,
@@ -173,9 +172,6 @@ jest.mock('@/components/shared/SlashCommandBoard', () => ({
 }))
 jest.mock('@/components/shared/SlashCommandArgModal', () => ({
   SlashCommandArgModal: () => null,
-}))
-jest.mock('@/components/queue/PromptQueueSheet', () => ({
-  PromptQueueSheet: () => null,
 }))
 
 const mockSearchTargetQuery = jest.fn()

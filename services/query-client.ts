@@ -5,7 +5,6 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { AppState, type AppStateStatus } from 'react-native'
 import i18n from '@/lib/i18n'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
-import { useSessionsStore } from '@/stores/sessions'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
 const ONE_MINUTE = 1000 * 60
@@ -107,7 +106,6 @@ export function clearServerConversationAndSessionState(serverId: string) {
   queryClient.removeQueries({ queryKey: ['conversation', serverId] })
   queryClient.removeQueries({ queryKey: ['project-conversations', serverId] })
   queryClient.removeQueries({ queryKey: ['session', serverId] })
-  useSessionsStore.getState().clearServer(serverId)
 }
 
 // React Native has no browser online/offline events, so onlineManager never

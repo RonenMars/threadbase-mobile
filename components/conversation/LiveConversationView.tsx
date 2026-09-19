@@ -36,7 +36,6 @@ import { dropSeenLive, mergeLiveMessages, resolveToolNames } from '@/utils/merge
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
-import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { wsManager } from '@/services/ws-client'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { Message } from '@/types/api'
@@ -354,8 +353,6 @@ export function LiveConversationView({
     attachError,
     handleAttach,
     removeAttachment,
-    queueVisible,
-    setQueueVisible,
     voice,
     micGranted,
     handleToggleMic,
@@ -563,12 +560,6 @@ export function LiveConversationView({
         onDismiss={() => setPendingArgCommand(null)}
       />
 
-      <PromptQueueSheet
-        serverId={serverId}
-        sessionId={sessionId}
-        visible={queueVisible}
-        onClose={() => setQueueVisible(false)}
-      />
 
     </Reanimated.View>
   )

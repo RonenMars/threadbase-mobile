@@ -40,8 +40,6 @@ export interface ComposerState {
   attachError: string | null
   handleAttach: () => void
   removeAttachment: (id: string) => void
-  queueVisible: boolean
-  setQueueVisible: (v: boolean) => void
   voice: { listening: boolean; start: () => Promise<void>; stop: () => void }
   micGranted: boolean
   handleToggleMic: () => Promise<void>
@@ -55,7 +53,6 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const [attachError, setAttachError] = useState<string | null>(null)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
-  const [queueVisible, setQueueVisible] = useState(false)
   const [micGranted, setMicGranted] = useState(false)
   const sendingRef = useRef(false)
   const autoNameTriedRef = useRef(false)
@@ -258,8 +255,6 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     attachError,
     handleAttach,
     removeAttachment,
-    queueVisible,
-    setQueueVisible,
     voice,
     micGranted,
     handleToggleMic,

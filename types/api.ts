@@ -661,13 +661,6 @@ export function claudeFlagValueRisk(
   return def.risk
 }
 
-export interface QueuedPrompt {
-  id: string
-  text: string
-  addedAt: string
-  status: 'pending' | 'running' | 'completed' | 'cancelled'
-}
-
 export interface NotificationEvent {
   type: 'waiting_input' | 'session_complete' | 'session_failed' | 'diff_ready'
   sessionId: string

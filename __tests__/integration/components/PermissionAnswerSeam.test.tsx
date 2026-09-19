@@ -111,7 +111,6 @@ jest.mock('@/hooks/useSessionActions', () => ({
 jest.mock('@/components/terminal/SessionHistoryFeed', () => ({ SessionHistoryFeed: () => null }))
 jest.mock('@/components/shared/SlashCommandBoard', () => ({ SlashCommandBoard: () => null }))
 jest.mock('@/components/shared/SlashCommandArgModal', () => ({ SlashCommandArgModal: () => null }))
-jest.mock('@/components/queue/PromptQueueSheet', () => ({ PromptQueueSheet: () => null }))
 
 // eslint-disable-next-line import/first
 import { TerminalView } from '@/components/terminal/TerminalView'
