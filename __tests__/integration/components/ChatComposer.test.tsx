@@ -17,6 +17,17 @@ import i18n from '@/test-utils/i18n-setup'
 let appStateListeners: ((s: string) => void)[] = []
 const fireAppState = (s: string) => appStateListeners.forEach((l) => l(s))
 
+// useKeyboardInset reads the keyboard height; a mutable mock lets a test open
+// the keyboard under the expanded editor.
+const mockKeyboardHeight = { value: 0 }
+jest.mock('react-native-keyboard-controller', () => ({
+  useReanimatedKeyboardAnimation: () => ({ height: mockKeyboardHeight, progress: { value: 0 } }),
+  useKeyboardState: (selector?: (s: { isVisible: boolean; height: number }) => unknown) => {
+    const state = { isVisible: false, height: 0 }
+    return selector ? selector(state) : state
+  },
+}))
+
 function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProps {
   return {
     value: '',
@@ -82,6 +93,17 @@ describe('ChatComposer', () => {
     fireAppState('active')
     expect(focusSpy).not.toHaveBeenCalled()
   })
+  // The editor opens from a focused composer, so it mounts under an already-open
+  // keyboard — the case RN's KeyboardAvoidingView had no metrics for.
+  it('lifts the expanded editor by the keyboard height', async () => {
+    mockKeyboardHeight.value = -300
+    await renderComposer({ value: 'draft' })
+    await fireEvent.press(screen.getByTestId('expand-input-button'))
+    const container = screen.getByTestId('expanded-composer-container')
+    expect(StyleSheet.flatten(container.props.style).paddingBottom).toBe(300)
+    mockKeyboardHeight.value = 0
+  })
+
   it('renders the text input and forwards typing', async () => {
     const { props } = await renderComposer()
     const input = screen.getByTestId('chat-message-input')

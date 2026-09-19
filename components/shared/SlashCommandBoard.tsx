@@ -8,11 +8,13 @@ import {
   Modal,
   Pressable,
 } from 'react-native'
+import Reanimated from 'react-native-reanimated'
 import { Terminal, CaretRight } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { SLASH_COMMANDS, type SlashCommand } from '@/constants/slashCommands'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import type { RtlStyleKit } from '@/lib/rtl'
 
 interface Props {
@@ -29,6 +31,7 @@ interface Props {
 export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props) {
   const { t } = useTranslation('shared')
   const { styles, theme } = useThemedStyles(makeStyles)
+  const keyboardInset = useKeyboardInset()
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     if (!q) return SLASH_COMMANDS
@@ -50,7 +53,9 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
     >
       {/* Tapping outside dismisses without sending */}
       <Pressable style={styles.backdrop} onPress={onDismiss} />
-      <View style={styles.sheet}>
+      {/* The composer keeps focus underneath, so the keyboard stays up over this
+          modal and would cover a sheet anchored to the screen's bottom edge. */}
+      <Reanimated.View style={[styles.sheet, keyboardInset]} testID="slash-command-sheet">
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Terminal size={15} color={theme.text.accent} />
@@ -77,7 +82,7 @@ export function SlashCommandBoard({ visible, query, onSelect, onDismiss }: Props
             showsVerticalScrollIndicator={false}
           />
         )}
-      </View>
+      </Reanimated.View>
     </Modal>
   )
 }
