@@ -189,6 +189,9 @@ export default function ProjectsHub() {
   } = useEagerSessions({
     sort: { sortBy, order: sortOrder },
   })
+  // Must be stable: ServerStateMessage keys its alert entries on it, and this
+  // screen re-renders on every alert-store write (useOpenStatusSurface).
+  const retryServer = useCallback((serverId: string) => retryFailed([serverId]), [retryFailed])
   const [manualRefreshing, setManualRefreshing] = useState(false)
 
   const visibleSessions = useMemo(
@@ -504,7 +507,7 @@ export default function ProjectsHub() {
         servers={servers}
         fetchStatuses={fetchStatuses}
         wsConnectedCount={wsConnectedCount}
-        onRetryFailed={(serverId) => retryFailed([serverId])}
+        onRetryFailed={retryServer}
         isRetrying={isRetryingFailedServers}
       />
 

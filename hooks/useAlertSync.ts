@@ -17,7 +17,10 @@ export function useAlertListSync(entries: readonly AlertInput[]) {
       upsert(entry)
     }
     idsRef.current = nextIds
-  })
+    // Re-run only when the entries change. Without deps, every re-render caused
+    // by our own upsert wrote again, and two mounted writers that disagreed on
+    // one id ping-ponged into "Maximum update depth exceeded".
+  }, [entries, upsert, dismiss])
 
   useEffect(() => () => {
     for (const id of idsRef.current) dismiss(id)
