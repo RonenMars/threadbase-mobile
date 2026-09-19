@@ -185,7 +185,7 @@ describe('HostPressureBanner', () => {
     expect(
       await screen.findByText(/On this Mac, quit Cursor, Chrome, or any VMs/),
     ).toBeTruthy()
-    expect(await screen.findByText('Dismiss')).toBeTruthy()
+    expect(await screen.findByTestId('status-row-dismiss-host-pressure')).toBeTruthy()
   })
 
   it('mentions live agents only when that reason fired', async () => {
@@ -231,7 +231,7 @@ describe('HostPressureBanner', () => {
     const screen = await renderBanner()
 
     await openAdvice(screen)
-    fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
+    fireEvent.press(await screen.findByTestId('status-row-dismiss-host-pressure'))
     await waitFor(() => {
       expect(screen.queryByTestId('status-pill')).toBeNull()
     })
@@ -256,7 +256,7 @@ describe('HostPressureBanner', () => {
     useServersStore.getState().setHostPressure(server.id, elevated)
     const screen = await renderBanner()
     await openAdvice(screen)
-    fireEvent.press(await screen.findByTestId('status-row-action-host-pressure'))
+    fireEvent.press(await screen.findByTestId('status-row-dismiss-host-pressure'))
     await waitFor(() => {
       expect(screen.queryByTestId('status-pill')).toBeNull()
     })

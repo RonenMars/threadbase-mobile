@@ -37,7 +37,8 @@
       "warningCount_many": "{{count}} предупреждений",
       "warningCount_other": "{{count}} предупреждения",
       "retryEverything": "Повторить всё",
-      "technicalDetails": "Технические сведения"
+      "technicalDetails": "Технические сведения",
+      "dismiss": "Закрыть"
     },
     "inline": {
       "unreachableSince": "Недоступен с {{time}}",
