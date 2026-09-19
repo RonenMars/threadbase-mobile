@@ -54,7 +54,7 @@ Keyboard phases:
 | S9 | Send from the expanded editor | H2 | Dismiss, close the modal, send | Both | OK | — | Code |
 | S10 | Pick a **no-arg** slash command from the board | `handleSlashCommandSelect` → `sendAndReset` (`useComposerState.ts:147-156`) | No `Keyboard.dismiss()`, so the keyboard stays up. This differs from S7. | Both | Glitch (inconsistent) | R13 | Code |
 | S11 | Pick an **arg** slash command, type the argument, confirm | O4 then H6 | The board closes. The arg modal autofocuses, so focus moves. On confirm the modal returns `null`, the focused input unmounts, the keyboard closes, and the composer is **not** refocused. | Both | Glitch | R13, R14 | Code |
-| S12 | Dictate with the mic, then tap Send while recognition is still running | C4, H1 | Send dismisses the keyboard and resets the composer, but `voice.stop()` is never called. A later interim `result` (continuous mode, up to the 30 s silence timeout) writes the old transcript back into the now-empty composer (`useComposerState.ts:70`). | Both (real device only; the simulator throws `VOICE_UNAVAILABLE`) | Broken | R20 | Code |
+| S12 | Dictate with the mic, then tap Send while recognition is still running | C4, H1 | Send dismisses the keyboard and resets the composer, but nothing ends recognition. A later interim `result` (continuous mode, up to the 30 s silence timeout) writes the old transcript back into the now-empty composer (`useComposerState.ts:70`). | Both (real device only; the simulator throws `VOICE_UNAVAILABLE`) | Broken | R20 | Code |
 
 ## 4. Session and surface changes while the keyboard is open
 
