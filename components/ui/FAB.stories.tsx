@@ -21,6 +21,6 @@ export const NewSession: Story = {
   args: { onPress: () => {} },
 }
 
-export const Hidden: Story = {
-  args: { onPress: () => {}, hidden: true },
+export const Collapsed: Story = {
+  args: { onPress: () => {}, collapsed: true },
 }
