@@ -4,6 +4,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native'
@@ -47,7 +48,7 @@ import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
-import { CaretDown } from 'phosphor-react-native'
+import { CaretDown, Question } from 'phosphor-react-native'
 
 interface Props {
   serverId: string
@@ -296,6 +297,11 @@ export function LiveConversationView({
   // that lands a beat later has no host left to render in.
   const showThinkingFooter = activeQuestion !== null || thinkingState !== 'hidden'
 
+  // A question is asynchronous state: it never moves the reader. When one is
+  // waiting off-screen the jump control says so instead.
+  const questionWaiting = activeQuestion !== null && showJumpToLatest
+  const jumpLabel = questionWaiting ? t('action.questionWaiting') : t('action.scrollToBottom')
+
 
   // Await, then transition. The card stays exactly where it is until the server
   // has taken the answer, so a tap on a gate that has already closed clears the
@@ -458,6 +464,9 @@ export function LiveConversationView({
 
   return (
     <Reanimated.View style={[styles.container, keyboardInset]}>
+      {/* The FAB is absolute: this wrapper ends where the composer starts, so it
+          rides the keyboard lift instead of sitting behind the keyboard. */}
+      <View style={styles.transcript}>
       <FlashList
         ref={listRef}
         testID="live-conversation-list"
@@ -529,15 +538,20 @@ export function LiveConversationView({
       />
       {showJumpToLatest ? (
         <TouchableOpacity
-          style={styles.jumpToLatest}
+          style={[styles.jumpToLatest, questionWaiting && styles.jumpToLatestQuestion]}
           onPress={jumpToLatest}
-          accessibilityLabel={t('action.scrollToBottom')}
+          accessibilityLabel={jumpLabel}
           accessibilityRole="button"
-          testID="chat-jump-to-latest"
+          testID={questionWaiting ? 'chat-question-waiting' : 'chat-jump-to-latest'}
         >
-          <CaretDown size={20} color="#fff" weight="bold" />
+          {questionWaiting ? (
+            <Question size={20} color="#fff" weight="bold" />
+          ) : (
+            <CaretDown size={20} color="#fff" weight="bold" />
+          )}
         </TouchableOpacity>
       ) : null}
+      </View>
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
@@ -626,6 +640,7 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       lineHeight: 16,
     },
+    transcript: { flex: 1 },
     jumpToLatest: {
       position: 'absolute',
       end: spacing.md,
@@ -642,5 +657,6 @@ function makeStyles(theme: Theme) {
       shadowRadius: 4,
       elevation: 4,
     },
+    jumpToLatestQuestion: { backgroundColor: theme.status.waiting },
   })
 }

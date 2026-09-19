@@ -669,6 +669,31 @@ describe('LiveConversationView — send refused while the ghost is pending', () 
     expect(screen.queryByText(GHOST_LOCAL_MESSAGE)).toBeNull()
   })
 
+  // Decision D6: an incoming question never moves a reader. When one lands
+  // off-screen the jump control announces it instead.
+  it('flags a waiting question when the reader has scrolled away', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    await act(async () => list!.props.onScroll(SCROLLED_UP))
+    expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+
+    await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+
+    expect(screen.getByTestId('chat-question-waiting')).toBeTruthy()
+    expect(screen.queryByTestId('chat-jump-to-latest')).toBeNull()
+    expect(screen.getByLabelText('Question waiting below')).toBeTruthy()
+  })
+
+  it('shows no jump control for a question while the reader is at the end', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    await act(async () => list!.props.onScroll(AT_BOTTOM))
+    await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+
+    expect(screen.queryByTestId('chat-question-waiting')).toBeNull()
+    expect(screen.queryByTestId('chat-jump-to-latest')).toBeNull()
+  })
+
   it('shows the local ghost message once the answer has been sent and is pending confirmation', async () => {
     const { rerender } = await renderView()
     await act(async () => dispatchWs('question', QUESTION_MESSAGE))

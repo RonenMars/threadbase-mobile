@@ -70,7 +70,8 @@
     "showAllLines_other": "Показать все {{count}} строк",
     "copyCode": "Копировать",
     "copiedCode": "Скопировано",
-    "scrollToBottom": "Прокрутить вниз"
+    "scrollToBottom": "Прокрутить вниз",
+    "questionWaiting": "Ниже ожидает вопрос"
   },
   "message": {
     "code": "Код",
