@@ -50,3 +50,41 @@ describe('ServerStateMessage producers', () => {
     expect(useAlertStore.getState().alerts.every((alert) => alert.level === 'error')).toBe(true)
   })
 })
+
+describe('ServerStateMessage with two mounted screens', () => {
+  // Stands in for app/index.tsx: it subscribes to the alert store (through
+  // useOpenStatusSurface). A second home screen on the stack disagreeing on
+  // isRetrying used to loop forever. Props are hoisted because index.tsx reads
+  // them from stores or memoizes them, so their references are stable.
+  const a = server('a', 'alpha.local')
+  const activeServerIds = [a.id]
+  const servers = { [a.id]: a }
+  const fetchStatuses = { [a.id]: { status: 'error' as const, lastCheckedAt: 1 } }
+  const onRetryFailed = () => {}
+
+  function Screen({ isRetrying }: { isRetrying: boolean }) {
+    useAlertStore((s) => s.alerts)
+    return (
+      <ServerStateMessage
+        activeServerIds={activeServerIds}
+        servers={servers}
+        fetchStatuses={fetchStatuses}
+        wsConnectedCount={0}
+        onRetryFailed={onRetryFailed}
+        isRetrying={isRetrying}
+      />
+    )
+  }
+
+  it('settles instead of exceeding the update depth when they disagree', async () => {
+    jest.spyOn(wsManager, 'status').mockReturnValue('disconnected')
+    await renderWithI18n(
+      <>
+        <Screen isRetrying={false} />
+        <Screen isRetrying />
+      </>,
+    )
+
+    expect(useAlertStore.getState().alerts.map((alert) => alert.id)).toEqual(['server-state:a'])
+  })
+})

@@ -59,7 +59,7 @@ export default function ManageFavoritesScreen() {
         <View style={styles.empty}>
           {hasAnyConversations ? (
             <Pressable
-              onPress={() => router.push('/')}
+              onPress={() => router.dismissTo('/')}
               style={({ pressed }) => [styles.primaryBtn, pressed && styles.primaryBtnPressed]}
             >
               <Text style={styles.primaryBtnText}>{t('manageFavorites.addToFavorites')}</Text>
