@@ -8,15 +8,59 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { MatchAnchor } from '@/components/conversation/MessageBubble'
 import type { MessageContent } from '@/types/api'
+import {
+  Eye,
+  FilePlus,
+  Files,
+  Globe,
+  Image,
+  ListChecks,
+  MagnifyingGlass,
+  PencilSimple,
+  Plug,
+  Robot,
+  Terminal,
+  Wrench,
+  type IconProps,
+} from 'phosphor-react-native'
 
-const TOOL_ICONS: Record<string, string> = {
-  Edit: '✏️',
-  Bash: '💻',
-  Read: '👁',
-  Write: '🖊',
-  Glob: '🔍',
-  Grep: '🔎',
-  default: '🔧',
+const TOOL_ICONS: Record<string, React.ComponentType<IconProps>> = {
+  Edit: PencilSimple,
+  StrReplace: PencilSimple,
+  apply_patch: PencilSimple,
+  Bash: Terminal,
+  Shell: Terminal,
+  exec_command: Terminal,
+  write_stdin: Terminal,
+  exec: Terminal,
+  js: Terminal,
+  Read: Eye,
+  view_image: Image,
+  Write: FilePlus,
+  Glob: Files,
+  Grep: MagnifyingGlass,
+  WebSearch: Globe,
+  WebFetch: Globe,
+  web_search: Globe,
+  CallMcpTool: Plug,
+  Task: Robot,
+  spawn_agent: Robot,
+  TodoWrite: ListChecks,
+  update_plan: ListChecks,
+}
+
+// Input key shown as a one-line summary in the collapsed header. Tool names
+// don't collide across Claude, Codex and Cursor, so one flat map serves all.
+const SUMMARY_KEYS: Record<string, string> = {
+  exec_command: 'cmd',
+  Shell: 'command',
+  Bash: 'command',
+  Read: 'path',
+  Write: 'path',
+  StrReplace: 'path',
+  Grep: 'pattern',
+  Glob: 'glob_pattern',
+  web_search: 'query',
 }
 
 type ToolUse = Extract<MessageContent, { type: 'tool_use' }>
@@ -54,6 +98,28 @@ function summarizeAskUserQuestion(input: Record<string, unknown>): string | null
   return blocks.length > 0 ? blocks.join('\n\n') : null
 }
 
+function nonEmpty(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim() : null
+}
+
+// One-line header summary for the high-volume tools; null when the input lacks it.
+function summarizeToolInput(name: string, input: Record<string, unknown>): string | null {
+  if (name === 'CallMcpTool') {
+    const server = nonEmpty(input.server)
+    const tool = nonEmpty(input.toolName)
+    return server && tool ? [server, tool].join(' · ') : (server ?? tool)
+  }
+  const key = SUMMARY_KEYS[name]
+  return key ? nonEmpty(input[key]) : null
+}
+
+// Codex custom tools carry source text in a single string field; show it as-is
+// rather than as a JSON-escaped string. Null for anything else (caller uses JSON).
+function toolSourceText(name: string, input: Record<string, unknown>): string | null {
+  const source = name === 'exec' || name === 'apply_patch' ? input.input : name === 'js' ? input.code : null
+  return typeof source === 'string' ? source : null
+}
+
 interface Props {
   block: ToolUse | ToolResult
   /** Stable per-cell key — reset recycled `expanded` state when the cell is reassigned. */
@@ -76,7 +142,10 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
   const bodyRef = useRef<Text>(null)
 
   const toolName = block.type === 'tool_use' ? block.name : block.toolName
-  const icon = TOOL_ICONS[toolName] ?? TOOL_ICONS.default
+  // Live results arrive unnamed until resolveToolNames finds their call.
+  const displayName = toolName || t('message.toolFallback')
+  const Icon = TOOL_ICONS[toolName] ?? Wrench
+  const summary = block.type === 'tool_use' ? summarizeToolInput(block.name, block.input) : null
   const isError = block.type === 'tool_result' && block.isError
 
   // AskUserQuestion: render a readable summary of the questions + option labels
@@ -88,7 +157,9 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
 
   const bodyText =
     askSummary ??
-    (block.type === 'tool_use' ? JSON.stringify(block.input, null, 2) : block.content)
+    (block.type === 'tool_use'
+      ? (toolSourceText(block.name, block.input) ?? JSON.stringify(block.input, null, 2))
+      : block.content)
 
   const hasContent =
     block.type === 'tool_result'
@@ -120,13 +191,18 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
     <TouchableOpacity
       onPress={() => hasContent && setExpanded((v) => !v)}
       style={[styles.card, isError && styles.cardError, isGlass && styles.cardGlass]}
-      accessibilityLabel={`${toolName} tool ${isOpen ? 'collapse' : 'expand'}`}
+      accessibilityLabel={`${displayName} tool ${isOpen ? 'collapse' : 'expand'}`}
       accessibilityRole="button"
     >
       <GlassFill />
       <View style={styles.header}>
-        <Text style={styles.icon}>{icon}</Text>
-        <Text style={styles.name}>{toolName}</Text>
+        <Icon size={font.sm} color={theme.text.secondary} />
+        <Text style={[styles.name, !summary && styles.fill]}>{displayName}</Text>
+        {summary ? (
+          <Text style={[styles.summary, styles.fill]} numberOfLines={1}>
+            {summary}
+          </Text>
+        ) : null}
         {isError ? <Text style={styles.errorBadge}>{t('message.errorBadge')}</Text> : null}
         {hasContent ? (
           <Text style={styles.chevron}>{isOpen ? '▲' : '▼'}</Text>
@@ -178,12 +254,16 @@ function makeStyles(theme: Theme) {
       padding: spacing.sm,
       minHeight: 44,
     },
-    icon: { fontSize: font.sm },
     name: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      flex: 1,
     },
+    summary: {
+      color: theme.text.secondary,
+      fontFamily: 'monospace',
+      fontSize: font.xs,
+    },
+    fill: { flex: 1 },
     errorBadge: {
       color: theme.status.failed,
       fontSize: font.xs,

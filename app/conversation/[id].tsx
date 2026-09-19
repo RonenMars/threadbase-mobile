@@ -35,7 +35,7 @@ import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { createApiForServer, AuthError, ConversationBusyError, NotFoundError } from '@/services/api-client'
 import { CODEX_CLI_PROVIDER, providerColor } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
-import { mergeLiveMessages } from '@/utils/mergeLiveMessages'
+import { mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
@@ -312,14 +312,15 @@ export default function ConversationDetailScreen() {
     })
   }, [triggerDelta])
 
-  // Merge WS-live messages after REST history for the tail view. When nothing is
-  // streaming this is referentially the same array as conversation.messages, so
-  // the non-live render path stays byte-identical.
+  // Merge WS-live messages after REST history for the tail view, then name each
+  // tool result after its call, which usually sits in an earlier message.
   const liveMerged = useMemo(() => {
     if (!conversation) return []
-    return liveMessages.length > 0
-      ? mergeLiveMessages(conversation.messages, liveMessages)
-      : conversation.messages
+    return resolveToolNames(
+      liveMessages.length > 0
+        ? mergeLiveMessages(conversation.messages, liveMessages)
+        : conversation.messages,
+    )
   }, [conversation, liveMessages])
 
   // Pausing freezes the transcript: hold the last live merge and keep showing it
