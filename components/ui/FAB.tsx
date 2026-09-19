@@ -156,10 +156,10 @@ const styles = StyleSheet.create({
   },
   glow: {
     position: 'absolute',
-    top: -10,
-    bottom: -10,
-    left: -10,
-    right: -10,
-    borderRadius: (FAB_HEIGHT + 20) / 2,
+    top: -4,
+    bottom: -4,
+    left: -4,
+    right: -4,
+    borderRadius: (FAB_HEIGHT + 8) / 2,
   },
 })
