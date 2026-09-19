@@ -242,7 +242,19 @@ export function ChatComposer({
     </TouchableOpacity>
   )
 
-  const trailingButton = hasContent ? (
+  // Stop outranks Send while listening: once the first words land `hasContent`
+  // turns true, and without this the only way out of dictation would be to send
+  // or wait for the silence timeout.
+  const trailingButton = voice.listening ? (
+    <TouchableOpacity
+      testID="chat-mic-button"
+      style={styles.sendBtn}
+      onPress={onToggleMic}
+      accessibilityLabel={t('voice.stop')}
+    >
+      <MicrophoneSlash size={24} color={theme.text.onAccent} />
+    </TouchableOpacity>
+  ) : hasContent ? (
     <TouchableOpacity
       testID="chat-send-button"
       style={[styles.sendBtn, (disabled || sendDisabled) && styles.disabled]}
@@ -258,13 +270,9 @@ export function ChatComposer({
       style={[styles.sendBtn, disabled && styles.disabled]}
       onPress={onToggleMic}
       disabled={disabled}
-      accessibilityLabel={voice.listening ? t('voice.stop') : t('voice.start')}
+      accessibilityLabel={t('voice.start')}
     >
-      {voice.listening ? (
-        <MicrophoneSlash size={24} color={theme.text.onAccent} />
-      ) : (
-        <Microphone size={24} color={theme.text.onAccent} />
-      )}
+      <Microphone size={24} color={theme.text.onAccent} />
     </TouchableOpacity>
   ) : (
     <TouchableOpacity
@@ -299,7 +307,7 @@ export function ChatComposer({
               multiline
               scrollEnabled
               textAlignVertical="top"
-              editable={!disabled}
+              editable={!disabled && !voice.listening}
             />
             <TouchableOpacity
               testID="expand-input-button"
@@ -328,7 +336,7 @@ export function ChatComposer({
               multiline
               scrollEnabled
               textAlignVertical="top"
-              editable={!disabled}
+              editable={!disabled && !voice.listening}
             />
             <TouchableOpacity
               testID="expand-input-button"
@@ -379,7 +387,7 @@ export function ChatComposer({
                 multiline
                 textAlignVertical="top"
                 autoFocus
-                editable={!disabled}
+                editable={!disabled && !voice.listening}
               />
               <View style={styles.expandedToolbar}>
                 <TouchableOpacity
