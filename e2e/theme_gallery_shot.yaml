@@ -1,0 +1,51 @@
+# Subflow for theme_gallery.yaml — not a standalone flow.
+# Env: THEME_ID (settings-theme-<id> testID), TAB (dark | light), NAME (file slug).
+#
+# Relaunches after picking the theme instead of navigating back: the theme is
+# persisted, the paired server survives launchApp, and it sidesteps the iOS-only
+# lack of a Maestro `back` command.
+
+appId: com.ronenmars.threadbase
+---
+- tapOn:
+    id: "hub-settings-btn"
+- extendedWaitUntil:
+    visible:
+      id: "settings-theme-tab-${TAB}"
+    timeout: 8000
+- tapOn:
+    id: "settings-theme-tab-${TAB}"
+- scrollUntilVisible:
+    element:
+      id: "settings-theme-${THEME_ID}"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: "settings-theme-${THEME_ID}"
+- waitForAnimationToEnd
+
+# Give the settings store time to flush to storage before the process is killed.
+- extendedWaitUntil:
+    visible:
+      id: "settings-theme-${THEME_ID}"
+    timeout: 3000
+- waitForAnimationToEnd:
+    timeout: 1500
+
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "now-list"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e2e/_artifacts/screenshots/theme-gallery-${NAME}-now
+
+- tapOn: "Projects"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: e2e/_artifacts/screenshots/theme-gallery-${NAME}-projects
+
+# Leave the hub on the Now tab for the next theme's relaunch.
+- tapOn: "Now"
+- waitForAnimationToEnd
