@@ -33,5 +33,14 @@ export function useInitialScrollToEnd(
     pinRef.current = false
   }, [])
 
-  return { stickToEnd, releasePin }
+  // Re-arm after the caller decides something the reader was waiting at the tail
+  // for has arrived. The pin is what makes `stickToEnd` chase a layout that
+  // settles over several frames, so re-arming — not a one-off `scrollToEnd` —
+  // is what lands on the true bottom of tall new content. The next drag
+  // releases it again.
+  const repin = useCallback(() => {
+    pinRef.current = true
+  }, [])
+
+  return { stickToEnd, releasePin, repin }
 }

@@ -200,8 +200,12 @@ jest.mock('expo-file-system/legacy', () => ({
 jest.mock('@shopify/flash-list', () => {
   const React = require('react')
   const { FlatList } = require('react-native')
+  // Shared across instances so a test can assert that something scrolled the
+  // list; exposed as __scrollToEndMock.
+  const scrollToEnd = jest.fn()
   return {
     __esModule: true,
+    __scrollToEndMock: scrollToEnd,
     // Real FlashList's imperative scroll methods resolve offscreen indices
     // internally and never throw FlatList's getItemLayout invariant. Expose
     // no-op scroll stubs on the ref so tests that call scrollToIndex/End/Offset
@@ -210,7 +214,7 @@ jest.mock('@shopify/flash-list', () => {
       const innerRef = React.useRef(null)
       React.useImperativeHandle(ref, () => ({
         scrollToIndex: () => Promise.resolve(),
-        scrollToEnd: () => {},
+        scrollToEnd,
         scrollToOffset: () => {},
       }))
       // Real FlashList fires onLoad once it has drawn items; the skeleton gate

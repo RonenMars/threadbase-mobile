@@ -173,6 +173,10 @@ async function renderView(onPreferRawTerminal?: () => void) {
   )
 }
 
+const { __scrollToEndMock: scrollToEndMock } = jest.requireMock('@shopify/flash-list') as {
+  __scrollToEndMock: jest.Mock
+}
+
 // FlashList is mocked, so drive the FAB the way the real list does: a scroll
 // event whose distance-from-bottom is past the threshold.
 const SCROLLED_UP = {
@@ -180,6 +184,23 @@ const SCROLLED_UP = {
 }
 const AT_BOTTOM = {
   nativeEvent: { contentOffset: { y: 4200 }, contentSize: { height: 5000 }, layoutMeasurement: { height: 800 } },
+}
+
+const QUESTION_MESSAGE = {
+  type: 'question' as const,
+  sessionId: 'sess1',
+  toolUseId: 'q1',
+  questions: [
+    {
+      question: 'Which approach?',
+      header: 'Choose one',
+      multiSelect: false,
+      options: [
+        { label: 'Option A', description: '' },
+        { label: 'Option B', description: '' },
+      ],
+    },
+  ],
 }
 
 describe('LiveConversationView — optimistic sent message', () => {
@@ -357,6 +378,52 @@ describe('LiveConversationView — optimistic sent message', () => {
   })
 })
 
+// A question card renders as the list's footer, which flash-list's autoscroll
+// never measures (getChildContainerDimensions excludes header/footer), so
+// nothing scrolls when one lands and its lower options can sit behind the
+// composer. The list is re-pinned only for a reader who was still at the tail
+// when the card arrived.
+describe('LiveConversationView — question card arriving below the fold', () => {
+  beforeEach(() => {
+    mockHistorical = []
+    mockLive = []
+    mockPtyLines = []
+    mockSendInputState = { isError: false, error: null }
+    for (const key of Object.keys(wsHandlers)) delete wsHandlers[key]
+    scrollToEndMock.mockClear()
+  })
+
+  it('re-pins to the bottom when a card arrives while the reader is at the tail', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    await act(async () => list!.props.onScrollBeginDrag())
+    await act(async () => list!.props.onScroll(AT_BOTTOM))
+    scrollToEndMock.mockClear()
+
+    await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+    // The card lays out over the frames after it mounts; the pin is what makes
+    // the list follow it down to its true bottom.
+    await act(async () => list!.props.onContentSizeChange(400, 5600))
+
+    expect(scrollToEndMock).toHaveBeenCalled()
+  })
+
+  it('leaves a reader who had scrolled away from the tail where they are', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    await act(async () => list!.props.onScrollBeginDrag())
+    await act(async () => list!.props.onScroll(SCROLLED_UP))
+    scrollToEndMock.mockClear()
+
+    await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+    await act(async () => list!.props.onContentSizeChange(400, 5600))
+
+    expect(scrollToEndMock).not.toHaveBeenCalled()
+  })
+})
+
 // Regression: a resumed session's PTY replay lands before REST conversation
 // history resolves, so "0 messages" briefly means "still loading", not
 // "genuinely empty chat". Firing the raw-terminal fallback on that transient
@@ -496,23 +563,6 @@ describe('LiveConversationView — text refused while a prompt is open', () => {
 describe('LiveConversationView — send refused while the ghost is pending', () => {
   const PROMPT_PENDING_MESSAGE = 'A prompt is waiting for an answer; answer or dismiss it before sending text'
   const GHOST_LOCAL_MESSAGE = 'Waiting for the prompt to close; try again in a moment.'
-
-  const QUESTION_MESSAGE = {
-    type: 'question' as const,
-    sessionId: 'sess1',
-    toolUseId: 'q1',
-    questions: [
-      {
-        question: 'Which approach?',
-        header: 'Choose one',
-        multiSelect: false,
-        options: [
-          { label: 'Option A', description: '' },
-          { label: 'Option B', description: '' },
-        ],
-      },
-    ],
-  }
 
   beforeEach(() => {
     mockMutate.mockClear()
