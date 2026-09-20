@@ -56,8 +56,10 @@ function sortByLastMessageDesc(a: MultiConversation, b: MultiConversation): numb
 
 // Paginated fetches across servers can yield the same conversation twice when
 // rows reorder between the count and a page fetch (last_updated_at moves the
-// row across an offset boundary). Drop later duplicates so FlatList keys stay unique.
-function dedupeByServerAndId(items: MultiConversation[]): MultiConversation[] {
+// row across an offset boundary). Drop later duplicates so FlatList keys stay
+// unique. Exported because the same row can repeat across two pages, which
+// only the concatenated page list can see.
+export function dedupeByServerAndId(items: MultiConversation[]): MultiConversation[] {
   const seen = new Set<string>()
   const out: MultiConversation[] = []
   for (const item of items) {
