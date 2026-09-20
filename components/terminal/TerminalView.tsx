@@ -25,6 +25,8 @@ interface Props {
   sessionId: string
   provider?: ProviderName | string | null
   disabled?: boolean
+  /** The raw-keys row, when open; rides the keyboard with the composer. */
+  composerAccessory?: React.ReactNode
   /** Conversation that was resumed into this session — when set, disclose missing PTY scrollback. */
   resumedConversationId?: string | null
   /** Conversation backing this session — seeds a history region above the live terminal tail. */
@@ -36,6 +38,7 @@ export function TerminalView({
   sessionId,
   provider,
   disabled = false,
+  composerAccessory = null,
   resumedConversationId = null,
   conversationId = null,
 }: Props) {
@@ -241,6 +244,7 @@ export function TerminalView({
           dismissSuggestion()
           handleInputChange(text)
         }}
+        accessory={composerAccessory}
       />
 
       <SlashCommandBoard

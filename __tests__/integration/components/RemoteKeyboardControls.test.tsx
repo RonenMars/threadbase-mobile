@@ -4,6 +4,21 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { RemoteKeyboardControls } from '@/components/sessions/RemoteKeyboardControls'
 
 describe('RemoteKeyboardControls', () => {
+  it('keeps every key reachable in one row, with close', async () => {
+    const onClose = jest.fn()
+    const onSend = jest.fn()
+    const { getByLabelText, getByTestId } = await render(
+      <ThemeProvider><RemoteKeyboardControls onClose={onClose} onSend={onSend} /></ThemeProvider>,
+    )
+
+    for (const action of ['escape', 'tab', 'shift_tab', 'left', 'up', 'down', 'right'] as const) {
+      expect(getByTestId(`remote-key-${action}`)).toBeTruthy()
+    }
+    expect(getByTestId('remote-key-enter')).toBeTruthy()
+    fireEvent.press(getByLabelText('Close remote keyboard'))
+    expect(onClose).toHaveBeenCalled()
+  })
+
   it('sends each constrained navigation action with the current prompt identity', async () => {
     const onSend = jest.fn()
     const { getByLabelText, getByTestId } = await render(

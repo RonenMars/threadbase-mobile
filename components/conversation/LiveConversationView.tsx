@@ -56,6 +56,8 @@ interface Props {
   provider?: ProviderName | string | null
   /** Disable the composer while the session's PTY is still waking up. */
   disabled?: boolean
+  /** The raw-keys row, when open; rides the keyboard with the composer. */
+  composerAccessory?: React.ReactNode
   /** Prefer raw terminal when chat normalization looks unreliable. */
   onPreferRawTerminal?: () => void
 }
@@ -102,6 +104,7 @@ export function LiveConversationView({
   conversationId,
   provider,
   disabled = false,
+  composerAccessory = null,
   onPreferRawTerminal,
 }: Props) {
   const theme = useTheme()
@@ -548,6 +551,7 @@ export function LiveConversationView({
           dismissSuggestion()
           handleInputChange(text)
         }}
+        accessory={composerAccessory}
       />
 
       <SlashCommandBoard

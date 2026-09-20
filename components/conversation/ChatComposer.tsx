@@ -66,6 +66,10 @@ export interface ChatComposerProps {
   onSendSuggestion?: (text: string) => void
   /** Long-press on the chip: put the suggestion in the input instead of sending. */
   onFillSuggestion?: (text: string) => void
+  /** Rides the keyboard with the composer: the raw-keys row, when it is open.
+   *  It sits above the composer's own safe-area padding, so that padding stays
+   *  the single owner of the bottom inset. */
+  accessory?: React.ReactNode
 }
 
 // A style object may not be shared between components, so each area calls this.
@@ -96,6 +100,7 @@ export function ChatComposer({
   promptSuggestion = null,
   onSendSuggestion,
   onFillSuggestion,
+  accessory = null,
 }: ChatComposerProps) {
   const { t } = useTranslation('terminal')
   const theme = useTheme()
@@ -363,6 +368,7 @@ export function ChatComposer({
         )}
         {trailingButton}
       </View>
+      {accessory}
 
       <Modal
         testID="expanded-composer-modal"

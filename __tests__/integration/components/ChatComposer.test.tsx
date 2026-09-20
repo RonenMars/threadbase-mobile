@@ -132,6 +132,13 @@ describe('ChatComposer', () => {
       expect(padOf()).toBe(21)
     })
   })
+  // The raw-keys row is handed in as an accessory so it shares the composer's
+  // lift instead of sitting below it as a competing bottom surface.
+  it('renders an accessory inside the composer', async () => {
+    const { Text: RNText } = jest.requireActual('react-native')
+    await renderComposer({ accessory: <RNText testID="composer-accessory">keys</RNText> })
+    expect(screen.getByTestId('composer-accessory')).toBeTruthy()
+  })
 
   it('renders the text input and forwards typing', async () => {
     const { props } = await renderComposer()
