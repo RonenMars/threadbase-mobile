@@ -81,9 +81,9 @@
     "timeYesterday": "أمس",
     "tierActive": "نشطة",
     "tierRecent": "حديثة",
-    "tierQuiet": "هادئة",
-    "showQuiet": "إظهار",
-    "hideQuiet": "إخفاء",
+    "tierOlder": "أقدم",
+    "showOlder": "إظهار",
+    "hideOlder": "إخفاء",
     "filterPlaceholder": "تصفية المشاريع أو المسارات…"
   },
   "loading": {

@@ -64,27 +64,30 @@ beforeEach(async () => {
 })
 
 describe('ProjectHubList tiers', () => {
-  it('splits projects into ACTIVE, RECENT and a folded QUIET tail, and unfolds on Show', async () => {
-    const { getByText, getByTestId, queryByTestId, getAllByTestId } = await renderHub(
+  it('splits projects into ACTIVE, RECENT and a collapsed OLDER tail, and expands on Show', async () => {
+    const { getByText, getByTestId, queryByTestId } = await renderHub(
       [liveSession],
       [summary('fresh', DAY), summary('old-one', 40 * DAY), summary('old-two', 90 * DAY)],
     )
     expect(getByText('ACTIVE · 1')).toBeTruthy()
     expect(getByText('RECENT')).toBeTruthy()
-    expect(getByText('QUIET · 2')).toBeTruthy()
-    expect(getByTestId('hub-quiet-chips')).toBeTruthy()
-    // The chip carries the card's id, so a flow reaching for the project still finds it.
-    expect(getAllByTestId('hub-project-old-one')).toHaveLength(1)
+    expect(getByText('OLDER · 2')).toBeTruthy()
+    expect(getByText('Show')).toBeTruthy()
+    // Collapsed means not rendered at all, not folded into anything.
+    expect(queryByTestId('hub-project-old-one')).toBeNull()
+    expect(queryByTestId('hub-project-old-two')).toBeNull()
 
-    fireEvent.press(getByTestId('hub-quiet-toggle-all'))
-    await waitFor(() => expect(queryByTestId('hub-quiet-chips')).toBeNull())
+    fireEvent.press(getByTestId('hub-older-toggle-all'))
+    await waitFor(() => expect(getByTestId('hub-project-old-one')).toBeTruthy())
     expect(getByText('Hide')).toBeTruthy()
     expect(getByTestId('hub-project-old-two')).toBeTruthy()
+
+    fireEvent.press(getByTestId('hub-older-toggle-all'))
+    await waitFor(() => expect(queryByTestId('hub-project-old-one')).toBeNull())
   })
 
   it('shows the tail as cards when there is nothing above it to fold under', async () => {
-    const { queryByTestId, getByTestId, queryByText } = await renderHub([], [summary('old-one', 40 * DAY)])
-    expect(queryByTestId('hub-quiet-chips')).toBeNull()
+    const { getByTestId, queryByText } = await renderHub([], [summary('old-one', 40 * DAY)])
     expect(getByTestId('hub-project-old-one')).toBeTruthy()
     expect(queryByText('Show')).toBeNull()
   })
@@ -97,7 +100,7 @@ describe('ProjectHubList tiers', () => {
     fireEvent.changeText(getByTestId('hub-project-filter'), 'old')
     await waitFor(() => expect(queryByText('ACTIVE · 1')).toBeNull())
     expect(queryByText('RECENT')).toBeNull()
-    expect(getByText('QUIET · 1')).toBeTruthy()
+    expect(getByText('OLDER · 1')).toBeTruthy()
     expect(getByTestId('hub-project-old-one')).toBeTruthy()
   })
 })

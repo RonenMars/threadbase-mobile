@@ -12,7 +12,7 @@ interface Props {
   tone: SectionTone
   /** Trailing count for muted sections; live sections carry it in the label. */
   count?: number
-  /** Trailing link, e.g. the QUIET tier's Show / Hide. */
+  /** Trailing link, e.g. the OLDER tier's Show / Hide. */
   action?: { label: string; onPress: () => void; testID?: string }
 }
 
