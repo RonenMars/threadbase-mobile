@@ -84,6 +84,7 @@
       "__tests__/integration/components/DrillView.test.tsx",
       "__tests__/integration/components/SessionRow.external.test.tsx",
       "__tests__/integration/components/SessionStatusBadge.test.tsx",
+      "__tests__/integration/components/SlashCommandBoard.test.tsx",
       "__tests__/integration/components/TokenTooltip.test.tsx",
       "__tests__/integration/components/ToolCard.test.tsx",
       "__tests__/integration/components/TourOverlay.test.tsx",
