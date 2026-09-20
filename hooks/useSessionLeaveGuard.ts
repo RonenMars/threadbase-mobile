@@ -83,6 +83,7 @@ export function useSessionLeaveGuard(opts: {
   confirmLeave: (choice: AppliedSessionLeaveAction, remember: boolean) => void
   dismissLeaveError: () => void
   onModalDismiss: () => void
+  swipeBackBlocked: boolean
 } {
   const {
     navigation,
@@ -329,5 +330,9 @@ export function useSessionLeaveGuard(opts: {
     confirmLeave,
     dismissLeaveError,
     onModalDismiss,
+    // native-stack leaves the iOS edge-swipe enabled while removal is prevented;
+    // the swipe then pops the screen natively and the guard refuses it in JS.
+    // The screen switches the gesture off with this instead.
+    swipeBackBlocked: shouldPreventRemove,
   }
 }
