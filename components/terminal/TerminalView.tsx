@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { usePromptSuggestion } from '@/hooks/usePromptSuggestion'
-import { TerminalRawModeToast } from '@/components/terminal/TerminalRawModeToast'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
@@ -21,13 +20,11 @@ import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { conversationHref } from '@/lib/conversationHref'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { ProviderName } from '@/constants/providers'
-import type { ParseConfidence } from '@/lib/renderConfidence'
 
 interface Props {
   serverId: string
   sessionId: string
   provider?: ProviderName | string | null
-  parseConfidence?: ParseConfidence
   disabled?: boolean
   /** Conversation that was resumed into this session — when set, disclose missing PTY scrollback. */
   resumedConversationId?: string | null
@@ -39,7 +36,6 @@ export function TerminalView({
   serverId,
   sessionId,
   provider,
-  parseConfidence: parseConfidenceProp,
   disabled = false,
   resumedConversationId = null,
   conversationId = null,
@@ -48,14 +44,13 @@ export function TerminalView({
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
   const { suggestion, chipSuggestion, dismiss: dismissSuggestion } = usePromptSuggestion(serverId, sessionId)
-  const { lines, isStreaming, userMessageTexts, parseConfidence } = useTerminalStream(
+  const { lines, isStreaming, userMessageTexts } = useTerminalStream(
     serverId,
     sessionId,
     false,
     provider,
     suggestion,
   )
-  const confidence = parseConfidenceProp ?? parseConfidence
   const { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt } = useSessionActions(serverId, sessionId)
   const {
     activeQuestion,
@@ -188,7 +183,6 @@ export function TerminalView({
 
   return (
     <Reanimated.View style={[styles.container, keyboardInset]}>
-      <TerminalRawModeToast visible={confidence === 'low'} />
       {conversationId ? (
         <SessionHistoryFeed
           serverId={serverId}

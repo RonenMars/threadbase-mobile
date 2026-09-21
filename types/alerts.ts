@@ -16,6 +16,7 @@ export type AlertCause =
   | `query:${string}`
   | `host-pressure:${string}`
   | `cache:${string}`
+  | `session:${string}`
   | 'servers:summary'
 
 export const CAUSE_SERVERS_SUMMARY: AlertCause = 'servers:summary'
