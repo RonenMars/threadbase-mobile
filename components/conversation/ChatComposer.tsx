@@ -8,13 +8,14 @@ import {
   TouchableOpacity,
   ScrollView,
   Modal,
-  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'
+import Reanimated from 'react-native-reanimated'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import {
   ImageIcon as PhosphorImage,
   X,
@@ -105,6 +106,7 @@ export function ChatComposer({
     ? spacing.sm
     : Math.max(insets.bottom, spacing.sm)
   const [expanded, setExpanded] = useState(false)
+  const expandedKeyboardInset = useKeyboardInset()
 
   // iOS sometimes drops the software keyboard across a background/foreground
   // cycle even though the TextInput never lost first-responder state, so
@@ -361,9 +363,14 @@ export function ChatComposer({
         onRequestClose={() => setExpanded(false)}
         onDismiss={focusInlineIfPending}
       >
-        <KeyboardAvoidingView
-          style={[styles.modalContainer, directionStyle]}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        {/* Same lift as the surfaces: the modal spans to the screen's bottom edge,
+            so the keyboard height is exactly the padding it needs. RN's
+            KeyboardAvoidingView measured its own frame and had no metrics when it
+            mounted under an already-open keyboard — which is how it mounts here,
+            since the editor opens from a focused composer. */}
+        <Reanimated.View
+          style={[styles.modalContainer, directionStyle, expandedKeyboardInset]}
+          testID="expanded-composer-container"
         >
           <SafeAreaView style={styles.flex} edges={['top']}>
             <View
@@ -429,7 +436,7 @@ export function ChatComposer({
               </View>
             </View>
           </SafeAreaView>
-        </KeyboardAvoidingView>
+        </Reanimated.View>
       </Modal>
     </View>
   )
