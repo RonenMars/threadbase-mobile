@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
-import { useConversations, useConversationSearch } from '@/hooks/useConversations'
+import { dedupeByServerAndId, useConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useProjectSummaries } from '@/hooks/useProjectSummaries'
 import { useServersStore } from '@/stores/servers'
 import { useLiveInstanceCount } from '@/lib/openTrace'
@@ -250,7 +250,10 @@ export default function ProjectsHub() {
     if (convPages.hasNextPage && !convPages.isFetchingNextPage) void convPages.fetchNextPage()
   }
   const paginatedConversations = useMemo(
-    () => convPages.data?.pages.flatMap((p) => p.conversations) ?? EMPTY_CONVERSATIONS,
+    () => {
+      const pages = convPages.data?.pages
+      return pages ? dedupeByServerAndId(pages.flatMap((p) => p.conversations)) : EMPTY_CONVERSATIONS
+    },
     [convPages.data],
   )
 
