@@ -13,8 +13,8 @@ import {
   StyleSheet,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useKeyboardState } from 'react-native-keyboard-controller'
-import Reanimated from 'react-native-reanimated'
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
+import Reanimated, { useAnimatedStyle } from 'react-native-reanimated'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import {
   ImageIcon as PhosphorImage,
@@ -68,6 +68,14 @@ export interface ChatComposerProps {
   onFillSuggestion?: (text: string) => void
 }
 
+// A style object may not be shared between components, so each area calls this.
+function useKeyboardGapPadding(restingPad: number) {
+  const { progress } = useReanimatedKeyboardAnimation()
+  return useAnimatedStyle(() => ({
+    paddingBottom: restingPad + (spacing.sm - restingPad) * progress.value,
+  }))
+}
+
 export function ChatComposer({
   value,
   onChangeText,
@@ -96,15 +104,15 @@ export function ChatComposer({
   const { direction } = useAppDirection()
   const inputDirection = textDirectionStyle(direction)
   const insets = useSafeAreaInsets()
-  // When the keyboard is up, behavior="padding" already lifts the composer above
-  // it — the home indicator is covered, so any resting safe-area padding would
-  // double-count and leave a visible gap. Use a small fixed gap instead; when
-  // the keyboard is closed, the safe-area inset alone clears the home
-  // indicator (floored at spacing.sm for devices reporting a zero inset).
-  const keyboardVisible = useKeyboardState((s) => s.isVisible)
-  const inputAreaPaddingBottom = keyboardVisible
-    ? spacing.sm
-    : Math.max(insets.bottom, spacing.sm)
+  // `useKeyboardInset` lifts the whole surface by the keyboard height, so while
+  // the keyboard is up the home indicator is covered and the resting safe-area
+  // padding would double-count. The gap therefore shrinks to spacing.sm as the
+  // keyboard arrives — interpolated on the same animation that drives the lift,
+  // because a discrete switch jumps by insets.bottom − spacing.sm (26 pt on a
+  // notched iPhone) at the start of every open and the end of every close.
+  const restingPad = Math.max(insets.bottom, spacing.sm)
+  const inputAreaPadding = useKeyboardGapPadding(restingPad)
+  const expandedInputAreaPadding = useKeyboardGapPadding(restingPad)
   const [expanded, setExpanded] = useState(false)
   const expandedKeyboardInset = useKeyboardInset()
 
@@ -288,7 +296,7 @@ export function ChatComposer({
   )
 
   return (
-    <View style={[styles.inputArea, { paddingBottom: inputAreaPaddingBottom }]}>
+    <Reanimated.View style={[styles.inputArea, inputAreaPadding]} testID="composer-input-area">
       {errors}
       {chips}
       {suggestionChip}
@@ -373,12 +381,9 @@ export function ChatComposer({
           testID="expanded-composer-container"
         >
           <SafeAreaView style={styles.flex} edges={['top']}>
-            <View
-              style={[
-                styles.inputArea,
-                styles.inputAreaExpanded,
-                { paddingBottom: inputAreaPaddingBottom },
-              ]}
+            <Reanimated.View
+              style={[styles.inputArea, styles.inputAreaExpanded, expandedInputAreaPadding]}
+              testID="composer-input-area-expanded"
             >
               {errors}
               {chips}
@@ -434,11 +439,11 @@ export function ChatComposer({
                   <PaperPlaneRight size={26} color={theme.text.onAccent} />
                 </TouchableOpacity>
               </View>
-            </View>
+            </Reanimated.View>
           </SafeAreaView>
         </Reanimated.View>
       </Modal>
-    </View>
+    </Reanimated.View>
   )
 }
 
