@@ -368,6 +368,7 @@ export function TerminalOutput({
       <View style={styles.listArea}>
         <FlashList
           ref={listRef}
+          testID="terminal-output-list"
           data={collapsedLines}
           // Remount once the first PTY rows exist so startRenderingFromBottom
           // measures against real content, not the empty waking list.
@@ -384,6 +385,7 @@ export function TerminalOutput({
             autoscrollToBottomThreshold: 0.2,
           }}
           contentContainerStyle={styles.listContent}
+          keyboardShouldPersistTaps="handled"
         />
 
         <Animated.View style={[styles.jumpBtn, styles.jumpBtnTop, topBtnStyle]} pointerEvents="box-none">
