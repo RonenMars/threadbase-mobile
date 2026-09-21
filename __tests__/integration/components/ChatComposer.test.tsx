@@ -8,6 +8,7 @@ import React from 'react'
 import { AppState, Keyboard, Platform, StyleSheet, TextInput, type ViewStyle } from 'react-native'
 import { fireEvent, screen, cleanup } from '@testing-library/react-native'
 import { ChatComposer, type ChatComposerProps } from '@/components/conversation/ChatComposer'
+import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 import { DirectionRoot } from '@/lib/direction-root'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
@@ -90,6 +91,38 @@ describe('ChatComposer', () => {
     expect(focusSpy).toHaveBeenCalled()
   })
 
+  // Decision D2: a composer sub-flow gives focus back; a separate task does not.
+  it('takes focus back when a composer sub-flow closes', async () => {
+    await renderComposer()
+    fireEvent(screen.getByTestId('chat-message-input'), 'focus')
+    lendComposerFocus('attach')
+    const focusSpy = TextInput.prototype.focus as jest.Mock
+    focusSpy.mockClear()
+
+    returnComposerFocus('attach')
+    expect(focusSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves focus alone when a separate task closes', async () => {
+    await renderComposer()
+    fireEvent(screen.getByTestId('chat-message-input'), 'focus')
+    lendComposerFocus('rename')
+    const focusSpy = TextInput.prototype.focus as jest.Mock
+    focusSpy.mockClear()
+
+    returnComposerFocus('rename')
+    expect(focusSpy).not.toHaveBeenCalled()
+  })
+
+  it('does not refocus while the composer is disabled', async () => {
+    await renderComposer({ disabled: true })
+    const focusSpy = TextInput.prototype.focus as jest.Mock
+    focusSpy.mockClear()
+    fireAppState('background')
+    fireAppState('active')
+    expect(focusSpy).not.toHaveBeenCalled()
+  })
+
   it('does not refocus on return to foreground if the input was never focused', async () => {
     await renderComposer()
     const focusSpy = TextInput.prototype.focus as jest.Mock
@@ -163,25 +196,37 @@ describe('ChatComposer', () => {
     expect(dismiss).not.toHaveBeenCalled()
   })
 
-  describe('sending from the expanded editor', () => {
-    async function openExpanded({ focused }: { focused: boolean }) {
+  describe('leaving the expanded editor', () => {
+    async function openExpanded({
+      focused,
+      closeWith = 'expanded-send-button',
+    }: {
+      focused: boolean
+      closeWith?: 'expanded-send-button' | 'minimize-input-button'
+    }) {
       const rendered = await renderComposer({ value: 'draft' })
       await fireEvent.press(screen.getByTestId('expand-input-button'))
-      if (focused) await fireEvent(screen.getByTestId('message-input-expanded'), 'focus')
+      // The editor's input autofocuses, so it always starts focused; `focused:
+      // false` is the user putting the keyboard away again before sending.
+      await fireEvent(screen.getByTestId('message-input-expanded'), 'focus')
+      if (!focused) await fireEvent(screen.getByTestId('message-input-expanded'), 'blur')
       // The jest Modal renders nothing once hidden, so keep the handler iOS
       // calls when the slide-out finishes.
       const onDismiss: () => void = screen.getByTestId('expanded-composer-modal').props.onDismiss
+      // iOS blurs the editor's input during the slide-out, before onDismiss.
+      const blurOnClose: () => void = screen.getByTestId('message-input-expanded').props.onBlur
       const focusSpy = TextInput.prototype.focus as jest.Mock
       focusSpy.mockClear()
-      await fireEvent.press(screen.getByTestId('expanded-send-button'))
-      return { ...rendered, onDismiss, focusSpy }
+      await fireEvent.press(screen.getByTestId(closeWith))
+      return { ...rendered, onDismiss, blurOnClose, focusSpy }
     }
 
     it('hands focus to the inline input once the editor has closed (iOS)', async () => {
-      const { props, onDismiss, focusSpy } = await openExpanded({ focused: true })
+      const { props, onDismiss, blurOnClose, focusSpy } = await openExpanded({ focused: true })
       expect(props.onSend).toHaveBeenCalled()
       expect(screen.queryByTestId('message-input-expanded')).toBeNull()
       expect(focusSpy).not.toHaveBeenCalled()
+      blurOnClose()
       onDismiss()
       expect(focusSpy).toHaveBeenCalledTimes(1)
     })
@@ -192,10 +237,42 @@ describe('ChatComposer', () => {
       expect(focusSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('does not summon the keyboard when the editor was not focused', async () => {
+    it('does not summon the keyboard when the editor no longer had focus', async () => {
       const { onDismiss, focusSpy } = await openExpanded({ focused: false })
       onDismiss()
       expect(focusSpy).not.toHaveBeenCalled()
+    })
+
+    // Minimize is the same hand-off as send. Calling it while the editor was
+    // still on screen reached nothing on device: the keyboard went away and the
+    // inline input stayed unfocused.
+    it('hands focus back after minimize only once the editor has closed (iOS)', async () => {
+      const { props, onDismiss, blurOnClose, focusSpy } = await openExpanded({ focused: true, closeWith: 'minimize-input-button' })
+      expect(props.onSend).not.toHaveBeenCalled()
+      expect(focusSpy).not.toHaveBeenCalled()
+      blurOnClose()
+      onDismiss()
+      expect(focusSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('hands focus back after minimize as soon as the editor closes (Android)', async () => {
+      jest.replaceProperty(Platform, 'OS', 'android')
+      const { focusSpy } = await openExpanded({ focused: true, closeWith: 'minimize-input-button' })
+      expect(focusSpy).toHaveBeenCalledTimes(1)
+    })
+
+    // The hand-off goes through the focus machine, not a local ref: after the
+    // editor closes the machine must believe the *inline* input is the one
+    // typing, or the next sub-flow would hand focus back to an unmounted editor.
+    it('leaves the machine pointing at the inline input', async () => {
+      const { onDismiss, focusSpy } = await openExpanded({ focused: true })
+      onDismiss()
+      expect(focusSpy).toHaveBeenCalledTimes(1)
+
+      lendComposerFocus('attach')
+      focusSpy.mockClear()
+      returnComposerFocus('attach')
+      expect(focusSpy).toHaveBeenCalledTimes(1)
     })
   })
 

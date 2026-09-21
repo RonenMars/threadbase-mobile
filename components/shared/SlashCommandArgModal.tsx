@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
+import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 import type { SlashCommand } from '@/constants/slashCommands'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
@@ -33,9 +34,16 @@ export function SlashCommandArgModal({ command, onConfirm, onDismiss }: Props) {
   const copyStyle = textDirectionStyle(direction)
   const [arg, setArg] = useState('')
 
-  // Reset arg whenever a new command is shown
+  // Reset arg whenever a new command is shown, and borrow composer focus for as
+  // long as this sub-flow owns the keyboard.
   useEffect(() => {
-    if (command) queueMicrotask(() => setArg(''))
+    if (command) {
+      lendComposerFocus('slashArgs')
+      queueMicrotask(() => setArg(''))
+    }
+    return () => {
+      if (command) returnComposerFocus('slashArgs')
+    }
     // Effect keyed on command.id; the full `command` is read from the closure
     // intentionally and should not re-trigger when only its other fields change.
     // eslint-disable-next-line react-hooks/exhaustive-deps

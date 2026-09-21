@@ -12,6 +12,7 @@ import {
   uploadAttachment,
   type UploadedFile,
 } from '@/services/uploads'
+import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 import { useDraftsStore } from '@/stores/drafts'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
@@ -217,13 +218,20 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     }
   }
 
+  // A composer sub-flow: the sheet and the picker borrow focus and hand it back,
+  // so the user returns to the message they were writing.
   const handleAttach = () => {
     if (isUploading) return
+    lendComposerFocus('attach')
+    const pick = (source: 'camera' | 'library' | 'files') => async () => {
+      await runUpload(source)
+      returnComposerFocus('attach')
+    }
     Alert.alert(t('composer.attachTitle'), undefined, [
-      { text: t('composer.takePhoto'), onPress: () => runUpload('camera') },
-      { text: t('composer.chooseFromGallery'), onPress: () => runUpload('library') },
-      { text: t('composer.chooseFiles'), onPress: () => runUpload('files') },
-      { text: t('button.cancel'), style: 'cancel' },
+      { text: t('composer.takePhoto'), onPress: pick('camera') },
+      { text: t('composer.chooseFromGallery'), onPress: pick('library') },
+      { text: t('composer.chooseFiles'), onPress: pick('files') },
+      { text: t('button.cancel'), style: 'cancel', onPress: () => returnComposerFocus('attach') },
     ])
   }
 
