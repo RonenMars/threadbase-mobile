@@ -87,12 +87,21 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   }, [activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt])
 
   useEffect(() => {
-    if (!fadingOut || hasCard) return
+    // setValue also stops a fade already running. The status flip and the card
+    // are separate frames, so the fade can start a beat before the card lands,
+    // and a card left inside it finishes laid out at opacity 0.
+    if (hasCard) {
+      opacity.setValue(1)
+      return
+    }
+    if (!fadingOut) return
     Animated.timing(opacity, {
       toValue: 0,
       duration: 350,
       useNativeDriver: true,
-    }).start(() => onFadeOutComplete?.())
+    }).start(({ finished }) => {
+      if (finished) onFadeOutComplete?.()
+    })
   }, [fadingOut, hasCard, opacity, onFadeOutComplete])
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { render, fireEvent, waitFor } from '@testing-library/react-native'
+import { act, render, fireEvent, waitFor } from '@testing-library/react-native'
 import React from 'react'
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
@@ -49,6 +49,30 @@ describe('ThinkingBubble question lifecycle', () => {
     // tells the parent to unmount the footer, and the card lives inside it.
     await new Promise((resolve) => setTimeout(resolve, FADE_MS + 150))
     expect(onFadeOutComplete).not.toHaveBeenCalled()
+  })
+
+  // The guard above only keeps a fade from *starting*. The status flip and the
+  // card are separate frames with no ordering guarantee, so when the flip lands
+  // first the fade is already running, and a card that arrived inside it used
+  // to finish at opacity 0 — laid out, holding its space, painting nothing.
+  it('stops a fade already running when a card arrives inside it', async () => {
+    jest.useFakeTimers()
+    try {
+      const onFadeOutComplete = jest.fn()
+      const props = { lines: [], isStreaming: false, fadingOut: true, onFadeOutComplete }
+      const { rerender } = await render(<ThinkingBubble {...props} />)
+      // Before any timer runs: jest's native-animation mock ends every
+      // animation 16ms after it starts.
+      await rerender(<ThinkingBubble {...props} activeQuestion={aq} onAnswer={jest.fn()} />)
+      await act(() => jest.advanceTimersByTime(FADE_MS + 150))
+
+      // The fade runs on the native driver, so the rendered opacity never moves
+      // in jest and an opacity assertion passes against the bug. A fade that
+      // ran to completion is the observable part.
+      expect(onFadeOutComplete).not.toHaveBeenCalled()
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it('still fades when there is no card to protect', async () => {
