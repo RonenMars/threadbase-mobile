@@ -1,8 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer, isAnswerRefusedError, isPermissionAnswerRejectedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
-import { useSessionsStore } from '@/stores/sessions'
-import type { MultiSession, QueuedPrompt, Session } from '@/types/api'
+import type { MultiSession, Session } from '@/types/api'
 import type { ResumeConversationResponse } from '@/types/projectChat'
 import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
 
@@ -70,22 +69,6 @@ export function useSessionActions(serverId: string, sessionId: string) {
         ),
       )
       qc.invalidateQueries({ queryKey: ['sessions'] })
-    },
-  })
-
-  const addToQueue = useMutation({
-    mutationFn: (text: string) =>
-      api.post<QueuedPrompt>(`/api/sessions/${sessionId}/queue`, { text }),
-    onSuccess: (prompt) => {
-      useSessionsStore.getState().addToQueue(serverId, sessionId, prompt)
-    },
-  })
-
-  const removeFromQueue = useMutation({
-    mutationFn: (promptId: string) =>
-      api.delete(`/api/sessions/${sessionId}/queue/${promptId}`),
-    onSuccess: (_data, promptId) => {
-      useSessionsStore.getState().removeFromQueue(serverId, sessionId, promptId)
     },
   })
 
@@ -293,5 +276,5 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, sendRawKey, cancelSession, addToQueue, removeFromQueue, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, sendRawKey, cancelSession, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
 }

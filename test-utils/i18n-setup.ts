@@ -10,7 +10,6 @@ import servers from '../locales/en/servers.json';
 import onboarding from '../locales/en/onboarding.json';
 import conversation from '../locales/en/conversation.json';
 import browse from '../locales/en/browse.json';
-import queue from '../locales/en/queue.json';
 import pair from '../locales/en/pair.json';
 import shared from '../locales/en/shared.json';
 import feedback from '../locales/en/feedback.json';
@@ -32,7 +31,7 @@ i18n.use(initReactI18next).init({
   fallbackLng: 'en',
   defaultNS: 'common',
   resources: {
-    en: { common, sessions, terminal, settings, servers, onboarding, conversation, browse, queue, pair, shared, feedback },
+    en: { common, sessions, terminal, settings, servers, onboarding, conversation, browse, pair, shared, feedback },
     he: { onboarding: onboardingHe, sessions: sessionsHe, settings: settingsHe, servers: serversHe },
     ar: { onboarding: onboardingAr, sessions: sessionsAr, settings: settingsAr, servers: serversAr },
     ru: { onboarding: onboardingRu, sessions: sessionsRu, settings: settingsRu, servers: serversRu },

@@ -16,7 +16,6 @@ import { SessionHistoryFeed } from '@/components/terminal/SessionHistoryFeed'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
-import { PromptQueueSheet } from '@/components/queue/PromptQueueSheet'
 import { conversationHref } from '@/lib/conversationHref'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { ProviderName } from '@/constants/providers'
@@ -143,8 +142,6 @@ export function TerminalView({
     attachError,
     handleAttach,
     removeAttachment,
-    queueVisible,
-    setQueueVisible,
     voice,
     micGranted,
     handleToggleMic,
@@ -260,12 +257,6 @@ export function TerminalView({
         onDismiss={() => setPendingArgCommand(null)}
       />
 
-      <PromptQueueSheet
-        serverId={serverId}
-        sessionId={sessionId}
-        visible={queueVisible}
-        onClose={() => setQueueVisible(false)}
-      />
 
     </Reanimated.View>
   )
