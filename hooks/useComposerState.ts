@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, AppState, Linking } from 'react-native'
+import { Alert, AppState, Keyboard, Linking } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
@@ -65,7 +65,11 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const renameSession = useRenameSession(serverId)
 
   const voice = useVoiceInput({
-    onTranscript: (text) => setInputText(text),
+    // Drafted like typed text, so a remount mid-dictation doesn't lose it.
+    onTranscript: (text) => {
+      setInputText(text)
+      setDraft(serverId, sessionId, text)
+    },
     contextualStrings: ['React', 'TypeScript', 'useEffect', 'Expo', 'TSX', 'Claude'],
   })
 
@@ -229,6 +233,10 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
 
   const handleToggleMic = async () => {
     if (voice.listening) return voice.stop()
+    // Voice owns the value while it listens, and an editable keyboard over it
+    // invites typing that the next transcript would overwrite. Stopping does not
+    // bring the keyboard back: the transcript stays and the user taps to edit.
+    Keyboard.dismiss()
     try {
       await voice.start()
       setMicGranted(true)

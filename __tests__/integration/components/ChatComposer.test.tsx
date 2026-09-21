@@ -153,6 +153,31 @@ describe('ChatComposer', () => {
     expect(props.onToggleMic).toHaveBeenCalled()
   })
 
+  // Dictation owns the input while it listens (keyboard decision D4): a
+  // transcript that overwrites the field must not look typeable, and Stop has to
+  // stay reachable once the first words make hasContent true.
+  describe('while dictating', () => {
+    const listening = { listening: true, start: jest.fn(), stop: jest.fn() }
+
+    it('offers stop rather than send, even with a transcript present', async () => {
+      const { props } = await renderComposer({ value: 'dictated words', micGranted: true, voice: listening })
+      expect(screen.queryByTestId('chat-send-button')).toBeNull()
+      await fireEvent.press(screen.getByTestId('chat-mic-button'))
+      expect(props.onToggleMic).toHaveBeenCalled()
+    })
+
+    it('makes the input read-only', async () => {
+      await renderComposer({ value: 'dictated words', micGranted: true, voice: listening })
+      expect(screen.getByTestId('chat-message-input').props.editable).toBe(false)
+    })
+
+    it('leaves the input editable once dictation stops', async () => {
+      await renderComposer({ value: 'dictated words', micGranted: true })
+      expect(screen.getByTestId('chat-message-input').props.editable).toBe(true)
+      expect(screen.getByTestId('chat-send-button')).toBeTruthy()
+    })
+  })
+
   it('opens and closes the full-screen expand modal', async () => {
     await renderComposer({ value: 'draft' })
     expect(screen.queryByTestId('message-input-expanded')).toBeNull()

@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react-native'
-import { Alert, Linking } from 'react-native'
+import { Alert, Keyboard, Linking } from 'react-native'
 import { useComposerState } from '@/hooks/useComposerState'
 import { pickFromCamera, uploadAttachment } from '@/services/uploads'
 import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
@@ -31,9 +31,12 @@ jest.mock('@/hooks/useSessionName', () => ({
   useRenameSession: () => ({ mutate: jest.fn() }),
 }))
 
-const mockVoice = { listening: false, start: jest.fn(), stop: jest.fn(), cancel: jest.fn() }
+const mockVoice = { listening: false, start: jest.fn(), stop: jest.fn(), cancel: jest.fn(), onTranscript: (_t: string) => {} }
 jest.mock('@/hooks/useVoiceInput', () => ({
-  useVoiceInput: () => mockVoice,
+  useVoiceInput: ({ onTranscript }: { onTranscript: (text: string) => void }) => {
+    mockVoice.onTranscript = onTranscript
+    return mockVoice
+  },
 }))
 
 jest.mock('expo-speech-recognition', () => ({
@@ -101,6 +104,38 @@ describe('useComposerState', () => {
     expect(onSend).toHaveBeenCalledWith('dictated words', 'dictated words')
     expect(mockVoice.cancel).toHaveBeenCalledTimes(1)
     expect(mockVoice.stop).not.toHaveBeenCalled()
+  })
+
+  // Keyboard decision D4: voice owns the input while it listens.
+  it('handleToggleMic dismisses the keyboard when dictation starts', async () => {
+    const dismiss = jest.spyOn(Keyboard, 'dismiss')
+    mockVoice.listening = false
+    const { result } = await renderComposer()
+    await act(async () => { await result.current.handleToggleMic() })
+    expect(mockVoice.start).toHaveBeenCalled()
+    expect(dismiss).toHaveBeenCalledTimes(1)
+  })
+
+  it('handleToggleMic does not touch the keyboard when dictation stops', async () => {
+    const dismiss = jest.spyOn(Keyboard, 'dismiss')
+    mockVoice.listening = true
+    const { result } = await renderComposer()
+    await act(async () => { await result.current.handleToggleMic() })
+    expect(mockVoice.stop).toHaveBeenCalled()
+    expect(dismiss).not.toHaveBeenCalled()
+    mockVoice.listening = false
+  })
+
+  // A remount mid-dictation restores from the drafts store, so a transcript that
+  // never reaches it is lost (audit finding A3).
+  it('drafts the transcript as it arrives', async () => {
+    const { result } = await renderComposer()
+    await act(async () => { mockVoice.onTranscript('spoken words') })
+    expect(result.current.inputText).toBe('spoken words')
+    const { useDraftsStore } = jest.requireMock('@/stores/drafts') as {
+      useDraftsStore: { getState: () => { setDraft: jest.Mock } }
+    }
+    expect(useDraftsStore.getState().setDraft).toHaveBeenCalledWith('srv1', 'sess1', 'spoken words')
   })
 
   it('handleInputChange updates inputText and shows slash board when text starts with /', async () => {
