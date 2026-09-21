@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  AppState,
   View,
   Text,
   TextInput,
@@ -28,6 +27,7 @@ import {
   Sparkle,
 } from 'phosphor-react-native'
 import type { UploadedFile } from '@/services/uploads'
+import { useComposerFocus } from '@/hooks/useComposerFocus'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { layoutDirectionStyle, ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
@@ -123,34 +123,32 @@ export function ChatComposer({
 
   // iOS sometimes drops the software keyboard across a background/foreground
   // cycle even though the TextInput never lost first-responder state, so
-  // nothing else tells it to resurface. Track whether the composer was
-  // focused and nudge it back on return.
+  // nothing else tells it to resurface. That restore, and the ones an overlay
+  // owes when it closes, are decided by the focus machine.
   const inputRef = useRef<TextInput>(null)
-  const wasFocusedRef = useRef(false)
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', (next) => {
-      if (next === 'active' && wasFocusedRef.current) {
-        inputRef.current?.focus()
-      }
-    })
-    return () => sub.remove()
-  }, [])
+  const expandedInputRef = useRef<TextInput>(null)
+  const { onInputFocus, onInputBlur, onExpand, onMinimize } = useComposerFocus({
+    inlineRef: inputRef,
+    expandedRef: expandedInputRef,
+    disabled,
+  })
 
   // Sending from the expanded editor hands focus back to the inline input, but
-  // only if the editor had it: preserving focus must never summon a keyboard that
-  // wasn't up. iOS detaches the inline input until the modal's slide-out ends, so
-  // it can only take focus in onDismiss (iOS-only); Android's Dialog leaves it
-  // attached, so the post-close effect covers it there.
-  const expandedFocusedRef = useRef(false)
-  const focusInlineOnCloseRef = useRef(false)
-  const focusInlineIfPending = useCallback(() => {
-    if (!focusInlineOnCloseRef.current) return
-    focusInlineOnCloseRef.current = false
-    inputRef.current?.focus()
-  }, [])
+  // only if the editor had it — preserving focus must never summon a keyboard
+  // that wasn't up. The focus machine owns that decision (`minimize` from
+  // `typing(expanded)`); what is deferred here is only *when* it is asked, because
+  // neither platform can move focus while the editor is still on screen: iOS
+  // detaches the inline input until the slide-out ends (onDismiss, iOS-only) and
+  // Android's Dialog holds window focus until it goes (the post-close effect).
+  const minimizeOnCloseRef = useRef(false)
+  const minimizeIfPending = useCallback(() => {
+    if (!minimizeOnCloseRef.current) return
+    minimizeOnCloseRef.current = false
+    onMinimize()
+  }, [onMinimize])
   useEffect(() => {
-    if (!expanded && Platform.OS === 'android') focusInlineIfPending()
-  }, [expanded, focusInlineIfPending])
+    if (!expanded && Platform.OS === 'android') minimizeIfPending()
+  }, [expanded, minimizeIfPending])
 
   const hasContent = value.trim().length > 0 || attachments.length > 0
 
@@ -315,8 +313,8 @@ export function ChatComposer({
               style={[styles.input, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
-              onFocus={() => { wasFocusedRef.current = true }}
-              onBlur={() => { wasFocusedRef.current = false }}
+              onFocus={() => onInputFocus('inline')}
+              onBlur={onInputBlur}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
               multiline
@@ -329,7 +327,7 @@ export function ChatComposer({
               accessibilityRole="button"
               accessibilityLabel={t('input.expandLabel')}
               style={styles.expandBtnAndroid}
-              onPress={() => setExpanded(true)}
+              onPress={() => { onExpand(); setExpanded(true) }}
               disabled={disabled}
               hitSlop={8}
             >
@@ -344,8 +342,8 @@ export function ChatComposer({
               style={[styles.input, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
-              onFocus={() => { wasFocusedRef.current = true }}
-              onBlur={() => { wasFocusedRef.current = false }}
+              onFocus={() => onInputFocus('inline')}
+              onBlur={onInputBlur}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
               multiline
@@ -358,7 +356,7 @@ export function ChatComposer({
               accessibilityRole="button"
               accessibilityLabel={t('input.expandLabel')}
               style={styles.expandBtn}
-              onPress={() => setExpanded(true)}
+              onPress={() => { onExpand(); setExpanded(true) }}
               disabled={disabled}
               hitSlop={8}
             >
@@ -375,7 +373,7 @@ export function ChatComposer({
         visible={expanded}
         animationType="slide"
         onRequestClose={() => setExpanded(false)}
-        onDismiss={focusInlineIfPending}
+        onDismiss={minimizeIfPending}
       >
         {/* Same lift as the surfaces: the modal spans to the screen's bottom edge,
             so the keyboard height is exactly the padding it needs. RN's
@@ -394,12 +392,19 @@ export function ChatComposer({
               {errors}
               {chips}
               <TextInput
+                ref={expandedInputRef}
                 testID="message-input-expanded"
                 style={[styles.inputExpandedField, inputDirection, disabled && styles.disabled]}
                 value={disabled ? '' : value}
                 onChangeText={disabled ? undefined : onChangeText}
-                onFocus={() => { expandedFocusedRef.current = true }}
-                onBlur={() => { expandedFocusedRef.current = false }}
+                onFocus={() => onInputFocus('expanded')}
+                onBlur={() => {
+                  // Closing the editor takes its input's focus with it (iOS blurs it before
+                  // onDismiss). That is not the user putting the keyboard away, so it must
+                  // not erase that the editor had focus before minimize is asked.
+                  if (minimizeOnCloseRef.current) return
+                  onInputBlur()
+                }}
                 placeholder={disabled ? t('status.starting') : t('input.placeholder')}
                 placeholderTextColor={theme.text.secondary}
                 multiline
@@ -411,7 +416,10 @@ export function ChatComposer({
                 <TouchableOpacity
                   testID="minimize-input-button"
                   style={styles.iconBtn}
-                  onPress={() => setExpanded(false)}
+                  onPress={() => {
+                    minimizeOnCloseRef.current = true
+                    setExpanded(false)
+                  }}
                   accessibilityLabel={t('input.minimizeLabel')}
                   hitSlop={8}
                 >
@@ -435,8 +443,8 @@ export function ChatComposer({
                   testID="expanded-send-button"
                   style={[styles.sendBtn, (!hasContent || disabled || sendDisabled) && styles.disabled]}
                   onPress={() => {
-                    focusInlineOnCloseRef.current = expandedFocusedRef.current
                     handleSend()
+                    minimizeOnCloseRef.current = true
                     setExpanded(false)
                   }}
                   disabled={!hasContent || disabled || sendDisabled}

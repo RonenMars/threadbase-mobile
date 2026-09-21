@@ -72,6 +72,7 @@ import { ReviewSheet } from '@/components/review/ReviewSheet'
 import { buildReviewFromMessages } from '@/lib/reviewFromConversation'
 import { useConversation } from '@/hooks/useConversations'
 import { RemoteKeyboardControls } from '@/components/sessions/RemoteKeyboardControls'
+import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 
 const PENDING_PHRASES = [
   "Claude is putting on its thinking cap…",
@@ -571,6 +572,7 @@ export default function SessionDetailScreen() {
     })
   }
   const { question: activeQuestion } = useActiveQuestion(serverId, id ?? '')
+
   const [rawKeyboardVisible, setRawKeyboardVisible] = useState(false)
   const { mutateAsync: stopSessionMutateAsync } = stopSession
   const {
@@ -614,6 +616,11 @@ export default function SessionDetailScreen() {
     reviewConversation?.inheritedHistory?.kind === 'divider'
       ? reviewConversation.inheritedHistory.sourceId
       : undefined
+
+  // The dialog covers the composer; the keyboard steps aside while it is up.
+  useEffect(() => {
+    if (leaveModalVisible) lendComposerFocus('leaveDialog')
+  }, [leaveModalVisible])
 
   // Leave-session policy lives in useSessionLeaveGuard.
   // Do not add a second guard here.
@@ -779,6 +786,19 @@ export default function SessionDetailScreen() {
     !isStreaming &&
     (session?.promptCount ?? 0) === 0
 
+  // Once the composer has been enabled for a live session, keep it enabled.
+  // isWakingUpEarly tracks isStreaming, so a lull in output before the first
+  // prompt could otherwise disable an input the user is already typing in. The
+  // server queues input sent before the PTY is ready (pty-manager pendingReady),
+  // so the overlay is a courtesy, not a guard.
+  const [composerEnabledOnce, setComposerEnabledOnce] = useState(false)
+  useEffect(() => {
+    queueMicrotask(() => setComposerEnabledOnce(false))
+  }, [id])
+  useEffect(() => {
+    if (session && !isWakingUpEarly) queueMicrotask(() => setComposerEnabledOnce(true))
+  }, [session, isWakingUpEarly])
+
   // Backstop for the push-only overlay exit: if we're still waking up after
   // WAKING_UP_BACKSTOP_MS, the session_update that flips status → waiting_input
   // may have been dropped or landed on an unbound handler. Re-pull the session
@@ -844,7 +864,7 @@ export default function SessionDetailScreen() {
   // isWakingUpEarly stays exactly as #328 wrote it (no !wakeTimedOut) — it gates
   // the 15 s re-pull effect. Folding !wakeTimedOut into it would flip it false at
   // 8 s and clear the backstop timer before it ever fires, making #328 dead code.
-  const isWakingUp = isWakingUpEarly && !wakeTimedOut
+  const isWakingUp = isWakingUpEarly && !wakeTimedOut && !composerEnabledOnce
 
   const infoModal = (
     <InfoModal
@@ -1246,10 +1266,15 @@ export default function SessionDetailScreen() {
 
       {infoModal}
 
+      {/* A temporary interruption: the keyboard steps aside so the dialog is not
+          covered, and cancelling returns to the message being written. */}
       <LeaveSessionModal
         visible={leaveModalVisible}
         phase={leavePhase}
-        onCancel={cancelLeave}
+        onCancel={() => {
+          returnComposerFocus('leaveDialog')
+          cancelLeave()
+        }}
         onConfirm={confirmLeave}
         onDismissError={dismissLeaveError}
         onModalDismiss={onModalDismiss}

@@ -48,6 +48,12 @@ jest.mock('react-native-safe-area-context', () => ({
 }))
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+  // The composer tracks screen focus so it never restores focus under another
+  // screen; the real hook runs the effect on mount and cleans up on blur.
+  useFocusEffect: (cb: () => (() => void) | void) => {
+    const React = jest.requireActual<typeof import('react')>('react')
+    React.useEffect(() => cb(), [cb])
+  },
   useLocalSearchParams: () => ({}),
 }))
 
