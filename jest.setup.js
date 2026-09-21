@@ -402,6 +402,7 @@ jest.mock('expo-speech-recognition', () => ({
     requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
     start: jest.fn(),
     stop: jest.fn(),
+    abort: jest.fn(),
   },
   useSpeechRecognitionEvent: jest.fn(),
 }))

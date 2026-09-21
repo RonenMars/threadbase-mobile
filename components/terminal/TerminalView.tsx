@@ -117,11 +117,10 @@ export function TerminalView({
       await sendInput.mutateAsync(payload)
     } catch (err) {
       // A prompt is open and the server refused the text. The card sits right
-      // above the composer here and the composer already dropped the keyboard
-      // on send, so it is in view; the server's message shows inline via
-      // sendError. No alert: a modal would take the focus this is trying to
-      // hand to the card. The rethrow is what keeps the draft — sendAndReset
-      // only clears on success.
+      // above the composer here, so it is in view even with the keyboard up;
+      // the server's message shows inline via sendError. No alert: a modal
+      // would take the focus this is trying to hand to the card. The rethrow is
+      // what keeps the draft — sendAndReset only clears on success.
       if (isPromptPendingError(err instanceof Error ? err : null)) throw err
       Alert.alert(t('dialog.sendFailedTitle'), err instanceof Error ? err.message : String(err))
       throw err

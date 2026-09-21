@@ -5,7 +5,7 @@
  * full-screen expand modal: text input, send, attach, mic, and expand/minimize.
  */
 import React from 'react'
-import { AppState, StyleSheet, TextInput, type ViewStyle } from 'react-native'
+import { AppState, Keyboard, Platform, StyleSheet, TextInput, type ViewStyle } from 'react-native'
 import { fireEvent, screen, cleanup } from '@testing-library/react-native'
 import { ChatComposer, type ChatComposerProps } from '@/components/conversation/ChatComposer'
 import { DirectionRoot } from '@/lib/direction-root'
@@ -93,6 +93,52 @@ describe('ChatComposer', () => {
     const { props } = await renderComposer({ value: 'hello' })
     await fireEvent.press(screen.getByTestId('chat-send-button'))
     expect(props.onSend).toHaveBeenCalled()
+  })
+
+  // Keyboard decision D1 (docs/audits/composer-keyboard/): sending is part of
+  // composing, so the keyboard stays and the user can type the next message.
+  it('keeps the keyboard up when a message is sent', async () => {
+    const dismiss = jest.spyOn(Keyboard, 'dismiss')
+    const { props } = await renderComposer({ value: 'hello' })
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
+    expect(props.onSend).toHaveBeenCalled()
+    expect(dismiss).not.toHaveBeenCalled()
+  })
+
+  describe('sending from the expanded editor', () => {
+    async function openExpanded({ focused }: { focused: boolean }) {
+      const rendered = await renderComposer({ value: 'draft' })
+      await fireEvent.press(screen.getByTestId('expand-input-button'))
+      if (focused) await fireEvent(screen.getByTestId('message-input-expanded'), 'focus')
+      // The jest Modal renders nothing once hidden, so keep the handler iOS
+      // calls when the slide-out finishes.
+      const onDismiss: () => void = screen.getByTestId('expanded-composer-modal').props.onDismiss
+      const focusSpy = TextInput.prototype.focus as jest.Mock
+      focusSpy.mockClear()
+      await fireEvent.press(screen.getByTestId('expanded-send-button'))
+      return { ...rendered, onDismiss, focusSpy }
+    }
+
+    it('hands focus to the inline input once the editor has closed (iOS)', async () => {
+      const { props, onDismiss, focusSpy } = await openExpanded({ focused: true })
+      expect(props.onSend).toHaveBeenCalled()
+      expect(screen.queryByTestId('message-input-expanded')).toBeNull()
+      expect(focusSpy).not.toHaveBeenCalled()
+      onDismiss()
+      expect(focusSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('hands focus to the inline input as soon as the editor closes (Android)', async () => {
+      jest.replaceProperty(Platform, 'OS', 'android')
+      const { focusSpy } = await openExpanded({ focused: true })
+      expect(focusSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not summon the keyboard when the editor was not focused', async () => {
+      const { onDismiss, focusSpy } = await openExpanded({ focused: false })
+      onDismiss()
+      expect(focusSpy).not.toHaveBeenCalled()
+    })
   })
 
   it('calls onAttach when the attach button is pressed', async () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   AppState,
@@ -12,7 +12,6 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
-  Keyboard,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'
@@ -122,14 +121,30 @@ export function ChatComposer({
     return () => sub.remove()
   }, [])
 
+  // Sending from the expanded editor hands focus back to the inline input, but
+  // only if the editor had it: preserving focus must never summon a keyboard that
+  // wasn't up. iOS detaches the inline input until the modal's slide-out ends, so
+  // it can only take focus in onDismiss (iOS-only); Android's Dialog leaves it
+  // attached, so the post-close effect covers it there.
+  const expandedFocusedRef = useRef(false)
+  const focusInlineOnCloseRef = useRef(false)
+  const focusInlineIfPending = useCallback(() => {
+    if (!focusInlineOnCloseRef.current) return
+    focusInlineOnCloseRef.current = false
+    inputRef.current?.focus()
+  }, [])
+  useEffect(() => {
+    if (!expanded && Platform.OS === 'android') focusInlineIfPending()
+  }, [expanded, focusInlineIfPending])
+
   const hasContent = value.trim().length > 0 || attachments.length > 0
 
   // Both send buttons funnel through here — the inline one and the one in the
   // full-screen modal. They each disable themselves as well; this is the guard
-  // that survives someone adding a third.
+  // that survives someone adding a third. Sending leaves focus as it was: the
+  // user keeps composing (keyboard decision D1, docs/audits/composer-keyboard/).
   const handleSend = () => {
     if (disabled || sendDisabled || !hasContent) return
-    Keyboard.dismiss()
     onSend()
   }
 
@@ -331,7 +346,13 @@ export function ChatComposer({
         {trailingButton}
       </View>
 
-      <Modal visible={expanded} animationType="slide" onRequestClose={() => setExpanded(false)}>
+      <Modal
+        testID="expanded-composer-modal"
+        visible={expanded}
+        animationType="slide"
+        onRequestClose={() => setExpanded(false)}
+        onDismiss={focusInlineIfPending}
+      >
         <KeyboardAvoidingView
           style={[styles.modalContainer, directionStyle]}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -351,6 +372,8 @@ export function ChatComposer({
                 style={[styles.inputExpandedField, inputDirection, disabled && styles.disabled]}
                 value={disabled ? '' : value}
                 onChangeText={disabled ? undefined : onChangeText}
+                onFocus={() => { expandedFocusedRef.current = true }}
+                onBlur={() => { expandedFocusedRef.current = false }}
                 placeholder={disabled ? t('status.starting') : t('input.placeholder')}
                 placeholderTextColor={theme.text.secondary}
                 multiline
@@ -383,8 +406,10 @@ export function ChatComposer({
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
+                  testID="expanded-send-button"
                   style={[styles.sendBtn, (!hasContent || disabled || sendDisabled) && styles.disabled]}
                   onPress={() => {
+                    focusInlineOnCloseRef.current = expandedFocusedRef.current
                     handleSend()
                     setExpanded(false)
                   }}

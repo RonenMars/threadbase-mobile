@@ -9,6 +9,7 @@ import { useVoiceInput } from '@/hooks/useVoiceInput'
 const requestPermissions = ExpoSpeechRecognitionModule.requestPermissionsAsync as jest.Mock
 const startModule = ExpoSpeechRecognitionModule.start as jest.Mock
 const stopModule = ExpoSpeechRecognitionModule.stop as jest.Mock
+const abortModule = ExpoSpeechRecognitionModule.abort as jest.Mock
 const onEvent = useSpeechRecognitionEvent as jest.Mock
 
 type Handler = (e: any) => void
@@ -27,6 +28,7 @@ beforeEach(() => {
   requestPermissions.mockReset()
   startModule.mockReset()
   stopModule.mockReset()
+  abortModule.mockReset()
 })
 
 describe('useVoiceInput', () => {
@@ -96,6 +98,29 @@ describe('useVoiceInput', () => {
 
     expect(stopModule).toHaveBeenCalled()
     expect(result.current.listening).toBe(false)
+  })
+
+  // stop() asks for a final result, which would refill a composer that was just
+  // sent and cleared; cancel() must abort and drop anything still in flight.
+  it('cancel() aborts without a final result and ignores results already in flight', async () => {
+    requestPermissions.mockResolvedValue({ granted: true })
+    const onTranscript = jest.fn()
+    const { result } = await renderHook(() => useVoiceInput({ onTranscript }))
+
+    await act(async () => {
+      await result.current.start()
+    })
+    await act(() => {
+      result.current.cancel()
+    })
+    await act(() => {
+      fireEvent('result', { results: [{ transcript: 'late words' }] })
+    })
+
+    expect(abortModule).toHaveBeenCalledTimes(1)
+    expect(stopModule).not.toHaveBeenCalled()
+    expect(result.current.listening).toBe(false)
+    expect(onTranscript).not.toHaveBeenCalled()
   })
 
   it("'result' event invokes onTranscript with the first alternative's transcript", async () => {

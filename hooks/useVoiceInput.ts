@@ -16,6 +16,9 @@ const SILENCE_TIMEOUT_MS = 30_000
 export function useVoiceInput({ onTranscript, contextualStrings }: UseVoiceInputArgs) {
   const [listening, setListening] = useState(false)
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // False after cancel(): a result already in flight must not refill a composer
+  // that was just sent and cleared.
+  const acceptResultsRef = useRef(false)
 
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimer.current) {
@@ -35,6 +38,7 @@ export function useVoiceInput({ onTranscript, contextualStrings }: UseVoiceInput
   }, [clearSilenceTimer])
 
   useSpeechRecognitionEvent('result', (e: { results: { transcript: string }[] }) => {
+    if (!acceptResultsRef.current) return
     armSilenceTimer()
     const transcript = e.results[0]?.transcript ?? ''
     if (transcript) onTranscript(transcript)
@@ -70,6 +74,7 @@ export function useVoiceInput({ onTranscript, contextualStrings }: UseVoiceInput
     if (!granted) {
       throw new Error('PERMISSION_DENIED')
     }
+    acceptResultsRef.current = true
     setListening(true)
     armSilenceTimer()
     ExpoSpeechRecognitionModule.start({
@@ -89,5 +94,15 @@ export function useVoiceInput({ onTranscript, contextualStrings }: UseVoiceInput
     setListening(false)
   }, [clearSilenceTimer])
 
-  return { listening, start, stop }
+  // stop() asks the recognizer for a final `result`; abort() discards it.
+  const cancel = useCallback(() => {
+    acceptResultsRef.current = false
+    clearSilenceTimer()
+    try {
+      ExpoSpeechRecognitionModule.abort()
+    } catch {}
+    setListening(false)
+  }, [clearSilenceTimer])
+
+  return { listening, start, stop, cancel }
 }

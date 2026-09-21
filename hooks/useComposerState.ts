@@ -110,6 +110,9 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const sendAndReset = async (payload: string, optimisticText: string): Promise<boolean> => {
     if (sendingRef.current) return false
     sendingRef.current = true
+    // Every send path lands here. The transcript is already in the payload, so any
+    // later recognition result would only refill the composer being cleared.
+    if (voice.listening) voice.cancel()
     try {
       await onSend(payload, optimisticText)
       resetComposer()
