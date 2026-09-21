@@ -32,6 +32,12 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { HeaderOverflowMenu } from '@/components/shared/HeaderOverflowMenu'
+import { StatusPill } from '@/components/alerts/StatusPill'
+import { useAlertListSync } from '@/hooks/useAlertSync'
+import { useArbitratedAlerts } from '@/hooks/useArbitratedAlerts'
+import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
+import { globalSurface } from '@/lib/alertArbitration'
+import type { AlertInput } from '@/stores/alerts'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
@@ -633,6 +639,36 @@ export default function SessionDetailScreen() {
   const isLive =
     session?.ptyAttached === true &&
     (session.status === 'waiting_input' || session.status === 'running')
+  // Warnings go behind the header bell (docs/design/alert-system/README.md).
+  // Inline, they took transcript height a question card needs once the
+  // keyboard is up.
+  const terminalWarnings = useMemo((): AlertInput[] => {
+    if (!isLive || !id) return []
+    const warnings: AlertInput[] = []
+    if (parseConfidence === 'low') {
+      warnings.push({
+        id: `session-raw-mode:${id}`,
+        cause: `session:${id}:raw-mode`,
+        level: 'warning',
+        title: t('session.rawModeNote'),
+        message: t('session.rawModeDetails'),
+      })
+    }
+    if (forceRawTerminal) {
+      warnings.push({
+        id: `session-pty-fallback:${id}`,
+        cause: `session:${id}:pty-fallback`,
+        level: 'warning',
+        title: t('session.viewModeTerminal'),
+        message: t('session.ptyActiveFallbackBanner'),
+      })
+    }
+    return warnings
+  }, [isLive, id, parseConfidence, forceRawTerminal, t])
+  useAlertListSync(terminalWarnings)
+  const alerts = useArbitratedAlerts()
+  const alertSurface = globalSurface(alerts)
+  const openStatusSurface = useOpenStatusSurface()
   // Esc interrupts the agent's current response without killing the PTY session.
   const stopResponse = () => {
     sendKeys.mutate('\x1b', {
@@ -898,6 +934,9 @@ export default function SessionDetailScreen() {
 
   const sessionHeaderActions = (
     <View style={styles.headerActions}>
+      {alertSurface === 'error' || alertSurface === 'warning' ? (
+        <StatusPill surface={alertSurface} issueCount={alerts.global.length} onPress={openStatusSurface} />
+      ) : null}
       {canStopResponse ? (
         <Pressable
           testID="session-stop-button"
@@ -1038,10 +1077,6 @@ export default function SessionDetailScreen() {
   const viewModeLabel = showTerminalSurface
     ? t('session.viewModeTerminal')
     : t('session.viewModeChat')
-  // TerminalView renders its own low-confidence note (rawModeNote) whenever
-  // showTerminalSurface is true for that reason, so this banner only covers
-  // the forceRawTerminal case — otherwise the two banners duplicate.
-  const rawFallbackBanner = forceRawTerminal ? t('session.ptyActiveFallbackBanner') : null
 
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
@@ -1103,19 +1138,12 @@ export default function SessionDetailScreen() {
                 isTakingOver={adoptSession.isPending}
               />
             ) : null}
-            {rawFallbackBanner ? (
-              <View style={styles.rawBanner} testID="session-raw-fallback-banner">
-                <Warning size={14} color={theme.text.warning} weight="fill" />
-                <Text style={styles.rawBannerText}>{rawFallbackBanner}</Text>
-              </View>
-            ) : null}
             <View style={showReconnectBanner ? [styles.flex, styles.staleContent] : styles.flex}>
             {showTerminalSurface ? (
               <TerminalView
                 serverId={serverId}
                 sessionId={id}
                 provider={session.provider}
-                parseConfidence={parseConfidence}
                 disabled={isWakingUp}
                 resumedConversationId={session.resumedFromConversationId}
                 conversationId={historyConversationId}
@@ -1286,17 +1314,6 @@ function makeStyles(theme: Theme) {
     elapsed: { color: theme.text.secondary, fontSize: font.sm },
     prompts: { color: theme.text.secondary, fontSize: font.sm },
     metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
-    rawBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      backgroundColor: theme.bg.secondary,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.border,
-    },
-    rawBannerText: { flex: 1, color: theme.text.warning, fontSize: font.xs, lineHeight: 16 },
     body: { flex: 1 },
     // Content is frozen while the WS is down — make it read as stale, not live.
     staleContent: { opacity: 0.45 },
