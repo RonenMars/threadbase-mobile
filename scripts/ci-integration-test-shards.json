@@ -11,6 +11,7 @@
       "__tests__/integration/components/SessionScreen.leavePolicy.test.tsx",
       "__tests__/integration/components/SessionScreen.pending.test.tsx",
       "__tests__/integration/components/SessionScreen.stopButton.test.tsx",
+      "__tests__/integration/components/SessionScreen.terminalWarnings.test.tsx",
       "__tests__/integration/components/SessionScreen.waking.test.tsx"
     ]
   },
