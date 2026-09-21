@@ -66,9 +66,30 @@ async function renderComposer(onSend = jest.fn()) {
 }
 
 describe('useComposerState', () => {
+  const previousSlashCommandsFlag = process.env.EXPO_PUBLIC_SLASH_COMMANDS
+
   beforeEach(() => jest.clearAllMocks())
+  afterEach(() => {
+    if (previousSlashCommandsFlag === undefined) delete process.env.EXPO_PUBLIC_SLASH_COMMANDS
+    else process.env.EXPO_PUBLIC_SLASH_COMMANDS = previousSlashCommandsFlag
+  })
+
+  it('keeps the slash board hidden by default and shows it only with EXPO_PUBLIC_SLASH_COMMANDS=1', async () => {
+    delete process.env.EXPO_PUBLIC_SLASH_COMMANDS
+    const onSend = jest.fn().mockResolvedValue(undefined)
+    const { result } = await renderComposer(onSend)
+    await act(() => { result.current.handleInputChange('/usage') })
+    expect(result.current.slashBoardVisible).toBe(false)
+    await act(async () => { await result.current.handleSend() })
+    expect(onSend).toHaveBeenCalledWith('/usage', '/usage')
+
+    process.env.EXPO_PUBLIC_SLASH_COMMANDS = '1'
+    await act(() => { result.current.handleInputChange('/usage') })
+    expect(result.current.slashBoardVisible).toBe(true)
+  })
 
   it('handleInputChange updates inputText and shows slash board when text starts with /', async () => {
+    process.env.EXPO_PUBLIC_SLASH_COMMANDS = '1'
     const { result } = await renderComposer()
     await act(() => { result.current.handleInputChange('/compact') })
     expect(result.current.inputText).toBe('/compact')
