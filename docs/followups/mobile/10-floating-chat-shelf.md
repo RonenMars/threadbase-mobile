@@ -179,3 +179,91 @@ node scripts/jev-check.mjs --criteria docs/followups/mobile/10-floating-chat-she
 ## Plan
 
 (The implementation session writes the plan for each PR here, and stops for approval.)
+
+### PR A — the shelf
+
+Worktree `../tb-mobile-worktrees/floating-chat-shelf`, branch `feat/floating-chat-shelf`, cut from `docs/floating-chat-shelf-prep` so this brief is present.
+Once the docs PR merges, a rebase onto `main` drops that commit.
+Facts re-checked on `da55f301` on 2026-09-21: the `::`-split fix from `fix/favorite-session-open` is already on `main` (#1128), so the shelf reuses `.pop()` as it is.
+
+**Store (`stores/quickAccess.ts`)**
+- Add one persisted field: `shelfPosition: { side: 'left' | 'right'; y: number } | null`, default `null`, plus a `setShelfPosition` action.
+  - `side` is physical, so a snapped bubble stays put when the language changes; `null` means "trailing edge", resolved through `useAppDirection()` at render.
+  - `y` is a fraction of the window height (0–1), so rotation or a different device re-clamps it instead of placing it off-screen.
+  - `hydrate` reads it only when both fields have the right type; anything else stays `null`.
+- No new key, no new store, no id re-keying.
+
+**Pin bypass (`app/conversation/[id].tsx`)**
+- `toggleFavorite` becomes `unpinItem(favoriteId)` / `pinItem({...same item...})`, then `animateStar()`.
+- The direct `setState`, the manual `AsyncStorage.setItem`, the rollback and the `Alert` go, together with the `AsyncStorage` and `QUICK_ACCESS_STORAGE_KEY` imports.
+  - The store's `subscribe` already persists, and a store action cannot fail, so there is nothing left to roll back. PR C's rollback is about server calls, not this.
+  - `conversation:favorites.errorTitle` / `favorites.updateFailed` become unused; removed from all four locales so `test:i18n --unused` stays green.
+
+**Badge (`lib/savedShelf.ts` + `hooks/useSavedShelf.ts`)**
+- Pure helpers in `lib/savedShelf.ts`, all unit-tested:
+  - `shelfTarget(fav)`: kind, server and id; the id is `sessionId`/`conversationId`, else `id.split('::').pop()`; `project-chat` uses `chatType`/`chatId`.
+  - `indexShelfCache(sessions, conversations)`: maps keyed `serverId::id`.
+  - `buildShelfEntries(favorites, cache)`: drops `dir`, keeps the favorites order, stable-moves needs-you items first. Needs-you is `deriveSessionPresentation(session).tier === 'needsYou'`, matched by `serverId` + session id.
+  - `countNeedsYou(entries)`, `formatBadgeCount(n)` (`''` for 0, `'99+'` above 99), `labelFromCache(target, cache)`.
+- `hooks/useSavedShelf.ts` is the one small "needs you" hook the brief asks for. It reads session data **passively** from the React Query cache: every `['sessions-eager', …]` list, which the Hub keeps fetched and the WebSocket keeps patched (`lib/eagerCacheSync.ts`).
+  - It subscribes to the query cache with `useSyncExternalStore`, so it never starts a fetch of its own. Mounting `useEagerSessions` at the root would start a second full paginated fetch for every server.
+  - Ceiling: a saved session absent from every cached list (not loaded yet, or filtered out by an active status filter) counts as not needing you, and shows no provider icon. Add a detail-cache lookup if that matters on device.
+- No unread counter anywhere.
+
+**Components (`components/shelf/`)**
+- `ChatShelf.tsx` — the root overlay. Returns `null` unless `favoritesEnabled && favorites.length > 0`, and on the hidden screens.
+  - Hidden screens, by `useSegments()[0]`: `onboarding` and `pair`. The biometric lock needs no rule: `BiometricLockGate` renders its lock screen *instead of* its children (`app/_layout.tsx:388`), so the shelf is not mounted while locked.
+  - Hidden while the keyboard is open: opacity and `pointerEvents` follow `useReanimatedKeyboardAnimation().progress`, on the UI thread.
+- `ShelfBubble.tsx` — the draggable bubble (phosphor `ChatsCircle`, 52 pt) plus the badge.
+  - `Gesture.Race(Gesture.Pan(), Gesture.LongPress(), Gesture.Tap())` on one `GestureDetector`; no `Pressable` inside.
+  - On pan end, snap `x` to the nearest side and clamp `y`; `withSpring`, or a direct assignment when `useReduceMotion()` is on. The final side and `y` fraction are written with `setShelfPosition` via `runOnJS`.
+  - Sizes from `useWindowDimensions()` and `useSafeAreaInsets()`; nothing at module level.
+  - Screen readers cannot perform gesture-handler gestures, so the bubble is `accessible` with role `button`, a `t()` label that includes the badge count, and `accessibilityActions` `activate` (open) and `longpress` (toggle save).
+- `ShelfPanel.tsx` — RN `Modal` (transparent, fade; `animationType="none"` under reduce motion), a scrim that closes it, a close button, and a list of rows.
+  - Row: label, `ProviderMark` when the provider is known from the cache, a needs-you dot, and the server label when more than one server is paired (`Object.keys(servers).length > 1`).
+  - Empty state (only reachable when every saved item is a `dir`) reuses `components/ui/EmptyState`.
+  - Pure presentational: gets items and an `onSelect`, so stories and tests need no router.
+- `testID`s: `chat-shelf-bubble`, `chat-shelf-badge`, `chat-shelf-panel`, `chat-shelf-close`, `chat-shelf-row-<favorite id>`, `chat-shelf-empty`.
+- Stories: `ShelfBubble.stories.tsx` (0, 3, 120 → `99+`; LTR/RTL) and `ShelfPanel.stories.tsx` (mixed items, one server vs two, empty). `ChatShelf.tsx` is a root composition reading router + stores, so it goes in `scripts/git-hooks/story-exempt.txt` with that reason.
+
+**Selecting and toggling**
+- `openSavedItem(target, router)` in `lib/savedShelf.ts` (the target comes from `shelfTarget(fav)`), used by the panel's `onSelect` after closing it:
+  - `conversation`, and `project-chat` with `chatType: 'conversation'`: `router.push(conversationHref(id, serverId))`.
+  - `session`, and `project-chat` with `chatType: 'session'`: `useNavLockStore.getState().lock()`, then `router.push('/session/<id>?server=<serverId>')`.
+- Long-press toggles the current screen's item through `pinItem` / `unpinItem`:
+  - `useSegments()` + `useGlobalSearchParams<{ id; server }>()`: `session/[id]` (not `session/new`) → `buildFavoriteId(server, 'session', id)`; `conversation/[id]` → `buildFavoriteId(server, 'conversation', id)`. Same ids the screens' stars use, so each star updates live.
+  - Label from the cache (session name / conversation title), falling back to the id, as the screens already do.
+  - Anywhere else, long-press does nothing. Toggling off the last saved item hides the bubble, which is the specified behaviour.
+
+**Staying off the FAB, the jump pill and the question card**
+- Default position: trailing edge at 35 % of the window height, well above the bottom band.
+- The drag clamp keeps the bubble between the header (`insets.top + 56`) and a bottom band of `FAB_CLEARANCE` (exported from `components/ui/FAB.tsx`) + composer height (~64 pt) + `insets.bottom`. That band holds the FAB (bottom-right), the composer and the question card's resting position.
+- The jump pills are horizontally centred (`alignSelf: 'center'`), and the bubble is always snapped to a side edge, so they never overlap on any width ≥ 320 pt.
+- Known limit: a tall question card grows above the band and can sit under the bubble. The user can drag the bubble away, and the position is kept. If that shows up on device, hiding the bubble while `useActiveQuestion` reports a question is a follow-up.
+
+**Root mount (`app/_layout.tsx`)**
+- `<ChatShelf />` goes after `<ThemedStack />` and before `<AlertHost />` and `<NavigationLockOverlay />`, so alerts and the nav-lock overlay stay on top of it.
+
+**Strings**
+- New `shared:shelf.*` keys in en, he, ar and ru: open label (with count), close, panel title, empty title/subtitle, needs-you label, saved/removed announcements for the long-press. Every one through `t()`, and no conditional text inline in JSX.
+
+**Tests**
+- `__tests__/unit/lib/savedShelf.test.ts`: needs-you count (tier match, other-server ids, legacy `srv::id` ids, `dir` ignored), `formatBadgeCount` (0, 1, 99, 100), sort order, provider lookup, and `openSavedItem` (lock + session push, `conversationHref` push).
+- `__tests__/unit/hooks/useSavedShelf.test.tsx`: the count follows a cache update, infinite conversation pages are read, and an empty cache starts no fetch.
+- `__tests__/integration/components/ChatShelf.test.tsx`: the hidden rules, the badge, row order, selecting a session and a conversation from the panel, the empty state and close, and long-press save/remove (through the bubble's accessibility actions, which call the same handlers as the gestures).
+- `__tests__/unit/stores/quickAccess.test.ts`: `shelfPosition` persists under the existing key, and malformed values hydrate to `null`.
+- No existing test asserted on the conversation screen's manual AsyncStorage write, so none needed updating.
+- Maestro `e2e/chat_shelf.yaml`, added to `test:e2e:mock` (the shard manifest reads that script, so no workflow edit):
+  - `setup.yaml` → deep-link `conv-111` → tap the conversation header star (gets `testID="conversation-favorite-toggle"`; the only production change the flow needs) → back to the Hub → tap `chat-shelf-bubble` → assert `chat-shelf-panel` → tap the row → assert `conversation-bottom-bar`.
+  - As built: a conversation rather than a session, because leaving a live session raises the leave guard (`leave_session_nav.yaml`). Uses the existing fixtures.
+
+**Checks before any commit**
+- `npm run lint && npm run typecheck && npm run test:ci && npm run test:i18n`, plus `npx eslint` on the staged files.
+- Any `SessionScreen` failure re-run alone with `--runInBand` before calling it anything.
+- Then `jev-check` with the criteria file, and every CHECK row read by hand, before asking for review.
+- Rebase check against the branches the brief lists (`feat/alert-host-arbiter`, `feat/notification-prefs-sync` on `app/_layout.tsx`; the keyboard and jump-FAB branches) before committing; report conflicts rather than resolving them on their behalf.
+
+**Not in PR A:** any server call, sync, or `ServerInfo` flag (PR C); reorder inside the panel (the Manage Favorites screen already does it); haptics.
+
+**Decided in review (2026-09-21):** the bubble and the Hub's New Session FAB stay separate.
+Merging them (a FAB that carries the badge and opens the shelf on long-press, Hub-only or app-wide) was considered and deferred to a later change; the FAB exists only on the Hub (`app/index.tsx`), so a merge has to settle what the other screens show.

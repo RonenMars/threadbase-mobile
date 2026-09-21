@@ -17,3 +17,5 @@ components/servers/HostPressureBanner.tsx
 components/servers/CacheAlertBanner.tsx
 # Store-driven producer: slow session fetch lives on the pill and Status sheet.
 components/SlowQueryBanner.tsx
+# Root host over router, stores and the query cache — the visuals are ShelfBubble and ShelfPanel (both storied).
+components/shelf/ChatShelf.tsx

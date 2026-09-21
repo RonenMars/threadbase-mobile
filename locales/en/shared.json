@@ -24,5 +24,18 @@
     "loadMore_one": "+ {{count}} more",
     "loadMore_other": "+ {{count}} more",
     "emptyFavorites": "No favorites yet — long-press an item to pin it."
+  },
+  "shelf": {
+    "open": "Saved chats",
+    "openWithCount": "Saved chats, {{n}} need you",
+    "hint": "Opens your saved chats. Long-press to save or remove the chat on this screen.",
+    "toggleSaveAction": "Save or remove this chat",
+    "title": "Saved chats",
+    "close": "Close saved chats",
+    "emptyTitle": "No saved chats yet",
+    "emptySubtitle": "Long-press this bubble on a session or conversation to save it here.",
+    "rowNeedsYou": "{{label}}, needs you",
+    "saved": "Saved to your chats",
+    "removed": "Removed from your saved chats"
   }
 }

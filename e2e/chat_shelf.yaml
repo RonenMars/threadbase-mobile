@@ -1,0 +1,72 @@
+# Maestro E2E — floating chat shelf
+# Saves a conversation with its header star, returns to the Hub, opens the
+# shelf bubble and selects the saved row, which must land back on that
+# conversation. A conversation (not a session) is used because leaving a live
+# session raises the leave guard (see leave_session_nav.yaml).
+#
+# The conversation deep link carries no ?server=, so the screen falls back to
+# the first active server and the favorite id is `<serverId>::conversation::conv-111`;
+# the row is matched on the id's tail.
+#
+# Requires: mock server on localhost:7071
+# Usage: node e2e/run-maestro.js test e2e/chat_shelf.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# Nothing is saved on a fresh install, so there is no bubble yet.
+- assertNotVisible:
+    id: "chat-shelf-bubble"
+
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///conversation/conv-111"
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
+    timeout: 12000
+
+- tapOn:
+    id: "conversation-favorite-toggle"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-shelf-bubble"
+    timeout: 5000
+
+- tapOn:
+    id: "screen-header-back-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 8000
+
+- tapOn:
+    id: "chat-shelf-bubble"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-shelf-panel"
+    timeout: 5000
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-shelf-01-panel
+
+- tapOn:
+    id: "chat-shelf-row-.*::conversation::conv-111"
+
+- extendedWaitUntil:
+    visible:
+      id: "conversation-bottom-bar"
+    timeout: 12000
+
+- assertNotVisible:
+    id: "chat-shelf-panel"
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-shelf-02-opened

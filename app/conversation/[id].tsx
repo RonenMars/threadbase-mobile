@@ -17,7 +17,6 @@ import {
   type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
@@ -53,7 +52,7 @@ import { CriticalDialog, type CriticalAction } from '@/components/alerts/Critica
 import { useClaimInline } from '@/hooks/useClaimInline'
 import { queryCause } from '@/types/alerts'
 import type { Message, Session } from '@/types/api'
-import { useQuickAccessStore, buildFavoriteId, QUICK_ACCESS_STORAGE_KEY } from '@/stores/quickAccess'
+import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`)
 
@@ -419,33 +418,21 @@ export default function ConversationDetailScreen() {
     ]).start()
   }, [starScale, glowOpacity, glowScale])
 
-  const toggleFavorite = useCallback(async () => {
-    const previousFavorites = useQuickAccessStore.getState().favorites
-    const nextFavorites = isFavorite
-      ? previousFavorites.filter((f) => f.id !== favoriteId)
-      : [
-          ...previousFavorites,
-          {
-            type: 'conversation' as const,
-            id: favoriteId,
-            label: conversation?.title || conversation?.projectPath || id || '',
-            serverId,
-            conversationId: id,
-          },
-        ]
-
-    useQuickAccessStore.setState({ favorites: nextFavorites })
-    try {
-      await AsyncStorage.setItem(
-        QUICK_ACCESS_STORAGE_KEY,
-        JSON.stringify({ ...useQuickAccessStore.getState(), favorites: nextFavorites }),
-      )
-      animateStar()
-    } catch (err) {
-      useQuickAccessStore.setState({ favorites: previousFavorites })
-      Alert.alert(t('favorites.errorTitle'), err instanceof Error ? err.message : t('favorites.updateFailed'))
+  const toggleFavorite = useCallback(() => {
+    const { pinItem, unpinItem } = useQuickAccessStore.getState()
+    if (isFavorite) {
+      unpinItem(favoriteId)
+    } else {
+      pinItem({
+        type: 'conversation',
+        id: favoriteId,
+        label: conversation?.title || conversation?.projectPath || id || '',
+        serverId,
+        conversationId: id,
+      })
     }
-  }, [animateStar, conversation?.projectPath, conversation?.title, favoriteId, id, isFavorite, serverId, t])
+    animateStar()
+  }, [animateStar, conversation?.projectPath, conversation?.title, favoriteId, id, isFavorite, serverId])
 
   // Skeleton stays up until the fetch lands AND FlashList has drawn its items
   // (onLoad → listDrawn). The 400ms useMinDisplayTime floor is the anti-flicker
@@ -755,9 +742,8 @@ export default function ConversationDetailScreen() {
         />
       </Pressable>
       <Pressable
-        onPress={() => {
-          void toggleFavorite()
-        }}
+        testID="conversation-favorite-toggle"
+        onPress={toggleFavorite}
         hitSlop={8}
         accessibilityLabel={isFavorite ? t('common:favorite.remove') : t('common:favorite.add')}
         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}

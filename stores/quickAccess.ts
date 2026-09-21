@@ -58,6 +58,27 @@ export function buildFavoriteId(
   return [serverId, type, ...idParts].join('::')
 }
 
+/**
+ * Where the floating chat shelf bubble was last snapped. `side` is physical so
+ * a language switch doesn't move a bubble the user placed; `y` is a fraction of
+ * the window height so a rotation or another screen size re-clamps it.
+ * `null` = never moved: the trailing edge of the current language.
+ */
+export interface ShelfPosition {
+  side: 'left' | 'right'
+  y: number
+}
+
+function isShelfPosition(v: ShelfPosition | null | undefined): v is ShelfPosition {
+  return (
+    !!v &&
+    (v.side === 'left' || v.side === 'right') &&
+    typeof v.y === 'number' &&
+    v.y >= 0 &&
+    v.y <= 1
+  )
+}
+
 interface PersistedState {
   favorites: FavoriteItem[]
   ignoredRecents: string[]
@@ -66,6 +87,7 @@ interface PersistedState {
   favoritesEnabled: boolean
   recentsEnabled: boolean
   popularEnabled: boolean
+  shelfPosition: ShelfPosition | null
 }
 
 interface QuickAccessStore extends PersistedState {
@@ -78,6 +100,7 @@ interface QuickAccessStore extends PersistedState {
   setFavoritesEnabled: (v: boolean) => void
   setRecentsEnabled: (v: boolean) => void
   setPopularEnabled: (v: boolean) => void
+  setShelfPosition: (v: ShelfPosition) => void
   hydrate: () => Promise<void>
 }
 
@@ -92,6 +115,7 @@ const DEFAULTS: PersistedState = {
   favoritesEnabled: true,
   recentsEnabled: true,
   popularEnabled: true,
+  shelfPosition: null,
 }
 
 export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
@@ -128,6 +152,7 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
   setFavoritesEnabled: (favoritesEnabled) => set({ favoritesEnabled }),
   setRecentsEnabled: (recentsEnabled) => set({ recentsEnabled }),
   setPopularEnabled: (popularEnabled) => set({ popularEnabled }),
+  setShelfPosition: (shelfPosition) => set({ shelfPosition }),
 
   hydrate: async () => {
     try {
@@ -142,6 +167,7 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
         favoritesEnabled: parsed.favoritesEnabled ?? s.favoritesEnabled,
         recentsEnabled: parsed.recentsEnabled ?? s.recentsEnabled,
         popularEnabled: parsed.popularEnabled ?? s.popularEnabled,
+        shelfPosition: isShelfPosition(parsed.shelfPosition) ? parsed.shelfPosition : s.shelfPosition,
       }))
     } catch {
       // storage unavailable or corrupted — ignore
@@ -158,6 +184,7 @@ useQuickAccessStore.subscribe((state) => {
     favoritesEnabled: state.favoritesEnabled,
     recentsEnabled: state.recentsEnabled,
     popularEnabled: state.popularEnabled,
+    shelfPosition: state.shelfPosition,
   }
   AsyncStorage.setItem(QUICK_ACCESS_STORAGE_KEY, JSON.stringify(payload)).catch(() => {})
 })
