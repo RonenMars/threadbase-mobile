@@ -5,6 +5,7 @@ import {
   indexShelfCache,
   openSavedItem,
   shelfTarget,
+  snapSide,
 } from '@/lib/savedShelf'
 import { useNavLockStore } from '@/stores/navLock'
 import type { FavoriteItem } from '@/stores/quickAccess'
@@ -89,5 +90,25 @@ describe('openSavedItem', () => {
     const push = jest.fn(() => expect(useNavLockStore.getState().isNavigating).toBe(true))
     openSavedItem({ kind: 'session', serverId: 'srv', id: 's1' }, { push })
     expect(push).toHaveBeenCalledWith('/session/s1?server=srv')
+  })
+})
+
+describe('snapSide', () => {
+  it('settles on the half the bubble is released in when it is still', () => {
+    expect(snapSide(100, 0, 400)).toBe('left')
+    expect(snapSide(300, 0, 400)).toBe('right')
+  })
+
+  it('sends a bubble dropped dead centre to the right', () => {
+    expect(snapSide(200, 0, 400)).toBe('right')
+  })
+
+  it('follows a flick across the middle', () => {
+    expect(snapSide(150, 1000, 400)).toBe('right')
+    expect(snapSide(250, -1000, 400)).toBe('left')
+  })
+
+  it('ignores a drift too slow to cross the middle', () => {
+    expect(snapSide(150, 100, 400)).toBe('left')
   })
 })

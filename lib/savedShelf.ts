@@ -98,3 +98,15 @@ export function openSavedItem(target: ShelfTarget, router: { push: (href: Href) 
   useNavLockStore.getState().lock()
   router.push(`/session/${target.id}?server=${target.serverId}`)
 }
+
+// How far ahead a release's velocity is projected when choosing the edge, in seconds.
+const SNAP_PROJECTION_S = 0.15
+
+/**
+ * The edge a released bubble settles on: the half of the screen its centre is
+ * heading for, so a flick toward one side lands there even from the other half.
+ */
+export function snapSide(centerX: number, velocityX: number, width: number): 'left' | 'right' {
+  'worklet'
+  return centerX + velocityX * SNAP_PROJECTION_S < width / 2 ? 'left' : 'right'
+}

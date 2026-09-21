@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
+  withSpring,
   withTiming,
   ZoomIn,
   ZoomOut,
@@ -18,7 +19,7 @@ import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { GlassView } from '@/components/ui/GlassView'
 import { font, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { formatBadgeCount } from '@/lib/savedShelf'
+import { formatBadgeCount, snapSide } from '@/lib/savedShelf'
 import type { ShelfPosition } from '@/stores/quickAccess'
 
 export const BUBBLE_SIZE = 52
@@ -32,7 +33,9 @@ const EASE_OUT = Easing.bezier(0.16, 1, 0.3, 1)
 const EASE_IN = Easing.bezier(0.4, 0, 1, 1)
 const PRESS = { duration: 120, easing: EASE_STANDARD }
 const LIFT = { duration: 180, easing: EASE_STANDARD }
-const SNAP = { duration: 280, easing: EASE_OUT }
+// Slightly over-damped and clamped: the glide to the edge carries the finger's
+// speed but never overshoots the edge (design system: no bounce).
+const SNAP_SPRING = { stiffness: 180, damping: 28, overshootClamping: true }
 const PRESSED_SCALE = 0.96
 const LIFTED_SCALE = 1.04
 const PULSE_HALF_MS = 800
@@ -75,9 +78,8 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
   const scale = useSharedValue(1)
   const pulse = useSharedValue(1)
 
-  // Rotation, a new inset or a language switch moves the resting point. After
-  // a drag the stored position resolves to exactly where the bubble landed, so
-  // this does not cut the snap spring short.
+  // Rotation, a new inset or a language switch moves the resting point. A drag
+  // saves its position only after the glide lands, so this never cuts it short.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability
     x.value = restX
@@ -122,19 +124,23 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
         // eslint-disable-next-line react-hooks/immutability
         y.value = Math.min(maxY, Math.max(minY, startY.value + e.translationY))
       })
-      .onEnd(() => {
+      .onEnd((e) => {
         'worklet'
-        const snapLeft = x.value + BUBBLE_SIZE / 2 < width / 2
-        const targetX = snapLeft ? minX : maxX
-        const targetY = y.value
+        const side = snapSide(x.value + BUBBLE_SIZE / 2, e.velocityX, width)
+        const targetX = side === 'left' ? minX : maxX
+        const settled = { side, y: height > 0 ? y.value / height : DEFAULT_Y }
+        // Saving moves the resting point, which re-seats x, so save only once the
+        // glide has landed; saving on release would cut the glide short.
         if (reduceMotion) {
           // eslint-disable-next-line react-hooks/immutability
           x.value = targetX
-        } else {
-          // eslint-disable-next-line react-hooks/immutability
-          x.value = withTiming(targetX, SNAP)
+          runOnJS(onSnap)(settled)
+          return
         }
-        runOnJS(onSnap)({ side: snapLeft ? 'left' : 'right', y: height > 0 ? targetY / height : DEFAULT_Y })
+        // eslint-disable-next-line react-hooks/immutability
+        x.value = withSpring(targetX, { ...SNAP_SPRING, velocity: e.velocityX }, (finished) => {
+          if (finished) runOnJS(onSnap)(settled)
+        })
       })
       .onFinalize(() => {
         'worklet'
