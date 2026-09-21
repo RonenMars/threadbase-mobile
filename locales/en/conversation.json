@@ -68,7 +68,8 @@
     "showAllLines_other": "Show all {{count}} lines",
     "copyCode": "Copy",
     "copiedCode": "Copied",
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "questionWaiting": "Question waiting below"
   },
   "message": {
     "code": "Code",

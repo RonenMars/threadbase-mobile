@@ -69,7 +69,8 @@
     "showAllLines_other": "הצג את כל {{count}} השורות",
     "copyCode": "העתק",
     "copiedCode": "הועתק",
-    "scrollToBottom": "גלול למטה"
+    "scrollToBottom": "גלול למטה",
+    "questionWaiting": "שאלה ממתינה למטה"
   },
   "message": {
     "code": "קוד",
