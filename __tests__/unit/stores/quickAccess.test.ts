@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 
 beforeEach(() => {
@@ -113,5 +114,29 @@ describe('QuickAccessStore – new favorite types (Step S6)', () => {
     })
     const fav = useQuickAccessStore.getState().favorites[0]
     expect(fav).toMatchObject({ type: 'conversation', conversationId: 'c1' })
+  })
+})
+
+describe('QuickAccessStore – shelf position', () => {
+  const setItem = AsyncStorage.setItem as jest.Mock
+  const getItem = AsyncStorage.getItem as jest.Mock
+
+  it('persists the snapped shelf position under the existing key', () => {
+    useQuickAccessStore.getState().setShelfPosition({ side: 'left', y: 0.4 })
+    const [key, payload] = setItem.mock.calls.at(-1)
+    expect(key).toBe('threadbase_quick_access')
+    expect(JSON.parse(payload).shelfPosition).toEqual({ side: 'left', y: 0.4 })
+  })
+
+  it.each([
+    ['a valid position', { side: 'right', y: 0.2 }, { side: 'right', y: 0.2 }],
+    ['an unknown side', { side: 'top', y: 0.2 }, null],
+    ['an out-of-range y', { side: 'left', y: 4 }, null],
+    ['no field (older installs)', undefined, null],
+  ])('hydrates %s', async (_name, stored, expected) => {
+    useQuickAccessStore.setState({ shelfPosition: null })
+    getItem.mockResolvedValueOnce(JSON.stringify({ favorites: [], shelfPosition: stored }))
+    await useQuickAccessStore.getState().hydrate()
+    expect(useQuickAccessStore.getState().shelfPosition).toEqual(expected)
   })
 })

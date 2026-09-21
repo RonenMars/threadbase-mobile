@@ -43,6 +43,7 @@ import { currentIntroVersion } from '@/services/intro-version'
 import { goBackOrHub } from '@/lib/goBackOrHub'
 import { basename } from '@/components/sessions/shared/pathTail'
 import { AlertHost } from '@/components/alerts/AlertHost'
+import { ChatShelf } from '@/components/shelf/ChatShelf'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -627,6 +628,7 @@ function RootLayout() {
               <BiometricLockGate>
                 <ThemedStatusBar />
                 <ThemedStack router={router} />
+                <ChatShelf />
                 <AlertHost />
                 <NavigationLockOverlay />
               </BiometricLockGate>

@@ -133,10 +133,6 @@
     "fileMeta": "{{kind}} · +{{added}} / −{{removed}}",
     "noteHeader": "ملاحظة مراجعة من الجوال (مشتقة من المحادثة، قد تكون غير مكتملة مقارنة بـ git status):"
   },
-  "favorites": {
-    "errorTitle": "خطأ في المفضلة",
-    "updateFailed": "تعذّر تحديث المفضلة"
-  },
   "share": {
     "roleUser": "المستخدم",
     "roleAssistant": "المساعد"
