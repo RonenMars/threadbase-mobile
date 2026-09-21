@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useFocusEffect } from 'expo-router'
 import { wsManager } from '@/services/ws-client'
 import type { Message, MessageContent } from '@/types/api'
+import { cliPromptText } from '@/lib/cliPromptText'
 import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
 
 function extractCodexText(content: unknown): string {
@@ -75,6 +76,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
     if (entry.isMeta) return null
     if (entry.type !== 'user' && entry.type !== 'assistant') return null
     if (!entry.message?.role) return null
+    const isUser = entry.message.role === 'user'
 
     // Claude Code writes a typed user prompt with `content` as a bare string,
     // not an array of blocks. Normalize it to a single text block (mirrors the
@@ -86,7 +88,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
         id: entry.uuid ?? `${entry.timestamp ?? ''}-${entry.type ?? ''}-${entry.message.role}`,
         uuid: entry.uuid ?? null,
         role: entry.message.role,
-        content: [{ type: 'text', text: rawContentValue }],
+        content: [{ type: 'text', text: isUser ? cliPromptText(rawContentValue) : rawContentValue }],
         timestamp: entry.timestamp ?? new Date().toISOString(),
         is_sidechain: entry.isSidechain ?? false,
         parent_uuid: entry.parentUuid ?? null,
@@ -96,7 +98,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
     const content: MessageContent[] = rawContent.flatMap((block): MessageContent[] => {
       const b = block as Record<string, unknown>
       if (b.type === 'text' && typeof b.text === 'string') {
-        return [{ type: 'text', text: b.text }]
+        return [{ type: 'text', text: isUser ? cliPromptText(b.text) : b.text }]
       }
       if (b.type === 'thinking' && typeof b.thinking === 'string') {
         return [{ type: 'thinking', thinking: b.thinking, signature: typeof b.signature === 'string' ? b.signature : undefined }]

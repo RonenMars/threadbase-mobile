@@ -23,6 +23,7 @@ import {
   stampTrigger,
   etagOf,
 } from '@/hooks/conversationCursor'
+import { cliPromptText } from '@/lib/cliPromptText'
 import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
 import { inheritedHistorySeam, type RawInheritedHistory } from '@/utils/inheritedHistory'
 
@@ -299,7 +300,7 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
       if (block.type === 'thinking') {
         content.push({ type: 'thinking', thinking: block.thinking ?? '', signature: block.signature })
       } else if (block.type === 'text' && block.text) {
-        content.push({ type: 'text', text: block.text })
+        content.push({ type: 'text', text: m.role === 'user' ? cliPromptText(block.text) : block.text })
       } else if (block.type === 'tool_use') {
         content.push({ type: 'tool_use', id: block.id, name: block.name ?? '', input: block.input ?? {} })
       } else if (block.type === 'tool_result') {
@@ -333,10 +334,10 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
       !m.is_tool_result &&
       !content.some((b) => b.type === 'text')
     ) {
-      content.unshift({ type: 'text', text: m.text })
+      content.unshift({ type: 'text', text: cliPromptText(m.text) })
     }
   } else {
-    if (m.text) content.push({ type: 'text', text: m.text })
+    if (m.text) content.push({ type: 'text', text: m.role === 'user' ? cliPromptText(m.text) : m.text })
     if (m.tool_calls) {
       m.tool_calls.forEach((name) =>
         content.push({ type: 'tool_use', name, input: {} })

@@ -58,6 +58,30 @@ describe('useConversationStream – user line parsing', () => {
       content: [{ type: 'text', text: 'hello there' }],
     })
   })
+
+  // Claude Code 2.1.278 records a pasted prompt and a slash command in markup; the
+  // bubble has to read as sent or the optimistic echo never clears.
+  it('shows pasted prompts and slash commands as the user sent them', async () => {
+    const { result } = await setup()
+
+    const lines = [
+      { type: 'user', uuid: 'u-2', message: { role: 'user', content: '\n\n<pasted_content id="1643">\nList all files\n</pasted_content id="1643">\n' } },
+      { type: 'user', uuid: 'u-3', message: { role: 'user', content: '<command-message>doctor</command-message>\n<command-name>/doctor</command-name>' } },
+      { type: 'user', uuid: 'u-4', message: { role: 'user', content: [{ type: 'text', text: '<pasted_content id="0b2e">\nhi\n</pasted_content id="0b2e">' }] } },
+      { type: 'assistant', uuid: 'a-1', message: { role: 'assistant', content: [{ type: 'text', text: '<command-name>/doctor</command-name>' }] } },
+    ]
+    for (const entry of lines) {
+      const line = JSON.stringify({ ...entry, timestamp: '2026-09-21T17:30:00.000Z' })
+      await act(() => __wsTest.emit('conversation_event', { type: 'conversation_event', sessionId: 'sess-1', line }))
+    }
+
+    expect(result.current.liveMessages.map((m) => m.content)).toEqual([
+      [{ type: 'text', text: 'List all files' }],
+      [{ type: 'text', text: '/doctor' }],
+      [{ type: 'text', text: 'hi' }],
+      [{ type: 'text', text: '<command-name>/doctor</command-name>' }],
+    ])
+  })
 })
 
 // Lines as streamer 1.98.0's toClaudeShapedLine emits them for a Codex

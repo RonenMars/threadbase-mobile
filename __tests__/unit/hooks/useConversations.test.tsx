@@ -258,6 +258,33 @@ describe('useConversation — assistant prose alongside tool blocks', () => {
   })
 })
 
+describe('useConversation — Claude Code prompt markup', () => {
+  // Shape the local streamer served for a Claude Code 2.1.278 session: the pasted
+  // prompt keeps its <pasted_content> wrapper in `text`, with no content blocks.
+  it('shows a pasted user prompt without its wrapper', async () => {
+    setActiveServers(['srv_p'])
+    const page = {
+      meta: { id: 'c7', project_name: 'proj-c7', message_count: 1 },
+      messages: [
+        {
+          message_index: 0,
+          role: 'user',
+          text: '<pasted_content id="1643">\nHello, this is typing test\n</pasted_content id="1643">',
+          content: [],
+          timestamp: '2026-09-21T17:30:00.000Z',
+        },
+      ],
+      message_pagination: { total: 1, before_index: 1, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_p = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = await renderHook(() => useConversation('srv_p', 'c7'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data!.messages[0].content).toEqual([{ type: 'text', text: 'Hello, this is typing test' }])
+  })
+})
+
 describe('useConversation — unrenderable rows from a degraded page', () => {
   // Captured from a real streamer serving its SQLite cache tail for a Codex
   // conversation whose project folder had moved: findConversationByUuid returns
