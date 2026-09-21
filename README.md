@@ -59,6 +59,7 @@ cp .env.example .env         # optional dev defaults, see below
 |---|---|---|
 | `EXPO_PUBLIC_DEFAULT_SERVER_URL` | `http://localhost:8766` | Pre-filled URL in onboarding. For the easiest setup (local or production), run `tb-streamer pair` and use the URL it prints, or scan the QR code it displays from your device. |
 | `EXPO_PUBLIC_DEFAULT_API_KEY` | `tb_api_sample` | Pre-filled API key in onboarding |
+| `EXPO_PUBLIC_SLASH_COMMANDS` | unset (off) | Set to `1` to show the slash-command board when typing `/` in a session composer. Read from `.env` / `.env.local` only, not a shell export; restart Metro with `--clear` after changing it. |
 
 Runtime server URL/key are entered by the user and stored in SecureStore, not `.env`.
 

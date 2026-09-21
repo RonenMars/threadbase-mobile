@@ -127,7 +127,9 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const handleInputChange = (text: string) => {
     setInputText(text)
     setDraft(serverId, sessionId, text)
-    setSlashBoardVisible(/^\/.{0,30}$/.test(text))
+    // Off unless EXPO_PUBLIC_SLASH_COMMANDS=1 while the board has device issues (its arg sheet
+    // renders without a backdrop). Every way into the board and its arg modal passes through here.
+    setSlashBoardVisible(process.env.EXPO_PUBLIC_SLASH_COMMANDS === '1' && /^\/.{0,30}$/.test(text))
   }
 
   const handleSend = (override?: string) => {
