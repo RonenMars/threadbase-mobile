@@ -1,6 +1,6 @@
 import React from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react-native'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { useSessionLeaveGuard } from '@/hooks/useSessionLeaveGuard'
 import { useSettingsStore } from '@/stores/settings'
@@ -479,5 +479,53 @@ describe('useSessionLeaveGuard', () => {
     await fireModalDismiss()
     const second = await fire()
     expect(second.preventRemove).toBe(false)
+  })
+})
+
+// native-stack does not disable the iOS edge-swipe while a route has
+// usePreventRemove active: the swipe pops the screen natively, the guard then
+// refuses the pop in JS, and expo-router logs "removed natively but didn't get
+// removed from JS state". The screen therefore has to switch the gesture off
+// itself, exactly while removal is prevented.
+describe('useSessionLeaveGuard swipeBackBlocked', () => {
+  async function run(session: Partial<typeof live>, isPending: boolean) {
+    ;(usePreventRemove as jest.Mock).mockClear()
+    const { result } = await renderHook(() =>
+      useSessionLeaveGuard({
+        navigation: { dispatch: jest.fn() },
+        navigateHome: jest.fn(),
+        serverId: 'srv1',
+        sessionId: 'sess-live',
+        session: { ...live, ...session },
+        isPending,
+        stopSessionMutateAsync: jest.fn(() => Promise.resolve()),
+      }),
+    )
+    const [preventRemove] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
+    return { swipeBackBlocked: result.current.swipeBackBlocked, preventRemove }
+  }
+
+  it('blocks the swipe once a live attached session has loaded', async () => {
+    expect((await run({}, false)).swipeBackBlocked).toBe(true)
+  })
+
+  it('leaves the swipe alone while the session is still pending', async () => {
+    expect((await run({}, true)).swipeBackBlocked).toBe(false)
+  })
+
+  it('leaves the swipe alone for a session that is not a live attached PTY', async () => {
+    expect((await run({ ptyAttached: false }, false)).swipeBackBlocked).toBe(false)
+    expect((await run({ status: 'idle' }, false)).swipeBackBlocked).toBe(false)
+  })
+
+  it('is true exactly when removal is prevented', async () => {
+    for (const [session, pending] of [
+      [{}, false],
+      [{}, true],
+      [{ ptyAttached: false }, false],
+    ] as const) {
+      const { swipeBackBlocked, preventRemove } = await run(session, pending)
+      expect(swipeBackBlocked).toBe(preventRemove)
+    }
   })
 })

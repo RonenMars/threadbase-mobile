@@ -18,6 +18,7 @@ const mockSend = jest.fn()
 const mockStopMutate = jest.fn()
 const mockStopMutateAsync = jest.fn(() => Promise.resolve())
 const mockDispatch = jest.fn()
+const mockSetOptions = jest.fn()
 
 let mockSession = {
   id: 'sess-live',
@@ -98,7 +99,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1', starting: mockStarting }),
   useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
   useNavigation: () => ({
-    setOptions: jest.fn(),
+    setOptions: (...args: unknown[]) => mockSetOptions(...args),
     dispatch: (...args: unknown[]) => mockDispatch(...args),
   }),
 }))
@@ -122,6 +123,7 @@ describe('SessionScreen — leave-session gate', () => {
     mockStopMutate.mockClear()
     mockStopMutateAsync.mockClear()
     mockDispatch.mockClear()
+    mockSetOptions.mockClear()
     mockSession = {
       id: 'sess-live',
       ptyAttached: true,
@@ -142,6 +144,22 @@ describe('SessionScreen — leave-session gate', () => {
 
   afterEach(() => {
     jest.restoreAllMocks()
+  })
+
+  // native-stack keeps the iOS edge-swipe enabled while usePreventRemove is
+  // active, so the swipe would pop the screen natively and the guard would then
+  // refuse the pop in JS. The screen has to turn the gesture off itself.
+  it('disables the iOS swipe-back while the leave guard is armed', async () => {
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect((usePreventRemove as jest.Mock).mock.calls.at(-1)[0]).toBe(true)
+    expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: false })
+  })
+
+  it('keeps the iOS swipe-back for a session that is not a live PTY', async () => {
+    mockSession = { ...mockSession, ptyAttached: false, status: 'idle' }
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect((usePreventRemove as jest.Mock).mock.calls.at(-1)[0]).toBe(false)
+    expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: true })
   })
 
   it('Always ask: back from a live session shows the modal', async () => {

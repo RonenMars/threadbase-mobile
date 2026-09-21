@@ -583,6 +583,7 @@ export default function SessionDetailScreen() {
     confirmLeave,
     dismissLeaveError,
     onModalDismiss,
+    swipeBackBlocked,
   } = useSessionLeaveGuard({
       navigation: {
         dispatch: (action) => {
@@ -597,6 +598,9 @@ export default function SessionDetailScreen() {
       skipInitialReplace: isStarting,
       stopSessionMutateAsync,
     })
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !swipeBackBlocked })
+  }, [navigation, swipeBackBlocked])
   const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
   const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
     enabled: Boolean(serverId && reviewConversationId),
