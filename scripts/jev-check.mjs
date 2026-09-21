@@ -2,7 +2,7 @@
 // Asks Jev (TypeSafe System One) one yes/no question per acceptance criterion about the current branch's diff,
 // and prints how likely each criterion holds. A triage aid for review, never a verdict: CHECK rows need a human look.
 //
-//   TYPESAFE_API_KEY=… node scripts/jev-check.mjs --criteria docs/followups/floating-chat-shelf-criteria.json [--base main] [--threshold 0.7] [--strict] [--dry-run]
+//   TYPESAFE_API_KEY=… node scripts/jev-check.mjs --criteria docs/followups/mobile/10-floating-chat-shelf-criteria.json [--base main] [--threshold 0.7] [--strict] [--dry-run]
 //   node scripts/jev-check.mjs --self-test
 //
 // Sends the diff of the matching files to api.typesafe.ai. Local dev tool only; not for CI.
