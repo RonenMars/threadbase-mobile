@@ -80,6 +80,9 @@ function userMessageText(m: Message): string {
 // up → don't.
 const CHAT_ANCHOR = { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true } as const
 
+// Distance from the tail, in px, past which a reader counts as having left it.
+const FOLLOW_TAIL_THRESHOLD_PX = 100
+
 let optimisticSeq = 0
 function makeOptimisticMessage(text: string): Message {
   optimisticSeq += 1
@@ -107,7 +110,7 @@ export function LiveConversationView({
   const { t: tTerminal } = useTranslation('terminal')
   const styles = makeStyles(theme)
   const listRef = useRef<FlashListRef<Message>>(null)
-  const { stickToEnd, releasePin } = useInitialScrollToEnd(listRef, true)
+  const { stickToEnd, releasePin, repin } = useInitialScrollToEnd(listRef, true)
   const qc = useQueryClient()
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
@@ -405,10 +408,35 @@ export function LiveConversationView({
     setShowJumpToLatest(false)
   }, [])
 
-  // Drives the jump-to-latest FAB only — same rule as ConversationHistoryList.
+  // A question card renders as the list's ListFooterComponent, and flash-list's
+  // autoscroll cannot see it: `getChildContainerDimensions()` excludes header and
+  // footer (RecyclerViewManager.ts), so the card counts towards neither the
+  // content length `checkBounds` measures nor the `contentHeight` that re-runs
+  // that check (useBoundDetection.ts). Nothing scrolls, and a card landing while
+  // the keyboard is up opens with its lower options behind the composer, out of
+  // reach — the transcript will not scroll far enough to expose them.
+  //
+  // The verdict has to come from before the card arrived. Measuring after is
+  // useless: one option label is a whole command line, so appending the card
+  // instantly puts the tail hundreds of px away and any distance rule declines.
+  // Re-pinning unconditionally would yank a reader who had deliberately scrolled
+  // up, which is the one thing this surface must never do under a moving finger.
+  const followingTailRef = useRef(true)
+  const hadQuestionRef = useRef(false)
+  useEffect(() => {
+    const hasQuestion = activeQuestion !== null
+    const arrived = hasQuestion && !hadQuestionRef.current
+    hadQuestionRef.current = hasQuestion
+    if (arrived && followingTailRef.current) repin()
+  }, [activeQuestion, repin])
+
+  // Drives the jump-to-latest FAB, and records the follow state the card-arrival
+  // effect above reads — same rule as ConversationHistoryList.
   const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
-    setShowJumpToLatest(contentSize.height - contentOffset.y - layoutMeasurement.height > 100)
+    const distanceFromTail = contentSize.height - contentOffset.y - layoutMeasurement.height
+    followingTailRef.current = distanceFromTail <= FOLLOW_TAIL_THRESHOLD_PX
+    setShowJumpToLatest(distanceFromTail > FOLLOW_TAIL_THRESHOLD_PX)
   }, [])
 
   return (
