@@ -216,7 +216,7 @@ Facts re-checked on `da55f301` on 2026-09-21: the `::`-split fix from `fix/favor
   - Hidden while the keyboard is open: opacity and `pointerEvents` follow `useReanimatedKeyboardAnimation().progress`, on the UI thread.
 - `ShelfBubble.tsx` — the draggable bubble (phosphor `ChatsCircle`, 52 pt) plus the badge.
   - `Gesture.Race(Gesture.Pan(), Gesture.LongPress(), Gesture.Tap())` on one `GestureDetector`; no `Pressable` inside.
-  - On pan end, snap `x` to the nearest side and clamp `y`; `withSpring`, or a direct assignment when `useReduceMotion()` is on. The final side and `y` fraction are written with `setShelfPosition` via `runOnJS`.
+  - On pan end, snap `x` to the nearest side and clamp `y`; eased `withTiming` (280 ms, the design system's ease-out; nothing overshoots), or a direct assignment when `useReduceMotion()` is on. The final side and `y` fraction are written with `setShelfPosition` via `runOnJS`.
   - Sizes from `useWindowDimensions()` and `useSafeAreaInsets()`; nothing at module level.
   - Screen readers cannot perform gesture-handler gestures, so the bubble is `accessible` with role `button`, a `t()` label that includes the badge count, and `accessibilityActions` `activate` (open) and `longpress` (toggle save).
 - `ShelfPanel.tsx` — RN `Modal` (transparent, fade; `animationType="none"` under reduce motion), a scrim that closes it, a close button, and a list of rows.
@@ -264,6 +264,12 @@ Facts re-checked on `da55f301` on 2026-09-21: the `::`-split fix from `fix/favor
 - Rebase check against the branches the brief lists (`feat/alert-host-arbiter`, `feat/notification-prefs-sync` on `app/_layout.tsx`; the keyboard and jump-FAB branches) before committing; report conflicts rather than resolving them on their behalf.
 
 **Not in PR A:** any server call, sync, or `ServerInfo` flag (PR C); reorder inside the panel (the Manage Favorites screen already does it); haptics.
+
+**Glass pass (2026-09-22), checked against the Threadbase design system:**
+- Bubble and panel draw their surface through the shared `GlassView`: native Liquid Glass on iOS 26, and a solid fill under Reduce Transparency.
+- Android gets no real blur without a `BlurTargetView` around the stack, so the bubble sits on `bg.secondary` at 92% with a blue hairline and elevation, and the panel on 95%.
+- Accent icon, white hairline on iOS glass, amber glow on the needs-you badge that pulses 0.4→1 over 1.6 s (static under Reduce Motion).
+- Motion is eased and never overshoots: press 0.96 in 120 ms, drag lift 1.04 in 180 ms, zoom in 280 ms / out 180 ms.
 
 **Decided in review (2026-09-21):** the bubble and the Hub's New Session FAB stay separate.
 Merging them (a FAB that carries the badge and opens the shelf on long-press, Hub-only or app-wide) was considered and deferred to a later change; the FAB exists only on the Hub (`app/index.tsx`), so a merge has to settle what the other screens show.

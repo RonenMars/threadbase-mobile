@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { GlassView } from '@/components/ui/GlassView'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -39,6 +40,7 @@ export function ShelfPanel({ visible, entries, serverLabels, reduceMotion, onSel
       <View style={[styles.overlay, directionStyle, { paddingTop: insets.top + spacing.xl }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t('shelf.close')} />
         <View style={styles.panel} testID="chat-shelf-panel" accessibilityViewIsModal>
+          <GlassView style={StyleSheet.absoluteFill} intensity={60} />
           <View style={styles.header}>
             <Text style={styles.title} accessibilityRole="header">
               {t('shelf.title')}
@@ -127,8 +129,10 @@ const makeStyles = (theme: Theme) =>
       maxHeight: '70%',
       borderRadius: radius.lg,
       borderWidth: 1,
-      borderColor: theme.border,
-      backgroundColor: theme.bg.secondary,
+      borderColor: Platform.OS === 'ios' ? 'rgba(255,255,255,0.12)' : theme.border,
+      overflow: 'hidden',
+      // Android's blur fallback is only a tint, so the list needs a near-solid base to stay readable.
+      backgroundColor: Platform.OS === 'android' ? `${theme.bg.secondary}f2` : undefined,
       paddingVertical: spacing.md,
     },
     header: {
