@@ -1,5 +1,5 @@
-import React, { memo, useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import React, { memo, useEffect, useRef, useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, type GestureResponderEvent } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,11 @@ import { spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { RtlStyleKit } from '@/lib/rtl'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
+
+// A touch that travels further than this between press-in and lift is a scroll,
+// not an answer. Deliberately tighter than UIKit's ~10pt tap slop: a cancelled
+// tap costs one more tap, a committed drag costs an unintended permission grant.
+const DRAG_CANCEL_PX = 8
 
 interface Props {
   block: QuestionBlock
@@ -45,11 +50,28 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
 
   const locked = busy || ghost
 
-  const handlePress = (index: number) => {
+  const pressStartY = useRef<number | null>(null)
+
+  const handlePress = (index: number, e?: GestureResponderEvent) => {
     // The rows disable themselves too; this is the guard that survives a row
     // being rendered without that. See ChatComposer's second send button for
     // why that is worth the line.
     if (locked) return
+    // TouchableOpacity's cancel-on-movement is conditional, not guaranteed:
+    // `onResponderMove` early-returns while Pressability's `_responderRegion`
+    // is still null (Pressability.js), and that region comes from an
+    // async measure that is never retried after a zero-sized result.
+    // Until it lands, a touch that travels the length of the card still commits
+    // on lift — an accidental approval on a permission prompt. Re-check the
+    // distance here, where nothing can be pending.
+    //
+    // An accessibility activation arrives through `onClick` with no press-in and
+    // no `pageY`; it must still answer, so an unknown
+    // start or end position allows the press through.
+    const startY = pressStartY.current
+    pressStartY.current = null
+    const endY = e?.nativeEvent?.pageY
+    if (startY != null && typeof endY === 'number' && Math.abs(endY - startY) > DRAG_CANCEL_PX) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelected(index)
     onSelect(0, index)
@@ -74,7 +96,8 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
         <TouchableOpacity
           key={index}
           style={[styles.option, index === selected && styles.optionSelected]}
-          onPress={() => handlePress(index)}
+          onPressIn={(e) => { pressStartY.current = e.nativeEvent.pageY }}
+          onPress={(e) => handlePress(index, e)}
           disabled={locked}
           accessibilityRole="button"
           accessibilityState={{ disabled: locked, selected: index === selected }}

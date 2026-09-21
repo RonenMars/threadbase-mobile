@@ -168,4 +168,51 @@ describe('QuestionCard', () => {
     await rerender(<QuestionCard block={{ ...gate, selectedIndex: 1 }} onSelect={jest.fn()} />)
     expect(getByText('No')).toHaveStyle({ fontWeight: '500' })
   })
+  // A row only cancels a travelling touch once Pressability has measured its
+  // responder region, and that measure is async — under test it never resolves,
+  // which is exactly the device case this guard exists for: `onResponderMove`
+  // early-returns on the null region and the lift commits the answer whatever
+  // distance the finger covered. Drive the responder handlers directly so the
+  // press runs through that unmeasured path rather than through fireEvent.press.
+  describe('a touch that travels does not answer', () => {
+    function touchAt(pageY: number) {
+      return {
+        nativeEvent: {
+          pageY,
+          pageX: 20,
+          locationX: 20,
+          locationY: 10,
+          identifier: 1,
+          target: 1,
+          timestamp: Date.now(),
+          touches: [],
+          changedTouches: [],
+        },
+        dispatchConfig: { registrationName: 'onResponderGrant' },
+        persist: () => {},
+        currentTarget: 1,
+        target: 1,
+      }
+    }
+
+    async function dragOnFirstOption(fromY: number, toY: number, onSelect: jest.Mock) {
+      const { getAllByRole } = await render(<QuestionCard block={BASE_BLOCK} onSelect={onSelect} />)
+      const row = getAllByRole('button')[0]
+      await fireEvent(row, 'responderGrant', touchAt(fromY))
+      await fireEvent(row, 'responderMove', touchAt(toY))
+      await fireEvent(row, 'responderRelease', touchAt(toY))
+    }
+
+    it('answers when the finger barely moves', async () => {
+      const onSelect = jest.fn()
+      await dragOnFirstOption(400, 404, onSelect)
+      expect(onSelect).toHaveBeenCalledWith(0, 0)
+    })
+
+    it('does not answer when the finger is dragged down the card', async () => {
+      const onSelect = jest.fn()
+      await dragOnFirstOption(400, 490, onSelect)
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+  })
 })
