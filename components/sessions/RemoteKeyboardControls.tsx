@@ -1,5 +1,5 @@
 import React from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { spacing, type Theme } from '@/constants/theme'
@@ -33,14 +33,24 @@ export function RemoteKeyboardControls({ promptId, busy = false, onClose, onSend
   )
   return (
     <View style={styles.panel} testID="remote-keyboard-controls">
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>{t('rawKeyboard.title')}</Text>
-        <Pressable onPress={onClose} hitSlop={8} accessibilityRole="button" accessibilityLabel={t('rawKeyboard.close')}><X size={22} color={theme.text.secondary} /></Pressable>
-      </View>
-      <View style={styles.row}>{key(t('rawKeyboard.escape'), 'escape')}{key(t('rawKeyboard.tab'), 'tab')}{key(t('rawKeyboard.shiftTab'), 'shift_tab')}</View>
-      <View style={styles.row}>{key('←', 'left')}{key('↑', 'up')}{key('→', 'right')}</View>
-      <View style={styles.row}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+        keyboardShouldPersistTaps="always"
+      >
+        {key(t('rawKeyboard.escape'), 'escape')}
+        {key(t('rawKeyboard.tab'), 'tab')}
+        {key(t('rawKeyboard.shiftTab'), 'shift_tab')}
+        {/* Arrow glyphs are the key itself, not copy to translate. */}
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {key('←', 'left')}
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {key('↑', 'up')}
+        {/* eslint-disable-next-line i18next/no-literal-string */}
         {key('↓', 'down')}
+        {/* eslint-disable-next-line i18next/no-literal-string */}
+        {key('→', 'right')}
         <Pressable
           testID="remote-key-enter"
           style={[styles.key, busy && styles.disabled]}
@@ -51,33 +61,43 @@ export function RemoteKeyboardControls({ promptId, busy = false, onClose, onSend
         >
           <Text style={styles.keyText}>{t('rawKeyboard.enter')}</Text>
         </Pressable>
-      </View>
-      {promptId ? (
-        <Pressable
-          style={[styles.confirm, busy && styles.disabled]}
-          disabled={busy}
-          onLongPress={() => onSend('enter', true)}
-          delayLongPress={700}
-          accessibilityRole="button"
-          accessibilityLabel={t('rawKeyboard.confirmLabel')}
-        >
-          <Text style={styles.confirmText}>{t('rawKeyboard.confirm')}</Text>
-        </Pressable>
-      ) : null}
+        {promptId ? (
+          <Pressable
+            style={[styles.confirm, busy && styles.disabled]}
+            disabled={busy}
+            onLongPress={() => onSend('enter', true)}
+            delayLongPress={700}
+            accessibilityRole="button"
+            accessibilityLabel={t('rawKeyboard.confirmLabel')}
+          >
+            <Text style={styles.confirmText}>{t('rawKeyboard.confirm')}</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+      <Pressable
+        onPress={onClose}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={t('rawKeyboard.close')}
+        style={styles.close}
+      >
+        <X size={20} color={theme.text.secondary} />
+      </Pressable>
     </View>
   )
 }
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
-    panel: { backgroundColor: theme.bg.card, borderTopColor: theme.border, borderTopWidth: StyleSheet.hairlineWidth, padding: spacing.md, gap: spacing.sm },
-    titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    title: { color: theme.text.primary, fontSize: 15, fontWeight: '600' },
-    row: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
-    key: { alignItems: 'center', backgroundColor: theme.bg.secondary, borderRadius: 10, justifyContent: 'center', minHeight: 52, minWidth: 76, paddingHorizontal: spacing.md },
-    keyText: { color: theme.text.primary, fontSize: 17, fontWeight: '600' },
-    confirm: { alignItems: 'center', backgroundColor: theme.text.accent, borderRadius: 10, justifyContent: 'center', minHeight: 52 },
-    confirmText: { color: theme.text.onAccent, fontSize: 15, fontWeight: '600' },
+    // One compact row that rides the keyboard, so typing and special keys are
+    // never a mode switch; it scrolls when the keys outrun a narrow screen.
+    panel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderTopColor: theme.border, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.sm },
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingEnd: spacing.xs },
+    key: { alignItems: 'center', backgroundColor: theme.bg.secondary, borderRadius: 8, justifyContent: 'center', minHeight: 40, minWidth: 48, paddingHorizontal: spacing.sm },
+    keyText: { color: theme.text.primary, fontSize: 15, fontWeight: '600' },
+    close: { minHeight: 40, minWidth: 32, alignItems: 'center', justifyContent: 'center' },
+    confirm: { alignItems: 'center', backgroundColor: theme.text.accent, borderRadius: 8, justifyContent: 'center', minHeight: 40, paddingHorizontal: spacing.md },
+    confirmText: { color: theme.text.onAccent, fontSize: 14, fontWeight: '600' },
     disabled: { opacity: 0.45 },
   })
 }

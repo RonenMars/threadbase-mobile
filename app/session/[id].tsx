@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
-  Keyboard,
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -685,10 +684,7 @@ export default function SessionDetailScreen() {
       t('terminal:rawKeyboard.warning'),
       [
         { text: t('common:button.cancel'), style: 'cancel' },
-        { text: t('terminal:rawKeyboard.agree'), onPress: () => {
-          Keyboard.dismiss()
-          setRawKeyboardVisible(true)
-        } },
+        { text: t('terminal:rawKeyboard.agree'), onPress: () => setRawKeyboardVisible(true) },
       ],
     )
   }
@@ -1078,6 +1074,40 @@ export default function SessionDetailScreen() {
     ? t('session.viewModeTerminal')
     : t('session.viewModeChat')
 
+  const rawKeysAccessory = rawKeyboardVisible ? (
+<RemoteKeyboardControls
+        promptId={
+          activeQuestion?.source === 'prompt'
+            ? activeQuestion.promptId
+            : activeQuestion?.source === 'permission'
+              ? activeQuestion.permissionGateId
+              : undefined
+        }
+        busy={sendRawKey.isPending || sendKeys.isPending}
+        onClose={() => setRawKeyboardVisible(false)}
+        onSend={(action, confirm) => {
+          const promptId =
+            activeQuestion?.source === 'prompt'
+              ? activeQuestion.promptId
+              : activeQuestion?.source === 'permission'
+                ? activeQuestion.permissionGateId
+                : undefined
+          const fail = () => Alert.alert(t('terminal:rawKeyboard.failedTitle'), t('terminal:rawKeyboard.failedBody'))
+          if (!promptId && action !== 'escape') {
+            sendKeys.mutate(RAW_KEY_BYTES[action], { onError: fail })
+            return
+          }
+          sendRawKey.mutate({
+            action,
+            ...(action !== 'escape' && promptId ? { promptId } : {}),
+            ...(confirm ? { confirm } : {}),
+          }, {
+            onError: fail,
+          })
+        }}
+      />
+  ) : null
+
   const noAttachEmptyPlaceholder =
     session.ptyAttached === false &&
     !isLive
@@ -1145,6 +1175,7 @@ export default function SessionDetailScreen() {
                 sessionId={id}
                 provider={session.provider}
                 disabled={isWakingUp}
+                composerAccessory={rawKeysAccessory}
                 resumedConversationId={session.resumedFromConversationId}
                 conversationId={historyConversationId}
               />
@@ -1156,6 +1187,7 @@ export default function SessionDetailScreen() {
                 conversationId={historyConversationId!}
                 provider={session.provider}
                 disabled={isWakingUp}
+                composerAccessory={rawKeysAccessory}
                 onPreferRawTerminal={() => setForceRawTerminal(true)}
               />
             )}
@@ -1212,39 +1244,6 @@ export default function SessionDetailScreen() {
         ) : null}
       </View>
 
-      {rawKeyboardVisible ? (
-        <RemoteKeyboardControls
-          promptId={
-            activeQuestion?.source === 'prompt'
-              ? activeQuestion.promptId
-              : activeQuestion?.source === 'permission'
-                ? activeQuestion.permissionGateId
-                : undefined
-          }
-          busy={sendRawKey.isPending || sendKeys.isPending}
-          onClose={() => setRawKeyboardVisible(false)}
-          onSend={(action, confirm) => {
-            const promptId =
-              activeQuestion?.source === 'prompt'
-                ? activeQuestion.promptId
-                : activeQuestion?.source === 'permission'
-                  ? activeQuestion.permissionGateId
-                  : undefined
-            const fail = () => Alert.alert(t('terminal:rawKeyboard.failedTitle'), t('terminal:rawKeyboard.failedBody'))
-            if (!promptId && action !== 'escape') {
-              sendKeys.mutate(RAW_KEY_BYTES[action], { onError: fail })
-              return
-            }
-            sendRawKey.mutate({
-              action,
-              ...(action !== 'escape' && promptId ? { promptId } : {}),
-              ...(confirm ? { confirm } : {}),
-            }, {
-              onError: fail,
-            })
-          }}
-        />
-      ) : null}
       {infoModal}
 
       <LeaveSessionModal
