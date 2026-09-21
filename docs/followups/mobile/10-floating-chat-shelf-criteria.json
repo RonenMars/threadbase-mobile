@@ -1,0 +1,164 @@
+{
+  "context": "Threadbase Mobile (Expo / React Native) adds a floating chat shelf: a draggable bubble mounted once at the app root that opens a panel listing the user's saved (favorite) sessions and conversations. The saved items are the existing favorites in stores/quickAccess.ts. The badge counts saved sessions that need the user.",
+  "criteria": [
+    {
+      "id": "reuses-favorites",
+      "paths": [
+        "components/",
+        "app/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Does the shelf get its saved items from the existing favorites in `useQuickAccessStore` (stores/quickAccess.ts)?"
+    },
+    {
+      "id": "no-new-saved-store",
+      "expect": false,
+      "paths": [
+        "components/",
+        "app/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Does the change create a new Zustand store or a new AsyncStorage key for holding saved or pinned chats?"
+    },
+    {
+      "id": "pin-through-store",
+      "paths": [
+        "app/",
+        "components/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Do all pin and unpin writes in the changed files go through the quickAccess store actions `pinItem` / `unpinItem`, with no direct `setState` or `AsyncStorage.setItem` of the favorites list?"
+    },
+    {
+      "id": "mounted-at-root",
+      "paths": [
+        "app/_layout.tsx"
+      ],
+      "question": "Is the shelf component rendered in app/_layout.tsx next to `<AlertHost />` and `<NavigationLockOverlay />`, inside `AuthGate`?"
+    },
+    {
+      "id": "gestures-composed",
+      "paths": [
+        "components/"
+      ],
+      "question": "Are the bubble's tap and long-press handled as react-native-gesture-handler gestures (`Gesture.Tap`, `Gesture.LongPress`) combined with the pan gesture, instead of a `Pressable` nested inside the pan gesture's `GestureDetector`?"
+    },
+    {
+      "id": "static-dimensions",
+      "expect": false,
+      "paths": [
+        "components/"
+      ],
+      "question": "Does the shelf read the screen size with `Dimensions.get` at module level instead of `useWindowDimensions`?"
+    },
+    {
+      "id": "reduced-motion",
+      "paths": [
+        "components/"
+      ],
+      "question": "When the reduce-motion setting is on (`useReduceMotion`), does the bubble move to its snapped position without a spring animation?"
+    },
+    {
+      "id": "rtl-aware",
+      "paths": [
+        "components/"
+      ],
+      "question": "Does the bubble use `useAppDirection()` (isRTL) so that its default edge is the trailing edge in right-to-left languages?"
+    },
+    {
+      "id": "keyboard-aware",
+      "paths": [
+        "components/",
+        "hooks/"
+      ],
+      "question": "Does the bubble hide, or move above the keyboard, while the software keyboard is open, using the app's keyboard animation (`useReanimatedKeyboardAnimation` or `useKeyboardInset`)?"
+    },
+    {
+      "id": "badge-needs-you",
+      "paths": [
+        "components/",
+        "hooks/",
+        "lib/"
+      ],
+      "question": "Is the bubble's badge number the count of saved sessions whose presentation tier is `needsYou` (from `deriveSessionPresentation` or `countByTier`)?"
+    },
+    {
+      "id": "unread-counter",
+      "expect": false,
+      "paths": [
+        "components/",
+        "hooks/",
+        "stores/",
+        "types/"
+      ],
+      "question": "Does the change add an unread-message count field or counter for chats?"
+    },
+    {
+      "id": "navigation",
+      "paths": [
+        "components/",
+        "hooks/",
+        "lib/"
+      ],
+      "question": "Does selecting a saved conversation navigate with `conversationHref(...)`, and selecting a saved session lock navigation (`useNavLockStore`) and push `/session/<id>?server=<serverId>`?"
+    },
+    {
+      "id": "test-ids",
+      "paths": [
+        "components/"
+      ],
+      "question": "Do the bubble, the panel, each panel row and the panel's close control have kebab-case `testID` props?"
+    },
+    {
+      "id": "i18n",
+      "paths": [
+        "components/",
+        "app/",
+        "locales/"
+      ],
+      "question": "Is every user-visible string in the shelf rendered through `t('namespace:key')`, with the new keys added to the en, he, ar and ru locale files?"
+    },
+    {
+      "id": "emoji-icon",
+      "expect": false,
+      "paths": [
+        "components/"
+      ],
+      "question": "Does the shelf use an emoji character as an icon instead of a phosphor-react-native icon?"
+    },
+    {
+      "id": "stories",
+      "paths": [
+        "components/"
+      ],
+      "question": "Does every new component file under components/ come with a colocated `.stories.tsx` file in this change?"
+    },
+    {
+      "id": "any-or-unknown",
+      "expect": false,
+      "question": "Does the change add a type annotation of `any` or `unknown`?"
+    },
+    {
+      "id": "unit-tests",
+      "paths": [
+        "__tests__/",
+        "components/",
+        "hooks/",
+        "lib/",
+        "stores/"
+      ],
+      "question": "Does the change add Jest tests for the badge count and for opening a saved item from the panel?"
+    },
+    {
+      "id": "maestro-flow",
+      "paths": [
+        "e2e/",
+        "package.json"
+      ],
+      "question": "Does the change add a Maestro flow under e2e/ that opens the shelf and selects a saved item, and add that flow to the `test:e2e:mock` script in package.json?"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "context": "tb-streamer (TypeScript, Hono, better-sqlite3) adds durable storage and a REST API for the mobile app's saved (favorite) sessions and conversations, so every device paired with this streamer sees the same saved list.",
+  "criteria": [
+    {
+      "id": "runtime-db",
+      "paths": [
+        "src/db/"
+      ],
+      "question": "Is the saved-items table created by a new numbered migration in src/db/runtime-migrations/ (runtime.db), and not in src/db/migrations/ (the rebuildable cache.db)?"
+    },
+    {
+      "id": "capability-classified",
+      "paths": [
+        "src/services/security/",
+        "src/api/"
+      ],
+      "question": "Is the new saved-items route prefix added to `ROUTE_CAPABILITIES` in src/services/security/capabilities.ts?"
+    },
+    {
+      "id": "info-flag",
+      "paths": [
+        "src/api/"
+      ],
+      "question": "Does GET /api/info now return a boolean `savedItems: true`?"
+    },
+    {
+      "id": "schema-validation",
+      "paths": [
+        "src/schemas/",
+        "src/api/"
+      ],
+      "question": "Are request bodies for the saved-items routes validated with a schema in src/schemas/ before anything is written?"
+    },
+    {
+      "id": "upsert",
+      "paths": [
+        "src/db/",
+        "src/api/"
+      ],
+      "question": "Is saving an item whose id already exists an upsert that updates it, rather than an error or a duplicate row?"
+    },
+    {
+      "id": "order-persisted",
+      "paths": [
+        "src/db/",
+        "src/api/"
+      ],
+      "question": "Is the saved items' order stored (a position column or equivalent) and returned in that order by the list endpoint?"
+    },
+    {
+      "id": "tests",
+      "paths": [
+        "__tests__/"
+      ],
+      "question": "Are there Vitest tests in __tests__/ for listing, saving, re-saving the same id, reordering and deleting saved items, and for rejecting an invalid body?"
+    },
+    {
+      "id": "renames-wire-field",
+      "expect": false,
+      "question": "Does the change rename or remove a field in an existing API response?"
+    },
+    {
+      "id": "real-host-or-key",
+      "expect": false,
+      "question": "Does the change add a real hostname, IP address, token or API key?"
+    },
+    {
+      "id": "any-type",
+      "expect": false,
+      "question": "Does the change add a type annotation of `any`?"
+    }
+  ]
+}
