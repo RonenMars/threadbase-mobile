@@ -17,7 +17,6 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { conversationRowTitle, sessionRowTitle, storedNameFor } from '@/components/sessions/shared/rowTitle'
 import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
-import { QuietProjectChips } from './QuietProjectChips'
 import { matchesProjectFilter, splitProjectTiers } from './projectTiers'
 import { SectionEyebrow, type SectionTone } from '@/components/sessions/now/SectionEyebrow'
 import { EmptyState } from '../../ui/EmptyState'
@@ -95,11 +94,11 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     () => allGroups.filter((group) => matchesProjectFilter(group, filterQuery)),
     [allGroups, filterQuery],
   )
-  // The QUIET tier stays folded into chips until shown; keyed per server so a
+  // The OLDER tier stays collapsed until expanded; keyed per server so a
   // second machine's tail unfolds on its own.
-  const [quietOpen, setQuietOpen] = useState<Set<string>>(() => new Set())
-  const toggleQuiet = useCallback((scope: string) => {
-    setQuietOpen((prev) => {
+  const [olderOpen, setOlderOpen] = useState<Set<string>>(() => new Set())
+  const toggleOlder = useCallback((scope: string) => {
+    setOlderOpen((prev) => {
       const next = new Set(prev)
       if (next.has(scope)) next.delete(scope)
       else next.add(scope)
@@ -138,13 +137,6 @@ export const ProjectHubList = React.memo(function ProjectHubList({
       else next.add(projectId)
       return next
     })
-  }, [])
-
-  // A chip tap unfolds its tier and opens that card, so the tap lands where the
-  // reader expects instead of on a row of chips that just rearranged.
-  const openQuietProject = useCallback((scope: string, group: ProjectGroup) => {
-    setQuietOpen((prev) => new Set(prev).add(scope))
-    setOpenIds((prev) => new Set(prev).add(group.projectId))
   }, [])
 
   const handleConversationPress = useCallback(
@@ -283,16 +275,15 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     | { kind: 'header'; serverId: string; serverLabel: string; totalCount: number; failed: boolean }
     | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number; action?: { label: string; onPress: () => void; testID?: string } }
     | { kind: 'group'; group: ProjectGroup }
-    | { kind: 'quietChips'; key: string; scope: string; groups: ProjectGroup[] }
     | { kind: 'serverEmpty'; serverId: string }
     | { kind: 'serverUnsupported'; serverId: string; serverLabel: string }
 
   const hubFlatData = useMemo((): HubFlatItem[] => {
-    // ACTIVE (a live session), RECENT (activity inside the window), QUIET (the
-    // long tail). Quiet folds into chips only while there is something above it
-    // to be quiet next to; a list that is all tail shows its cards.
+    // ACTIVE (a live session), RECENT (activity inside the window), OLDER (the
+    // long tail). Older collapses until expanded, but only while there is
+    // something above it; a list that is all tail shows its cards.
     const tiered = (scoped: ProjectGroup[], scope: string): HubFlatItem[] => {
-      const { active, recent, quiet } = splitProjectTiers(scoped)
+      const { active, recent, older } = splitProjectTiers(scoped)
       const out: HubFlatItem[] = []
       if (active.length > 0) {
         out.push({ kind: 'eyebrow', key: `${scope}-active`, tone: 'needsYou', label: `${t('hub.tierActive')} · ${active.length}` })
@@ -302,20 +293,19 @@ export const ProjectHubList = React.memo(function ProjectHubList({
         out.push({ kind: 'eyebrow', key: `${scope}-recent`, tone: 'muted', label: t('hub.tierRecent'), count: recent.length })
         out.push(...recent.map((g) => ({ kind: 'group' as const, group: g })))
       }
-      if (quiet.length > 0) {
+      if (older.length > 0) {
         const foldable = active.length + recent.length > 0
-        const folded = foldable && !quietOpen.has(scope)
+        const collapsed = foldable && !olderOpen.has(scope)
         out.push({
           kind: 'eyebrow',
-          key: `${scope}-quiet`,
+          key: `${scope}-older`,
           tone: 'muted',
-          label: `${t('hub.tierQuiet')} · ${quiet.length}`,
+          label: `${t('hub.tierOlder')} · ${older.length}`,
           action: foldable
-            ? { label: folded ? t('hub.showQuiet') : t('hub.hideQuiet'), onPress: () => toggleQuiet(scope), testID: `hub-quiet-toggle-${scope}` }
+            ? { label: collapsed ? t('hub.showOlder') : t('hub.hideOlder'), onPress: () => toggleOlder(scope), testID: `hub-older-toggle-${scope}` }
             : undefined,
         })
-        if (folded) out.push({ kind: 'quietChips', key: `${scope}-quiet-chips`, scope, groups: quiet })
-        else out.push(...quiet.map((g) => ({ kind: 'group' as const, group: g })))
+        if (!collapsed) out.push(...older.map((g) => ({ kind: 'group' as const, group: g })))
       }
       return out
     }
@@ -348,7 +338,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           ]
         }), ...unsupportedRows]
       : [...tiered(groups, 'all'), ...unsupportedRows]
-  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, quietOpen, toggleQuiet, t, activeServerIds, fetchStatuses])
+  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, olderOpen, toggleOlder, t, activeServerIds, fetchStatuses])
 
   if (drill && !searchOpen) {
     return <DrillView key={drill.node.fullPath} node={drill.node} serverId={drill.serverId} onBack={() => setDrill(null)} topInset={topInset} onScroll={onScroll} />
@@ -390,7 +380,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           keyboardShouldPersistTaps="handled"
           keyExtractor={(item) => {
             if (item.kind === 'header') return `header-${item.serverId}`
-            if (item.kind === 'eyebrow' || item.kind === 'quietChips') return item.key
+            if (item.kind === 'eyebrow') return item.key
             if (item.kind === 'serverEmpty') return `empty-${item.serverId}`
             if (item.kind === 'serverUnsupported') return `unsupported-${item.serverId}`
             return `project:${item.group.serverId}::${item.group.projectId}`
@@ -398,9 +388,6 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           renderItem={({ item }) => {
             if (item.kind === 'eyebrow') {
               return <SectionEyebrow label={item.label} tone={item.tone} count={item.count} action={item.action} />
-            }
-            if (item.kind === 'quietChips') {
-              return <QuietProjectChips groups={item.groups} onPress={(group) => openQuietProject(item.scope, group)} />
             }
             if (item.kind === 'serverUnsupported') {
               return (

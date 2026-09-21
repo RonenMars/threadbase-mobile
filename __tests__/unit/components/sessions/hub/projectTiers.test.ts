@@ -41,18 +41,18 @@ describe('projectTier', () => {
     expect(projectTier(group('a', { sessions: [live], latestActivityMs: NOW - 30 * RECENT_WINDOW_MS }), NOW)).toBe('active')
   })
 
-  it('is recent inside the window and quiet past it, held sessions included', () => {
+  it('is recent inside the window and older past it, held sessions included', () => {
     const held = session({ status: 'waiting_input', ptyAttached: false, lifecycle: 'resumable' })
     expect(projectTier(group('a', { sessions: [held], latestActivityMs: NOW - RECENT_WINDOW_MS + 1 }), NOW)).toBe('recent')
-    expect(projectTier(group('a', { latestActivityMs: NOW - RECENT_WINDOW_MS - 1 }), NOW)).toBe('quiet')
+    expect(projectTier(group('a', { latestActivityMs: NOW - RECENT_WINDOW_MS - 1 }), NOW)).toBe('older')
   })
 
   it('keeps each tier in the incoming order', () => {
-    const quietOld = group('old', { latestActivityMs: NOW - 40 * 86_400_000 })
-    const quietOlder = group('older', { latestActivityMs: NOW - 90 * 86_400_000 })
-    const tiers = splitProjectTiers([quietOld, group('fresh'), quietOlder], NOW)
+    const olderA = group('old', { latestActivityMs: NOW - 40 * 86_400_000 })
+    const olderB = group('older', { latestActivityMs: NOW - 90 * 86_400_000 })
+    const tiers = splitProjectTiers([olderA, group('fresh'), olderB], NOW)
     expect(tiers.recent.map((g) => g.projectName)).toEqual(['fresh'])
-    expect(tiers.quiet.map((g) => g.projectName)).toEqual(['old', 'older'])
+    expect(tiers.older.map((g) => g.projectName)).toEqual(['old', 'older'])
     expect(tiers.active).toEqual([])
   })
 })

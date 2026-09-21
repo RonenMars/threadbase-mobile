@@ -69,9 +69,9 @@
     "timeYesterday": "אתמול",
     "tierActive": "פעילים",
     "tierRecent": "אחרונים",
-    "tierQuiet": "שקטים",
-    "showQuiet": "הצג",
-    "hideQuiet": "הסתר",
+    "tierOlder": "ישנים",
+    "showOlder": "הצג",
+    "hideOlder": "הסתר",
     "filterPlaceholder": "סינון פרויקטים או נתיבים…"
   },
   "loading": {

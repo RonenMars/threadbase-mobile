@@ -1,25 +1,25 @@
 import { deriveSessionPresentation, isPresentationLive, type SessionColorToken } from '@/lib/sessionPresentation'
 import type { ProjectGroup } from './useProjectGroups'
 
-export type ProjectTier = 'active' | 'recent' | 'quiet'
+export type ProjectTier = 'active' | 'recent' | 'older'
 
 /** A project with no live session and nothing inside this window is long-tail. */
 export const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
 export function projectTier(group: ProjectGroup, now: number = Date.now()): ProjectTier {
   if (group.sessions.some(isPresentationLive)) return 'active'
-  return now - group.latestActivityMs <= RECENT_WINDOW_MS ? 'recent' : 'quiet'
+  return now - group.latestActivityMs <= RECENT_WINDOW_MS ? 'recent' : 'older'
 }
 
 export interface ProjectTiers {
   active: ProjectGroup[]
   recent: ProjectGroup[]
-  quiet: ProjectGroup[]
+  older: ProjectGroup[]
 }
 
 /** Buckets the groups by tier, keeping the incoming order inside each tier. */
 export function splitProjectTiers(groups: ProjectGroup[], now: number = Date.now()): ProjectTiers {
-  const tiers: ProjectTiers = { active: [], recent: [], quiet: [] }
+  const tiers: ProjectTiers = { active: [], recent: [], older: [] }
   for (const group of groups) tiers[projectTier(group, now)].push(group)
   return tiers
 }

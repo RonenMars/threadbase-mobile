@@ -73,9 +73,9 @@
     "timeYesterday": "Вчера",
     "tierActive": "АКТИВНЫЕ",
     "tierRecent": "НЕДАВНИЕ",
-    "tierQuiet": "ТИХИЕ",
-    "showQuiet": "Показать",
-    "hideQuiet": "Скрыть",
+    "tierOlder": "СТАРЫЕ",
+    "showOlder": "Показать",
+    "hideOlder": "Скрыть",
     "filterPlaceholder": "Фильтр проектов или путей…"
   },
   "loading": {

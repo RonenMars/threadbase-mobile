@@ -65,9 +65,9 @@
     "timeYesterday": "Yesterday",
     "tierActive": "ACTIVE",
     "tierRecent": "RECENT",
-    "tierQuiet": "QUIET",
-    "showQuiet": "Show",
-    "hideQuiet": "Hide",
+    "tierOlder": "OLDER",
+    "showOlder": "Show",
+    "hideOlder": "Hide",
     "filterPlaceholder": "Filter projects or paths…"
   },
   "loading": {
