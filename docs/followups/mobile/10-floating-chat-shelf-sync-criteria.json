@@ -1,0 +1,77 @@
+{
+  "context": "Threadbase Mobile syncs the user's saved (favorite) sessions and conversations, kept today in AsyncStorage by stores/quickAccess.ts, with the streamer backend that each item belongs to. Sync is used only when the server advertises `savedItems` in GET /api/info; the local list stays the offline copy.",
+  "criteria": [
+    {
+      "id": "pin-through-store",
+      "paths": [
+        "app/",
+        "components/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Do all pin and unpin writes in the changed files go through the quickAccess store actions `pinItem` / `unpinItem`, with no direct `setState` or `AsyncStorage.setItem` of the favorites list?"
+    },
+    {
+      "id": "sync-capability-gated",
+      "paths": [
+        "services/",
+        "hooks/",
+        "stores/",
+        "types/"
+      ],
+      "question": "Is syncing saved items with the server used only when that server's `serverInfo.savedItems` flag is true, and skipped when the flag is absent?"
+    },
+    {
+      "id": "sync-optimistic-rollback",
+      "paths": [
+        "services/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "When syncing, does pinning or unpinning update the local list immediately and roll it back if the server request fails?"
+    },
+    {
+      "id": "sync-local-first",
+      "paths": [
+        "services/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Do saved items stay in AsyncStorage and remain usable when the server is unreachable?"
+    },
+    {
+      "id": "rekeys-legacy-ids",
+      "expect": false,
+      "paths": [
+        "services/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Does the change rewrite or re-key the ids of existing favorites?"
+    },
+    {
+      "id": "dir-stays-local",
+      "paths": [
+        "services/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Are `dir` favorites and favorites without a `serverId` kept local and never sent to a server?"
+    },
+    {
+      "id": "sync-tests",
+      "paths": [
+        "__tests__/",
+        "services/",
+        "hooks/",
+        "stores/"
+      ],
+      "question": "Does the change add Jest tests for the sync path: first upload of existing local items, pin and unpin rollback on a failed request, and no server calls when the `savedItems` flag is absent?"
+    },
+    {
+      "id": "any-or-unknown",
+      "expect": false,
+      "question": "Does the change add a type annotation of `any` or `unknown`?"
+    }
+  ]
+}
