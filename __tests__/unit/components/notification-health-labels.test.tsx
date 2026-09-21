@@ -17,7 +17,6 @@ import type { PushTokenHealth, PushTokenState } from '@/types/push-health'
 
 jest.mock('@/hooks/usePushHealth', () => ({ usePushHealth: jest.fn() }))
 jest.mock('@/services/push', () => ({
-  isInQuietHours: jest.fn(() => false),
   registerPushToken: jest.fn(),
 }))
 
@@ -80,13 +79,11 @@ beforeEach(() => {
   useSettingsStore.setState({
     notifications: {
       waitingInput: true,
-      sessionComplete: true,
       sessionFailed: true,
-      diffReady: false,
       quietHoursEnabled: false,
       quietHoursFrom: '22:00',
       quietHoursTo: '08:00',
-      showBadge: true,
+      quietHoursDays: {},
     },
   })
 })

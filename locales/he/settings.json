@@ -52,12 +52,27 @@
   "notifications": {
     "whenAddingServer": "בעת הוספת שרת חדש",
     "waitingForInput": "ממתין לקלט",
-    "sessionCompleted": "הסשן הושלם",
     "sessionFailed": "הסשן נכשל",
-    "diffReady": "Diff מוכן",
-    "showBadgeCount": "הצג תג ספירה",
     "quietHours": "שעות שקט",
-    "sendTest": "שלח התראת בדיקה"
+    "sendTest": "שלח התראת בדיקה",
+    "quietEveryDay": "כל יום",
+    "quietFrom": "מ־",
+    "quietTo": "עד",
+    "quietByDay": "קביעת שעות לפי יום",
+    "quietShow": "הצג",
+    "quietHide": "הסתר",
+    "quietDayOff": "כבוי",
+    "weekday": {
+      "mon": "שני",
+      "tue": "שלישי",
+      "wed": "רביעי",
+      "thu": "חמישי",
+      "fri": "שישי",
+      "sat": "שבת",
+      "sun": "ראשון"
+    },
+    "testFailedTitle": "התראת הבדיקה לא נמסרה",
+    "testFailedBody": "השרת לא הצליח להגיע למכשיר הזה. פתחו את \"בריאות משלוח\" לפרטים."
   },
   "notification": {
     "testTitle": "התראת בדיקה",

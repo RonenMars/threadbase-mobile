@@ -9,13 +9,11 @@ const MODULE_DEFAULT_LOCALE = useSettingsStore.getState().locale
 
 const DEFAULT_NOTIFICATIONS = {
   waitingInput: true,
-  sessionComplete: true,
   sessionFailed: true,
-  diffReady: false,
   quietHoursEnabled: false,
   quietHoursFrom: '22:00',
   quietHoursTo: '08:00',
-  showBadge: true,
+  quietHoursDays: {},
 }
 
 beforeEach(() => {
@@ -201,9 +199,9 @@ describe('SettingsStore – notifications', () => {
   })
 
   it('merges partial update', () => {
-    useSettingsStore.getState().setNotifications({ diffReady: true })
+    useSettingsStore.getState().setNotifications({ sessionFailed: false })
     const n = useSettingsStore.getState().notifications
-    expect(n.diffReady).toBe(true)
+    expect(n.sessionFailed).toBe(false)
     expect(n.waitingInput).toBe(true) // unchanged
   })
 
@@ -221,11 +219,74 @@ describe('SettingsStore – notifications', () => {
   })
 
   it('does not wipe unrelated fields on partial update', () => {
-    useSettingsStore.getState().setNotifications({ showBadge: false })
+    useSettingsStore.getState().setNotifications({ quietHoursEnabled: true })
     const n = useSettingsStore.getState().notifications
-    expect(n.sessionComplete).toBe(true)
+    expect(n.waitingInput).toBe(true)
     expect(n.sessionFailed).toBe(true)
-    expect(n.showBadge).toBe(false)
+    expect(n.quietHoursFrom).toBe('22:00')
+    expect(n.quietHoursEnabled).toBe(true)
+  })
+
+  it('stores per-weekday quiet hours, with null meaning no quiet hours that day', () => {
+    useSettingsStore.getState().setNotifications({
+      quietHoursDays: { fri: { from: '23:30', to: '10:00' }, sat: null },
+    })
+    expect(useSettingsStore.getState().notifications.quietHoursDays).toEqual({
+      fri: { from: '23:30', to: '10:00' },
+      sat: null,
+    })
+  })
+})
+
+describe('SettingsStore – notifications migration', () => {
+  const hydrated = async (notifications: object) => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(JSON.stringify({ notifications }))
+    await useSettingsStore.getState().hydrate()
+    return useSettingsStore.getState().notifications
+  }
+
+  it('keeps the settings that survive and drops the retired ones', async () => {
+    const n = await hydrated({
+      waitingInput: false,
+      sessionComplete: true,
+      sessionFailed: false,
+      diffReady: true,
+      showBadge: false,
+      quietHoursEnabled: true,
+      quietHoursFrom: '23:00',
+      quietHoursTo: '07:00',
+    })
+    expect(n).toEqual({
+      waitingInput: false,
+      sessionFailed: false,
+      quietHoursEnabled: true,
+      quietHoursFrom: '23:00',
+      quietHoursTo: '07:00',
+      quietHoursDays: {},
+    })
+    expect(n).not.toHaveProperty('sessionComplete')
+    expect(n).not.toHaveProperty('diffReady')
+    expect(n).not.toHaveProperty('showBadge')
+  })
+
+  it('does not write the retired keys back to storage', async () => {
+    await hydrated({ sessionComplete: true, diffReady: true, showBadge: true })
+    await persistSettingsNow()
+    const written = JSON.parse((AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)[1])
+    expect(Object.keys(written.notifications).sort()).toEqual(Object.keys(DEFAULT_NOTIFICATIONS).sort())
+  })
+
+  it('falls back to the default for a malformed time rather than sending it to a server', async () => {
+    const n = await hydrated({ quietHoursFrom: '25:99', quietHoursTo: 'late' })
+    expect(n.quietHoursFrom).toBe('22:00')
+    expect(n.quietHoursTo).toBe('08:00')
+  })
+
+  it('keeps valid per-day windows and drops invalid ones', async () => {
+    const n = await hydrated({
+      quietHoursDays: { mon: { from: '09:00', to: '17:00' }, tue: null, wed: { from: 'x', to: '17:00' } },
+    })
+    expect(n.quietHoursDays).toEqual({ mon: { from: '09:00', to: '17:00' }, tue: null })
   })
 })
 

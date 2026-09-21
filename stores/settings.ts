@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { NotificationPreferences } from '@/types/api'
+import {
+  migrateNotificationPrefs,
+  type StoredNotificationPreferences,
+} from '@/lib/notification-prefs'
 import type { SessionsLayout } from '@/types/ui'
 import { THEMES } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
@@ -108,19 +112,17 @@ interface SettingsStore {
 
 const DEFAULT_NOTIFICATIONS: NotificationPreferences = {
   waitingInput: true,
-  sessionComplete: true,
   sessionFailed: true,
-  diffReady: false,
   quietHoursEnabled: false,
   quietHoursFrom: '22:00',
   quietHoursTo: '08:00',
-  showBadge: true,
+  quietHoursDays: {},
 }
 
 interface PersistedSettings {
   // Retired ids are mapped by LEGACY_THEME_IDS on hydrate.
   colorScheme: ThemeId | LegacyThemeId
-  notifications: NotificationPreferences
+  notifications: StoredNotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
   sessionLeaveAction: SessionLeaveAction
@@ -215,9 +217,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           : isValidThemeId(parsed.colorScheme)
             ? parsed.colorScheme
             : state.colorScheme,
-        notifications: parsed.notifications
-          ? { ...state.notifications, ...parsed.notifications }
-          : state.notifications,
+        notifications: migrateNotificationPrefs(parsed.notifications, state.notifications),
         historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
         addServerAction: parsed.addServerAction ?? state.addServerAction,
         sessionLeaveAction: coerceSessionLeaveAction(

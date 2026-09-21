@@ -52,12 +52,27 @@
   "notifications": {
     "whenAddingServer": "When Adding A New Server",
     "waitingForInput": "Waiting for Input",
-    "sessionCompleted": "Session Completed",
     "sessionFailed": "Session Failed",
-    "diffReady": "Diff Ready",
-    "showBadgeCount": "Show Badge Count",
     "quietHours": "Quiet Hours",
-    "sendTest": "Send Test Notification"
+    "sendTest": "Send Test Notification",
+    "quietEveryDay": "Every day",
+    "quietFrom": "From",
+    "quietTo": "To",
+    "quietByDay": "Set hours by day",
+    "quietShow": "Show",
+    "quietHide": "Hide",
+    "quietDayOff": "Off",
+    "weekday": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "testFailedTitle": "Test notification not delivered",
+    "testFailedBody": "The server could not reach this device. Open Delivery health for details."
   },
   "notification": {
     "testTitle": "Test Notification",

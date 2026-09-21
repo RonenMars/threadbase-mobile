@@ -52,12 +52,27 @@
   "notifications": {
     "whenAddingServer": "عند إضافة خادم جديد",
     "waitingForInput": "في انتظار الإدخال",
-    "sessionCompleted": "اكتمل السيشن",
     "sessionFailed": "فشل السيشن",
-    "diffReady": "diff جاهز",
-    "showBadgeCount": "إظهار عدّاد الشارة",
     "quietHours": "ساعات الهدوء",
-    "sendTest": "إرسال إشعار تجريبي"
+    "sendTest": "إرسال إشعار تجريبي",
+    "quietEveryDay": "كل يوم",
+    "quietFrom": "من",
+    "quietTo": "إلى",
+    "quietByDay": "ضبط الساعات حسب اليوم",
+    "quietShow": "إظهار",
+    "quietHide": "إخفاء",
+    "quietDayOff": "متوقف",
+    "weekday": {
+      "mon": "الاثنين",
+      "tue": "الثلاثاء",
+      "wed": "الأربعاء",
+      "thu": "الخميس",
+      "fri": "الجمعة",
+      "sat": "السبت",
+      "sun": "الأحد"
+    },
+    "testFailedTitle": "لم يصل الإشعار التجريبي",
+    "testFailedBody": "تعذّر على الخادم الوصول إلى هذا الجهاز. افتح \"صحة التسليم\" للتفاصيل."
   },
   "notification": {
     "testTitle": "إشعار تجريبي",

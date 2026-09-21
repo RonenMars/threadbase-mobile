@@ -41,6 +41,8 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 import { removeServerAndUnregisterPush } from '@/services/server-removal'
+import { sendTestPush, serverSupportsPushPrefs } from '@/services/push'
+import { QuietHoursEditor } from '@/components/settings/QuietHoursEditor'
 import { queryClient } from '@/services/query-client'
 
 function getAddServerActionLabel(action: AddServerAction, t: TFunction<'settings'>): string {
@@ -291,14 +293,24 @@ export default function SettingsScreen() {
   const [themeTab, setThemeTab] = useState<'dark' | 'light'>(() => theme.colorMode === 'light' ? 'light' : 'dark')
   const { statuses: permStatuses, request: requestPermission, openSettings: openPermissionSettings } = usePermissionsStatus()
 
+  const pushPrefsServerIds = activeServerIds.filter(serverSupportsPushPrefs)
+
   const handleTestNotification = async () => {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: i18n.t('settings:notification.testTitle'),
-        body: i18n.t('settings:notification.testBody'),
-      },
-      trigger: null,
-    })
+    if (pushPrefsServerIds.length === 0) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: i18n.t('settings:notification.testTitle'),
+          body: i18n.t('settings:notification.testBody'),
+        },
+        trigger: null,
+      })
+      return
+    }
+    const results = await Promise.allSettled(pushPrefsServerIds.map((id) => sendTestPush(id)))
+    const delivered = results.some((r) => r.status === 'fulfilled' && r.value?.ok === true)
+    if (!delivered) {
+      Alert.alert(t('notifications.testFailedTitle'), t('notifications.testFailedBody'))
+    }
   }
 
   const handleDiagnosticsLearnMore = () => {
@@ -563,11 +575,9 @@ await refreshServerInfo(serverId)
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill material />
           <SettingsRow label={t('notifications.waitingForInput')} value={notifications.waitingInput} onValueChange={(v) => setNotifications({ waitingInput: v })} />
-          <SettingsRow label={t('notifications.sessionCompleted')} value={notifications.sessionComplete} onValueChange={(v) => setNotifications({ sessionComplete: v })} />
           <SettingsRow label={t('notifications.sessionFailed')} value={notifications.sessionFailed} onValueChange={(v) => setNotifications({ sessionFailed: v })} />
-          <SettingsRow label={t('notifications.diffReady')} value={notifications.diffReady} onValueChange={(v) => setNotifications({ diffReady: v })} />
-          <SettingsRow label={t('notifications.showBadgeCount')} value={notifications.showBadge} onValueChange={(v) => setNotifications({ showBadge: v })} />
           <SettingsRow label={t('notifications.quietHours')} value={notifications.quietHoursEnabled} onValueChange={(v) => setNotifications({ quietHoursEnabled: v })} />
+          {notifications.quietHoursEnabled && pushPrefsServerIds.length > 0 ? <QuietHoursEditor /> : null}
           <TouchableOpacity style={s.testBtn} onPress={handleTestNotification} testID="settings-send-test-notification">
             <Text style={s.testBtnText}>{t('notifications.sendTest')}</Text>
           </TouchableOpacity>
