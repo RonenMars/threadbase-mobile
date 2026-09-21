@@ -7,7 +7,7 @@
  *    back over the WebSocket.
  */
 import React from 'react'
-import { Alert } from 'react-native'
+import { Alert, Keyboard } from 'react-native'
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
 import { NetworkError } from '@/services/api-client'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
@@ -116,7 +116,12 @@ jest.mock('expo-speech-recognition', () => ({
   useSpeechRecognitionEvent: jest.fn(),
 }))
 
+type KeyboardHandler = { onStart?: () => void; onEnd?: (e: { height: number }) => void }
+// The component registers keyboard worklets; hold the last one so a test can
+// play the animation's start and end.
+let mockKeyboardHandler: KeyboardHandler | null = null
 jest.mock('react-native-keyboard-controller', () => ({
+  useKeyboardHandler: (handler: KeyboardHandler) => { mockKeyboardHandler = handler },
   KeyboardProvider: ({ children }: { children: unknown }) => children,
   KeyboardAwareScrollView: ({ children }: { children: unknown }) => children,
   KeyboardAvoidingView: ({ children }: { children: unknown }) => children,
@@ -173,10 +178,12 @@ async function renderView(onPreferRawTerminal?: () => void) {
   )
 }
 
+// The list's scrollToEnd and the keyboard handler both come from jest.setup's
+// mocks: one records what scrolled, the other lets a test play the keyboard
+// animation's start and end.
 const { __scrollToEndMock: scrollToEndMock } = jest.requireMock('@shopify/flash-list') as {
   __scrollToEndMock: jest.Mock
 }
-
 // FlashList is mocked, so drive the FAB the way the real list does: a scroll
 // event whose distance-from-bottom is past the threshold.
 const SCROLLED_UP = {
@@ -277,6 +284,75 @@ describe('LiveConversationView — optimistic sent message', () => {
   it('lets transcript controls take the first tap while the keyboard is up', async () => {
     await renderView()
     expect(screen.getByTestId('live-conversation-list')!.props.keyboardShouldPersistTaps).toBe('handled')
+  })
+
+  // The keyboard changes layout; the list decides position. Before this, every
+  // keyboardDidShow / keyboardDidChangeFrame fired an unconditional scrollToEnd,
+  // so opening the keyboard — or, on iOS, closing it — yanked a reader who had
+  // scrolled up back to the newest message.
+  describe('keyboard movement and scroll position', () => {
+    async function moveKeyboard(height: number) {
+      const handler = mockKeyboardHandler
+      await act(async () => {
+        handler?.onStart?.()
+        handler?.onEnd?.({ height })
+      })
+    }
+
+    it('carries a reader who was at the end when the keyboard opens', async () => {
+      await renderView()
+      const list = screen.getByTestId('live-conversation-list')
+      await act(async () => list!.props.onScroll(AT_BOTTOM))
+      scrollToEndMock.mockClear()
+
+      await moveKeyboard(300)
+      expect(scrollToEndMock).toHaveBeenCalled()
+    })
+
+    it('leaves a reader who scrolled up where they are', async () => {
+      await renderView()
+      const list = screen.getByTestId('live-conversation-list')
+      await act(async () => list!.props.onScroll(SCROLLED_UP))
+      scrollToEndMock.mockClear()
+
+      await moveKeyboard(300)
+      expect(scrollToEndMock).not.toHaveBeenCalled()
+    })
+
+    it('does not scroll when the keyboard hides', async () => {
+      await renderView()
+      const list = screen.getByTestId('live-conversation-list')
+      await act(async () => list!.props.onScroll(AT_BOTTOM))
+      scrollToEndMock.mockClear()
+
+      await moveKeyboard(0)
+      expect(scrollToEndMock).not.toHaveBeenCalled()
+    })
+
+    // The lift shrinks the viewport while the keyboard animates, so a follower
+    // reads as scrolled-away by the time it settles. The verdict has to come
+    // from onStart.
+    it('decides before the viewport shrinks, not after', async () => {
+      await renderView()
+      const list = screen.getByTestId('live-conversation-list')
+      await act(async () => list!.props.onScroll(AT_BOTTOM))
+      scrollToEndMock.mockClear()
+      const handler = mockKeyboardHandler
+
+      await act(async () => handler?.onStart?.())
+      await act(async () => list!.props.onScroll(SCROLLED_UP))
+      await act(async () => handler?.onEnd?.({ height: 300 }))
+
+      expect(scrollToEndMock).toHaveBeenCalled()
+    })
+
+    it('subscribes to no RN keyboard events', async () => {
+      const addListener = jest.spyOn(Keyboard, 'addListener')
+      await renderView()
+      expect(addListener).not.toHaveBeenCalledWith('keyboardDidShow', expect.any(Function))
+      expect(addListener).not.toHaveBeenCalledWith('keyboardDidChangeFrame', expect.any(Function))
+      addListener.mockRestore()
+    })
   })
 
   it('pins to the true bottom on first load until the user drags', async () => {

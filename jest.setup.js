@@ -411,6 +411,9 @@ jest.mock('expo-speech-recognition', () => ({
 jest.mock('react-native-keyboard-controller', () => {
   const React = require('react')
   return {
+    // Keyboard worklets do nothing here; a suite that needs to drive them
+    // registers its own mock (see LiveConversationView.test.tsx).
+    useKeyboardHandler: () => {},
     KeyboardProvider: ({ children }) => children,
     KeyboardAwareScrollView: React.forwardRef(({ children, contentContainerStyle, ...props }, ref) =>
       React.createElement('ScrollView', { ...props, contentContainerStyle, ref }, children)
