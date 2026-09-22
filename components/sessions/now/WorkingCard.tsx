@@ -1,13 +1,5 @@
-import { useEffect } from 'react'
-import { View, StyleSheet } from 'react-native'
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated'
+import { useEffect, useState } from 'react'
+import { Animated, Easing, View, StyleSheet, type LayoutChangeEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -36,22 +28,37 @@ const SWEEP_WIDTH = 0.34
 
 /** 2 px indeterminate sweep. There is no percentage anywhere in the API, so never a determinate bar. */
 function SweepBar({ color, track }: { color: string; track: string }) {
-  const progress = useSharedValue(0)
   const reduceMotion = useReduceMotion()
+  const [trackWidth, setTrackWidth] = useState(0)
+  const [x] = useState(() => new Animated.Value(0))
+
   useEffect(() => {
-    if (reduceMotion) {
-      progress.value = 0.5
-    } else {
-      progress.value = withRepeat(withTiming(1, { duration: SWEEP_MS, easing: Easing.linear }), -1, false)
-    }
-    return () => cancelAnimation(progress)
-  }, [progress, reduceMotion])
-  const style = useAnimatedStyle(() => ({
-    left: `${progress.value * (100 + SWEEP_WIDTH * 100) - SWEEP_WIDTH * 100}%`,
-  }))
+    if (!trackWidth || reduceMotion) return
+    const barWidth = trackWidth * SWEEP_WIDTH
+    x.setValue(-barWidth)
+    const loop = Animated.loop(
+      Animated.timing(x, {
+        toValue: trackWidth,
+        duration: SWEEP_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [trackWidth, reduceMotion, x])
+
+  const onLayout = (e: LayoutChangeEvent) => setTrackWidth(e.nativeEvent.layout.width)
+
   return (
-    <View style={[sweepStyles.track, { backgroundColor: track }]}>
-      <Animated.View style={[sweepStyles.bar, { backgroundColor: color }, style]} />
+    <View style={[sweepStyles.track, { backgroundColor: track }]} onLayout={onLayout}>
+      <Animated.View
+        style={[
+          sweepStyles.bar,
+          { backgroundColor: color },
+          { transform: [{ translateX: x }] },
+        ]}
+      />
     </View>
   )
 }
