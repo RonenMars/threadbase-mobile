@@ -48,6 +48,7 @@
     "__tests__/unit/scripts/store-capture-fixtures.test.js",
     "__tests__/unit/scripts/withLiveActivityTarget.test.js",
     "__tests__/unit/scripts/collect-promo-screenshots.test.js",
-    "__tests__/unit/scripts/ensure-promo-device.test.js"
+    "__tests__/unit/scripts/ensure-promo-device.test.js",
+    "__tests__/unit/scripts/figma-plugin.test.js"
   ]
 }
