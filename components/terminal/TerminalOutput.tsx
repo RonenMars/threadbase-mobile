@@ -162,8 +162,12 @@ export function TerminalOutput({
   const [showTopButton, setShowTopButton] = useState(0)
   const showJumpButtonVal = useSharedValue(0)
   const showTopButtonVal = useSharedValue(0)
-  showJumpButtonVal.value = showJumpButton
-  showTopButtonVal.value = showTopButton
+  // Written in an effect, not the render body: a render-time write makes
+  // Reanimated warn on every re-render, i.e. every streamed terminal line.
+  useEffect(() => {
+    showJumpButtonVal.value = showJumpButton
+    showTopButtonVal.value = showTopButton
+  }, [showJumpButton, showTopButton, showJumpButtonVal, showTopButtonVal])
 
   // FlashList v2 draws items only after the first measure cycle. A resumed
   // session mounts the list empty (fresh PTY), then dumps replay / the prompt
