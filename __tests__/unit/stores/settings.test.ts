@@ -26,7 +26,8 @@ beforeEach(() => {
     notifications: { ...DEFAULT_NOTIFICATIONS },
     anonymousDiagnosticsEnabled: false,
     crashReportingNoticeDismissed: false,
-    sessionLeaveAction: 'ask',
+    sessionLeaveAction: 'leave',
+    skipLeaveNotice: false,
     showProviderVersionWarning: false,
     locale: 'he',
   })
@@ -406,15 +407,15 @@ describe('SettingsStore – postFeedbackDiagnosticsSuggestionImpressions (spec �
 })
 
 describe('SettingsStore – sessionLeaveAction', () => {
-  it('defaults to always ask', () => {
-    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+  it('defaults to keep running', () => {
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('leave')
   })
 
   it('persists and can restore Always ask', async () => {
     useSettingsStore.getState().setSessionLeaveAction('kill')
     await Promise.resolve()
     const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
-    expect(JSON.parse(raw[1]).sessionLeaveAction).toBe('kill')
+    expect(JSON.parse(raw[1]).leaveAction).toBe('kill')
 
     useSettingsStore.getState().setSessionLeaveAction('ask')
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
@@ -422,16 +423,39 @@ describe('SettingsStore – sessionLeaveAction', () => {
 
   it('hydrates a stored action and rejects unknown values', async () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
-      JSON.stringify({ sessionLeaveAction: 'kill_on_idle', notifications: DEFAULT_NOTIFICATIONS }),
+      JSON.stringify({ leaveAction: 'kill_on_idle', notifications: DEFAULT_NOTIFICATIONS }),
     )
     await useSettingsStore.getState().hydrate()
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('kill_on_idle')
 
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
-      JSON.stringify({ sessionLeaveAction: 'explode', notifications: DEFAULT_NOTIFICATIONS }),
+      JSON.stringify({ leaveAction: 'explode', notifications: DEFAULT_NOTIFICATIONS }),
     )
     await useSettingsStore.getState().hydrate()
-    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('leave')
+  })
+
+  it('persists and hydrates skipping the Keep running notice', async () => {
+    expect(useSettingsStore.getState().skipLeaveNotice).toBe(false)
+    useSettingsStore.getState().setSkipLeaveNotice(true)
+    await Promise.resolve()
+    const raw = (AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)
+    expect(JSON.parse(raw[1]).skipLeaveNotice).toBe(true)
+
+    useSettingsStore.setState({ skipLeaveNotice: false })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ skipLeaveNotice: true, notifications: DEFAULT_NOTIFICATIONS }),
+    )
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().skipLeaveNotice).toBe(true)
+  })
+
+  it('drops a choice saved under the old key, so every install starts on keep running', async () => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ sessionLeaveAction: 'ask', notifications: DEFAULT_NOTIFICATIONS }),
+    )
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('leave')
   })
 })
 

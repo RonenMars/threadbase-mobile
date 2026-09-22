@@ -8,6 +8,7 @@ import { StateBadge, getSessionTierLabel } from '@/components/sessions/StateBadg
 import { formatWaitSince, waitSinceIso } from '@/components/sessions/shared/formatCoarseElapsed'
 import { shortPath } from '@/components/sessions/shared/pathTail'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
+import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
 import { LiveCard } from './LiveCard'
@@ -41,7 +42,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
-  const { handlePress, handleLongPress } = useSessionRowActions(session)
+  const { handlePress, handleLongPress, handleMenuPress, overlays, endStatus } = useSessionRowActions(session, title)
   const stamp = waitSinceIso(session)
   const now = useNow(stamp != null)
   const wait = formatWaitSince(stamp, now)
@@ -61,6 +62,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
       dominantProvider={dominantProvider}
       onPress={handlePress}
       onLongPress={handleLongPress}
+      onMenuPress={handleMenuPress}
       accessibilityLabel={accessibilityLabel}
       testID={`session-row-${session.id}`}
       isFirst={isFirst}
@@ -81,6 +83,8 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         ) : null}
         <Text style={styles.open}>{t('row.open')} →</Text>
       </View>
+      <EndSessionStatus {...endStatus} />
+      {overlays}
     </LiveCard>
   )
 }

@@ -10,6 +10,7 @@ import { THEMES } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import {
   coerceSessionLeaveAction,
+  DEFAULT_SESSION_LEAVE_ACTION,
   type SessionLeaveAction,
 } from '@/lib/sessionLeavePolicy'
 import { getLocales } from 'expo-localization'
@@ -60,6 +61,8 @@ interface SettingsStore {
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
   sessionLeaveAction: SessionLeaveAction
+  /** "Skip this warning in the future" on the Keep running notice. */
+  skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
@@ -90,6 +93,7 @@ interface SettingsStore {
   setHistoryMessageDisplay: (v: 'first' | 'last') => void
   setAddServerAction: (v: AddServerAction) => void
   setSessionLeaveAction: (v: SessionLeaveAction) => void
+  setSkipLeaveNotice: (v: boolean) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
@@ -125,7 +129,10 @@ interface PersistedSettings {
   notifications: StoredNotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
-  sessionLeaveAction: SessionLeaveAction
+  // Stored as `sessionLeaveAction` until 2026-09-22. The key moved so every
+  // install drops its old choice once and lands on Keep running.
+  leaveAction: SessionLeaveAction
+  skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
   showProviderVersionWarning: boolean
   locale: SupportedLocale
@@ -156,7 +163,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   notifications: DEFAULT_NOTIFICATIONS,
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
-  sessionLeaveAction: 'ask',
+  sessionLeaveAction: DEFAULT_SESSION_LEAVE_ACTION,
+  skipLeaveNotice: false,
   sessionsLayout: 'now',
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
@@ -185,6 +193,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setHistoryMessageDisplay: (historyMessageDisplay) => set({ historyMessageDisplay }),
   setAddServerAction: (addServerAction) => set({ addServerAction }),
   setSessionLeaveAction: (sessionLeaveAction) => set({ sessionLeaveAction }),
+  setSkipLeaveNotice: (skipLeaveNotice) => set({ skipLeaveNotice }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
@@ -221,8 +230,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
         addServerAction: parsed.addServerAction ?? state.addServerAction,
         sessionLeaveAction: coerceSessionLeaveAction(
-          parsed.sessionLeaveAction ?? state.sessionLeaveAction,
+          parsed.leaveAction ?? state.sessionLeaveAction,
         ),
+        skipLeaveNotice: parsed.skipLeaveNotice ?? state.skipLeaveNotice,
         sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
@@ -274,7 +284,8 @@ export function persistSettingsNow(): Promise<void> {
     notifications: state.notifications,
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,
-    sessionLeaveAction: state.sessionLeaveAction,
+    leaveAction: state.sessionLeaveAction,
+    skipLeaveNotice: state.skipLeaveNotice,
     sessionsLayout: state.sessionsLayout,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,

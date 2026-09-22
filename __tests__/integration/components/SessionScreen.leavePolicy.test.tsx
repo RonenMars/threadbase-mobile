@@ -5,7 +5,7 @@
  */
 import React from 'react'
 import { AppState } from 'react-native'
-import { render, screen, act } from '@testing-library/react-native'
+import { render, screen, act, fireEvent, waitFor } from '@testing-library/react-native'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { createWrapper } from '@/test-utils'
 import { useSettingsStore } from '@/stores/settings'
@@ -135,7 +135,7 @@ describe('SessionScreen — leave-session gate', () => {
       failureReason: null,
       resumedFromConversationId: null,
     }
-    useSettingsStore.setState({ sessionLeaveAction: 'ask', sessionView: 'chat' })
+    useSettingsStore.setState({ sessionLeaveAction: 'ask', skipLeaveNotice: false, sessionView: 'chat' })
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, cb) => {
       appStateListeners.push(cb as (s: string) => void)
       return { remove: jest.fn() } as ReturnType<typeof AppState.addEventListener>
@@ -157,6 +157,14 @@ describe('SessionScreen — leave-session gate', () => {
 
   it('keeps the iOS swipe-back for a session that is not a live PTY', async () => {
     mockSession = { ...mockSession, ptyAttached: false, status: 'idle' }
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect((usePreventRemove as jest.Mock).mock.calls.at(-1)[0]).toBe(false)
+    expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: true })
+  })
+
+  it('keeps the iOS swipe-back under Keep running for a waiting agent that got no message', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave' })
+    mockSession = { ...mockSession, status: 'waiting_input' }
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect((usePreventRemove as jest.Mock).mock.calls.at(-1)[0]).toBe(false)
     expect(mockSetOptions).toHaveBeenLastCalledWith({ gestureEnabled: true })
@@ -199,6 +207,41 @@ describe('SessionScreen — leave-session gate', () => {
 
     expect(screen.queryByTestId('leave-session-modal')).toBeNull()
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'REPLACE' })
+  })
+
+  it('Keep running: back from a live session shows the notice over the session', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave' })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    const [preventRemove, callback] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
+    expect(preventRemove).toBe(true)
+
+    await act(() => {
+      callback({ data: { action: { type: 'GO_BACK' } } })
+    })
+
+    expect(screen.getByTestId('leave-notice')).toBeTruthy()
+    expect(screen.queryByTestId('leave-session-modal')).toBeNull()
+    expect(mockStopMutateAsync).not.toHaveBeenCalled()
+
+    // Android back answers it the way the countdown would.
+    await fireEvent(screen.getByTestId('leave-notice'), 'requestClose')
+    await waitFor(() => expect(screen.queryByTestId('leave-notice')).toBeNull())
+    expect(mockStopMutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('Keep running: ticking the box and closing the notice switches it off for next time', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave' })
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    const [, callback] = (usePreventRemove as jest.Mock).mock.calls.at(-1)
+    await act(() => {
+      callback({ data: { action: { type: 'GO_BACK' } } })
+    })
+
+    await fireEvent.press(screen.getByTestId('leave-notice-skip'))
+    await fireEvent.press(screen.getByTestId('leave-notice-close'))
+    await waitFor(() => expect(screen.queryByTestId('leave-notice')).toBeNull())
+    expect(useSettingsStore.getState().skipLeaveNotice).toBe(true)
+    expect(mockStopMutateAsync).not.toHaveBeenCalled()
   })
 
   it('backgrounding still sends hold_session and does not show the leave modal', async () => {

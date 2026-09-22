@@ -113,16 +113,19 @@ function CantResumeSessionRow({
   statusLabel: SessionStatusLabel | null
   timestamp: number
 }) {
-  const { handlePress, handleLongPress } = useSessionRowActions(session)
+  const { handlePress, handleLongPress, overlays } = useSessionRowActions(session, title)
   return (
-    <CantResumeRow
-      title={title}
-      statusLabel={statusLabel}
-      timestamp={timestamp}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      testID={`session-row-${session.id}`}
-    />
+    <>
+      <CantResumeRow
+        title={title}
+        statusLabel={statusLabel}
+        timestamp={timestamp}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        testID={`session-row-${session.id}`}
+      />
+      {overlays}
+    </>
   )
 }
 

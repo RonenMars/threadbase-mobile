@@ -254,6 +254,8 @@ export default function SettingsScreen() {
     setAddServerAction,
     sessionLeaveAction,
     setSessionLeaveAction,
+    skipLeaveNotice,
+    setSkipLeaveNotice,
     showProviderVersionWarning,
     setShowProviderVersionWarning,
     colorScheme,
@@ -618,6 +620,14 @@ await refreshServerInfo(serverId)
             </View>
           ) : null}
         </View>
+        {sessionLeaveAction === 'leave' ? (
+          <SettingsRow
+            label={t('session.leaveNotice')}
+            value={!skipLeaveNotice}
+            onValueChange={(show) => setSkipLeaveNotice(!show)}
+            testID="settings-leave-notice-toggle"
+          />
+        ) : null}
         <SettingsRow
           label={t('session.chatView')}
           value={sessionView === 'chat'}
@@ -956,7 +966,7 @@ function SessionLeaveActionList({
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
   const { t } = useTranslation('settings')
-  const options: SessionLeaveAction[] = ['ask', 'kill', 'leave', 'kill_on_idle']
+  const options: SessionLeaveAction[] = ['leave', 'ask', 'kill_on_idle', 'kill']
   return (
     <View accessibilityRole="radiogroup">
       {options.map((id) => {

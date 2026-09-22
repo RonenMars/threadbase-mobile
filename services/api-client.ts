@@ -456,20 +456,27 @@ async function request<T>(
   return json
 }
 
-// Hard-stops a running PTY session via POST /api/sessions/:id/stop. The server
-// streams ndjson progress (`stopping` then `stopped`/`timeout`) for a live kill,
-// or returns plain JSON `{ status: "already_idle" }` if it was already stopped.
-// Uses a direct fetch rather than request<T>() because that helper parses the
-// body as JSON and throws on the ndjson stream. WS `session_update` drives the
-// status to idle afterwards — callers should not set status locally.
+// Ends a running PTY session via POST /api/sessions/:id/stop (SIGINT), or
+// /kill (SIGKILL) when `force` is set. `delete` also soft-deletes the cached
+// conversation once the process is gone; the JSONL on disk is never touched.
+// The server streams ndjson progress (`stopping` then `stopped`/`timeout`) for
+// a live session, or returns plain JSON `{ status: "already_idle" }` if it was
+// already stopped. Uses a direct fetch rather than request<T>() because that
+// helper parses the body as JSON and throws on the ndjson stream. WS
+// `session_update` drives the status to idle afterwards — callers should not
+// set status locally.
 export async function stopSession(
   serverId: string,
   sessionId: string,
+  opts: { force?: boolean; delete?: boolean } = {},
 ): Promise<'stopped' | 'timeout' | 'already_idle'> {
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
-  const path = `/api/sessions/${encodeURIComponent(sessionId)}/stop`
+  const route = opts.force ? 'kill' : 'stop'
+  // eslint-disable-next-line i18next/no-literal-string -- URL query, never rendered
+  const query = opts.delete ? '?delete=true' : ''
+  const path = `/api/sessions/${encodeURIComponent(sessionId)}/${route}${query}`
   let response: Response
   try {
     response = await authedFetch(server, path, { method: 'POST' })
@@ -493,6 +500,36 @@ export async function stopSession(
   if (!last) return 'stopped'
   const event = JSON.parse(last) as { event?: string }
   return event.event === 'timeout' ? 'timeout' : 'stopped'
+}
+
+export type StopWhenIdleResult =
+  | { status: 'armed' }
+  | { status: 'killed' }
+  | { status: 'watchers_present'; watcherCount: number }
+
+// POST /api/sessions/:id/stop?when=idle: ends the session after the current
+// turn instead of cutting it. Without `ignoreWatchers` the server refuses to arm
+// while any socket (this phone's included) is subscribed, and a socket that
+// subscribes later cancels the armed latch; with it, neither happens.
+export async function stopSessionWhenIdle(
+  serverId: string,
+  sessionId: string,
+  opts: { ignoreWatchers?: boolean } = {},
+): Promise<StopWhenIdleResult> {
+  // eslint-disable-next-line i18next/no-literal-string -- URL query, never rendered
+  const query = opts.ignoreWatchers ? '?when=idle&ignoreWatchers=true' : '?when=idle'
+  const body = await request<{ status?: string; watcherCount?: number }>(
+    'POST',
+    `/api/sessions/${encodeURIComponent(sessionId)}/stop${query}`,
+    undefined,
+    serverId,
+    { retry: false },
+  )
+  if (body?.status === 'armed' || body?.status === 'killed') return { status: body.status }
+  if (body?.status === 'watchers_present' && typeof body.watcherCount === 'number') {
+    return { status: 'watchers_present', watcherCount: body.watcherCount }
+  }
+  throw new NetworkError(`stop when idle: unexpected response ${JSON.stringify(body)}`)
 }
 
 // Conditional GET that surfaces the response status + ETag to the caller.

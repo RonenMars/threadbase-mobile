@@ -41,16 +41,9 @@
   },
   "card": {
     "copyId": "העתק מזהה סשן",
-    "sendInput": "שלח קלט",
-    "cancel": "בטל סשן",
     "prompts_one": "פרומפט אחד",
     "prompts_two": "שני פרומפטים",
-    "prompts_other": "{{count}} פרומפטים",
-    "actionsTitle": "פעולות סשן",
-    "dismiss": "סגור",
-    "cancelConfirm": "האם אתם בטוחים?",
-    "confirmYes": "כן",
-    "confirmNo": "לא"
+    "prompts_other": "{{count}} פרומפטים"
   },
   "hub": {
     "browsePath": "עיון בנתיב",
@@ -201,5 +194,44 @@
     "account": "חשבון",
     "messageCount": "מספר הודעות",
     "lastActivity": "פעילות אחרונה"
+  },
+  "leaveNotice": {
+    "working": "{{agent}} עדיין עובד",
+    "waiting": "{{agent}} ממתין לך",
+    "body": "הוא ממשיך לרוץ ב-{{server}} עד שתסיים אותו.",
+    "terminateHint": "כדי לסיים את הסשן, פתח את התפריט <menu></menu> והקש על ״{{action}}״.",
+    "leaveHint": "הקש פעמיים כדי לצאת מהסשן.",
+    "skip": "דלג על האזהרה הזו בעתיד"
+  },
+  "endSession": {
+    "menu": "פעולות סשן",
+    "section": "סיום סשן",
+    "open": "פתח",
+    "whenDone": "סיים בסוף התור",
+    "whenDoneHint": "נותן לתור הזה להסתיים, ואז מסיים",
+    "terminate": "סיים",
+    "terminateHint": "מסיים עכשיו. אפשר להמשיך אותו אחר כך.",
+    "force": "כפה סיום",
+    "forceHint": "רק אם סיום רגיל לא עבד",
+    "delete": "מחק…",
+    "deleteHint": "מסיר אותו מ-Threadbase. ההיסטוריה נשמרת ב-{{agent}}.",
+    "armed": "יסתיים בסוף התור",
+    "terminating": "מסיים…",
+    "stillRunning": "עדיין רץ אחרי הסיום.",
+    "failed": "לא ניתן לסיים את הסשן. בדוק את החיבור ונסה שוב."
+  },
+  "deleteDialog": {
+    "title": "למחוק את הסשן?",
+    "body": "הוא עדיין חי. Threadbase יסיים אותו ואז יסיר אותו מרשימת הסשנים בכל המכשירים.",
+    "keepsTitle": "ההיסטוריה נשמרת ב-{{agent}}",
+    "keepsClaude": "השיחה נשארת ב-{{server}}. הפקודה claude --resume עדיין מוצאת אותה.",
+    "keepsCodex": "השיחה נשארת ב-{{server}}. הפקודה codex resume עדיין מוצאת אותה.",
+    "keepsCursor": "היא נשארת בהיסטוריית הצ׳אט של Cursor Agent ב-{{server}}.",
+    "noUndo": "אי אפשר לבטל את זה מהאפליקציה.",
+    "confirm": "מחק"
+  },
+  "watchersDialog": {
+    "title": "פתוח במכשיר אחר",
+    "body": "הסשן הזה פתוח במכשיר אחר. סיום בסוף התור יסיים אותו גם שם, ופתיחה שלו שם לא תבטל את זה."
   }
 }

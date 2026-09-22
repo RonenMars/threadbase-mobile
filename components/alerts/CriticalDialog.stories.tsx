@@ -15,12 +15,16 @@ type Story = StoryObj<typeof CriticalDialog>
 export const LeaveSession: Story = {
   args: {
     visible: true,
-    title: 'Leave this session?',
-    message: 'The agent keeps running on your computer until you stop it.',
+    level: 'warning',
+    title: "Leave while it's working?",
+    message: 'Claude keeps going on MacBook Pro unless you end it.',
     onRequestClose: fn(),
+    stacked: true,
     actions: [
-      { label: 'Cancel', variant: 'secondary', onPress: fn() },
-      { label: 'Confirm', onPress: fn() },
+      { label: 'Keep running', onPress: fn() },
+      { label: 'Terminate when done', variant: 'secondary', onPress: fn() },
+      { label: 'Terminate', variant: 'destructive', onPress: fn() },
+      { label: 'Stay here', variant: 'secondary', onPress: fn() },
     ],
   },
 }

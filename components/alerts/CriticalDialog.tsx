@@ -38,6 +38,8 @@ type Props = {
   dismissable?: boolean
   busy?: boolean
   level?: AlertLevel
+  /** One full-width button per row, for choices whose labels don't fit side by side. */
+  stacked?: boolean
 }
 
 export function CriticalDialog({
@@ -52,6 +54,7 @@ export function CriticalDialog({
   dismissable = true,
   busy = false,
   level = 'critical',
+  stacked = false,
 }: Props) {
   const { t } = useTranslation('common')
   const theme = useTheme()
@@ -106,7 +109,7 @@ export function CriticalDialog({
             </>
           )}
           {!busy && actions.length > 0 ? (
-            <View style={styles.actions}>
+            <View style={[styles.actions, stacked && styles.actionsStacked]}>
               {actions.map((action) => {
                 const variant = action.variant ?? 'primary'
                 return (
@@ -200,6 +203,10 @@ function makeStyles(theme: Theme) {
       flexWrap: 'wrap',
       gap: spacing.sm,
       marginTop: spacing.xs,
+    },
+    actionsStacked: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
     },
     action: {
       flexGrow: 1,

@@ -31,31 +31,34 @@ function SessionEarlierRow({ session, ms, title, isFirst, highlight, previewMode
   previewMode: MessagePreviewMode
   dominantProvider?: ProviderName
 }) {
-  const { handlePress, handleLongPress } = useSessionRowActions(session)
+  const { handlePress, handleLongPress, overlays } = useSessionRowActions(session, title)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
   const { tier } = deriveSessionPresentation(session)
   return (
-    <ConversationListItem
-      testID={isFirst ? 'first-session-card' : `session-row-${session.id}`}
-      title={title}
-      timestamp={ms}
-      tier={tier}
-      lastOutput={session.lastOutput || null}
-      serverLabel={session.serverLabel}
-      serverColor={serverColor}
-      activeServerCount={activeServerCount}
-      provider={session.provider}
-      dominantProvider={dominantProvider}
-      density="compact"
-      leading="none"
-      showBranch={false}
-      showCount={false}
-      previewMode={previewMode}
-      highlight={highlight}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-    />
+    <>
+      <ConversationListItem
+        testID={isFirst ? 'first-session-card' : `session-row-${session.id}`}
+        title={title}
+        timestamp={ms}
+        tier={tier}
+        lastOutput={session.lastOutput || null}
+        serverLabel={session.serverLabel}
+        serverColor={serverColor}
+        activeServerCount={activeServerCount}
+        provider={session.provider}
+        dominantProvider={dominantProvider}
+        density="compact"
+        leading="none"
+        showBranch={false}
+        showCount={false}
+        previewMode={previewMode}
+        highlight={highlight}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+      />
+      {overlays}
+    </>
   )
 }
 

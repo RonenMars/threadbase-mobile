@@ -1,7 +1,8 @@
 # Maestro E2E — the leave-session modal must land on the app homepage
 #
-# Pressing back on a live session opens the leave-session modal. Whichever of
-# the three options is confirmed ("Kill it" / "Leave it" / "Kill on idle"),
+# With the leave setting on "Ask me", pressing back on a live session opens the
+# leave-session modal. Whichever of its three buttons is tapped ("Terminate" /
+# "Keep running" / "Terminate when done"),
 # once the action has been applied the app has to be on the homepage (the hub /
 # classic / tree list at `/`) — not still on the session screen, and not on the
 # conversation screen it redirects to when a session stops being live.
@@ -25,6 +26,33 @@ appId: com.ronenmars.threadbase
 
 - assertVisible:
     id: "hub-screen"
+
+# --- ask on leave ----------------------------------------------------------
+# A fresh install answers back with the Keep running notice, so the modal this
+# flow tests only appears once the setting is switched to "Ask me". The
+# settings screen's back button is native and carries no testID, so relaunch
+# instead: the setting is persisted, and relaunching without clearState keeps it.
+- tapOn:
+    id: "hub-settings-btn"
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: "settings-session-leave-action"
+    commands:
+      - swipe:
+          start: 50%, 90%
+          end: 50%, 20%
+- tapOn:
+    id: "settings-session-leave-action"
+- tapOn:
+    id: "settings-session-leave-ask"
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 20000
 
 # --- reach a live session -------------------------------------------------
 - runFlow:
@@ -115,9 +143,6 @@ appId: com.ronenmars.threadbase
 
 - tapOn:
     id: "leave-session-option-${LEAVE_OPTION}"
-
-- tapOn:
-    id: "leave-session-confirm"
 
 # A real streamer produces incidental failures a mock server never does (a slow
 # response, a conversation whose history has been pruned), and any error

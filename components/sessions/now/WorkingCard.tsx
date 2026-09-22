@@ -17,6 +17,7 @@ import { getAgentPhaseLabel } from '@/components/sessions/agentPhaseLabel'
 import { formatCoarseElapsed } from '@/components/sessions/shared/formatCoarseElapsed'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
+import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
 import { LiveCard } from './LiveCard'
@@ -63,7 +64,7 @@ const sweepStyles = StyleSheet.create({
 export function WorkingCard({ session, title, serverLabel, serverColor, dominantProvider, isFirst }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
-  const { handlePress, handleLongPress } = useSessionRowActions(session)
+  const { handlePress, handleLongPress, handleMenuPress, overlays, endStatus } = useSessionRowActions(session, title)
   const { subStatus } = deriveSessionPresentation(session)
   const phase = subStatus ? getAgentPhaseLabel(subStatus, t) : null
   const elapsed = formatCoarseElapsed(session.elapsedMs)
@@ -81,12 +82,15 @@ export function WorkingCard({ session, title, serverLabel, serverColor, dominant
       dominantProvider={dominantProvider}
       onPress={handlePress}
       onLongPress={handleLongPress}
+      onMenuPress={handleMenuPress}
       accessibilityLabel={`${title}, ${tierLabel}`}
       testID={`session-row-${session.id}`}
       isFirst={isFirst}
     >
       <StateBadge tier="working" qualifier={qualifier} />
       <SweepBar color={theme.status.running} track={trackColor(theme)} />
+      <EndSessionStatus {...endStatus} />
+      {overlays}
     </LiveCard>
   )
 }

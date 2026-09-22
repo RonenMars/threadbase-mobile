@@ -2,12 +2,15 @@ export const SESSION_LEAVE_ACTIONS = ['ask', 'kill', 'leave', 'kill_on_idle'] as
 export type SessionLeaveAction = (typeof SESSION_LEAVE_ACTIONS)[number]
 export type AppliedSessionLeaveAction = Exclude<SessionLeaveAction, 'ask'>
 
-export const DEFAULT_SESSION_LEAVE_ACTION: SessionLeaveAction = 'ask'
-export const DEFAULT_LEAVE_MODAL_CHOICE: AppliedSessionLeaveAction = 'leave'
+// Every install starts here once: the store moved the persisted key, so a
+// choice saved before 2026-09-22 is dropped rather than carried over.
+export const DEFAULT_SESSION_LEAVE_ACTION: SessionLeaveAction = 'leave'
 
 export interface LeaveSessionSnapshot {
   ptyAttached?: boolean | null
   status?: string | null
+  /** Messages sent through POST /input; raw keys and card answers do not move it. */
+  promptCount?: number | null
 }
 
 export type SessionLeaveDecision =
@@ -34,12 +37,27 @@ export function isLiveAttachedPty(session: LeaveSessionSnapshot | null | undefin
 export function decideSessionLeave(opts: {
   session: LeaveSessionSnapshot | null | undefined
   setting: unknown
+  /** `promptCount` when the screen opened. Absent never skips the notice. */
+  promptsAtEntry?: number
+  /** The user ticked "Skip this warning in the future" on the notice. */
+  skipNotice?: boolean
 }): SessionLeaveDecision {
   if (!isLiveAttachedPty(opts.session)) {
     return { kind: 'none' }
   }
   const setting = coerceSessionLeaveAction(opts.setting)
   if (setting === 'ask') return { kind: 'prompt' }
+  // Keep running without the notice: the user opted out of it, or the agent was
+  // waiting when they came in, got no message since, and is left as it was found.
+  if (
+    setting === 'leave' &&
+    (opts.skipNotice === true ||
+      (opts.session?.status === 'waiting_input' &&
+        opts.promptsAtEntry != null &&
+        (opts.session.promptCount ?? 0) <= opts.promptsAtEntry))
+  ) {
+    return { kind: 'none' }
+  }
   return { kind: 'apply', action: setting }
 }
 

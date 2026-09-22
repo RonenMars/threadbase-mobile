@@ -1,49 +1,25 @@
 import React, { useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { CircleIcon, RadioButtonIcon, SquareIcon, CheckSquareIcon } from 'phosphor-react-native'
+import { StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { SquareIcon, CheckSquareIcon } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
 import { CriticalDialog, type CriticalAction } from '@/components/alerts/CriticalDialog'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { AppliedSessionLeaveAction } from '@/lib/sessionLeavePolicy'
-import { DEFAULT_LEAVE_MODAL_CHOICE } from '@/lib/sessionLeavePolicy'
 import type { SessionLeavePhase } from '@/hooks/useSessionLeaveGuard'
 import { textDirectionStyle, useAppDirection } from '@/lib/rtl'
-
-const OPTIONS: AppliedSessionLeaveAction[] = ['kill', 'leave', 'kill_on_idle']
-
-function getLeaveActionTitle(
-  action: AppliedSessionLeaveAction,
-  t: TFunction<['terminal', 'common']>,
-): string {
-  switch (action) {
-    case 'kill':
-      return t('terminal:leaveSession.kill')
-    case 'leave':
-      return t('terminal:leaveSession.leave')
-    case 'kill_on_idle':
-      return t('terminal:leaveSession.kill_on_idle')
-  }
-}
-
-function getLeaveActionHint(
-  action: AppliedSessionLeaveAction,
-  t: TFunction<['terminal', 'common']>,
-): string {
-  switch (action) {
-    case 'kill':
-      return t('terminal:leaveSession.killHint')
-    case 'leave':
-      return t('terminal:leaveSession.leaveHint')
-    case 'kill_on_idle':
-      return t('terminal:leaveSession.kill_on_idleHint')
-  }
-}
 
 interface Props {
   visible: boolean
   phase: SessionLeavePhase
+  /** Display name of the agent, e.g. "Claude". */
+  agent: string
+  /** Display name of the server the session runs on. */
+  server: string
+  /** False while the session waits for input: there is no turn left to finish. */
+  offerWhenDone: boolean
+  /** The agent is waiting on the user rather than working. */
+  waiting?: boolean
   onCancel: () => void
   onConfirm: (choice: AppliedSessionLeaveAction, remember: boolean) => void
   onDismissError: () => void
@@ -56,6 +32,10 @@ interface Props {
 export function LeaveSessionModal({
   visible,
   phase,
+  agent,
+  server,
+  offerWhenDone,
+  waiting = false,
   onCancel,
   onConfirm,
   onDismissError,
@@ -64,34 +44,41 @@ export function LeaveSessionModal({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { direction } = useAppDirection()
-  const optionTextStyle = textDirectionStyle(direction)
+  const labelStyle = textDirectionStyle(direction)
   const { t } = useTranslation(['terminal', 'common'])
   const showOptions = visible && phase === 'idle'
   const showPending = phase === 'pending'
   const showError = phase === 'error'
   const open = showOptions || showPending || showError
-  const [choice, setChoice] = useState<AppliedSessionLeaveAction>(DEFAULT_LEAVE_MODAL_CHOICE)
   const [remember, setRemember] = useState(false)
   const [wasOpen, setWasOpen] = useState(open)
   if (open !== wasOpen) {
     setWasOpen(open)
-    if (open) {
-      setChoice(DEFAULT_LEAVE_MODAL_CHOICE)
-      setRemember(false)
-    }
+    if (open) setRemember(false)
   }
 
   const message = showPending
     ? t('terminal:leaveSession.pending')
     : showError
       ? t('terminal:leaveSession.error')
-      : t('terminal:leaveSession.body')
+      : t('terminal:leaveSession.body', { agent, server })
+
+  const title = waiting ? t('terminal:leaveSession.titleWaiting') : t('terminal:leaveSession.title')
 
   const testID = showPending
     ? 'leave-session-pending'
     : showError
       ? 'leave-session-error'
       : 'leave-session-modal'
+
+  const whenDone: CriticalAction[] = offerWhenDone
+    ? [{
+        label: t('terminal:leaveSession.kill_on_idle'),
+        onPress: () => onConfirm('kill_on_idle', remember),
+        variant: 'secondary',
+        testID: 'leave-session-option-kill_on_idle',
+      }]
+    : []
 
   const actions: CriticalAction[] = showError
     ? [{
@@ -102,15 +89,22 @@ export function LeaveSessionModal({
     : showOptions
       ? [
           {
-            label: t('common:button.cancel'),
+            label: t('terminal:leaveSession.leave'),
+            onPress: () => onConfirm('leave', remember),
+            testID: 'leave-session-option-leave',
+          },
+          ...whenDone,
+          {
+            label: t('terminal:leaveSession.kill'),
+            onPress: () => onConfirm('kill', remember),
+            variant: 'destructive',
+            testID: 'leave-session-option-kill',
+          },
+          {
+            label: t('terminal:leaveSession.stay'),
             onPress: onCancel,
             variant: 'secondary',
             testID: 'leave-session-cancel',
-          },
-          {
-            label: t('common:button.confirm'),
-            onPress: () => onConfirm(choice, remember),
-            testID: 'leave-session-confirm',
           },
         ]
       : []
@@ -118,7 +112,7 @@ export function LeaveSessionModal({
   return (
     <CriticalDialog
       visible={open}
-      title={t('terminal:leaveSession.title')}
+      title={title}
       message={message}
       level="warning"
       busy={showPending}
@@ -127,50 +121,23 @@ export function LeaveSessionModal({
       onDismiss={onModalDismiss}
       testID={testID}
       actions={actions}
+      stacked
     >
       {showOptions ? (
-        <>
-          <View accessibilityRole="radiogroup" style={styles.options}>
-            {OPTIONS.map((id) => {
-              const checked = choice === id
-              return (
-                <TouchableOpacity
-                  key={id}
-                  style={styles.option}
-                  onPress={() => setChoice(id)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked }}
-                  testID={`leave-session-option-${id}`}
-                >
-                  {checked ? (
-                    <RadioButtonIcon size={22} color={theme.text.accent} weight="fill" />
-                  ) : (
-                    <CircleIcon size={22} color={theme.text.secondary} />
-                  )}
-                  <View style={styles.optionCopy}>
-                    <Text style={[styles.optionTitle, optionTextStyle]}>{getLeaveActionTitle(id, t)}</Text>
-                    <Text style={[styles.optionHint, optionTextStyle]}>{getLeaveActionHint(id, t)}</Text>
-                  </View>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-
-          <TouchableOpacity
-            style={styles.rememberRow}
-            onPress={() => setRemember((v) => !v)}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: remember }}
-            testID="leave-session-remember"
-          >
-            {remember ? (
-              <CheckSquareIcon size={22} color={theme.text.accent} weight="fill" />
-            ) : (
-              <SquareIcon size={22} color={theme.text.secondary} />
-            )}
-            <Text style={[styles.rememberLabel, optionTextStyle]}>{t('terminal:leaveSession.remember')}</Text>
-          </TouchableOpacity>
-        </>
+        <TouchableOpacity
+          style={styles.rememberRow}
+          onPress={() => setRemember((v) => !v)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: remember }}
+          testID="leave-session-remember"
+        >
+          {remember ? (
+            <CheckSquareIcon size={22} color={theme.text.accent} weight="fill" />
+          ) : (
+            <SquareIcon size={22} color={theme.text.secondary} />
+          )}
+          <Text style={[styles.rememberLabel, labelStyle]}>{t('terminal:leaveSession.remember')}</Text>
+        </TouchableOpacity>
       ) : null}
     </CriticalDialog>
   )
@@ -178,30 +145,6 @@ export function LeaveSessionModal({
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
-    options: {
-      gap: spacing.sm,
-    },
-    option: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: spacing.sm,
-      paddingVertical: spacing.sm,
-      minHeight: 44,
-    },
-    optionCopy: {
-      flex: 1,
-      gap: 2,
-    },
-    optionTitle: {
-      color: theme.text.primary,
-      fontSize: font.base,
-      fontWeight: '600',
-    },
-    optionHint: {
-      color: theme.text.secondary,
-      fontSize: font.sm,
-      lineHeight: 18,
-    },
     rememberRow: {
       flexDirection: 'row',
       alignItems: 'center',
