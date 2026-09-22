@@ -1,0 +1,68 @@
+{
+  "name": "Threadbase DS Builder",
+  "id": "threadbase-ds-builder-local",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": [
+    "figma"
+  ],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "none"
+    ],
+    "devAllowedDomains": [
+      "http://localhost:7079"
+    ],
+    "reasoning": "Local development bridge only."
+  },
+  "menu": [
+    {
+      "name": "Build remaining components + screens",
+      "command": "build"
+    },
+    {
+      "name": "Bridge (live)",
+      "command": "bridge"
+    },
+    {
+      "separator": true
+    },
+    {
+      "name": "Theme \u2192 toggle dark / light",
+      "command": "theme:toggle"
+    },
+    {
+      "name": "Theme \u2192 dark",
+      "command": "theme:dark"
+    },
+    {
+      "name": "Theme \u2192 light",
+      "command": "theme:light"
+    },
+    {
+      "name": "Theme \u2192 catppuccin",
+      "command": "theme:catppuccin"
+    },
+    {
+      "name": "Theme \u2192 catppuccinLatte",
+      "command": "theme:catppuccinLatte"
+    },
+    {
+      "name": "Theme \u2192 nord",
+      "command": "theme:nord"
+    },
+    {
+      "name": "Theme \u2192 oneDark",
+      "command": "theme:oneDark"
+    },
+    {
+      "name": "Theme \u2192 rosePineDawn",
+      "command": "theme:rosePineDawn"
+    },
+    {
+      "name": "Theme \u2192 tokyoNightLight",
+      "command": "theme:tokyoNightLight"
+    }
+  ]
+}

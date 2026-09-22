@@ -11,6 +11,10 @@ This design system captures the brand's visual DNA — the midnight canvas, the 
 **Live design system:** the Claude Design project [Threadbase Design System](https://claude.ai/design/p/b841e42d-5143-4b62-b148-350537f4b972) holds the current `colors_and_type.css`, previews and mobile UI kit.
 This file is a snapshot of that project's `README.md`; when the two disagree, the project wins.
 
+**Figma file:** [Threadbase Mobile Design System](https://www.figma.com/design/EhOoHrZG4C6A2lNz0i5ewK) — tokens, ~195 components and the app screens, built as real vector components.
+It is generated from this repository by `design/figma-plugin/`, so for the **mobile** app it reads the actual values out of `constants/theme.ts` and `constants/providers.ts` rather than deriving them.
+Where it disagrees with the derived numbers below, the Figma file and the code win; see "Figma" at the end of this document.
+
 This system was reverse-engineered from the publicly accessible parts of the Threadbase monorepo. **Treat link access as not assumed for the reader.**
 
 - Root repo: `github.com/RonenMars/threadbase` — README, CLAUDE.md, IMPLEMENTATION-GUIDELINES.md, feature-comparison.md, status-mobile.md
@@ -23,14 +27,17 @@ This system was reverse-engineered from the publicly accessible parts of the Thr
 
 ## Index — what's where
 
+Paths are relative to `design/`, except this file, which lives at the repository root.
+
 | Path | What |
 |---|---|
-| `README.md` | This file. Brand overview, content fundamentals, visual foundations, iconography. |
+| `../DESIGN.md` | This file. Brand overview, content fundamentals, visual foundations, iconography. |
 | `SKILL.md` | Cross-compatible Agent Skill manifest — drop the folder into `.claude/skills/threadbase-design/` to use as a Claude Code skill. |
 | `colors_and_type.css` | Single source of truth for color + typography CSS variables. Import it on every page. |
 | `assets/` | Brand SVG icons (logo + "chat" mark variant). Copy from here, never link cross-project. |
 | `preview/` | Small HTML cards that render in the Design System tab (palettes, type specimens, components, motifs). |
 | `ui_kits/mobile/` | High-fidelity recreation of the Threadbase mobile (Expo / React Native) app. JSX components + an interactive `index.html`. |
+| `figma-plugin/` | Local Figma plugin that builds the Figma file from this repo's code. See "Figma" below. |
 | `slides/` | _Not included._ No deck template was provided. |
 
 ---
@@ -257,6 +264,38 @@ The richer reference is in `preview/` and `ui_kits/mobile/`. Inline summary:
 - **Lane header (Kanban)** — eyebrow type + count badge. Coloring matches lane semantic.
 - **Conversation row** — 12-px V padding, 16-px H. Title + project + timestamp + chips on right. Live chip is amber-pulsing.
 - **Tool result card** — 12-px radius, monospace content, header row with tool name (mono) + status pill.
+
+---
+
+## Figma
+
+The [Threadbase Mobile Design System](https://www.figma.com/design/EhOoHrZG4C6A2lNz0i5ewK) file is built by `design/figma-plugin/`, a local Figma plugin, not by hand.
+Nothing in it is a screenshot — every component is a real Figma component with variants, auto-layout and variable-bound fills.
+
+| Page | Holds |
+|---|---|
+| Foundations | Colour, spacing, radius and type variables, plus the eight theme palettes |
+| Components | ~195 components across the ui, sessions, conversation, servers, terminal, alerts, tour and onboarding domains |
+| Screens | Assembled app screens, plus the `e2e/visual/theme-gallery/` reference screenshots |
+
+Values come from `constants/theme.ts` and `constants/providers.ts`; component geometry comes from the `.tsx` files themselves.
+**If the code changes, re-run the plugin or edit the variables — never edit the code to match Figma.**
+Every component set carries a `documentationLinks` entry pointing at its source file on GitHub, which stands in for Code Connect (an Organization-plan feature).
+
+### Running it
+
+1. Open the file in the Figma **desktop** app.
+2. Plugins → Development → **Import plugin from manifest…** → `design/figma-plugin/manifest.json`.
+3. Plugins → Development → Threadbase DS Builder → **Build remaining components + screens**. Each step skips itself if its output already exists.
+
+For agent-driven edits there is a live bridge: `node bridge.mjs` starts a localhost relay, the plugin's **Bridge (live)** command connects to it, and `node bridge.mjs run job.js` executes a script against the open file with no MCP call limit.
+`design/figma-plugin/README.md` has the details and the gotchas.
+
+### Themes
+
+The Figma Starter plan allows one variable mode per collection, so the eight themes cannot be Figma modes.
+The `Color` collection aliases one palette out of `Theme Palettes` instead, and the plugin's **Theme → …** commands re-point every alias at once.
+`color/brand/*` is theme-independent and never re-pointed.
 
 ---
 
