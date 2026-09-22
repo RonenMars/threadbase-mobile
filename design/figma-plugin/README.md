@@ -70,3 +70,8 @@ Lets a shell script drive the open file through the full Plugin API, with no MCP
 A job is the body of an async function, with everything above `// ---------- plugin entry ----------` in `code.js` in scope.
 Call `await init()` first to load variables, text styles and fonts.
 Close the bridge window to stop it; the plugin runs nothing on its own.
+
+## Tests
+
+`npm run test:scripts` runs `__tests__/unit/scripts/figma-plugin.test.js`, which reads `code.js` as text and checks that it parses, that every `SOURCES` path still resolves to a file, that no `SOURCES` key is repeated, and that every builder named in the build steps exists.
+`code.js` is outside the lint globs and has no type checking, so those four are the only automated net it has — everything else needs Figma.
