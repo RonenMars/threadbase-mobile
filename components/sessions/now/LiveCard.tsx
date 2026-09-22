@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, TouchableOpacity, Pressable, StyleSheet } from 'react-native'
+import { DotsThreeVertical } from 'phosphor-react-native'
+import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { showsProviderMark } from '@/lib/providerDominance'
@@ -20,6 +22,8 @@ interface Props {
   dominantProvider?: ProviderName
   onPress: () => void
   onLongPress?: () => void
+  /** Shows the ⋮ button that opens the session's action sheet. */
+  onMenuPress?: () => void
   accessibilityLabel: string
   testID?: string
   isFirst?: boolean
@@ -37,12 +41,14 @@ export function LiveCard({
   dominantProvider,
   onPress,
   onLongPress,
+  onMenuPress,
   accessibilityLabel,
   testID,
   isFirst,
   children,
 }: Props) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const borderColor = emphasis === 'solid' ? `${color}80` : `${theme.text.accent}2e`
 
@@ -66,6 +72,18 @@ export function LiveCard({
             ) : null}
             {serverLabel ? (
               <ServerChip label={serverLabel} color={serverColor ?? SERVER_COLOR_DEFAULT} variant="label" />
+            ) : null}
+            {onMenuPress ? (
+              <Pressable
+                onPress={onMenuPress}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel={t('endSession.menu')}
+                testID={testID ? `${testID}-menu` : undefined}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
+                <DotsThreeVertical size={18} color={theme.text.secondary} weight="bold" />
+              </Pressable>
             ) : null}
           </View>
           {children}

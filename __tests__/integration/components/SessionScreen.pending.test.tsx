@@ -143,7 +143,7 @@ describe('SessionScreen — pending session', () => {
     expect(mockReplace).toHaveBeenCalledWith('/session/sess-real-id?server=srv1')
   })
 
-  it('shows a stuck state with View console / Stop session after 20s with no signal', async () => {
+  it('shows a stuck state with View console / Terminate after 20s with no signal', async () => {
     installPendingFakeTimers()
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
 
@@ -154,7 +154,7 @@ describe('SessionScreen — pending session', () => {
     expect(screen.queryByText('Starting session…')).toBeNull()
     expect(screen.getByText('Wait more')).toBeTruthy()
     const viewConsole = screen.getByText('View console')
-    const stop = screen.getByText('Stop session')
+    const stop = screen.getByText('Terminate')
 
     await act(async () => {
       fireEvent.press(viewConsole)

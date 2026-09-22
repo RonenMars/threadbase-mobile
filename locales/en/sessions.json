@@ -41,15 +41,8 @@
   },
   "card": {
     "copyId": "Copy Session ID",
-    "sendInput": "Send Input",
-    "cancel": "Cancel Session",
     "prompts_one": "{{count}} prompt",
-    "prompts_other": "{{count}} prompts",
-    "actionsTitle": "Session Actions",
-    "dismiss": "Dismiss",
-    "cancelConfirm": "Are you sure?",
-    "confirmYes": "Yes",
-    "confirmNo": "No"
+    "prompts_other": "{{count}} prompts"
   },
   "hub": {
     "browsePath": "Browse path",
@@ -193,5 +186,41 @@
     "account": "Account",
     "messageCount": "Message Count",
     "lastActivity": "Last Activity"
+  },
+  "leaveHint": {
+    "body": "Sessions keep running when you leave. To end one, use the ⋮ menu on its card.",
+    "gotIt": "Got it",
+    "settings": "Change in Settings"
+  },
+  "endSession": {
+    "menu": "Session actions",
+    "section": "End session",
+    "open": "Open",
+    "whenDone": "Terminate when done",
+    "whenDoneHint": "Lets this turn finish, then ends it",
+    "terminate": "Terminate",
+    "terminateHint": "Ends it now. You can resume it later.",
+    "force": "Force terminate",
+    "forceHint": "Only if Terminate didn't work",
+    "delete": "Delete…",
+    "deleteHint": "Removes it from Threadbase. {{agent}} keeps its history.",
+    "armed": "Ends after this turn",
+    "terminating": "Terminating…",
+    "stillRunning": "Still running after Terminate.",
+    "failed": "Couldn't end the session. Check your connection and try again."
+  },
+  "deleteDialog": {
+    "title": "Delete this session?",
+    "body": "It's still live. Threadbase terminates it, then removes it from your session list on every device.",
+    "keepsTitle": "{{agent}} keeps its history",
+    "keepsClaude": "The conversation stays on {{server}}. claude --resume still finds it.",
+    "keepsCodex": "The conversation stays on {{server}}. codex resume still finds it.",
+    "keepsCursor": "It stays in Cursor Agent's chat history on {{server}}.",
+    "noUndo": "You can't undo this from the app.",
+    "confirm": "Delete"
+  },
+  "watchersDialog": {
+    "title": "Open on another device",
+    "body": "This session is open on another device. Terminate when done ends it there too, and opening it there won't cancel it."
   }
 }

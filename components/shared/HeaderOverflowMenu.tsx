@@ -11,6 +11,10 @@ export interface HeaderOverflowMenuItem {
   icon: React.ComponentType<IconProps>
   onPress: () => void
   disabled?: boolean
+  destructive?: boolean
+  /** Small caps heading drawn above this item, with a divider when it isn't first. */
+  sectionLabel?: string
+  dividerBefore?: boolean
   testID?: string
 }
 
@@ -42,23 +46,28 @@ export function HeaderOverflowMenu({ items, accessibilityLabel = 'More options',
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={[styles.backdrop, directionStyle]} onPress={() => setOpen(false)}>
           <View style={styles.menu}>
-            {items.map((item) => (
-              <Pressable
-                key={item.key}
-                testID={item.testID}
-                disabled={item.disabled}
-                onPress={() => {
-                  setOpen(false)
-                  item.onPress()
-                }}
-                style={({ pressed }) => [
-                  styles.item,
-                  { opacity: item.disabled ? 0.4 : pressed ? 0.6 : 1 },
-                ]}
-              >
-                <item.icon size={20} color={theme.text.secondary} />
-                <Text style={[styles.itemText, copyStyle]}>{item.label}</Text>
-              </Pressable>
+            {items.map((item, index) => (
+              <React.Fragment key={item.key}>
+                {item.dividerBefore || (item.sectionLabel && index > 0) ? <View style={styles.divider} /> : null}
+                {item.sectionLabel ? <Text style={[styles.section, copyStyle]}>{item.sectionLabel}</Text> : null}
+                <Pressable
+                  testID={item.testID}
+                  disabled={item.disabled}
+                  onPress={() => {
+                    setOpen(false)
+                    item.onPress()
+                  }}
+                  style={({ pressed }) => [
+                    styles.item,
+                    { opacity: item.disabled ? 0.4 : pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <item.icon size={20} color={item.destructive ? theme.status.failed : theme.text.secondary} />
+                  <Text style={[styles.itemText, item.destructive && { color: theme.status.failed }, copyStyle]}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              </React.Fragment>
             ))}
           </View>
         </Pressable>
@@ -92,5 +101,20 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.sm,
     },
     itemText: { color: theme.text.primary, fontSize: font.sm },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.border,
+      marginVertical: spacing.xs,
+    },
+    section: {
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.xs,
+      paddingBottom: 2,
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      fontWeight: '600',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+    },
   })
 }

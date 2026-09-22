@@ -280,8 +280,6 @@ appId: ${APP_BUNDLE_ID}
     commands:
       - tapOn:
           id: "leave-session-option-leave"
-      - tapOn:
-          id: "leave-session-confirm"
       - waitForAnimationToEnd
 
 # Should now be back on projects hub with session list

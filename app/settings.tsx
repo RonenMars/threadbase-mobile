@@ -956,7 +956,7 @@ function SessionLeaveActionList({
   const theme = useTheme()
   const s = useMemo(() => styles(theme), [theme])
   const { t } = useTranslation('settings')
-  const options: SessionLeaveAction[] = ['ask', 'kill', 'leave', 'kill_on_idle']
+  const options: SessionLeaveAction[] = ['leave', 'ask', 'kill_on_idle', 'kill']
   return (
     <View accessibilityRole="radiogroup">
       {options.map((id) => {

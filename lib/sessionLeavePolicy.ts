@@ -2,8 +2,9 @@ export const SESSION_LEAVE_ACTIONS = ['ask', 'kill', 'leave', 'kill_on_idle'] as
 export type SessionLeaveAction = (typeof SESSION_LEAVE_ACTIONS)[number]
 export type AppliedSessionLeaveAction = Exclude<SessionLeaveAction, 'ask'>
 
-export const DEFAULT_SESSION_LEAVE_ACTION: SessionLeaveAction = 'ask'
-export const DEFAULT_LEAVE_MODAL_CHOICE: AppliedSessionLeaveAction = 'leave'
+// Only fresh installs see this default: the store persists its whole state on
+// every change, so an existing install already carries an explicit value.
+export const DEFAULT_SESSION_LEAVE_ACTION: SessionLeaveAction = 'leave'
 
 export interface LeaveSessionSnapshot {
   ptyAttached?: boolean | null

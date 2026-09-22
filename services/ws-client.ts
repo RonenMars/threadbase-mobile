@@ -681,6 +681,10 @@ class WSClientManager {
     }
   }
 
+  isSessionAcquired(serverId: string, sessionId: string): boolean {
+    return (this.sessionRefCounts.get(serverId)?.get(sessionId) ?? 0) > 0
+  }
+
   releaseSession(serverId: string, sessionId: string) {
     if (!serverId || !sessionId) return
     const bySession = this.sessionRefCounts.get(serverId)

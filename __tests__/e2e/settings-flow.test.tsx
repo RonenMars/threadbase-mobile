@@ -379,9 +379,9 @@ describe('Settings – anonymous diagnostics section (spec §15)', () => {
 })
 
 describe('Settings – session leave action', () => {
-  it('shows Action on session leave and can restore Always ask', async () => {
+  it('shows When you leave a live session and can switch to Ask me', async () => {
     const { getByText, getByTestId } = await renderWithTheme(<SettingsScreen />)
-    expect(getByText('Action on session leave')).toBeTruthy()
+    expect(getByText('When you leave a live session')).toBeTruthy()
     await fireEvent.press(getByTestId('settings-session-leave-action'))
     await fireEvent.press(getByTestId('settings-session-leave-kill'))
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('kill')

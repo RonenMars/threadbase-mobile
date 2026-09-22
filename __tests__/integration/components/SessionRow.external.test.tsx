@@ -17,10 +17,11 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
 }))
 
-const mockCancel = jest.fn()
+const mockStop = jest.fn()
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
-    cancelSession: { mutate: mockCancel, isPending: false },
+    stopSession: { mutate: mockStop, isPending: false },
+    stopWhenIdle: { mutateAsync: jest.fn(), isPending: false },
   }),
 }))
 
@@ -41,7 +42,7 @@ const makeSession = (overrides: Partial<MultiSession> = {}): MultiSession => ({
 
 beforeEach(() => {
   mockPush.mockClear()
-  mockCancel.mockClear()
+  mockStop.mockClear()
 })
 
 describe('SessionRow — external session', () => {
@@ -100,7 +101,7 @@ describe('SessionRow — external session', () => {
       )
       await fireEvent(getByTestId('session-row-sess-1'), 'longPress')
       expect(alertSpy).not.toHaveBeenCalled()
-      expect(mockCancel).not.toHaveBeenCalled()
+      expect(mockStop).not.toHaveBeenCalled()
     } finally {
       alertSpy.mockRestore()
     }

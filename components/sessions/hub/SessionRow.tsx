@@ -1,9 +1,8 @@
 import { useCallback } from 'react'
-import { Platform, Alert, ActionSheetIOS } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import * as Haptics from 'expo-haptics'
-import { useSessionActions } from '@/hooks/useSessionActions'
+import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
@@ -18,8 +17,7 @@ import type { SessionRowProps } from './types'
 
 export function SessionRow({ session, forceServerChip = false }: SessionRowProps) {
   const router = useRouter()
-  const { t } = useTranslation(['sessions', 'common'])
-  const { cancelSession } = useSessionActions(session.serverId, session.id)
+  const { t } = useTranslation('sessions')
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
   const storedName = useSessionNamesStore((s) => s.getName(session.serverId, session.id))
@@ -40,35 +38,9 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
     router.push(`/session/${session.id}?server=${session.serverId}`)
   }, [session, presentation.capabilities.isObserveOnly, isExternal, router])
 
-  const handleLongPress = useCallback(() => {
-    if (!presentation.capabilities.canCancel) return
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        { options: [t('card.cancel'), t('common:button.cancel')], destructiveButtonIndex: 0, cancelButtonIndex: 1 },
-        (index) => {
-          if (index === 0) {
-            Alert.alert(t('card.cancel'), t('card.cancelConfirm'), [
-              { text: t('card.confirmNo'), style: 'cancel' },
-              {
-                text: t('card.confirmYes'),
-                style: 'destructive',
-                onPress: () => {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-                  cancelSession.mutate()
-                },
-              },
-            ])
-          }
-        },
-      )
-    } else {
-      Alert.alert(t('card.actionsTitle'), session.projectName, [
-        { text: t('card.cancel'), style: 'destructive', onPress: () => cancelSession.mutate() },
-        { text: t('card.dismiss'), style: 'cancel' },
-      ])
-    }
-  }, [session, presentation.capabilities.canCancel, cancelSession, t])
+  // Hub rows keep the old reach: the sheet opens only where ending was offered.
+  const rowActions = useSessionRowActions(session, title)
+  const handleLongPress = presentation.capabilities.canCancel ? rowActions.handleLongPress : undefined
 
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewModeSetting === 'off' ? 'none' : rowPreviewModeSetting
@@ -77,25 +49,28 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
   const activityTimestamp = presentation.activityAt ?? session.completedAt ?? session.startedAt
 
   return (
-    <ConversationListItem
-      title={title}
-      timestamp={activityTimestamp}
-      messageCount={session.promptCount}
-      branch={session.branch}
-      tier={presentation.tier}
-      lastOutput={session.lastOutput || null}
-      preview={promptCountLabel}
-      serverLabel={session.serverLabel}
-      serverColor={serverColor}
-      activeServerCount={activeServerCount}
-      forceServerChip={forceServerChip}
-      provider={session.provider}
-      density="compact"
-      leading="dot"
-      previewMode={previewMode}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      testID={`session-row-${session.id}`}
-    />
+    <>
+      <ConversationListItem
+        title={title}
+        timestamp={activityTimestamp}
+        messageCount={session.promptCount}
+        branch={session.branch}
+        tier={presentation.tier}
+        lastOutput={session.lastOutput || null}
+        preview={promptCountLabel}
+        serverLabel={session.serverLabel}
+        serverColor={serverColor}
+        activeServerCount={activeServerCount}
+        forceServerChip={forceServerChip}
+        provider={session.provider}
+        density="compact"
+        leading="dot"
+        previewMode={previewMode}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        testID={`session-row-${session.id}`}
+      />
+      {rowActions.overlays}
+    </>
   )
 }

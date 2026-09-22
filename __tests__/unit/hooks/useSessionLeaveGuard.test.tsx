@@ -427,7 +427,8 @@ describe('useSessionLeaveGuard', () => {
   it('Settings Kill it / Leave it / Kill on idle skip the modal', async () => {
     useSettingsStore.setState({ sessionLeaveAction: 'leave' })
     const leaveRun = await setup()
-    await leaveRun.fire()
+    // Keep running never guards the removal, so the native back gesture runs untouched.
+    expect((await leaveRun.fire()).preventRemove).toBe(false)
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
     expect(wsManager.holdSessionWaitingInput).not.toHaveBeenCalled()

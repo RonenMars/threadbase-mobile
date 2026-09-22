@@ -26,7 +26,7 @@ beforeEach(() => {
     notifications: { ...DEFAULT_NOTIFICATIONS },
     anonymousDiagnosticsEnabled: false,
     crashReportingNoticeDismissed: false,
-    sessionLeaveAction: 'ask',
+    sessionLeaveAction: 'leave',
     showProviderVersionWarning: false,
     locale: 'he',
   })
@@ -406,8 +406,8 @@ describe('SettingsStore – postFeedbackDiagnosticsSuggestionImpressions (spec �
 })
 
 describe('SettingsStore – sessionLeaveAction', () => {
-  it('defaults to always ask', () => {
-    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+  it('defaults to keep running', () => {
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('leave')
   })
 
   it('persists and can restore Always ask', async () => {
@@ -431,7 +431,7 @@ describe('SettingsStore – sessionLeaveAction', () => {
       JSON.stringify({ sessionLeaveAction: 'explode', notifications: DEFAULT_NOTIFICATIONS }),
     )
     await useSettingsStore.getState().hydrate()
-    expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
+    expect(useSettingsStore.getState().sessionLeaveAction).toBe('leave')
   })
 })
 

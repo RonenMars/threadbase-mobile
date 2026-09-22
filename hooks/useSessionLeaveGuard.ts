@@ -98,6 +98,9 @@ export function useSessionLeaveGuard(opts: {
   const [leaveModalVisible, setLeaveModalVisible] = useState(false)
   const [leavePhase, setLeavePhase] = useState<SessionLeavePhase>('idle')
   const [continuation, setContinuation] = useState<LeaveContinuation | null>(null)
+  // Raw, not coerced: 'leave' needs no guard at all, so native swipe-back and
+  // the back button keep working without the modal's dismiss wait.
+  const leavesWithoutAsking = useSettingsStore((s) => s.sessionLeaveAction) === 'leave'
   // One-shot, armed at mount and disarmed by the first REPLACE — not on a timer:
   // the automatic replacement lands whenever session_ready arrives, which can be
   // long after the screen mounted.
@@ -236,7 +239,8 @@ export function useSessionLeaveGuard(opts: {
 
   const shouldPreventRemove =
     !continuation &&
-    (leavePhase !== 'idle' || (!isPending && Boolean(sessionId) && isLiveAttachedPty(session)))
+    (leavePhase !== 'idle' ||
+      (!leavesWithoutAsking && !isPending && Boolean(sessionId) && isLiveAttachedPty(session)))
   usePreventRemove(shouldPreventRemove, ({ data }) => {
     if (!sessionId) return
 

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, isAnswerRefusedError, isPermissionAnswerRejectedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, NetworkError, NotFoundError, stopSession } from '@/services/api-client'
+import { createApiForServer, isAnswerRefusedError, isPermissionAnswerRejectedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, NetworkError, NotFoundError, stopSession, stopSessionWhenIdle } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
-import type { MultiSession, Session } from '@/types/api'
+import type { Session } from '@/types/api'
 import type { ResumeConversationResponse } from '@/types/projectChat'
 import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
 
@@ -57,21 +57,6 @@ export function useSessionActions(serverId: string, sessionId: string) {
     mutationFn: (vars: { action: 'escape' | 'up' | 'down' | 'left' | 'right' | 'tab' | 'shift_tab' | 'enter'; promptId?: string; confirm?: true }) =>
       api.post(`/api/sessions/${sessionId}/raw-key`, vars),
   })
-
-  const cancelSession = useMutation({
-    mutationFn: () => api.post(`/api/sessions/${sessionId}/cancel`),
-    onSuccess: () => {
-      // Targeted update: flip this session to idle in every sessions-eager cache entry
-      // instead of invalidating the whole list (which triggers a full multi-server re-fetch).
-      qc.setQueriesData<MultiSession[]>({ queryKey: ['sessions-eager'] }, (prev) =>
-        prev?.map((s) =>
-          s.id === sessionId && s.serverId === serverId ? { ...s, status: 'idle' } : s,
-        ),
-      )
-      qc.invalidateQueries({ queryKey: ['sessions'] })
-    },
-  })
-
 
   const respondToQuestion = useMutation({
     ...retryOnNetwork,
@@ -265,16 +250,28 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  // Hard-kills the PTY via /stop. Status is driven idle by the WS session_update
-  // the server broadcasts after the stream closes, so we only refresh the lists.
+  // Ends the PTY via /stop (or /kill when forced). Status is driven idle by the
+  // WS session_update the server broadcasts after the stream closes, so we only
+  // refresh the lists.
+  const refreshAfterEnd = () => {
+    qc.invalidateQueries({ queryKey: ['sessions'] })
+    qc.invalidateQueries({ queryKey: ['sessions-eager'] })
+    qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+  }
   const stopSessionMutation = useMutation({
-    mutationFn: () => stopSession(serverId, sessionId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['sessions'] })
-      qc.invalidateQueries({ queryKey: ['sessions-eager'] })
-      qc.invalidateQueries({ queryKey: ['session', serverId, sessionId] })
+    mutationFn: (vars?: { force?: boolean; delete?: boolean }) => stopSession(serverId, sessionId, vars),
+    onSuccess: refreshAfterEnd,
+  })
+
+  // No retries at either layer: a replayed arm that lands after the turn ended
+  // cuts the next one.
+  const stopWhenIdle = useMutation({
+    retry: false,
+    mutationFn: (vars?: { ignoreWatchers?: boolean }) => stopSessionWhenIdle(serverId, sessionId, vars),
+    onSuccess: (result) => {
+      if (result.status === 'killed') refreshAfterEnd()
     },
   })
 
-  return { sendInput, sendKeys, sendRawKey, cancelSession, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation }
+  return { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation, stopWhenIdle }
 }

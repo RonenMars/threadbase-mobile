@@ -41,19 +41,12 @@
   },
   "card": {
     "copyId": "نسخ معرّف السيشن",
-    "sendInput": "إرسال إدخال",
-    "cancel": "إلغاء السيشن",
     "prompts_zero": "لا برومبتات",
     "prompts_one": "برومبت واحد",
     "prompts_two": "برومبتان",
     "prompts_few": "{{count}} برومبتات",
     "prompts_many": "{{count}} برومبتًا",
-    "prompts_other": "{{count}} برومبت",
-    "actionsTitle": "إجراءات السيشن",
-    "dismiss": "إغلاق",
-    "cancelConfirm": "هل أنت متأكد؟",
-    "confirmYes": "نعم",
-    "confirmNo": "لا"
+    "prompts_other": "{{count}} برومبت"
   },
   "hub": {
     "browsePath": "تصفح المسار",
@@ -225,5 +218,41 @@
     "account": "الحساب",
     "messageCount": "عدد الرسائل",
     "lastActivity": "آخر نشاط"
+  },
+  "leaveHint": {
+    "body": "تستمر السيشنات في العمل عند مغادرتها. لإنهاء أحدها، استخدم القائمة ⋮ في بطاقته.",
+    "gotIt": "فهمت",
+    "settings": "التغيير من الإعدادات"
+  },
+  "endSession": {
+    "menu": "إجراءات السيشن",
+    "section": "إنهاء السيشن",
+    "open": "فتح",
+    "whenDone": "إنهاء بعد انتهاء الدور",
+    "whenDoneHint": "يترك هذا الدور ينتهي، ثم يُنهيه",
+    "terminate": "إنهاء",
+    "terminateHint": "يُنهيه الآن. يمكنك استئنافه لاحقًا.",
+    "force": "إنهاء قسري",
+    "forceHint": "فقط إذا لم ينجح الإنهاء",
+    "delete": "حذف…",
+    "deleteHint": "يزيله من Threadbase. يحتفظ {{agent}} بسجله.",
+    "armed": "ينتهي بعد هذا الدور",
+    "terminating": "جارٍ الإنهاء…",
+    "stillRunning": "لا يزال يعمل بعد الإنهاء.",
+    "failed": "تعذّر إنهاء السيشن. تحقق من الاتصال وحاول مرة أخرى."
+  },
+  "deleteDialog": {
+    "title": "حذف هذا السيشن؟",
+    "body": "لا يزال مباشرًا. سيُنهيه Threadbase، ثم يزيله من قائمة السيشنات على كل الأجهزة.",
+    "keepsTitle": "يحتفظ {{agent}} بسجله",
+    "keepsClaude": "تبقى المحادثة على {{server}}. لا يزال الأمر claude --resume يجدها.",
+    "keepsCodex": "تبقى المحادثة على {{server}}. لا يزال الأمر codex resume يجدها.",
+    "keepsCursor": "تبقى في سجل محادثات Cursor Agent على {{server}}.",
+    "noUndo": "لا يمكن التراجع عن هذا من التطبيق.",
+    "confirm": "حذف"
+  },
+  "watchersDialog": {
+    "title": "مفتوح على جهاز آخر",
+    "body": "هذا السيشن مفتوح على جهاز آخر. الإنهاء بعد انتهاء الدور يُنهيه هناك أيضًا، وفتحه هناك لن يلغي ذلك."
   }
 }

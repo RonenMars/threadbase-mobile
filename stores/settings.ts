@@ -10,6 +10,7 @@ import { THEMES } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import {
   coerceSessionLeaveAction,
+  DEFAULT_SESSION_LEAVE_ACTION,
   type SessionLeaveAction,
 } from '@/lib/sessionLeavePolicy'
 import { getLocales } from 'expo-localization'
@@ -70,6 +71,8 @@ interface SettingsStore {
   anonymousDiagnosticsEnabled: boolean
   /** Whether the post-upgrade crash-reporting notice has been dismissed. */
   crashReportingNoticeDismissed: boolean
+  /** Whether the Now list's "sessions keep running when you leave" hint has been dismissed. */
+  leaveHintDismissed: boolean
   /** This installation's onboarding Anonymous Diagnostics experiment arm
    * (spec §7): 40% treatment / 60% control. Assigned once on first hydrate,
    * persisted, and never reassigned. `null` until assigned. */
@@ -96,6 +99,7 @@ interface SettingsStore {
   setBiometricLock: (v: boolean) => void
   setAnonymousDiagnosticsEnabled: (v: boolean) => void
   setCrashReportingNoticeDismissed: (v: boolean) => void
+  setLeaveHintDismissed: (v: boolean) => void
   /** Appends now() to the impression history (spec §14 frequency tracking). */
   recordPostFeedbackDiagnosticsSuggestionImpression: () => void
   setRowPreviewMode: (v: RowPreviewMode) => void
@@ -132,6 +136,7 @@ interface PersistedSettings {
   biometricLock: boolean
   anonymousDiagnosticsEnabled: boolean
   crashReportingNoticeDismissed: boolean
+  leaveHintDismissed: boolean
   onboardingDiagnosticsExperimentVariant: 'treatment' | 'control' | null
   postFeedbackDiagnosticsSuggestionImpressions: number[]
   rowPreviewMode: RowPreviewMode
@@ -156,13 +161,14 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   notifications: DEFAULT_NOTIFICATIONS,
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
-  sessionLeaveAction: 'ask',
+  sessionLeaveAction: DEFAULT_SESSION_LEAVE_ACTION,
   sessionsLayout: 'now',
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
   anonymousDiagnosticsEnabled: false,
   crashReportingNoticeDismissed: false,
+  leaveHintDismissed: false,
   onboardingDiagnosticsExperimentVariant: null,
   postFeedbackDiagnosticsSuggestionImpressions: [],
   autoNameFromMessage: true,
@@ -193,6 +199,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setAnonymousDiagnosticsEnabled: (anonymousDiagnosticsEnabled) => set({ anonymousDiagnosticsEnabled }),
   setCrashReportingNoticeDismissed: (crashReportingNoticeDismissed) =>
     set({ crashReportingNoticeDismissed }),
+  setLeaveHintDismissed: (leaveHintDismissed) => set({ leaveHintDismissed }),
   recordPostFeedbackDiagnosticsSuggestionImpression: () =>
     set((state) => ({
       postFeedbackDiagnosticsSuggestionImpressions: [
@@ -233,6 +240,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         anonymousDiagnosticsEnabled: parsed.anonymousDiagnosticsEnabled ?? state.anonymousDiagnosticsEnabled,
         crashReportingNoticeDismissed:
           parsed.crashReportingNoticeDismissed ?? state.crashReportingNoticeDismissed,
+        leaveHintDismissed: parsed.leaveHintDismissed ?? state.leaveHintDismissed,
         // Assigned once, ever, for this installation (spec §7). Preference
         // order: what's already persisted > what's already in memory (guards
         // a second hydrate() before the first assignment finishes persisting)
@@ -281,6 +289,7 @@ export function persistSettingsNow(): Promise<void> {
     biometricLock: state.biometricLock,
     anonymousDiagnosticsEnabled: state.anonymousDiagnosticsEnabled,
     crashReportingNoticeDismissed: state.crashReportingNoticeDismissed,
+    leaveHintDismissed: state.leaveHintDismissed,
     onboardingDiagnosticsExperimentVariant: state.onboardingDiagnosticsExperimentVariant,
     postFeedbackDiagnosticsSuggestionImpressions: state.postFeedbackDiagnosticsSuggestionImpressions,
     autoNameFromMessage: state.autoNameFromMessage,

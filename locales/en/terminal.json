@@ -7,7 +7,8 @@
   },
   "action": {
     "sendInput": "Send Input",
-    "stop": "Stop session"
+    "stop": "Stop response",
+    "terminate": "Terminate"
   },
   "answer": {
     "failed": "Couldn't send your answer. Check your connection and try again.",
@@ -38,11 +39,8 @@
     "stop": "Stop dictation"
   },
   "dialog": {
-    "cancelTitle": "Cancel Session",
-    "cancelMessage": "Are you sure you want to cancel this session?",
-    "cancelConfirm": "Cancel Session",
-    "stopTitle": "Stop session",
-    "stopFailed": "Couldn't stop the session. Check your connection and try again.",
+    "stopTitle": "Stop response",
+    "stopFailed": "Couldn't stop the response. Check your connection and try again.",
     "sendFailedTitle": "Send failed",
     "sendFailedGeneric": "Failed to send"
   },
@@ -113,17 +111,15 @@
     "modelEffortFailed": "Couldn't change the setting."
   },
   "leaveSession": {
-    "title": "Leave this session?",
-    "body": "The agent on the computer keeps running until you choose.",
-    "kill": "Kill it",
-    "killHint": "Stop the session now. History stays if there is one.",
-    "leave": "Leave it",
-    "leaveHint": "Keep it running so you can come back.",
-    "kill_on_idle": "Kill on idle",
-    "kill_on_idleHint": "Don't cut a turn in progress; hold when the session is idle.",
-    "remember": "Don't ask me again",
+    "title": "Leave while it's working?",
+    "body": "{{agent}} keeps going on {{server}} unless you end it.",
+    "kill": "Terminate",
+    "leave": "Keep running",
+    "kill_on_idle": "Terminate when done",
+    "remember": "Remember my choice",
     "pending": "Sending…",
-    "error": "Couldn't complete this action. Check your connection and try again."
+    "error": "Couldn't complete this action. Check your connection and try again.",
+    "stay": "Stay here"
   },
   "history": {
     "header_one": "History · {{count}} message",

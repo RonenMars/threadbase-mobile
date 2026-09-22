@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
-import { ArrowUUpLeft, CopySimple, InfoIcon, PencilSimple, Sparkle, Star, StopCircle, GitDiff, Warning } from 'phosphor-react-native'
+import { ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, Trash, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
 import { deriveSessionPresentation, sessionOpensAsHistory } from '@/lib/sessionPresentation'
@@ -30,7 +30,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { InfoModal } from '@/components/shared/InfoModal'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
-import { HeaderOverflowMenu } from '@/components/shared/HeaderOverflowMenu'
+import { HeaderOverflowMenu, type HeaderOverflowMenuItem } from '@/components/shared/HeaderOverflowMenu'
 import { StatusPill } from '@/components/alerts/StatusPill'
 import { useAlertListSync } from '@/hooks/useAlertSync'
 import { useArbitratedAlerts } from '@/hooks/useArbitratedAlerts'
@@ -45,6 +45,11 @@ import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { ModelEffortSheet } from '@/components/sessions/ModelEffortSheet'
 import { canSetModelEffort } from '@/lib/modelEffortSupport'
 import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
+import { EndSessionDialogs } from '@/components/sessions/EndSessionDialogs'
+import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
+import { getProviderLabel } from '@/components/sessions/providerLabel'
+import { useEndSession } from '@/hooks/useEndSession'
+import { hostPressureServerName } from '@/utils/hostPressureCopy'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useNavLockStore } from '@/stores/navLock'
 import { useLiveInstanceCount } from '@/lib/openTrace'
@@ -246,7 +251,7 @@ function PendingSessionScreen({
               stopSession.mutate(undefined, { onSuccess: () => router.back() })
             }}
           >
-            <Text style={pendingStyles.cancelText}>{t('terminal:action.stop')}</Text>
+            <Text style={pendingStyles.cancelText}>{t('terminal:action.terminate')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -649,6 +654,16 @@ export default function SessionDetailScreen() {
   const isLive =
     session?.ptyAttached === true &&
     (session.status === 'waiting_input' || session.status === 'running')
+  const endSession = useEndSession(serverId, id ?? '', isLive)
+  const serverName = useServersStore((s) => hostPressureServerName(s.servers?.[serverId])) ?? ''
+  const { t: tSessions } = useTranslation('sessions')
+  const agentName = getProviderLabel(session?.provider, tSessions)
+  // Delete ends the session first. Leaving while it still reads live would
+  // meet the leave guard, so home waits for the end; the ended redirect below
+  // stands aside, since the history it opens is what Delete just hid.
+  useEffect(() => {
+    if (endSession.deleting && !isLive) navigateHome()
+  }, [endSession.deleting, isLive, navigateHome])
   // Warnings go behind the header bell (docs/design/alert-system/README.md).
   // Inline, they took transcript height a question card needs once the
   // keyboard is up.
@@ -720,7 +735,7 @@ export default function SessionDetailScreen() {
     // session to resumable/ended before the guard's own home navigation has
     // unmounted this screen, and this redirect must not win that race and
     // strand the user on the conversation view instead of the homepage.
-    if (isPending || isLeaving) return
+    if (isPending || isLeaving || endSession.deleting) return
     const hasConversation = !!(session?.boundConversationId ?? session?.conversationId)
     if (
       session != null &&
@@ -730,7 +745,7 @@ export default function SessionDetailScreen() {
     ) {
       router.replace(`/conversation/${historyNavigationId}?server=${serverId}`)
     }
-  }, [isPending, isLeaving, session, historyNavigationId, serverId, router])
+  }, [isPending, isLeaving, endSession.deleting, session, historyNavigationId, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch
@@ -952,6 +967,50 @@ export default function SessionDetailScreen() {
     if (model !== undefined) setModel.mutate(model, { onSuccess: close })
   }
 
+  const endSessionItems: HeaderOverflowMenuItem[] = []
+  if (isLive) {
+    // Waiting for input means there is no turn left to finish.
+    if (endSession.supported && session.status === 'running' && !endSession.armed) {
+      endSessionItems.push({
+        key: 'end-when-done',
+        label: t('sessions:endSession.whenDone'),
+        icon: HourglassMedium,
+        onPress: () => void endSession.terminateWhenDone(),
+        testID: 'session-end-when-done',
+      })
+    }
+    endSessionItems.push({
+      key: 'end-terminate',
+      label: t('sessions:endSession.terminate'),
+      icon: Power,
+      onPress: endSession.terminate,
+      destructive: true,
+      testID: 'session-end-terminate',
+    })
+    if (endSession.supported) {
+      endSessionItems.push(
+        {
+          key: 'end-force',
+          label: t('sessions:endSession.force'),
+          icon: Lightning,
+          onPress: endSession.forceTerminate,
+          destructive: true,
+          testID: 'session-end-force',
+        },
+        {
+          key: 'end-delete',
+          label: t('sessions:endSession.delete'),
+          icon: Trash,
+          onPress: endSession.requestDelete,
+          destructive: true,
+          dividerBefore: true,
+          testID: 'session-end-delete',
+        },
+      )
+    }
+    endSessionItems[0] = { ...endSessionItems[0], sectionLabel: t('sessions:endSession.section') }
+  }
+
   const sessionHeaderActions = (
     <View style={styles.headerActions}>
       {alertSurface === 'error' || alertSurface === 'warning' ? (
@@ -1044,6 +1103,7 @@ export default function SessionDetailScreen() {
             disabled: !isLive,
             testID: 'session-raw-keys',
           },
+          ...endSessionItems,
         ]}
       />
     </View>
@@ -1172,6 +1232,15 @@ export default function SessionDetailScreen() {
             <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
           </View>
         ) : null}
+        {isLive && (endSession.armed || endSession.terminatingAt != null) ? (
+          <View style={styles.endStatus}>
+            <EndSessionStatus
+              armed={endSession.armed}
+              terminatingAt={endSession.terminatingAt}
+              onForce={endSession.supported ? endSession.forceTerminate : undefined}
+            />
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.body}>
@@ -1275,6 +1344,9 @@ export default function SessionDetailScreen() {
       <LeaveSessionModal
         visible={leaveModalVisible}
         phase={leavePhase}
+        agent={agentName}
+        server={serverName}
+        offerWhenDone={session?.status === 'running'}
         onCancel={() => {
           returnComposerFocus('leaveDialog')
           cancelLeave()
@@ -1282,6 +1354,15 @@ export default function SessionDetailScreen() {
         onConfirm={confirmLeave}
         onDismissError={dismissLeaveError}
         onModalDismiss={onModalDismiss}
+      />
+
+      <EndSessionDialogs
+        dialog={endSession.dialog}
+        provider={session?.provider}
+        server={serverName}
+        onConfirmDelete={endSession.confirmDelete}
+        onConfirmWatchers={endSession.confirmWatchers}
+        onDismiss={endSession.dismissDialog}
       />
 
       <NameSessionModal
@@ -1333,6 +1414,13 @@ function makeStyles(theme: Theme) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      backgroundColor: theme.bg.secondary,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+    },
+    endStatus: {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       backgroundColor: theme.bg.secondary,

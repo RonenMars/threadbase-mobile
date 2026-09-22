@@ -12,9 +12,9 @@ const live: LeaveSessionSnapshot = {
 }
 
 describe('sessionLeavePolicy', () => {
-  it('coerces unknown settings to always-ask', () => {
-    expect(coerceSessionLeaveAction(undefined)).toBe('ask')
-    expect(coerceSessionLeaveAction('nope')).toBe('ask')
+  it('coerces unknown settings to keep running', () => {
+    expect(coerceSessionLeaveAction(undefined)).toBe('leave')
+    expect(coerceSessionLeaveAction('nope')).toBe('leave')
     expect(coerceSessionLeaveAction('kill')).toBe('kill')
   })
 

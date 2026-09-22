@@ -16,7 +16,8 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
-    cancelSession: { mutate: jest.fn(), isPending: false },
+    stopSession: { mutate: jest.fn(), isPending: false },
+    stopWhenIdle: { mutateAsync: jest.fn(), isPending: false },
     sendInput: { mutate: jest.fn(), isPending: false },
   }),
 }))
