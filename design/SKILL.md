@@ -4,14 +4,16 @@ description: Use this skill to generate well-branded interfaces and assets for T
 user-invocable: true
 ---
 
-Read the README.md file within this skill, and explore the other available files.
+Read `DESIGN.md` at the repository root — the brand doc for this skill — and explore the other available files.
+Copy it into this folder as `README.md` when exporting the skill standalone; it is kept at the root so there is only one copy to keep current.
 
 If creating visual artifacts (slides, mocks, throwaway prototypes, etc), copy assets out and create static HTML files for the user to view. If working on production code, you can copy assets and read the rules here to become an expert in designing with this brand.
 
 If the user invokes this skill without any other guidance, ask them what they want to build or design, ask some questions, and act as an expert designer who outputs HTML artifacts _or_ production code, depending on the need.
 
 Key files:
-- `README.md` — voice, content fundamentals, visual foundations, iconography
+- `../DESIGN.md` — voice, content fundamentals, visual foundations, iconography
+- `figma-plugin/` — builds the Figma design-system file from this repo's code
 - `colors_and_type.css` — single source of truth for color/type CSS variables; import on every page
 - `assets/threadbase-icon.svg`, `assets/threadbase-icon-chat.svg` — brand marks
 - `preview/` — small HTML cards illustrating colors, type, components
