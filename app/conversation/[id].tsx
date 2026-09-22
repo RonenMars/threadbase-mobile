@@ -969,9 +969,12 @@ export default function ConversationDetailScreen() {
               contentContainerStyle={listContentStyle}
             />
           ) : (
+            // searchQuery is still set when the resolver failed: tint the
+            // matches in place even though there is no anchor to scroll to.
             <ConversationHistoryList
               messages={mergedMessages}
               lastMessageId={mergedLastMessageId}
+              highlight={searchQuery}
               inheritedHistory={conversation.inheritedHistory}
               onReady={handleListReady}
               onStartReached={fetchNextPage}
