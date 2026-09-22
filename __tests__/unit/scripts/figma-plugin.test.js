@@ -75,3 +75,70 @@ describe('figma plugin: code.js', () => {
     expect(undefinedFns).toEqual([]);
   });
 });
+
+describe('figma plugin: bridge.mjs', () => {
+  const { spawn } = require('child_process');
+  const PORT = 7179;
+  const BASE = `http://127.0.0.1:${PORT}`;
+  const BRIDGE = path.join(ROOT, 'design/figma-plugin/bridge.mjs');
+
+  let relay;
+  let token;
+
+  beforeAll(async () => {
+    relay = spawn(process.execPath, [BRIDGE], {
+      env: { ...process.env, BRIDGE_PORT: String(PORT) },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    await new Promise((resolve, reject) => {
+      relay.stdout.on('data', (c) => { if (String(c).includes('bridge on')) resolve(); });
+      relay.on('error', reject);
+      setTimeout(() => reject(new Error('relay did not start')), 10000);
+    });
+    token = fs.readFileSync(path.join(ROOT, 'design/figma-plugin/.bridge-token'), 'utf8').trim();
+  }, 15000);
+
+  afterAll(() => relay && relay.kill());
+
+  it('mints a token with enough entropy to be unguessable', () => {
+    expect(token).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('refuses /run without the token', async () => {
+    // The whole point: a page in the user's browser can reach this port, and
+    // /run executes whatever it sends inside the Figma document.
+    const res = await fetch(`${BASE}/run`, { method: 'POST', body: 'figma.closePlugin()' });
+    expect(res.status).toBe(403);
+  });
+
+  it('refuses /run with a wrong token, and /next and /result too', async () => {
+    const bad = { 'x-bridge-token': 'f'.repeat(32) };
+    const run = await fetch(`${BASE}/run`, { method: 'POST', headers: bad, body: 'x' });
+    const next = await fetch(`${BASE}/next`, { headers: bad });
+    const result = await fetch(`${BASE}/result`, { method: 'POST', headers: bad, body: '{}' });
+    expect([run.status, next.status, result.status]).toEqual([403, 403, 403]);
+  });
+
+  it('does not let a preflight wave through arbitrary headers', async () => {
+    // `Access-Control-Allow-Headers: *` would let any origin send the token
+    // header name, which is what forces the preflight in the first place.
+    const res = await fetch(`${BASE}/run`, { method: 'OPTIONS' });
+    expect(res.headers.get('access-control-allow-headers')).not.toContain('*');
+  });
+
+  it('runs a job end to end for a caller holding the token', async () => {
+    const auth = { 'x-bridge-token': token };
+    const job = fetch(`${BASE}/run`, { method: 'POST', headers: auth, body: 'return 1 + 1' });
+
+    const handed = await fetch(`${BASE}/next`, { headers: auth }).then((r) => r.json());
+    expect(handed.code).toContain('return 1 + 1');
+
+    await fetch(`${BASE}/result`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ id: handed.id, ok: true, value: 2 }),
+    });
+
+    await expect(job.then((r) => r.json())).resolves.toMatchObject({ ok: true, value: 2 });
+  }, 15000);
+});

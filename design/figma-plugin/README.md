@@ -63,15 +63,26 @@ If the code changes, edit this plugin or the variables to match; don't edit the 
 
 Lets a shell script drive the open file through the full Plugin API, with no MCP call limit.
 
-1. `node bridge.mjs` starts the relay on `http://localhost:7079` (localhost only).
+1. `node bridge.mjs` starts the relay on `http://localhost:7079` (localhost only) and prints a token.
 2. In Figma, run **Plugins → Development → Threadbase DS Builder → Bridge (live)** and leave its small window open.
+   The first time, paste the token into the box it shows; Figma remembers it per machine, so later runs connect on their own.
 3. `node bridge.mjs run job.js [outDir]` sends `job.js`, prints its return value and saves any `snap(node, name, scale)` PNGs to `outDir` (default `out/`).
 
 A job is the body of an async function, with everything above `// ---------- plugin entry ----------` in `code.js` in scope.
 Call `await init()` first to load variables, text styles and fonts.
 Close the bridge window to stop it; the plugin runs nothing on its own.
 
+### Why there is a token
+
+`/run` executes whatever it is handed inside the open Figma document, and any page in the browser can reach a port on localhost.
+Binding to `127.0.0.1` stops the network but not the browser, and CORS does not help: a cross-origin `POST` is still *sent*, CORS only decides who may read the reply.
+
+So every request must carry `x-bridge-token`. A custom header forces a preflight that a forged request cannot satisfy, and the value lives in `design/figma-plugin/.bridge-token` — gitignored, `0600`, readable only by local processes.
+The relay mints it on first run. Delete the file to roll it; the plugin will ask for the new one.
+
 ## Tests
 
 `npm run test:scripts` runs `__tests__/unit/scripts/figma-plugin.test.js`, which reads `code.js` as text and checks that it parses, that every `SOURCES` path still resolves to a file, that no `SOURCES` key is repeated, and that every builder named in the build steps exists.
 `code.js` is outside the lint globs and has no type checking, so those four are the only automated net it has — everything else needs Figma.
+
+The same file starts `bridge.mjs` on a spare port and drives one job end to end, asserting that `/run`, `/next` and `/result` all refuse a request without the token.

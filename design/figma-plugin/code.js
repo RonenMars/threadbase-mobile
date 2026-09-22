@@ -3493,18 +3493,31 @@ async function build() {
 
 // ---------- plugin entry ----------
 // Everything above is also sent as the prelude of every bridge job (see bridge.mjs).
-const BRIDGE_HTML = `<body style="font:12px -apple-system,sans-serif;margin:8px;color:#333"><div id="s">connecting…</div><script>
+const BRIDGE_HTML = `<body style="font:12px -apple-system,sans-serif;margin:8px;color:#333"><div id="s">connecting…</div><div id="auth" style="display:none;margin-top:6px"><input id="t" placeholder="paste .bridge-token" style="width:150px"><button id="b">save</button></div><script>
 const B = 'http://localhost:7079';
 const s = document.getElementById('s');
+const auth = document.getElementById('auth');
+let TOKEN = null;
+const ask = msg => { TOKEN = null; auth.style.display = 'block'; s.textContent = msg; };
+document.getElementById('b').onclick = () => {
+  TOKEN = document.getElementById('t').value.trim();
+  parent.postMessage({ pluginMessage: { type: 'token', token: TOKEN } }, '*');
+  auth.style.display = 'none';
+  s.textContent = 'connecting…';
+};
 onmessage = e => {
   const m = e.data.pluginMessage;
-  if (m && m.type === 'result') fetch(B + '/result', { method: 'POST', body: JSON.stringify(m.payload) }).then(() => { s.textContent = 'idle (last job ' + m.payload.id + ')'; }, () => {});
+  if (!m) return;
+  if (m.type === 'token') { if (m.token) TOKEN = m.token; else ask('paste the token the relay printed'); }
+  if (m.type === 'result') fetch(B + '/result', { method: 'POST', headers: { 'x-bridge-token': TOKEN }, body: JSON.stringify(m.payload) }).then(() => { s.textContent = 'idle (last job ' + m.payload.id + ')'; }, () => {});
 };
 (async () => {
   for (;;) {
+    if (!TOKEN) { await new Promise(r => setTimeout(r, 400)); continue; }
     try {
-      const r = await fetch(B + '/next');
-      if (r.status === 200) { const job = await r.json(); s.textContent = 'running job ' + job.id; parent.postMessage({ pluginMessage: { type: 'job', job } }, '*'); }
+      const r = await fetch(B + '/next', { headers: { 'x-bridge-token': TOKEN } });
+      if (r.status === 403) ask('token rejected, paste the current one');
+      else if (r.status === 200) { const job = await r.json(); s.textContent = 'running job ' + job.id; parent.postMessage({ pluginMessage: { type: 'job', job } }, '*'); }
       else if (!/job/.test(s.textContent)) s.textContent = 'connected, idle';
     } catch (e) { s.textContent = 'relay not running, retrying…'; await new Promise(r => setTimeout(r, 2000)); }
   }
@@ -3512,9 +3525,12 @@ onmessage = e => {
 </script></body>`;
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 function startBridge() {
-  figma.showUI(BRIDGE_HTML, { width: 240, height: 48, title: 'Threadbase bridge' });
+  figma.showUI(BRIDGE_HTML, { width: 260, height: 86, title: 'Threadbase bridge' });
+  figma.clientStorage.getAsync('bridgeToken').then(t => figma.ui.postMessage({ type: 'token', token: t || null }));
   figma.ui.onmessage = async m => {
-    if (!m || m.type !== 'job') return;
+    if (!m) return;
+    if (m.type === 'token') return figma.clientStorage.setAsync('bridgeToken', m.token);
+    if (m.type !== 'job') return;
     const images = [];
     const snap = async (node, name, scale) => {
       const bytes = await node.exportAsync({ format: 'PNG', constraint: { type: 'SCALE', value: scale || 2 } });

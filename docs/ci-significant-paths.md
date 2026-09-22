@@ -70,6 +70,7 @@ Source dirs (consumed at runtime or by tests):
 Tests + test infra:
 
 - `__tests__/` — jest unit/integration suites (run in CI)
+- `design/figma-plugin/` — the Figma plugin and its bridge relay, covered by `__tests__/unit/scripts/figma-plugin.test.js`; the relay's token check has to keep being exercised
 - `__mocks__/` — jest mocks
 - `test-utils/` — shared test helpers
 

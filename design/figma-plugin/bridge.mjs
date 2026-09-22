@@ -4,19 +4,37 @@
 // The job runs as the body of an async function with code.js's helpers in scope
 // (P, AL, T, comp, findComp, variant, icon, init, build*, …) plus snap(node, name, scale).
 import http from 'node:http';
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PORT = 7079;
+const PORT = Number(process.env.BRIDGE_PORT) || 7079;
 const here = dirname(fileURLToPath(import.meta.url));
+
+// Any page open in the browser can POST to a localhost port, and /run executes
+// whatever it is given inside the Figma document. The token is what a web page
+// cannot supply: it lives in a gitignored file only local processes can read,
+// and sending it as a header forces a preflight that a forged request fails.
+const TOKEN_FILE = join(here, '.bridge-token');
+if (!existsSync(TOKEN_FILE)) writeFileSync(TOKEN_FILE, randomBytes(16).toString('hex'), { mode: 0o600 });
+const TOKEN = readFileSync(TOKEN_FILE, 'utf8').trim();
+const authorized = given => {
+  const a = Buffer.from(String(given ?? ''));
+  const b = Buffer.from(TOKEN);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
 
 if (process.argv[2] === 'run') {
   const job = readFileSync(process.argv[3], 'utf8');
   const out = process.argv[4] || join(here, 'out');
   const src = readFileSync(join(here, 'code.js'), 'utf8');
   const prelude = src.slice(0, src.indexOf('// ---------- plugin entry ----------'));
-  const res = await fetch(`http://localhost:${PORT}/run`, { method: 'POST', body: prelude + '\n' + job });
+  const res = await fetch(`http://localhost:${PORT}/run`, {
+    method: 'POST',
+    headers: { 'x-bridge-token': TOKEN, 'Content-Type': 'application/json' },
+    body: prelude + '\n' + job,
+  });
   const r = await res.json();
   if (r.images && r.images.length) {
     mkdirSync(out, { recursive: true });
@@ -35,7 +53,11 @@ const queue = [];
 let inFlight = null;
 let waiter = null;
 let nextId = 1;
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' };
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'x-bridge-token, content-type',
+  'Access-Control-Max-Age': '86400',
+};
 const body = req => new Promise(ok => { let d = ''; req.on('data', c => d += c); req.on('end', () => ok(d)); });
 
 function hand(res) {
@@ -46,6 +68,7 @@ function hand(res) {
 
 http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
+  if (!authorized(req.headers['x-bridge-token'])) { res.writeHead(403, cors); return res.end(); }
   if (req.url === '/next') {
     if (!inFlight && queue.length) return hand(res);
     if (waiter) { waiter.writeHead(204, cors); waiter.end(); }
@@ -76,4 +99,7 @@ http.createServer(async (req, res) => {
     return;
   }
   res.writeHead(404, cors); res.end();
-}).listen(PORT, '127.0.0.1', () => console.log(`bridge on http://localhost:${PORT}`));
+}).listen(PORT, '127.0.0.1', () => {
+  console.log(`bridge on http://localhost:${PORT}`);
+  console.log(`token ${TOKEN}  (paste into the plugin's Bridge (live) panel once)`);
+});
