@@ -164,7 +164,7 @@ describe('conversation detail — search-anchored navigation', () => {
     expect(mockRequestedPaths.some((p) => p.includes('msg_limit=80') && !p.includes('anchor'))).toBe(false)
   })
 
-  it('falls back to the tail view with no highlight when the resolver 404s', async () => {
+  it('falls back to the tail view with no anchor when the resolver 404s', async () => {
     ;(useLocalSearchParams as jest.Mock).mockReturnValue({
       id: 'conv-anchor',
       server: 'srv1',
@@ -181,6 +181,25 @@ describe('conversation detail — search-anchored navigation', () => {
       expect(mockRequestedPaths.some((p) => p.includes('msg_limit=80'))).toBe(true)
     })
     expect(mockRequestedPaths.some((p) => p.includes('anchor_index'))).toBe(false)
+  })
+
+  it('still tints the query in the tail view when the resolver fails', async () => {
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({
+      id: 'conv-anchor',
+      server: 'srv1',
+      search: 'message',
+    })
+    // A streamer that refuses the QUERY (the sealed-request 415) must cost the
+    // scroll-to-match, not the highlighting.
+    mockSearchTargetResponder = () => new Error('415 Unsupported Content-Type')
+    mockTailResponder = () => makeDetail(0, 10, 10)
+
+    const screen = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueries()
+
+    await waitFor(() => {
+      expect(screen.queryAllByText('message').length).toBeGreaterThan(0)
+    })
   })
 
   it('does not call the resolver when no search param is present (regression)', async () => {
