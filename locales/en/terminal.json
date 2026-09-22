@@ -119,7 +119,8 @@
     "remember": "Remember my choice",
     "pending": "Sending…",
     "error": "Couldn't complete this action. Check your connection and try again.",
-    "stay": "Stay here"
+    "stay": "Stay here",
+    "titleWaiting": "Leave while it's waiting for you?"
   },
   "history": {
     "header_one": "History · {{count}} message",

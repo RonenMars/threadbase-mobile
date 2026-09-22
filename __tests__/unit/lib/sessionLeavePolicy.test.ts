@@ -55,6 +55,44 @@ describe('sessionLeavePolicy', () => {
     ).toEqual({ kind: 'none' })
   })
 
+  it('Keep running skips the notice for a waiting agent that got no message this visit', () => {
+    const waiting = { ...live, status: 'waiting_input', promptCount: 3 }
+    expect(decideSessionLeave({ session: waiting, setting: 'leave', promptsAtEntry: 3 })).toEqual({
+      kind: 'none',
+    })
+    expect(
+      decideSessionLeave({ session: { ...waiting, promptCount: 4 }, setting: 'leave', promptsAtEntry: 3 }),
+    ).toEqual({ kind: 'apply', action: 'leave' })
+    expect(
+      decideSessionLeave({ session: { ...waiting, status: 'running' }, setting: 'leave', promptsAtEntry: 3 }),
+    ).toEqual({ kind: 'apply', action: 'leave' })
+    expect(decideSessionLeave({ session: waiting, setting: 'kill', promptsAtEntry: 3 })).toEqual({
+      kind: 'apply',
+      action: 'kill',
+    })
+    expect(decideSessionLeave({ session: waiting, setting: 'ask', promptsAtEntry: 3 })).toEqual({
+      kind: 'prompt',
+    })
+    // The guard has not seen the session yet, so nothing is known about this visit.
+    expect(decideSessionLeave({ session: { ...waiting, promptCount: 0 }, setting: 'leave' })).toEqual({
+      kind: 'apply',
+      action: 'leave',
+    })
+  })
+
+  it('Keep running skips the notice once the user opted out of it', () => {
+    expect(decideSessionLeave({ session: live, setting: 'leave', skipNotice: true })).toEqual({ kind: 'none' })
+    expect(decideSessionLeave({ session: live, setting: 'leave', skipNotice: false })).toEqual({
+      kind: 'apply',
+      action: 'leave',
+    })
+    expect(decideSessionLeave({ session: live, setting: 'kill', skipNotice: true })).toEqual({
+      kind: 'apply',
+      action: 'kill',
+    })
+    expect(decideSessionLeave({ session: live, setting: 'ask', skipNotice: true })).toEqual({ kind: 'prompt' })
+  })
+
   it('maps kill / leave / hold to their outcomes', async () => {
     const stopSession = jest.fn(() => Promise.resolve())
     const sendHold = jest.fn(() => Promise.resolve(true))

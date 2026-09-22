@@ -34,24 +34,26 @@ export function useEndSession(serverId: string, sessionId: string, live: boolean
   }, [live, key])
 
   const fail = () => Alert.alert(t('endSession.section'), t('endSession.failed'))
-  // A 404 from /stop or /kill means the PTY is already gone: what was asked for.
-  const failUnlessGone = (err: Error) => {
-    if (!(err instanceof SessionNotFoundError)) fail()
-  }
-
-  const terminate = () => {
+  // mutateAsync, not mutate's callbacks: React Query drops those once the
+  // caller unmounts, and a list row can be gone before /stop answers.
+  const terminate = async () => {
     useSessionEndStore.getState().setTerminating(key, Date.now())
-    stopSession.mutate({}, {
-      onError: (err) => {
-        useSessionEndStore.getState().setTerminating(key, null)
-        failUnlessGone(err)
-      },
-    })
+    try {
+      await stopSession.mutateAsync({})
+    } catch (err) {
+      useSessionEndStore.getState().setTerminating(key, null)
+      // A 404 from /stop or /kill means the PTY is already gone: what was asked for.
+      if (!(err instanceof SessionNotFoundError)) fail()
+    }
   }
 
-  const forceTerminate = () => {
+  const forceTerminate = async () => {
     useSessionEndStore.getState().setTerminating(key, null)
-    stopSession.mutate({ force: true }, { onError: failUnlessGone })
+    try {
+      await stopSession.mutateAsync({ force: true })
+    } catch (err) {
+      if (!(err instanceof SessionNotFoundError)) fail()
+    }
   }
 
   // Without ignoreWatchers the latch is cancelled by the next subscribe, this
@@ -84,15 +86,15 @@ export function useEndSession(serverId: string, sessionId: string, live: boolean
     arm().catch(fail)
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     setDialog(null)
     setDeleting(true)
-    stopSession.mutate({ delete: true }, {
-      onError: () => {
-        setDeleting(false)
-        fail()
-      },
-    })
+    try {
+      await stopSession.mutateAsync({ delete: true })
+    } catch {
+      setDeleting(false)
+      fail()
+    }
   }
 
   return {

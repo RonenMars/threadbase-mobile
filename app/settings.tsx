@@ -254,6 +254,8 @@ export default function SettingsScreen() {
     setAddServerAction,
     sessionLeaveAction,
     setSessionLeaveAction,
+    skipLeaveNotice,
+    setSkipLeaveNotice,
     showProviderVersionWarning,
     setShowProviderVersionWarning,
     colorScheme,
@@ -618,6 +620,14 @@ await refreshServerInfo(serverId)
             </View>
           ) : null}
         </View>
+        {sessionLeaveAction === 'leave' ? (
+          <SettingsRow
+            label={t('session.leaveNotice')}
+            value={!skipLeaveNotice}
+            onValueChange={(show) => setSkipLeaveNotice(!show)}
+            testID="settings-leave-notice-toggle"
+          />
+        ) : null}
         <SettingsRow
           label={t('session.chatView')}
           value={sessionView === 'chat'}

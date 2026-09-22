@@ -45,6 +45,7 @@ import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { ModelEffortSheet } from '@/components/sessions/ModelEffortSheet'
 import { canSetModelEffort } from '@/lib/modelEffortSupport'
 import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
+import { LeaveNotice } from '@/components/sessions/LeaveNotice'
 import { EndSessionDialogs } from '@/components/sessions/EndSessionDialogs'
 import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import { getProviderLabel } from '@/components/sessions/providerLabel'
@@ -582,6 +583,7 @@ export default function SessionDetailScreen() {
   const { mutateAsync: stopSessionMutateAsync } = stopSession
   const {
     leaveModalVisible,
+    leaveNotice,
     leavePhase,
     isLeaving,
     cancelLeave,
@@ -606,6 +608,15 @@ export default function SessionDetailScreen() {
   useEffect(() => {
     navigation.setOptions({ gestureEnabled: !swipeBackBlocked })
   }, [navigation, swipeBackBlocked])
+  const setSkipLeaveNotice = useSettingsStore((s) => s.setSkipLeaveNotice)
+  // Stable, because the notice's countdown effect restarts whenever it changes.
+  const leaveFromNotice = useCallback(
+    (skipInFuture: boolean) => {
+      if (skipInFuture) setSkipLeaveNotice(true)
+      confirmLeave('leave', false)
+    },
+    [confirmLeave, setSkipLeaveNotice],
+  )
   const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
   const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
     enabled: Boolean(serverId && reviewConversationId),
@@ -628,8 +639,8 @@ export default function SessionDetailScreen() {
 
   // The dialog covers the composer; the keyboard steps aside while it is up.
   useEffect(() => {
-    if (leaveModalVisible) lendComposerFocus('leaveDialog')
-  }, [leaveModalVisible])
+    if (leaveModalVisible || leaveNotice === 'open') lendComposerFocus('leaveDialog')
+  }, [leaveModalVisible, leaveNotice])
 
   // Leave-session policy lives in useSessionLeaveGuard.
   // Do not add a second guard here.
@@ -1343,16 +1354,27 @@ export default function SessionDetailScreen() {
           covered, and cancelling returns to the message being written. */}
       <LeaveSessionModal
         visible={leaveModalVisible}
-        phase={leavePhase}
+        phase={leaveNotice ? 'idle' : leavePhase}
         agent={agentName}
         server={serverName}
         offerWhenDone={session?.status === 'running'}
+        waiting={session?.status === 'waiting_input'}
         onCancel={() => {
           returnComposerFocus('leaveDialog')
           cancelLeave()
         }}
         onConfirm={confirmLeave}
         onDismissError={dismissLeaveError}
+        onModalDismiss={onModalDismiss}
+      />
+
+      <LeaveNotice
+        visible={leaveNotice === 'open'}
+        phase={leaveNotice ? leavePhase : 'idle'}
+        agent={agentName}
+        server={serverName}
+        waiting={session?.status === 'waiting_input'}
+        onLeave={leaveFromNotice}
         onModalDismiss={onModalDismiss}
       />
 

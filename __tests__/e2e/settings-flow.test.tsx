@@ -388,4 +388,16 @@ describe('Settings – session leave action', () => {
     await fireEvent.press(getByTestId('settings-session-leave-ask'))
     expect(useSettingsStore.getState().sessionLeaveAction).toBe('ask')
   })
+
+  it('turns the Keep running notice back on, and offers it only under Keep running', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave', skipLeaveNotice: true })
+    const { getByTestId, queryByTestId, getByText } = await renderWithTheme(<SettingsScreen />)
+    expect(getByText('Show the Keep running notice')).toBeTruthy()
+    await fireEvent(getByTestId('settings-leave-notice-toggle'), 'valueChange', true)
+    expect(useSettingsStore.getState().skipLeaveNotice).toBe(false)
+
+    await fireEvent.press(getByTestId('settings-session-leave-action'))
+    await fireEvent.press(getByTestId('settings-session-leave-ask'))
+    expect(queryByTestId('settings-leave-notice-toggle')).toBeNull()
+  })
 })

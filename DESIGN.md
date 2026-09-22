@@ -8,6 +8,9 @@ This design system captures the brand's visual DNA — the midnight canvas, the 
 
 ## Sources
 
+**Live design system:** the Claude Design project [Threadbase Design System](https://claude.ai/design/p/b841e42d-5143-4b62-b148-350537f4b972) holds the current `colors_and_type.css`, previews and mobile UI kit.
+This file is a snapshot of that project's `README.md`; when the two disagree, the project wins.
+
 This system was reverse-engineered from the publicly accessible parts of the Threadbase monorepo. **Treat link access as not assumed for the reader.**
 
 - Root repo: `github.com/RonenMars/threadbase` — README, CLAUDE.md, IMPLEMENTATION-GUIDELINES.md, feature-comparison.md, status-mobile.md

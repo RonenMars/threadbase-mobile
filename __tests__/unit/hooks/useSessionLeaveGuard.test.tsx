@@ -61,6 +61,7 @@ function LeaveGuardProbe({
   const [renderNonce, setRenderNonce] = React.useState(0)
   const {
     leaveModalVisible,
+    leaveNotice,
     leavePhase,
     isLeaving,
     cancelLeave,
@@ -81,6 +82,7 @@ function LeaveGuardProbe({
   return (
     <View>
       <Text testID="leave-modal-visible">{leaveModalVisible ? 'yes' : 'no'}</Text>
+      <Text testID="leave-notice">{leaveNotice ?? 'none'}</Text>
       <Text testID="leave-phase">{leavePhase}</Text>
       <Text testID="leave-is-leaving">{isLeaving ? 'yes' : 'no'}</Text>
       <Pressable testID="leave-cancel" onPress={cancelLeave} />
@@ -117,17 +119,18 @@ describe('useSessionLeaveGuard', () => {
 
   async function setup(session = live, extra?: { isPending?: boolean; skipInitialReplace?: boolean }) {
     const nav = makeNav()
-    const view = await render(
+    const probe = (current: typeof live) => (
       <LeaveGuardProbe
         navigation={nav.navigation}
         navigateHome={nav.navigateHome}
-        session={session}
+        session={current}
         isPending={extra?.isPending ?? false}
         skipInitialReplace={extra?.skipInitialReplace}
         stopSessionMutateAsync={stopSessionMutateAsync}
-      />,
+      />
     )
-    return { ...nav, unmount: view.unmount }
+    const view = await render(probe(session))
+    return { ...nav, unmount: view.unmount, update: (next: typeof live) => view.rerender(probe(next)) }
   }
 
   // The modal was showing on every path exercised below (session live ->
@@ -427,9 +430,9 @@ describe('useSessionLeaveGuard', () => {
   it('Settings Kill it / Leave it / Kill on idle skip the modal', async () => {
     useSettingsStore.setState({ sessionLeaveAction: 'leave' })
     const leaveRun = await setup()
-    // Keep running never guards the removal, so the native back gesture runs untouched.
-    expect((await leaveRun.fire()).preventRemove).toBe(false)
+    await leaveRun.fire()
     expect(screen.getByTestId('leave-modal-visible')).toHaveTextContent('no')
+    expect(screen.getByTestId('leave-notice')).toHaveTextContent('open')
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
     expect(wsManager.holdSessionWaitingInput).not.toHaveBeenCalled()
     await leaveRun.unmount()
@@ -473,6 +476,41 @@ describe('useSessionLeaveGuard', () => {
     expect(stopSessionMutateAsync).not.toHaveBeenCalled()
   })
 
+  it('Keep running: the notice leaves once its countdown answers', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave' })
+    const { fire, navigateHome } = await setup()
+    expect((await fire()).preventRemove).toBe(true)
+    expect(screen.getByTestId('leave-notice')).toHaveTextContent('open')
+
+    // A second back press while the notice is up is swallowed, not re-asked.
+    await fire()
+    expect(screen.getByTestId('leave-notice')).toHaveTextContent('open')
+    expect(navigateHome).not.toHaveBeenCalled()
+
+    await fireEvent.press(screen.getByTestId('leave-confirm-leave'))
+    expect(screen.getByTestId('leave-notice')).toHaveTextContent('confirmed')
+    await fireModalDismiss()
+    await waitFor(() => expect(navigateHome).toHaveBeenCalled())
+    expect(stopSessionMutateAsync).not.toHaveBeenCalled()
+  })
+
+  it('Keep running: a waiting agent that got no message this visit leaves without the notice', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave' })
+    const waiting = { ...live, status: 'waiting_input' }
+    const quiet = await setup(waiting)
+    // Not armed at all, so back and the iOS swipe leave natively.
+    expect((await quiet.fire()).preventRemove).toBe(false)
+    expect(screen.getByTestId('leave-notice')).toHaveTextContent('none')
+    await quiet.unmount()
+
+    // A message sent before leaving brings the notice back.
+    const sent = await setup(waiting)
+    await sent.update({ ...waiting, promptCount: live.promptCount + 1 })
+    expect((await sent.fire()).preventRemove).toBe(true)
+    expect(screen.getByTestId('leave-notice')).toHaveTextContent('open')
+    expect(sent.dispatch).not.toHaveBeenCalled()
+  })
+
   it('one leave through stacked routes: one prompt max', async () => {
     const { fire } = await setup()
     await fire()
@@ -512,6 +550,22 @@ describe('useSessionLeaveGuard swipeBackBlocked', () => {
 
   it('leaves the swipe alone while the session is still pending', async () => {
     expect((await run({}, true)).swipeBackBlocked).toBe(false)
+  })
+
+  it('leaves the swipe alone under Keep running while the waiting agent got no message', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave' })
+    expect((await run({ status: 'waiting_input' }, false)).swipeBackBlocked).toBe(false)
+    expect((await run({ status: 'running' }, false)).swipeBackBlocked).toBe(true)
+    useSettingsStore.setState({ sessionLeaveAction: 'ask' })
+    expect((await run({ status: 'waiting_input' }, false)).swipeBackBlocked).toBe(true)
+  })
+
+  it('leaves the swipe alone under Keep running once the notice is switched off', async () => {
+    useSettingsStore.setState({ sessionLeaveAction: 'leave', skipLeaveNotice: true })
+    expect((await run({}, false)).swipeBackBlocked).toBe(false)
+    useSettingsStore.setState({ sessionLeaveAction: 'kill' })
+    expect((await run({}, false)).swipeBackBlocked).toBe(true)
+    useSettingsStore.setState({ skipLeaveNotice: false })
   })
 
   it('leaves the swipe alone for a session that is not a live attached PTY', async () => {

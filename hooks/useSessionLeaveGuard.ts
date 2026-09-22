@@ -6,7 +6,6 @@ import {
   applySessionLeaveAction,
   coerceSessionLeaveAction,
   decideSessionLeave,
-  isLiveAttachedPty,
   type AppliedSessionLeaveAction,
   type LeaveActionOutcome,
   type LeaveSessionSnapshot,
@@ -39,6 +38,10 @@ type LeaveContinuation = { kind: 'home' } | { kind: 'action'; action: { type: st
 // as 'idle' is what let a killed session redirect to /conversation/<id> before
 // the guard's own navigation home landed.
 export type SessionLeavePhase = 'idle' | 'pending' | 'navigating' | 'error' | 'errorAcked'
+
+// 'open' while the Keep running notice counts down; 'confirmed' once it left,
+// so the notice, not the options modal, carries the pending render after it.
+export type LeaveNoticeState = 'open' | 'confirmed' | null
 
 function readLeaveSetting(): unknown {
   const store = useSettingsStore as typeof useSettingsStore & {
@@ -77,6 +80,7 @@ export function useSessionLeaveGuard(opts: {
   stopSessionMutateAsync: () => Promise<unknown>
 }): {
   leaveModalVisible: boolean
+  leaveNotice: LeaveNoticeState
   leavePhase: SessionLeavePhase
   isLeaving: boolean
   cancelLeave: () => void
@@ -98,9 +102,11 @@ export function useSessionLeaveGuard(opts: {
   const [leaveModalVisible, setLeaveModalVisible] = useState(false)
   const [leavePhase, setLeavePhase] = useState<SessionLeavePhase>('idle')
   const [continuation, setContinuation] = useState<LeaveContinuation | null>(null)
-  // Raw, not coerced: 'leave' needs no guard at all, so native swipe-back and
-  // the back button keep working without the modal's dismiss wait.
-  const leavesWithoutAsking = useSettingsStore((s) => s.sessionLeaveAction) === 'leave'
+  const [leaveNotice, setLeaveNotice] = useState<LeaveNoticeState>(null)
+  const leaveSetting = useSettingsStore((s) => s.sessionLeaveAction)
+  const skipNotice = useSettingsStore((s) => s.skipLeaveNotice)
+  const [promptsAtEntry, setPromptsAtEntry] = useState<number | undefined>(undefined)
+  if (session && promptsAtEntry === undefined) setPromptsAtEntry(session.promptCount ?? 0)
   // One-shot, armed at mount and disarmed by the first REPLACE — not on a timer:
   // the automatic replacement lands whenever session_ready arrives, which can be
   // long after the screen mounted.
@@ -237,10 +243,13 @@ export function useSessionLeaveGuard(opts: {
     [serverId, sessionId, finishLeave],
   )
 
+  // Disarmed whenever back would leave anyway, so the iOS swipe works there too.
   const shouldPreventRemove =
     !continuation &&
     (leavePhase !== 'idle' ||
-      (!leavesWithoutAsking && !isPending && Boolean(sessionId) && isLiveAttachedPty(session)))
+      (!isPending &&
+        Boolean(sessionId) &&
+        decideSessionLeave({ session, setting: leaveSetting, promptsAtEntry, skipNotice }).kind !== 'none'))
   usePreventRemove(shouldPreventRemove, ({ data }) => {
     if (!sessionId) return
 
@@ -273,6 +282,8 @@ export function useSessionLeaveGuard(opts: {
     const decision = decideSessionLeave({
       session: sessionRef.current,
       setting: coerceSessionLeaveAction(readLeaveSetting()),
+      promptsAtEntry,
+      skipNotice,
     })
 
     if (decision.kind === 'none') {
@@ -280,14 +291,15 @@ export function useSessionLeaveGuard(opts: {
       return
     }
 
-    if (decision.kind === 'apply') {
+    if (decision.kind === 'apply' && decision.action !== 'leave') {
       void runLeaveAction(decision.action)
       return
     }
 
     modalVisibleRef.current = true
     modalIsShowingRef.current = true
-    setLeaveModalVisible(true)
+    if (decision.kind === 'apply') setLeaveNotice('open')
+    else setLeaveModalVisible(true)
   })
 
   // navRef, not navigation: the screen passes a fresh { dispatch } object every
@@ -313,6 +325,7 @@ export function useSessionLeaveGuard(opts: {
       if (remember) persistLeaveSetting(choice)
       modalVisibleRef.current = false
       setLeaveModalVisible(false)
+      setLeaveNotice((notice) => (notice ? 'confirmed' : null))
       void runLeaveAction(choice)
     },
     [runLeaveAction],
@@ -328,6 +341,7 @@ export function useSessionLeaveGuard(opts: {
 
   return {
     leaveModalVisible,
+    leaveNotice,
     leavePhase,
     isLeaving: leavePhase !== 'idle' || continuation != null,
     cancelLeave,

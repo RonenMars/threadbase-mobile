@@ -228,6 +228,13 @@ appId: com.ronenmars.threadbase
 # Wait for navigation animation
 - waitForAnimationToEnd
 
+# Keep running, the default, shows the leave notice over the session, and it
+# leaves by itself after 5 s.
+- extendedWaitUntil:
+    notVisible:
+      id: "leave-notice"
+    timeout: 10000
+
 # Should now be back on projects hub with session list
 # Wait for the list to load
 - waitForAnimationToEnd:

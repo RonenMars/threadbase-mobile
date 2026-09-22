@@ -18,6 +18,8 @@ interface Props {
   server: string
   /** False while the session waits for input: there is no turn left to finish. */
   offerWhenDone: boolean
+  /** The agent is waiting on the user rather than working. */
+  waiting?: boolean
   onCancel: () => void
   onConfirm: (choice: AppliedSessionLeaveAction, remember: boolean) => void
   onDismissError: () => void
@@ -33,6 +35,7 @@ export function LeaveSessionModal({
   agent,
   server,
   offerWhenDone,
+  waiting = false,
   onCancel,
   onConfirm,
   onDismissError,
@@ -59,6 +62,8 @@ export function LeaveSessionModal({
     : showError
       ? t('terminal:leaveSession.error')
       : t('terminal:leaveSession.body', { agent, server })
+
+  const title = waiting ? t('terminal:leaveSession.titleWaiting') : t('terminal:leaveSession.title')
 
   const testID = showPending
     ? 'leave-session-pending'
@@ -107,7 +112,7 @@ export function LeaveSessionModal({
   return (
     <CriticalDialog
       visible={open}
-      title={t('terminal:leaveSession.title')}
+      title={title}
       message={message}
       level="warning"
       busy={showPending}

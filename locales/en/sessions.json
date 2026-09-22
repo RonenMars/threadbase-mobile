@@ -187,10 +187,13 @@
     "messageCount": "Message Count",
     "lastActivity": "Last Activity"
   },
-  "leaveHint": {
-    "body": "Sessions keep running when you leave. To end one, use the ⋮ menu on its card.",
-    "gotIt": "Got it",
-    "settings": "Change in Settings"
+  "leaveNotice": {
+    "working": "{{agent}} is still working",
+    "waiting": "{{agent}} is waiting for you",
+    "body": "It keeps running on {{server}} until you end it.",
+    "terminateHint": "To terminate the session, go to the menu <menu></menu> and tap {{action}}.",
+    "leaveHint": "Double-tap to leave the session.",
+    "skip": "Skip this warning in the future"
   },
   "endSession": {
     "menu": "Session actions",

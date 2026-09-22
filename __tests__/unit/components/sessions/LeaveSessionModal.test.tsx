@@ -62,6 +62,11 @@ describe('LeaveSessionModal', () => {
     expect(screen.queryByTestId('leave-session-option-kill_on_idle')).toBeNull()
   })
 
+  it('asks differently while the agent waits for the user', async () => {
+    await render(modal({ waiting: true, offerWhenDone: false }))
+    expect(screen.getByText("Leave while it's waiting for you?")).toBeTruthy()
+  })
+
   it('Stay here does not confirm', async () => {
     const onConfirm = jest.fn()
     const onCancel = jest.fn()

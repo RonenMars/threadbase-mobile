@@ -61,6 +61,8 @@ interface SettingsStore {
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
   sessionLeaveAction: SessionLeaveAction
+  /** "Skip this warning in the future" on the Keep running notice. */
+  skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
@@ -71,8 +73,6 @@ interface SettingsStore {
   anonymousDiagnosticsEnabled: boolean
   /** Whether the post-upgrade crash-reporting notice has been dismissed. */
   crashReportingNoticeDismissed: boolean
-  /** Whether the Now list's "sessions keep running when you leave" hint has been dismissed. */
-  leaveHintDismissed: boolean
   /** This installation's onboarding Anonymous Diagnostics experiment arm
    * (spec §7): 40% treatment / 60% control. Assigned once on first hydrate,
    * persisted, and never reassigned. `null` until assigned. */
@@ -93,13 +93,13 @@ interface SettingsStore {
   setHistoryMessageDisplay: (v: 'first' | 'last') => void
   setAddServerAction: (v: AddServerAction) => void
   setSessionLeaveAction: (v: SessionLeaveAction) => void
+  setSkipLeaveNotice: (v: boolean) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
   setAnonymousDiagnosticsEnabled: (v: boolean) => void
   setCrashReportingNoticeDismissed: (v: boolean) => void
-  setLeaveHintDismissed: (v: boolean) => void
   /** Appends now() to the impression history (spec §14 frequency tracking). */
   recordPostFeedbackDiagnosticsSuggestionImpression: () => void
   setRowPreviewMode: (v: RowPreviewMode) => void
@@ -129,14 +129,16 @@ interface PersistedSettings {
   notifications: StoredNotificationPreferences
   historyMessageDisplay: 'first' | 'last'
   addServerAction: AddServerAction
-  sessionLeaveAction: SessionLeaveAction
+  // Stored as `sessionLeaveAction` until 2026-09-22. The key moved so every
+  // install drops its old choice once and lands on Keep running.
+  leaveAction: SessionLeaveAction
+  skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
   showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
   anonymousDiagnosticsEnabled: boolean
   crashReportingNoticeDismissed: boolean
-  leaveHintDismissed: boolean
   onboardingDiagnosticsExperimentVariant: 'treatment' | 'control' | null
   postFeedbackDiagnosticsSuggestionImpressions: number[]
   rowPreviewMode: RowPreviewMode
@@ -162,13 +164,13 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   historyMessageDisplay: 'first',
   addServerAction: 'ask',
   sessionLeaveAction: DEFAULT_SESSION_LEAVE_ACTION,
+  skipLeaveNotice: false,
   sessionsLayout: 'now',
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
   anonymousDiagnosticsEnabled: false,
   crashReportingNoticeDismissed: false,
-  leaveHintDismissed: false,
   onboardingDiagnosticsExperimentVariant: null,
   postFeedbackDiagnosticsSuggestionImpressions: [],
   autoNameFromMessage: true,
@@ -191,6 +193,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setHistoryMessageDisplay: (historyMessageDisplay) => set({ historyMessageDisplay }),
   setAddServerAction: (addServerAction) => set({ addServerAction }),
   setSessionLeaveAction: (sessionLeaveAction) => set({ sessionLeaveAction }),
+  setSkipLeaveNotice: (skipLeaveNotice) => set({ skipLeaveNotice }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
@@ -199,7 +202,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setAnonymousDiagnosticsEnabled: (anonymousDiagnosticsEnabled) => set({ anonymousDiagnosticsEnabled }),
   setCrashReportingNoticeDismissed: (crashReportingNoticeDismissed) =>
     set({ crashReportingNoticeDismissed }),
-  setLeaveHintDismissed: (leaveHintDismissed) => set({ leaveHintDismissed }),
   recordPostFeedbackDiagnosticsSuggestionImpression: () =>
     set((state) => ({
       postFeedbackDiagnosticsSuggestionImpressions: [
@@ -228,8 +230,9 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         historyMessageDisplay: parsed.historyMessageDisplay ?? state.historyMessageDisplay,
         addServerAction: parsed.addServerAction ?? state.addServerAction,
         sessionLeaveAction: coerceSessionLeaveAction(
-          parsed.sessionLeaveAction ?? state.sessionLeaveAction,
+          parsed.leaveAction ?? state.sessionLeaveAction,
         ),
+        skipLeaveNotice: parsed.skipLeaveNotice ?? state.skipLeaveNotice,
         sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
@@ -240,7 +243,6 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         anonymousDiagnosticsEnabled: parsed.anonymousDiagnosticsEnabled ?? state.anonymousDiagnosticsEnabled,
         crashReportingNoticeDismissed:
           parsed.crashReportingNoticeDismissed ?? state.crashReportingNoticeDismissed,
-        leaveHintDismissed: parsed.leaveHintDismissed ?? state.leaveHintDismissed,
         // Assigned once, ever, for this installation (spec §7). Preference
         // order: what's already persisted > what's already in memory (guards
         // a second hydrate() before the first assignment finishes persisting)
@@ -282,14 +284,14 @@ export function persistSettingsNow(): Promise<void> {
     notifications: state.notifications,
     historyMessageDisplay: state.historyMessageDisplay,
     addServerAction: state.addServerAction,
-    sessionLeaveAction: state.sessionLeaveAction,
+    leaveAction: state.sessionLeaveAction,
+    skipLeaveNotice: state.skipLeaveNotice,
     sessionsLayout: state.sessionsLayout,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
     biometricLock: state.biometricLock,
     anonymousDiagnosticsEnabled: state.anonymousDiagnosticsEnabled,
     crashReportingNoticeDismissed: state.crashReportingNoticeDismissed,
-    leaveHintDismissed: state.leaveHintDismissed,
     onboardingDiagnosticsExperimentVariant: state.onboardingDiagnosticsExperimentVariant,
     postFeedbackDiagnosticsSuggestionImpressions: state.postFeedbackDiagnosticsSuggestionImpressions,
     autoNameFromMessage: state.autoNameFromMessage,

@@ -34,14 +34,12 @@ import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
-import { useSettingsStore } from '@/stores/settings'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import type { MultiConversation, MultiSession } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { CantResumeRow } from './CantResumeRow'
 import { EarlierRow } from './EarlierRow'
 import { HistorySkeletonRow } from './HistorySkeletonRow'
-import { LeaveHintCard } from './LeaveHintCard'
 import { dominantProvider as findDominantProvider } from '@/lib/providerDominance'
 import { NeedsYouCard } from './NeedsYouCard'
 import { SectionEyebrow, type SectionTone } from './SectionEyebrow'
@@ -83,9 +81,6 @@ type FlatItem =
   | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number; failed: boolean }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
   | { kind: 'skeleton'; key: string }
-  | { kind: 'leaveHint'; key: string }
-
-const LEAVE_HINT_ITEM: FlatItem = { kind: 'leaveHint', key: 'leave-hint' }
 
 const HISTORY_SKELETONS = 2
 
@@ -308,15 +303,6 @@ export const NowList = React.memo(function NowList({
 
   const highlight = searchQuery.trim() || undefined
 
-  // The default became 'leave', so a user who got used to leaving ending the
-  // session is told once, where the sessions that now keep running are.
-  const showLeaveHint = useSettingsStore((s) => s.sessionLeaveAction === 'leave' && !s.leaveHintDismissed)
-  const hasLiveCards = entries.some((e) => e.tier === 'needsYou' || e.tier === 'working')
-  const listData = useMemo(
-    () => (showLeaveHint && hasLiveCards && !highlight ? [LEAVE_HINT_ITEM, ...flatData] : flatData),
-    [showLeaveHint, hasLiveCards, highlight, flatData],
-  )
-
   const renderItem = useCallback(({ item }: { item: FlatItem }) => {
     switch (item.kind) {
       case 'eyebrow':
@@ -338,16 +324,6 @@ export const NowList = React.memo(function NowList({
         )
       case 'skeleton':
         return <HistorySkeletonRow />
-      case 'leaveHint':
-        return (
-          <LeaveHintCard
-            onDismiss={() => useSettingsStore.getState().setLeaveHintDismissed(true)}
-            onOpenSettings={() => {
-              useSettingsStore.getState().setLeaveHintDismissed(true)
-              router.push('/settings')
-            }}
-          />
-        )
       case 'row': {
         if (item.entry.tier === 'cantResume') {
           if (item.entry.item.kind === 'session') {
@@ -402,13 +378,13 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, router])
+  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">
       <FlatList
         testID="now-list-scroll"
-        data={listData}
+        data={flatData}
         keyExtractor={(item) => item.key}
         renderItem={renderItem}
         keyboardShouldPersistTaps="handled"

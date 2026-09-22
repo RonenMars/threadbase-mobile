@@ -4,11 +4,11 @@ import { useEndSession } from '@/hooks/useEndSession'
 import { SessionNotFoundError, type StopWhenIdleResult } from '@/services/api-client'
 import { useSessionEndStore } from '@/stores/sessionEnd'
 
-const mockStopMutate = jest.fn()
+const mockStopMutate = jest.fn<Promise<void>, [{ force?: boolean; delete?: boolean }]>()
 const mockWhenIdle = jest.fn<Promise<StopWhenIdleResult>, [{ ignoreWatchers?: boolean }?]>()
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
-    stopSession: { mutate: mockStopMutate, isPending: false },
+    stopSession: { mutateAsync: mockStopMutate, isPending: false },
     stopWhenIdle: { mutateAsync: mockWhenIdle, isPending: false },
   }),
 }))
@@ -33,6 +33,7 @@ async function setup(live = true) {
 
 beforeEach(() => {
   mockStopMutate.mockReset()
+  mockStopMutate.mockResolvedValue(undefined)
   mockWhenIdle.mockReset()
   mockAcquired.mockReturnValue(false)
   mockVersion = '1.96.0'
@@ -97,42 +98,65 @@ describe('useEndSession — Terminate when done', () => {
 
 describe('useEndSession — Terminate and Delete', () => {
   it('marks Terminate in flight and clears the mark when it fails', async () => {
+    let reject: (err: Error) => void = () => {}
+    mockStopMutate.mockReturnValueOnce(new Promise((_, r) => { reject = r }))
     const result = await setup()
-    await act(async () => result.current.terminate())
-    expect(mockStopMutate).toHaveBeenCalledWith({}, expect.any(Object))
+    let done: Promise<void> = Promise.resolve()
+    await act(async () => { done = result.current.terminate() })
+    expect(mockStopMutate).toHaveBeenCalledWith({})
     expect(useSessionEndStore.getState().terminatingAt[KEY]).toEqual(expect.any(Number))
 
-    const { onError } = mockStopMutate.mock.calls[0][1]
-    await act(async () => onError(new Error('offline')))
+    await act(async () => {
+      reject(new Error('offline'))
+      await done
+    })
     expect(useSessionEndStore.getState().terminatingAt[KEY]).toBeUndefined()
     expect(Alert.alert).toHaveBeenCalled()
   })
 
   it('treats a 404 from Terminate as already ended', async () => {
+    mockStopMutate.mockRejectedValueOnce(new SessionNotFoundError('sess'))
     const result = await setup()
-    await act(async () => result.current.terminate())
-    await act(async () => mockStopMutate.mock.calls[0][1].onError(new SessionNotFoundError('sess')))
+    await act(() => result.current.terminate())
     expect(Alert.alert).not.toHaveBeenCalled()
+  })
+
+  it('still reports a failure that lands after the caller unmounted', async () => {
+    let reject: (err: Error) => void = () => {}
+    mockStopMutate.mockReturnValueOnce(new Promise((_, r) => { reject = r }))
+    const { result, unmount } = await renderHook(() => useEndSession('srv', 'sess', true))
+    let done: Promise<void> = Promise.resolve()
+    await act(async () => { done = result.current.terminate() })
+    await unmount()
+    reject(new Error('offline'))
+    await done
+    expect(Alert.alert).toHaveBeenCalled()
   })
 
   it('Force terminate goes to /kill', async () => {
     const result = await setup()
-    await act(async () => result.current.forceTerminate())
-    expect(mockStopMutate).toHaveBeenCalledWith({ force: true }, expect.any(Object))
+    await act(() => result.current.forceTerminate())
+    expect(mockStopMutate).toHaveBeenCalledWith({ force: true })
   })
 
   it('Delete sends only after the confirmation, and reports deleting from the tap', async () => {
+    let reject: (err: Error) => void = () => {}
+    mockStopMutate.mockReturnValueOnce(new Promise((_, r) => { reject = r }))
     const result = await setup()
     await act(async () => result.current.requestDelete())
     expect(result.current.dialog).toBe('delete')
     expect(mockStopMutate).not.toHaveBeenCalled()
 
-    await act(async () => result.current.confirmDelete())
-    expect(mockStopMutate).toHaveBeenCalledWith({ delete: true }, expect.any(Object))
+    let done: Promise<void> = Promise.resolve()
+    await act(async () => { done = result.current.confirmDelete() })
+    expect(mockStopMutate).toHaveBeenCalledWith({ delete: true })
     expect(result.current.deleting).toBe(true)
     expect(result.current.dialog).toBeNull()
 
-    await act(async () => mockStopMutate.mock.calls[0][1].onError(new Error('offline')))
+    await act(async () => {
+      reject(new Error('offline'))
+      await done
+    })
     expect(result.current.deleting).toBe(false)
   })
 

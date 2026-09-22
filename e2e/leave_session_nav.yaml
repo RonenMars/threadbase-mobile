@@ -28,8 +28,8 @@ appId: com.ronenmars.threadbase
     id: "hub-screen"
 
 # --- ask on leave ----------------------------------------------------------
-# A fresh install keeps sessions running on back without asking, so the modal
-# this flow tests only appears once the setting is switched to "Ask me". The
+# A fresh install answers back with the Keep running notice, so the modal this
+# flow tests only appears once the setting is switched to "Ask me". The
 # settings screen's back button is native and carries no testID, so relaunch
 # instead: the setting is persisted, and relaunching without clearState keeps it.
 - tapOn:

@@ -26,6 +26,7 @@
     "leaveActionLeave": "اتركها تعمل (افتراضي)",
     "leaveActionKillOnIdle": "إنهاء بعد انتهاء الدور",
     "leaveActionNote": "يُطبَّق عند مغادرة شاشة السيشن المباشرة. وضع التطبيق في الخلفية لا يتغير.",
+    "leaveNotice": "إظهار تنبيه «اتركها تعمل»",
     "showProviderVersionWarning": "إظهار تحذير إصدار المزوّد غير الموثَّق",
     "showProviderVersionWarningNote": "عندما يكون CLI المثبّت خارج النطاق الذي وثّقه الستريمر، أظهر ملاحظة صفراء في Browse."
   },
