@@ -83,14 +83,28 @@ async function errorOf(p: Promise<TransportContext>): Promise<OpenError> {
 }
 
 describe('serverAddresses', () => {
+  const pinned = { serverPublicKey: PIN, requireEncryption: true }
+
   it('puts the user address first and publicUrl second', () => {
-    expect(serverAddresses({ url: `${LAN}/`, publicUrl: `${PUBLIC}/` })).toEqual([LAN, PUBLIC])
+    expect(serverAddresses({ url: `${LAN}/`, publicUrl: `${PUBLIC}/`, ...pinned })).toEqual([LAN, PUBLIC])
   })
 
   it('drops a publicUrl that is absent, the same address, or refused by the cleartext policy', () => {
-    expect(serverAddresses({ url: LAN })).toEqual([LAN])
-    expect(serverAddresses({ url: LAN, publicUrl: `${LAN}/` })).toEqual([LAN])
-    expect(serverAddresses({ url: LAN, publicUrl: 'http://tb.example.com' })).toEqual([LAN])
+    expect(serverAddresses({ url: LAN, ...pinned })).toEqual([LAN])
+    expect(serverAddresses({ url: LAN, publicUrl: `${LAN}/`, ...pinned })).toEqual([LAN])
+    expect(serverAddresses({ url: LAN, publicUrl: 'http://tb.example.com', ...pinned })).toEqual([LAN])
+  })
+
+  it('drops a publicUrl whose scheme is not http(s)', () => {
+    expect(serverAddresses({ url: LAN, publicUrl: 'wss://tb.example.com', ...pinned })).toEqual([LAN])
+    expect(serverAddresses({ url: LAN, publicUrl: 'ftp://tb.example.com', ...pinned })).toEqual([LAN])
+  })
+
+  // TB-M-03: an unpinned server's publicUrl came from an unauthenticated reply.
+  it('drops publicUrl unless the server is pinned', () => {
+    expect(serverAddresses({ url: LAN, publicUrl: PUBLIC })).toEqual([LAN])
+    expect(serverAddresses({ url: LAN, publicUrl: PUBLIC, serverPublicKey: PIN })).toEqual([LAN])
+    expect(serverAddresses({ url: LAN, publicUrl: PUBLIC, requireEncryption: true })).toEqual([LAN])
   })
 })
 

@@ -19,7 +19,8 @@ No premise change. The multi-homed server measurement was not repeated, because 
 
 ## Design
 
-**Order.** The addresses are `[url, publicUrl]`: `publicUrl` is dropped when it is absent, equal to `url` after trailing-slash normalisation, or refused by the cleartext policy.
+**Order.** The addresses are `[url, publicUrl]`: `publicUrl` is dropped when the server is not pinned, when it is absent, not `http(s)://`, equal to `url` after trailing-slash normalisation, or refused by the cleartext policy.
+Only a pinned server's `publicUrl` came from the authenticated handshake; see "Unpinned servers get no fallback" under Known limits.
 They are tried in order, and the second attempt starts only after the first has failed. They are never raced.
 
 **What counts as "failed".** The address couldn't be reached on this attempt: a network error, or the first attempt's bounded timeout ran out.
@@ -28,7 +29,7 @@ The same goes for a permanent E2EE refusal (`retryable === false`) and for a `42
 The second attempt would cost a handshake against the five-per-minute budget to get the same answer.
 
 **Bounded first attempt.** When a second address exists, the first attempt gets `FIRST_ADDRESS_TIMEOUT_MS = 4000`.
-That applies to a WebSocket dial (instead of 15 s), to `/api/e2ee/open` (instead of 10 s), and to a plaintext `GET`/`HEAD`.
+That applies to `/api/e2ee/open` (instead of 10 s), which picks the address for both the socket and sealed REST.
 A LAN answer takes milliseconds, and a black-holed LAN address never answers at all.
 The second attempt keeps today's timeouts. A server with one address behaves exactly as it does today.
 
@@ -38,7 +39,7 @@ The address stays bound to the *connection* that found it and dies with that con
 - **WebSocket.** Each `_doConnect` starts at `url`. The socket that opens is bound to its address for as long as it lives. `liveUrl` is cleared when it closes, and the next dial starts at `url` again.
 - **Sealed REST.** The REST context *is* the connection. `acquireRestContext` opens it on the first reachable address, and the context carries that `baseUrl`. Sealed requests go to the context's address. The context already rolls over on every foreground, at 24 h, and at 1 GiB, and each reopen starts at `url`. A network failure on a context whose server has two addresses invalidates it, so walking out of Wi-Fi mid-session costs one reopen and doesn't strand requests on a dead LAN address until the next foreground.
   `authedFetch` does not replay the request that found the address dead. The api-client's own single retry (`request()`, `requestWithMeta()`) reopens the dropped context, and the reopen moves on to `publicUrl`, so a read through the api-client costs a slower load, not an error.
-- **Plaintext REST.** There is no connection object, so each request is its own attempt: `url`, then `publicUrl`.
+- **Plaintext REST and WebSocket (unpinned servers).** One address, `url`, exactly as on `main`.
 
 **`url` is never overwritten.** Nothing writes the answering address into the record.
 
@@ -55,11 +56,12 @@ The worst case is a first `/open` that did reach the streamer but answered after
 
 ## Known limits
 
-**A refused plaintext WebSocket upgrade falls back as if unreachable.**
-React Native's WebSocket reports a refused upgrade and an unreachable address the same way — an error, then close `1006`, with no HTTP status — so the client cannot tell them apart.
-The cost is at most one extra dial to `publicUrl` per connection attempt, made sequentially and paced by the existing backoff.
-On a pinned server it never happens unsealed or with `?key=`: a pinned dial picks its address by which one answered `/open`, and never takes the plaintext branch.
-No probe or pre-flight HTTP request is added to tell the two apart: that would add a request per dial, which is exactly the cost the reconnect rule warns against.
+**Unpinned servers get no fallback.**
+A server paired through the legacy path stores a `publicUrl` from a reply that is unauthenticated before E2EE (`services/pair-exchange.ts:497`).
+Dialling it in plaintext would send `Authorization: Bearer <apiKey>` and `/ws?key=` to whoever wrote that reply, which partly reopens TB-M-03 (`docs/security/2026-08-14-mobile-review.md`); #726 had closed it by never dialling `publicUrl`.
+So `serverAddresses` returns only `url` for an unpinned server, and the plaintext REST and WebSocket paths are single-address, as on `main`.
+Such a server reaches only the address the user typed; re-pairing over E2EE is what gives it a second one.
+The earlier caveat "a refused plaintext WebSocket upgrade falls back as if unreachable" no longer applies: there is no plaintext fallback left to take.
 
 **A direct sealed read with no retry of its own fails once after walking out.**
 A read that bypasses the api-client — the server-info refresh (`stores/servers.ts:426`) — surfaces the network error of the request that found the address dead; the context is already dropped, so the next refresh reopens and moves on to `publicUrl`.
@@ -76,16 +78,17 @@ Keeping the context on a timeout only when it sits on the last address (`publicU
 
 | File | Change |
 |---|---|
-| `services/server-addresses.ts` (new) | `serverAddresses(target)` → ordered, de-duplicated list; `FIRST_ADDRESS_TIMEOUT_MS` |
+| `services/server-addresses.ts` (new) | `serverAddresses(target)` → ordered, de-duplicated list, `publicUrl` only for a pinned server and only `http(s)://`; `FIRST_ADDRESS_TIMEOUT_MS` |
 | `services/e2ee/context.ts` | `OpenContextArgs.timeoutMs?`; `OpenError.unreachable` (set only when the `/open` fetch threw); `TransportContext.baseUrl`; permanent-refusal memory keyed by server and address |
 | `services/e2ee/rest-session.ts` | open over the address list; return the context bound to the address that answered |
-| `services/authed-fetch.ts` | `AuthedTarget.publicUrl?`; plaintext per-request order; sealed requests to `context.baseUrl`; invalidate on network failure when two addresses |
-| `services/ws-client.ts` | `publicUrl` in the connect options; address index per dial; bounded first dial; `liveUrl()` on client and manager |
+| `services/authed-fetch.ts` | `AuthedTarget.publicUrl?`; sealed requests to `context.baseUrl`; invalidate on network failure when two addresses, unless the caller cancelled (`cancelSignal`); plaintext unchanged |
+| `services/api-client.ts` | pass the caller's own signal as `cancelSignal` |
+| `services/ws-client.ts` | `publicUrl` in the connect options; a pinned dial opens on the address that answered `/open`; `liveUrl()` on client and manager; plaintext dial unchanged |
 | `app/_layout.tsx`, `app/settings.tsx`, `components/servers/ServerEditModal.tsx` | pass `publicUrl` to `wsManager.connect`; modal shows the addresses |
 | `types/api.ts` | drop "Nothing reads this yet" from the `publicUrl` comment |
 | `locales/{en,he,ru,ar}/servers.json` | new keys |
 
-Tests use `192.0.2.x` and `https://tb.example.com` only: `ws-client.test.ts`, `authed-fetch.test.ts`, `e2ee-rest-session.test.ts`, and the edit modal integration test.
+Tests use `192.0.2.x` and `https://tb.example.com` only: `e2ee-two-addresses.test.ts`, `e2ee-rest-envelope.test.ts`, `ws-client.test.ts`, `authed-fetch.test.ts`, `e2ee-rest-session.test.ts`, and the edit modal integration test.
 
 ## Decisions for approval
 
@@ -96,6 +99,7 @@ Tests use `192.0.2.x` and `https://tb.example.com` only: `ws-client.test.ts`, `a
    A retry on `publicUrl` would then run it twice, for example two sessions.
    `POST`/`PUT`/`PATCH`/`DELETE` fall back only on a network error. `GET`/`HEAD` also fall back on the timeout.
    The ceiling is a write to a black-holed LAN address, which waits the caller's own timeout. *Recommend: as designed.*
+   *Superseded (2026-09-23, D2): plaintext has no fallback at all now, so there is no plaintext timeout to bound.*
 3. **Permanent refusals are remembered per server *and address*.** `mapOpenFailure` turns any non-Threadbase answer into a permanent error (`403` → `E2EE_DEVICE_REVOKED`, `404` → `E2EE_DISABLED`, anything else → `E2EE_HANDSHAKE_FAILED`; `services/e2ee/context.ts:193-215`).
    `openContext` used to remember that per `serverId` only.
    Today `publicUrl` is never dialed, so that is harmless. With this change, a Cloudflare Access `403` on `publicUrl` while away would make the home address report "This device is not paired for encryption".
@@ -156,6 +160,8 @@ Run 3 re-judged commit 1's exact code diff (only a test and this doc had changed
 Run 4 is commit 1 plus the D1 fix (commit 2), 55,144 input tokens. Same statuses; `idle-reconnect-cost-bounded` rose from 0.10 to 0.16 and stayed CHECK.
 Run 5 judged the docs-only commit that records this trial, so the same code diff as run 4: 55,144 input tokens, one CHECK (`idle-reconnect-cost-bounded`, 0.17), every other status unchanged.
 The two runs agree on every status; the largest move in `p` is 0.05 (`pinned-never-plaintext`).
+Run 6 is commits 1–3 plus the uncommitted D2 fix (commit 4), 49,854 input tokens. `p` per criterion, in table order: 0.87, 0.97, 0.95, 0.07, 0.08, 0.97, **0.57 CHECK**, 0.93, 0.07, 0.95, 0.13, **0.69 CHECK**, 0.28. The criteria file was unchanged (same sha256).
+No blind change was written before run 6: a process slip, recorded here rather than back-filled.
 
 | Criterion | Expect | Run 1 p | Run 1 | Run 2 p | Run 2 | Run 3 p | Run 3 | Run 4 p | Run 4 | Blind agrees (run 1) |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -198,6 +204,12 @@ A reopen through an unreachable address spends no handshake, so the handshakes l
 Mine.
 
 **`idle-reconnect-cost-bounded`, run 4 (p 0.16), on the D1 fix.** Unchanged from run 1: a wording conflict on the timers, plus the slow-server timeout cost, which is now a documented known limit rather than an open defect. Mine.
+
+**`rest-falls-back`, run 6 (p 0.57), on the D2 fix — true detection of an intended change.** The question asks for a fallback "on both the plaintext path and the E2EE-sealed path", and D2 removed the plaintext one on purpose: `plaintextFetch` is single-address again (`services/authed-fetch.ts:242`).
+The strict answer is now no, so CHECK is right. Reword before reuse to "…on the E2EE-sealed path (pinned servers)".
+`websocket-falls-back` stayed PASS at 0.97 although it too is now true only for pinned servers; its question does not name the plaintext path, so a yes is defensible. Mine.
+
+**`idle-reconnect-cost-bounded`, run 6 (p 0.69).** The same wording conflict as run 1, now smaller: `boundedSignal` and the shortened plaintext dial timer are gone, and the one remaining first-attempt timer is the `/open` bound (`services/e2ee/context.ts:321`). It rose from 0.17 to 0.69 but stayed CHECK. The cost bound holds. Mine.
 
 ### Recall: mutations M0–M5
 
@@ -248,6 +260,7 @@ All three are correct PASSes. Line numbers are at `5e7baaf8`.
 | # | Found by | What | Criterion covering it | Jev flagged it |
 |---|---|---|---|---|
 | D1 | Planner, from the run 1 CHECK row | An aborted sealed request (caller cancel or api-client timeout) drops the REST context on a two-address server, so the next request pays a handshake (`services/authed-fetch.ts:493` at `dc735e29`). Fixed in commit 2: `api-client` passes the caller's own signal as `cancelSignal`, and a cancel keeps the context; a timeout still drops it. The slow-server timeout cost remains, in Known limits. | `idle-reconnect-cost-bounded`, partly: it asks about retry loops and backoff ticks, not about per-request context drops | The row was CHECK, but for a reason Jev did not state; the wording conflict alone would have produced it |
+| D2 | Planner review after commit 3 | The plaintext fallback sent the API key (`Authorization: Bearer`, `/ws?key=`) to an unpinned server's `publicUrl`, which the legacy pairing path stores from an unauthenticated reply (`services/pair-exchange.ts:497`); this partly reopened TB-M-03. `serverAddresses` also accepted any non-`http`/`ws` scheme, because `isCleartextAllowed` passes every scheme it does not police. Fixed in commit 4: `publicUrl` only for pinned servers and only `http(s)://`, and the plaintext fallback removed. | None. `pinned-never-plaintext` asks the reverse question (a pinned server never goes plaintext), and no criterion asks where an unpinned server may send its key | No. Every run passed the fallback criteria on the plaintext path |
 
 ### Cost
 

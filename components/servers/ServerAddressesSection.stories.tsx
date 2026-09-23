@@ -13,6 +13,9 @@ function Seeded({ publicUrl }: { publicUrl?: string }) {
         apiKey: 'demo-key',
         label: 'Studio',
         publicUrl,
+        // Only a pinned server dials publicUrl, so only one shows it.
+        serverPublicKey: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        requireEncryption: true,
         isConnected: false,
         serverInfo: null,
         connectionError: null,

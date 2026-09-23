@@ -973,53 +973,13 @@ describe('WSClient – two addresses', () => {
   const LAN = 'https://192.0.2.10:8766'
   const PUBLIC = 'https://tb.example.com'
 
-  it('dials the user address first and moves to publicUrl when it errors, without a backoff tick', () => {
-    wsClient.connect(LAN, 'key', { publicUrl: PUBLIC })
-    expect(mockSockets.map((s) => s.url)).toEqual(['wss://192.0.2.10:8766/ws?key=key'])
-
-    mockSockets[0].onerror!()
-
-    expect(mockSockets.map((s) => s.url)).toEqual([
-      'wss://192.0.2.10:8766/ws?key=key',
-      'wss://tb.example.com/ws?key=key',
-    ])
-    expect(wsClient.status()).toBe('connecting')
-  })
-
-  it('bounds the first dial at FIRST_ADDRESS_TIMEOUT_MS, not the 15 s connect timeout', () => {
-    wsClient.connect(LAN, 'key', { publicUrl: PUBLIC })
-    jest.advanceTimersByTime(3_999)
-    expect(mockSockets).toHaveLength(1)
-    jest.advanceTimersByTime(1)
-    expect(mockSockets).toHaveLength(2)
-    expect(mockSockets[1].url).toBe('wss://tb.example.com/ws?key=key')
-  })
-
-  it('reports the live address, and starts the next dial at the user address again', () => {
+  it('never dials the publicUrl of an unpinned server (TB-M-03)', () => {
     wsClient.connect(LAN, 'key', { publicUrl: PUBLIC })
     mockSockets[0].onerror!()
-    mockSockets[1].readyState = 1
-    mockSockets[1].onopen!()
-    expect(wsClient.liveUrl()).toBe(PUBLIC)
+    jest.advanceTimersByTime(60_000)
 
-    mockSockets[1].onclose!()
-    expect(wsClient.liveUrl()).toBeNull()
-    jest.advanceTimersByTime(1_000)
-
-    expect(mockSockets[2].url).toBe('wss://192.0.2.10:8766/ws?key=key')
-  })
-
-  it('does not move to publicUrl once the user address had opened', () => {
-    wsClient.connect(LAN, 'key', { publicUrl: PUBLIC })
-    mockSockets[0].readyState = 1
-    mockSockets[0].onopen!()
-    expect(wsClient.liveUrl()).toBe(LAN)
-
-    mockSockets[0].onclose!()
-
-    expect(mockSockets).toHaveLength(1)
-    jest.advanceTimersByTime(1_000)
-    expect(mockSockets[1].url).toBe('wss://192.0.2.10:8766/ws?key=key')
+    expect(mockSockets.length).toBeGreaterThan(1)
+    expect(new Set(mockSockets.map((s) => s.url))).toEqual(new Set(['wss://192.0.2.10:8766/ws?key=key']))
   })
 
   it('opens a pinned context on publicUrl only when the user address never answered /open', async () => {

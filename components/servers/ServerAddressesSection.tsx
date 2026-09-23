@@ -14,6 +14,8 @@ interface Props {
 
 type LiveAddress = 'yours' | 'public' | 'none'
 
+const subscribeToSockets = (onChange: () => void) => wsManager.onAnyStatusChange(onChange)
+
 function liveAddressLabel(live: LiveAddress, t: TFunction<'servers'>) {
   switch (live) {
     case 'yours':
@@ -27,8 +29,8 @@ function liveAddressLabel(live: LiveAddress, t: TFunction<'servers'>) {
 
 /**
  * A server's second address and which one the live connection is on (#734).
- * Hidden when the server advertised no distinct `publicUrl` — with one address
- * there is nothing to choose between.
+ * Hidden when the server has no second address to dial — none advertised, or
+ * not pinned (see `serverAddresses`).
  */
 export function ServerAddressesSection({ serverId }: Props) {
   const { t } = useTranslation('servers')
@@ -36,7 +38,7 @@ export function ServerAddressesSection({ serverId }: Props) {
   const styles = makeStyles(theme)
   const server = useServersStore((s) => s.servers[serverId])
   const liveUrl = useSyncExternalStore(
-    wsManager.onAnyStatusChange.bind(wsManager),
+    subscribeToSockets,
     useCallback(() => wsManager.liveUrl(serverId), [serverId]),
   )
 

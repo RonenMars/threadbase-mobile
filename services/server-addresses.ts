@@ -16,12 +16,25 @@ const trimSlash = (url: string) => url.replace(/\/$/, '')
  * never raced, and every attempt starts again at the first — nothing records
  * which one answered last time.
  *
- * `publicUrl` is left out when it is the same address, or when the cleartext
- * policy would refuse it anyway. `url` itself is never filtered here: a refused
- * `url` keeps producing the refusal its callers already surface.
+ * Only a pinned server gets `publicUrl`. Its value came from the authenticated
+ * handshake and every request to it is sealed. An unpinned server's `publicUrl`
+ * came from an unauthenticated pairing reply (pair-exchange.ts), and dialling
+ * it would hand the API key to whoever wrote that reply (TB-M-03).
+ *
+ * `publicUrl` is also left out when it is not http(s), is the same address, or
+ * the cleartext policy would refuse it. `url` itself is never filtered here: a
+ * refused `url` keeps producing the refusal its callers already surface.
  */
-export function serverAddresses(target: { url: string; publicUrl?: string }): string[] {
+export function serverAddresses(target: {
+  url: string
+  publicUrl?: string
+  serverPublicKey?: string
+  requireEncryption?: boolean
+}): string[] {
   const url = trimSlash(target.url)
-  const publicUrl = target.publicUrl ? trimSlash(target.publicUrl) : ''
-  return publicUrl && publicUrl !== url && isCleartextAllowed(publicUrl) ? [url, publicUrl] : [url]
+  const pinned = target.requireEncryption === true && !!target.serverPublicKey
+  const publicUrl = pinned && target.publicUrl ? trimSlash(target.publicUrl) : ''
+  return /^https?:\/\//i.test(publicUrl) && publicUrl !== url && isCleartextAllowed(publicUrl)
+    ? [url, publicUrl]
+    : [url]
 }

@@ -6,7 +6,7 @@ import { OpenError } from '@/services/e2ee/context'
 // Safe because neither module touches the other during module evaluation —
 // both references are resolved at call time.
 import { reportRequestTiming } from '@/services/slow-request-log'
-import { FIRST_ADDRESS_TIMEOUT_MS, serverAddresses } from '@/services/server-addresses'
+import { serverAddresses } from '@/services/server-addresses'
 import { RecordError, recordCounter, restTargetHash } from '@/services/e2ee/record'
 import {
   acquireRestContext,
@@ -78,7 +78,7 @@ export interface AuthedTarget {
   id?: string
   serverPublicKey?: string
   requireEncryption?: boolean
-  /** The address the server advertised; tried when `url` cannot be reached (#734). */
+  /** The address the server advertised; tried when `url` cannot be reached, pinned servers only (#734). */
   publicUrl?: string
 }
 
@@ -222,7 +222,7 @@ export async function authedFetch(
   try {
     const response = sealed
       ? await sealedFetch(target, path, init, false, trace)
-      : await plaintextFetch(target, path, withoutCancelSignal(init))
+      : await plaintextFetch(target, path, url, withoutCancelSignal(init))
     report(String(response.status))
     return response
   } catch (err) {
@@ -242,56 +242,22 @@ function isPinned(target: AuthedTarget): boolean {
 async function plaintextFetch(
   target: AuthedTarget,
   path: string,
+  url: string,
   init: AuthedFetchInit,
 ): Promise<Response> {
   const credential = selectCredential(target)
-  const addresses = serverAddresses(target)
-  // With no connection object to bind an address to, each plaintext request is
-  // its own attempt: the user's address, then `publicUrl` (#734). Only reads get
-  // the short first-attempt timeout — a write can time out after it reached the
-  // server, and replaying it on the other address would run it twice.
-  const boundFirst = addresses.length > 1 && !canCarryRequestBody(requestMethod(init))
-  let response: Response | undefined
-  for (let i = 0; !response; i++) {
-    const last = i === addresses.length - 1
-    const attempt = boundFirst && !last ? boundedSignal(init.signal, FIRST_ADDRESS_TIMEOUT_MS) : null
-    try {
-      response = await fetch(serverUrl({ url: addresses[i] }, path), {
-        ...init,
-        ...(attempt ? { signal: attempt.signal } : {}),
-        headers: {
-          // Caller headers first: an `Authorization` among them loses to the one
-          // chosen here. A module that owns credential selection cannot let a
-          // caller quietly opt out of it — the request would still succeed.
-          ...init.headers,
-          Authorization: `Bearer ${credential.token}`,
-        },
-      })
-    } catch (err) {
-      // A caller's own abort is theirs to report, not a reason to try elsewhere.
-      if (last || init.signal?.aborted) throw err
-    } finally {
-      attempt?.dispose()
-    }
-  }
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      // Caller headers first: an `Authorization` among them loses to the one
+      // chosen here. A module that owns credential selection cannot let a
+      // caller quietly opt out of it — the request would still succeed.
+      ...init.headers,
+      Authorization: `Bearer ${credential.token}`,
+    },
+  })
   if (response.status === 401) throw new AuthError(credential.kind, path)
   return response
-}
-
-/** The caller's signal, plus an abort after `ms`. */
-function boundedSignal(outer: AbortSignal | null | undefined, ms: number) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), ms)
-  const onOuter = () => controller.abort()
-  if (outer?.aborted) controller.abort()
-  else outer?.addEventListener('abort', onOuter)
-  return {
-    signal: controller.signal,
-    dispose() {
-      clearTimeout(timer)
-      outer?.removeEventListener('abort', onOuter)
-    },
-  }
 }
 
 function isForbiddenSealedHeader(name: string): boolean {

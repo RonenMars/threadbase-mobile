@@ -99,7 +99,8 @@ export async function acquireRestContext(
     const { publicUrl, baseUrl, ...rest } = args
     const context = await openOnFirstReachable(
       { ...rest, kind: 'rest' },
-      serverAddresses({ url: baseUrl, publicUrl }),
+      // Only pinned servers open REST contexts, so the pin is implied here.
+      serverAddresses({ url: baseUrl, publicUrl, serverPublicKey: rest.serverPublicKey, requireEncryption: true }),
       opener,
     )
     const current = live.get(serverId)

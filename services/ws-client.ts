@@ -17,7 +17,7 @@ import { getDeviceClientId } from './device-id'
 import { isCleartextAllowed } from './cleartext-policy'
 import { clientLog } from '@/lib/clientLog'
 import { OpenError, openContextOnce, openOnFirstReachable, type TransportContext } from '@/services/e2ee/context'
-import { FIRST_ADDRESS_TIMEOUT_MS, serverAddresses } from '@/services/server-addresses'
+import { serverAddresses } from '@/services/server-addresses'
 import { openTicketedSocket, ticketedSocketProtocolOk } from '@/services/e2ee/ticketed-socket'
 
 export type WSMessage =
@@ -118,7 +118,7 @@ type MessageHandler = (msg: WSMessage) => void
 export interface WsConnectOptions {
   serverPublicKey?: string
   requireEncryption?: boolean
-  /** The address the server advertised; dialled when `url` cannot be reached (#734). */
+  /** The address the server advertised; dialled when `url` cannot be reached, pinned servers only (#734). */
   publicUrl?: string
 }
 
@@ -176,7 +176,6 @@ class WSClient {
   // The address the open socket is on. Belongs to that socket: cleared the
   // moment it is retired, and every dial starts again at `wsUrls[0]`.
   private _liveUrl: string | null = null
-  private opened = false
   private handlers: Map<string, Set<MessageHandler>> = new Map()
   private reconnectAttempt = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -199,7 +198,7 @@ class WSClient {
   constructor(private serverId = 'default') {}
 
   connect(url: string, apiKey: string, encryption: WsConnectOptions = {}) {
-    const addresses = serverAddresses({ url, publicUrl: encryption.publicUrl })
+    const addresses = serverAddresses({ url, ...encryption })
     const wsUrls = addresses.map((a) => a.replace(/^http/, 'ws') + '/ws?key=' + encodeURIComponent(apiKey))
     const wsUrl = wsUrls[0]
     // The socket carries the whole live session — terminal output, replay and
@@ -244,12 +243,12 @@ class WSClient {
     void this._doConnect()
   }
 
-  private async _doConnect(dialIndex = 0) {
+  private async _doConnect() {
     const generation = ++this.generation
     this._retireCurrentConnection()
     this._clearConnectTimer()
     this._lastError = null
-    this.dialIndex = dialIndex
+    this.dialIndex = 0
 
     this._setStatus('connecting')
     logConnection(this.serverId, 'connect', this.reconnectAttempt)
@@ -293,7 +292,7 @@ class WSClient {
         this.dialIndex = Math.max(0, this.addresses.indexOf(context.baseUrl))
         socket = openTicketedSocket(this.wsUrls[this.dialIndex].replace(/\?key=.*$/, ''), context.ticket)
       } else {
-        socket = new WebSocket(this.wsUrls[dialIndex])
+        socket = new WebSocket(this.url)
       }
       this.socket = socket
     } catch (error) {
@@ -319,14 +318,12 @@ class WSClient {
       this.socket === socket &&
       (context === null || this.context === context)
 
-    // Abandon the attempt if the handshake neither opens nor errors in time. A
-    // plaintext dial with another address behind it gets the shorter bound.
-    const hasNext = !context && dialIndex < this.wsUrls.length - 1
+    // Abandon the attempt if the handshake neither opens nor errors in time.
     this.connectTimer = setTimeout(() => {
       if (!isCurrent()) return
       logConnection(this.serverId, 'connect_timeout', this.reconnectAttempt)
       this._failCurrentConnection(socket, context, false)
-    }, hasNext ? FIRST_ADDRESS_TIMEOUT_MS : CONNECT_TIMEOUT_MS)
+    }, CONNECT_TIMEOUT_MS)
 
     socket.onopen = () => {
       if (!isCurrent()) return
@@ -344,7 +341,6 @@ class WSClient {
         return
       }
       logConnection(this.serverId, 'open')
-      this.opened = true
       this._liveUrl = this.addresses[this.dialIndex] ?? null
       // A sealed socket is not proven by opening: one that fails its first
       // frame would otherwise redial at the minimum backoff forever, and each
@@ -441,7 +437,6 @@ class WSClient {
   }
 
   private _retireCurrentConnection() {
-    this.opened = false
     this._liveUrl = null
     if (this.socket) {
       this.socket.onclose = null
@@ -455,15 +450,7 @@ class WSClient {
   }
 
   private _failCurrentConnection(socket: WebSocket, context: TransportContext | null, beforeOpen: boolean) {
-    // A plaintext dial that never opened moves straight on to the next address
-    // — same attempt, no backoff tick. A pinned dial already chose its address
-    // by which one answered `/open`, so it never takes this branch.
-    const next = !context && !this.opened && this.dialIndex < this.wsUrls.length - 1
     this._retireCurrentConnection()
-    if (next) {
-      void this._doConnect(this.dialIndex + 1)
-      return
-    }
     this._setStatus('disconnected')
     if (context && beforeOpen && this.ticketUpgradeRetryAvailable) {
       this.ticketUpgradeRetryAvailable = false
