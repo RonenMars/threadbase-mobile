@@ -22,7 +22,7 @@ import {
   recordCounter,
   restTargetHash,
 } from '@/services/e2ee/record'
-import type { TransportContext } from '@/services/e2ee/context'
+import { OpenError, type TransportContext } from '@/services/e2ee/context'
 import {
   _resetRestSessionsForTests,
   _restLiveCount,
@@ -53,6 +53,7 @@ function makeRestContext(expiresAt = Date.now() + 86_400_000): TransportContext 
   return {
     ctxId: vectors.ctxIdBase64Url,
     kind: 'rest',
+    baseUrl: 'https://box.example.com',
     expiresAt,
     provisional: false,
     send,
@@ -466,5 +467,68 @@ describe('authedFetch REST envelope', () => {
     } finally {
       globalThis.Response = NativeResponse
     }
+  })
+})
+
+// #734: the REST context is the connection. It opens on the first address that
+// answers `/open`, and sealed requests go to that address for its lifetime.
+describe('authedFetch REST envelope – two addresses', () => {
+  const LAN = 'https://192.0.2.10:8766'
+  const PUBLIC = 'https://tb.example.com'
+  const twoAddresses = () => ({ ...pinnedTarget(), url: LAN, publicUrl: PUBLIC })
+  // Earlier tests assign a `jest.fn` to `globalThis.fetch`, and spying on a
+  // mock returns that same mock — with every call it has already recorded.
+  const fetchSpy = () => {
+    const spy = jest.spyOn(globalThis, 'fetch')
+    spy.mockClear()
+    return spy
+  }
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+    _resetRestSessionsForTests()
+  })
+
+  function opener(unreachable: string[]) {
+    const opened: string[] = []
+    _setRestOpenForTests(async (args) => {
+      opened.push(args.baseUrl)
+      if (unreachable.includes(args.baseUrl)) throw new OpenError('E2EE_TRANSIENT', 'unreachable', true)
+      return { ...makeRestContext(), baseUrl: args.baseUrl }
+    })
+    return opened
+  }
+
+  it('sends sealed requests to the address the context opened on', async () => {
+    const opened = opener([LAN])
+    const spy = fetchSpy().mockResolvedValue(new Response('{}', { status: 200 }))
+
+    await authedFetch(twoAddresses(), '/api/info').catch(() => undefined)
+
+    expect(opened).toEqual([LAN, PUBLIC])
+    const [[url, init]] = spy.mock.calls
+    expect(String(url)).toBe(`${PUBLIC}/api/info`)
+    expect(hasHeader(init?.headers as Record<string, string>, 'Authorization')).toBe(false)
+  })
+
+  it('drops a context whose address stopped answering, so the next request reopens from the user address', async () => {
+    const opened = opener([])
+    const spy = fetchSpy().mockRejectedValue(new TypeError('Network request failed'))
+
+    await expect(authedFetch(twoAddresses(), '/api/info')).rejects.toThrow('Network request failed')
+    expect(_restLiveCount()).toBe(0)
+    await expect(authedFetch(twoAddresses(), '/api/info')).rejects.toThrow('Network request failed')
+
+    expect(opened).toEqual([LAN, LAN])
+    expect(spy.mock.calls.map(([url]) => String(url))).toEqual([`${LAN}/api/info`, `${LAN}/api/info`])
+  })
+
+  it('keeps the context of a single-address server through a network failure', async () => {
+    const opened = opener([])
+    fetchSpy().mockRejectedValue(new TypeError('Network request failed'))
+
+    await expect(authedFetch({ ...pinnedTarget(), url: LAN }, '/api/info')).rejects.toThrow()
+    expect(_restLiveCount()).toBe(1)
+    expect(opened).toEqual([LAN])
   })
 })

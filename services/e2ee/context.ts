@@ -16,6 +16,7 @@
  */
 import naclUtil from 'tweetnacl-util'
 import { E2EE_CLIENT_VERSION } from '@/types/api'
+import { FIRST_ADDRESS_TIMEOUT_MS } from '@/services/server-addresses'
 import { createOpenInitiator, openMessage1Payload, type OpenContextKind } from '@/services/e2ee/pair-handshake'
 import {
   CHANNEL_REST_REQUEST,
@@ -72,12 +73,20 @@ export class OpenError extends Error {
   readonly code: OpenErrorCode
   /** `true` for exactly the codes a client may retry. */
   readonly retryable: boolean
+  /**
+   * The `/open` request never got an answer: no response, or it timed out. The
+   * only failure that justifies trying the server's other address — a `429` is
+   * also `E2EE_TRANSIENT`, but it came from the server, which the other address
+   * reaches too.
+   */
+  readonly unreachable: boolean
 
-  constructor(code: OpenErrorCode, message: string) {
+  constructor(code: OpenErrorCode, message: string, unreachable = false) {
     super(message)
     this.name = 'OpenError'
     this.code = code
     this.retryable = code === 'E2EE_CTX_UNKNOWN' || code === 'E2EE_TRANSIENT'
+    this.unreachable = unreachable
   }
 }
 
@@ -101,6 +110,8 @@ export interface TransportContext {
   readonly provisional: boolean
   /** Present only for `kind: 'ws'`. Absent for REST — not null (§11). */
   readonly ticket?: string
+  /** The address this context was opened on. Its traffic goes there, and only for its lifetime. */
+  readonly baseUrl: string
   readonly send: RecordState
   readonly recv: RecordState
   destroy(): void
@@ -222,6 +233,8 @@ export interface OpenContextArgs {
   /** The pinned server static key, base64url, from the server record. */
   serverPublicKey: string
   kind: OpenContextKind
+  /** Overrides `OPEN_TIMEOUT_MS`; the first of two addresses gets less. */
+  timeoutMs?: number
   /** Test seam. Production uses the global `fetch`. */
   fetchImpl?: typeof fetch
   /** Test seam, forwarded to the Noise initiator. */
@@ -237,7 +250,7 @@ function contextFor(
   ticket: string | undefined,
   clientToServerKey: Uint8Array,
   serverToClientKey: Uint8Array,
-): TransportContext {
+): Omit<TransportContext, 'baseUrl'> {
   // REST send is the request channel; REST receive is the response channel.
   // A websocket context uses 0x01 both ways. Mixing them is a seal failure
   // on the first frame, which is why this split is its own mutation row.
@@ -305,7 +318,7 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
 
   const doFetch = args.fetchImpl ?? fetch
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), OPEN_TIMEOUT_MS)
+  const timer = setTimeout(() => controller.abort(), args.timeoutMs ?? OPEN_TIMEOUT_MS)
   let response: Response
   try {
     response = await doFetch(`${args.baseUrl.replace(/\/$/, '')}/api/e2ee/open`, {
@@ -320,7 +333,7 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
       signal: controller.signal,
     })
   } catch {
-    throw new OpenError('E2EE_TRANSIENT', 'Could not reach the server to open an encrypted context')
+    throw new OpenError('E2EE_TRANSIENT', 'Could not reach the server to open an encrypted context', true)
   } finally {
     clearTimeout(timer)
   }
@@ -363,7 +376,7 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
     args.kind,
   )
 
-  return contextFor(
+  const context = contextFor(
     args.kind,
     msg2.ctxId,
     msg2.ctxIdRaw,
@@ -373,6 +386,7 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
     result.clientToServerKey,
     result.serverToClientKey,
   )
+  return { ...context, baseUrl: args.baseUrl }
 }
 
 /**
@@ -393,7 +407,16 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
  * channels funnel through, stops the loop whichever layer above the transport
  * re-issues the request — which is why this does not wait on identifying it.
  */
-const refused = new Map<string, { error: OpenError; serverPublicKey: string }>()
+/*
+ * Keyed by server, then by address. A server has two (#734), and a refusal from
+ * one says nothing reliable about the other: `mapOpenFailure` reads any foreign
+ * answer as permanent, so a Cloudflare Access `403` in front of `publicUrl`
+ * would otherwise brand the LAN address "not paired for encryption". A genuine
+ * revocation costs one refused `/open` per address — still no loop.
+ */
+const refused = new Map<string, Map<string, { error: OpenError; serverPublicKey: string }>>()
+
+const addressKey = (baseUrl: string) => baseUrl.replace(/\/$/, '')
 
 /**
  * Forgets a server's permanent refusal, so the next open reaches the network.
@@ -408,9 +431,11 @@ export function clearOpenRefusal(serverId: string): void {
   refused.delete(serverId)
 }
 
-/** Test helper: how many servers currently hold a permanent refusal. */
+/** Test helper: how many server addresses currently hold a permanent refusal. */
 export function _openRefusalCount(): number {
-  return refused.size
+  let count = 0
+  for (const byAddress of refused.values()) count += byAddress.size
+  return count
 }
 
 export function _resetOpenRefusalsForTests(): void {
@@ -427,28 +452,60 @@ export function _resetOpenRefusalsForTests(): void {
  * diagnosis on screen instead of the busy message.
  */
 export async function openContext(args: OpenContextArgs): Promise<TransportContext> {
-  const standing = refused.get(args.serverId)
+  const address = addressKey(args.baseUrl)
+  const forget = () => {
+    const byAddress = refused.get(args.serverId)
+    byAddress?.delete(address)
+    if (byAddress?.size === 0) refused.delete(args.serverId)
+  }
+  const standing = refused.get(args.serverId)?.get(address)
   if (standing) {
     if (standing.serverPublicKey === args.serverPublicKey) {
       throw new OpenError(standing.error.code, standing.error.message)
     }
     // A different pin is a different server identity; the old verdict says
     // nothing about it.
-    refused.delete(args.serverId)
+    forget()
   }
 
   try {
     const context = await runOpenHandshake(args)
-    refused.delete(args.serverId)
+    forget()
     return context
   } catch (error) {
     // Only a permanent refusal is remembered. A retryable one — `429`, a 5xx, an
     // unreachable server, `E2EE_CTX_UNKNOWN` — is neither recorded nor allowed
     // to clear a verdict the other channel may already have reached.
     if (error instanceof OpenError && !error.retryable) {
-      refused.set(args.serverId, { error, serverPublicKey: args.serverPublicKey })
+      const byAddress = refused.get(args.serverId) ?? new Map()
+      byAddress.set(address, { error, serverPublicKey: args.serverPublicKey })
+      refused.set(args.serverId, byAddress)
     }
     throw error
+  }
+}
+
+/**
+ * Opens a context on the first of `addresses` that answers (#734).
+ *
+ * In order, never raced. Moves on only when an address never answered
+ * (`unreachable`): any answer — a `429`, a `5xx`, a permanent refusal — came
+ * from the server, which every address reaches, and asking again elsewhere
+ * would spend a handshake from the five-per-minute budget for the same verdict.
+ * Every address but the last gets the shorter first-attempt timeout.
+ */
+export async function openOnFirstReachable(
+  args: Omit<OpenContextArgs, 'baseUrl' | 'timeoutMs'>,
+  addresses: readonly string[],
+  open: (args: OpenContextArgs) => Promise<TransportContext> = openContext,
+): Promise<TransportContext> {
+  for (let i = 0; ; i++) {
+    const last = i === addresses.length - 1
+    try {
+      return await open({ ...args, baseUrl: addresses[i], ...(last ? {} : { timeoutMs: FIRST_ADDRESS_TIMEOUT_MS }) })
+    } catch (error) {
+      if (last || !(error instanceof OpenError && error.unreachable)) throw error
+    }
   }
 }
 

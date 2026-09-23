@@ -7,6 +7,7 @@
 // object. These tests pin the three things that are now decided exactly once.
 
 import { authedFetch, AuthError, serverUrl } from '@/services/authed-fetch'
+import { FIRST_ADDRESS_TIMEOUT_MS } from '@/services/server-addresses'
 import { AuthError as ApiClientAuthError } from '@/services/api-client'
 import type { ServerConfig, ServerInfo } from '@/types/api'
 
@@ -199,5 +200,86 @@ describe('authedFetch', () => {
     mockFetch({ status: 409, ok: false })
     const res = await authedFetch(target(), '/api/cache/alert/resolve', { method: 'POST' })
     expect(res.status).toBe(409)
+  })
+})
+
+// #734: an unpinned server with two addresses. Each plaintext request is its own
+// attempt — the user's address, then publicUrl. Reserved addresses only.
+describe('authedFetch – two addresses, plaintext', () => {
+  const LAN = 'https://192.0.2.10:8766'
+  const PUBLIC = 'https://tb.example.com'
+  const twoAddresses = { url: LAN, apiKey: 'tb_shared', publicUrl: PUBLIC }
+
+  /** A fetch whose behaviour per address is scripted: 'down' rejects, 'hang' waits for an abort. */
+  function network(script: Record<string, 'down' | 'hang' | number>) {
+    const calls: string[] = []
+    const spy = jest.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = String(input)
+      calls.push(url)
+      const behaviour = script[Object.keys(script).find((a) => url.startsWith(a)) ?? '']
+      if (behaviour === 'down') return Promise.reject(new TypeError('Network request failed'))
+      if (behaviour === 'hang') {
+        return new Promise<Response>((_resolve, reject) =>
+          init?.signal?.addEventListener('abort', () => reject(new Error('Aborted'))),
+        )
+      }
+      return Promise.resolve(new Response('{}', { status: behaviour }))
+    })
+    return { calls, spy }
+  }
+
+  afterEach(() => {
+    jest.restoreAllMocks()
+    jest.useRealTimers()
+  })
+
+  it('tries the user address, then publicUrl when it cannot be reached', async () => {
+    const { calls } = network({ [LAN]: 'down', [PUBLIC]: 200 })
+    const res = await authedFetch(twoAddresses, '/api/info')
+    expect(res.status).toBe(200)
+    expect(calls).toEqual([`${LAN}/api/info`, `${PUBLIC}/api/info`])
+  })
+
+  it('stays on the user address when it answered, whatever the status', async () => {
+    const { calls } = network({ [LAN]: 500, [PUBLIC]: 200 })
+    const res = await authedFetch(twoAddresses, '/api/info')
+    expect(res.status).toBe(500)
+    expect(calls).toEqual([`${LAN}/api/info`])
+  })
+
+  it('gives a read on the user address FIRST_ADDRESS_TIMEOUT_MS before moving on', async () => {
+    jest.useFakeTimers()
+    const { calls } = network({ [LAN]: 'hang', [PUBLIC]: 200 })
+    const pending = authedFetch(twoAddresses, '/api/sessions')
+    await Promise.resolve()
+    jest.advanceTimersByTime(FIRST_ADDRESS_TIMEOUT_MS - 1)
+    expect(calls).toHaveLength(1)
+    jest.advanceTimersByTime(1)
+    expect((await pending).status).toBe(200)
+    expect(calls).toEqual([`${LAN}/api/sessions`, `${PUBLIC}/api/sessions`])
+  })
+
+  it('never replays a write that timed out — it may already have reached the server', async () => {
+    jest.useFakeTimers()
+    const { calls } = network({ [LAN]: 'hang', [PUBLIC]: 200 })
+    void authedFetch(twoAddresses, '/api/sessions', { method: 'POST', body: '{}' })
+    await Promise.resolve()
+    jest.advanceTimersByTime(FIRST_ADDRESS_TIMEOUT_MS * 3)
+    expect(calls).toEqual([`${LAN}/api/sessions`])
+  })
+
+  it('moves a write to publicUrl when the user address refused the connection outright', async () => {
+    const { calls } = network({ [LAN]: 'down', [PUBLIC]: 200 })
+    await authedFetch(twoAddresses, '/api/sessions', { method: 'POST', body: '{}' })
+    expect(calls).toEqual([`${LAN}/api/sessions`, `${PUBLIC}/api/sessions`])
+  })
+
+  it("does not move on after the caller's own abort", async () => {
+    const { calls } = network({ [LAN]: 'hang', [PUBLIC]: 200 })
+    const controller = new AbortController()
+    const pending = authedFetch(twoAddresses, '/api/info', { signal: controller.signal })
+    controller.abort()
+    await expect(pending).rejects.toThrow('Aborted')
+    expect(calls).toEqual([`${LAN}/api/info`])
   })
 })

@@ -8,9 +8,11 @@
 import { AppState, type AppStateStatus, type NativeEventSubscription } from 'react-native'
 import {
   openContext,
+  openOnFirstReachable,
   type OpenContextArgs,
   type TransportContext,
 } from '@/services/e2ee/context'
+import { serverAddresses } from '@/services/server-addresses'
 
 /** How long an evicted REST context keeps answering in-flight responses (§12). */
 export const REST_DRAIN_MS = 10_000
@@ -79,7 +81,9 @@ function ensureForegroundHook() {
  * and each send failed with "this record state has been destroyed" until the
  * app restarted.
  */
-export async function acquireRestContext(args: OpenContextArgs): Promise<TransportContext> {
+export async function acquireRestContext(
+  args: OpenContextArgs & { publicUrl?: string },
+): Promise<TransportContext> {
   ensureForegroundHook()
   const serverId = args.serverId
   const t = nowMs()
@@ -90,7 +94,14 @@ export async function acquireRestContext(args: OpenContextArgs): Promise<Transpo
   if (pending) return pending
 
   const attempt = (async () => {
-    const context = await opener({ ...args, kind: 'rest' })
+    // Each open starts at the user's address; the context then carries the one
+    // that answered, and requests follow it until the context rolls over.
+    const { publicUrl, baseUrl, ...rest } = args
+    const context = await openOnFirstReachable(
+      { ...rest, kind: 'rest' },
+      serverAddresses({ url: baseUrl, publicUrl }),
+      opener,
+    )
     const current = live.get(serverId)
     if (current) {
       retire(current, nowMs())

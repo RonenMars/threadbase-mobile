@@ -21,6 +21,7 @@ import { NetworkError } from '@/services/api-client'
 import { CleartextBlockedError } from '@/services/cleartext-policy'
 import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSection'
+import { ServerAddressesSection } from '@/components/servers/ServerAddressesSection'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
 import { useServersStore, type AddServerMeta } from '@/stores/servers'
 import { wsManager } from '@/services/ws-client'
@@ -146,6 +147,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         wsManager.connect(newId, updated.url, authToken(updated), {
           serverPublicKey: updated.serverPublicKey,
           requireEncryption: updated.requireEncryption,
+          publicUrl: updated.publicUrl,
         })
       }
     } else {
@@ -182,6 +184,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
       wsManager.connect(newId, trimmedUrl, trimmedKey, {
         serverPublicKey: added?.serverPublicKey,
         requireEncryption: added?.requireEncryption,
+        publicUrl: added?.publicUrl,
       })
     }
 
@@ -297,6 +300,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               {/* Only in edit mode: the pin is written onto a server record, and
                   Add mode has none until Save. */}
               {isEditMode && serverId ? <ServerEncryptionSection serverId={serverId} /> : null}
+
+              {isEditMode && serverId ? <ServerAddressesSection serverId={serverId} /> : null}
 
               {/* Only in edit mode: the flags are fetched from the server, which
                   must already exist (and be reachable) to have any. */}
