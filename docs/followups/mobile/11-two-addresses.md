@@ -154,6 +154,7 @@ Run 1 is commit `dc735e29` (implementation) against `origin/main`, 52,644 input 
 Run 2 is commit 1 plus the uncommitted, later dropped, sealed read replay, against `origin/main`, 53,289 input tokens, 5 batches.
 Run 3 re-judged commit 1's exact code diff (only a test and this doc had changed, both outside every criterion's `paths`): 52,644 input tokens, as in run 1. Same statuses; `p` moved by at most 0.03 on an identical input.
 Run 4 is commit 1 plus the D1 fix (commit 2), 55,144 input tokens. Same statuses; `idle-reconnect-cost-bounded` rose from 0.10 to 0.16 and stayed CHECK.
+Run 5 judged the docs-only commit that records this trial, so the same code diff as run 4: 55,144 input tokens, one CHECK (`idle-reconnect-cost-bounded`, 0.17), every other status unchanged.
 The two runs agree on every status; the largest move in `p` is 0.05 (`pinned-never-plaintext`).
 
 | Criterion | Expect | Run 1 p | Run 1 | Run 2 p | Run 2 | Run 3 p | Run 3 | Run 4 p | Run 4 | Blind agrees (run 1) |
@@ -198,11 +199,67 @@ Mine.
 
 **`idle-reconnect-cost-bounded`, run 4 (p 0.16), on the D1 fix.** Unchanged from run 1: a wording conflict on the timers, plus the slow-server timeout cost, which is now a documented known limit rather than an open defect. Mine.
 
+### Recall: mutations M0–M5
+
+Run in a throwaway detached worktree at `5e7baaf8` (both commits), each mutation applied uncommitted to a clean tree, judged, then reverted; the tree was confirmed clean between mutations and the worktree removed afterwards.
+The clean run there scored the same statuses as run 4.
+A cell is `p` and status; **bold** marks a status that changed against the clean run.
+
+| Criterion | Clean | M0 rename | M1 `publicUrl` first | M2 address remembered | M3 `url` overwritten | M4 identity-key check | M5 per-server refusals |
+|---|---|---|---|---|---|---|---|
+| `user-address-first` | 0.88 P | 0.89 P | **0.36 C** | **0.58 C** | 0.90 P | 0.91 P | 0.90 P |
+| `sequential-not-raced` | 0.97 P | 0.97 P | 0.97 P | 0.95 P | 0.97 P | 0.97 P | 0.97 P |
+| `bounded-first-attempt` | 0.96 P | 0.96 P | 0.96 P | 0.92 P | 0.95 P | 0.96 P | 0.96 P |
+| `no-sticky-switch` | 0.05 P | 0.06 P | 0.06 P | **0.84 C** | **0.62 C** | 0.06 P | 0.06 P |
+| `url-never-overwritten` | 0.08 P | 0.08 P | 0.08 P | 0.07 P | **0.97 C** | 0.09 P | 0.08 P |
+| `websocket-falls-back` | 0.97 P | 0.97 P | 0.97 P | 0.94 P | 0.97 P | 0.97 P | 0.97 P |
+| `rest-falls-back` | 0.89 P | 0.89 P | 0.89 P | 0.79 P | 0.87 P | 0.88 P | 0.89 P |
+| `live-address-shown` | 0.90 P | 0.91 P | 0.88 P | 0.83 P | 0.89 P | 0.93 P | 0.91 P |
+| `no-identity-key-comparison` | 0.04 P | 0.04 P | 0.04 P | 0.04 P | 0.04 P | **0.98 C** | 0.03 P |
+| `fallback-only-when-unreachable` | 0.94 P | 0.94 P | 0.93 P | 0.91 P | 0.93 P | 0.94 P | 0.94 P |
+| `pinned-never-plaintext` | 0.22 P | 0.20 P | 0.20 P | 0.19 P | 0.22 P | 0.24 P | 0.21 P |
+| `idle-reconnect-cost-bounded` | 0.14 C | 0.14 C | 0.14 C | 0.10 C | 0.13 C | 0.13 C | 0.15 C |
+| `refusal-scoped-to-address` | 0.17 P | 0.19 P | 0.22 P | 0.21 P | 0.17 P | 0.18 P | **0.72 C** |
+
+What each mutation was:
+
+- **M0** renames `trimSlash` to `stripTrailingSlash`. Nothing moved by more than 0.02: no false alarm from a pure rename.
+- **M1** returns `[publicUrl, url]`, leaving the doc comment claiming the opposite. Caught by `user-address-first`.
+- **M2** remembers the address that opened a context in a module map and AsyncStorage, and puts it first in `serverAddresses` for that server. Caught by `no-sticky-switch`, and also by `user-address-first` — correctly, since a remembered `publicUrl` is then tried before `url`.
+- **M3** writes the answering address into the record's `url` through `editServer` on a WebSocket that opened on the second address. The criterion's examples name `updateServer`, `addServer` and `setState`, not `editServer`; it was caught anyway. Also caught by `no-sticky-switch` — correctly, since the record now remembers it.
+- **M4** fetches `publicUrl`'s `/api/info` before opening on it and compares `serverIdentityKey` with the pin, commented as verification. Caught by `no-identity-key-comparison`.
+- **M5** (owner-confirmed) restores `origin/main`'s per-server refusal memory in `services/e2ee/context.ts` and nothing else. Caught by `refusal-scoped-to-address`, but only just: 0.72 against a 0.70 threshold. It is the weakest catch of the six.
+
+Recall: 5 of 5 defect mutations caught by the criterion written for them, with no status change on the no-op; the two extra catches (M2, M3) are true.
+Across M0–M5, `idle-reconnect-cost-bounded` stayed CHECK throughout, so it carried no signal about any of them.
+The criteria and the mutations were written in the same session, by the same author, so 5 of 5 is a ceiling, not an expected rate: each mutation was aimed at a criterion already on the page.
+Before `idle-reconnect-cost-bounded` is reused, reword it to drop "adds no new timer", which conflicts with `bounded-first-attempt` and kept it CHECK on every run.
+
+### Spot-checks of the three lowest PASS rows (final clean run)
+
+All three are correct PASSes. Line numbers are at `5e7baaf8`.
+
+- **`pinned-never-plaintext` (score 0.78, p 0.22).** A pinned dial computes `pinned` at the top of every `_doConnect` (`services/ws-client.ts:252`) and opens only a ticketed socket with `?key=` stripped (`:289`); the plaintext `new WebSocket` (`:291`) is the other branch. The no-backoff redial to the next address requires `!context` (`:456`, `:459`), and a pinned socket always has one. REST picks the path from `isPinned` (`services/authed-fetch.ts:209`, `:224`–`:225`), and an open failure on the sealed path becomes an `EnvelopeError` (`:460`), never a plaintext retry.
+- **`refusal-scoped-to-address` (score 0.83, p 0.17).** Refusals are looked up and recorded under server, then address (`services/e2ee/context.ts:461`, `:481`). `__tests__/unit/e2ee-two-addresses.test.ts:152` proves an access-gate refusal on `publicUrl` does not stop the user address, and `:172` that a real revocation costs one `/open` per address.
+- **`user-address-first` (score 0.88, p 0.88).** `serverAddresses` returns `[url, publicUrl]` (`services/server-addresses.ts:26`), and every consumer starts at index 0: the E2EE open (`services/e2ee/context.ts:502`), the plaintext REST loop (`services/authed-fetch.ts:255`), and the WebSocket, whose `_doConnect` defaults to index 0.
+
 ### Defects found later
 
 | # | Found by | What | Criterion covering it | Jev flagged it |
 |---|---|---|---|---|
 | D1 | Planner, from the run 1 CHECK row | An aborted sealed request (caller cancel or api-client timeout) drops the REST context on a two-address server, so the next request pays a handshake (`services/authed-fetch.ts:493` at `dc735e29`). Fixed in commit 2: `api-client` passes the caller's own signal as `cancelSignal`, and a cancel keeps the context; a timeout still drops it. The slow-server timeout cost remains, in Known limits. | `idle-reconnect-cost-bounded`, partly: it asks about retry loops and backoff ticks, not about per-request context drops | The row was CHECK, but for a reason Jev did not state; the wording conflict alone would have produced it |
+
+### Cost
+
+From `session-profile.mjs` on session `f9e9ccc8-e330-407d-9c66-e106bf97e286`, taken before the docs-only commit that records it, so the last turn is missing.
+List-price estimates, not billing.
+
+- **Session:** 94.9 min wall clock, 176 API calls on `claude-opus-5-5`, about $24.87, no subagents.
+- **Jev:** 12 real runs, 653,088 input tokens, about $0.027 at $0.042 per Mtok.
+  The profiler's detector listed 6 runs; one was the dry run, which reports no tokens and is not counted.
+  It missed the six mutation runs, which a driver script ran as subprocesses; their tokens (329,079) come from the runs' own output.
+  Counted runs: runs 1–5, the clean run in the mutation worktree, and M0–M5.
+- **Comparison:** the whole Jev trial cost about a thousandth of the session that produced the change.
 
 ## Criteria change log
 
