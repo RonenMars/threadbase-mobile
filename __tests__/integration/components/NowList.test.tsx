@@ -24,6 +24,13 @@ jest.mock('@/hooks/useSessionActions', () => ({
 
 const NOW = Date.now()
 
+// Fixtures are offsets from NOW, but the cards render their elapsed label against
+// the clock at render time, so every second the suite spends between this line and
+// an assertion moves the number it renders. That made `waiting 45s` arrive as
+// `waiting 47s` on a loaded CI runner.
+beforeAll(() => jest.spyOn(Date, 'now').mockReturnValue(NOW))
+afterAll(() => jest.restoreAllMocks())
+
 const session = (overrides: Partial<MultiSession>): MultiSession => ({
   id: 'sid',
   serverId: 'server-1',

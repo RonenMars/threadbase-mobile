@@ -1,14 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { Animated, Easing } from 'react-native'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
-import { StyleSheet } from 'react-native'
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated'
 
 interface Props {
   /**
@@ -20,43 +12,55 @@ interface Props {
   size?: number
 }
 
+const PULSE_HALF_MS = 800
+
 /**
  * Small primitive shared by SessionStatusBadge, the tree leaf indicator, and
  * the hub session row. The pulse cadence (0.4 → 1 → 0.4 over 1.6s, ease-out)
  * matches DESIGN.md's "live / running" signal exactly.
+ *
+ * React Native's own native driver, not Reanimated: on Fabric a Reanimated
+ * animation commits the whole surface's shadow tree once per frame and re-runs
+ * Yoga with it, which a hub full of live rows pays continuously. The native
+ * driver writes opacity straight to the view and never enters the shadow tree.
  */
 export function LiveDot({ live, color, size = 7 }: Props) {
-  const opacity = useSharedValue(1)
   const reduceMotion = useReduceMotion()
+  const [opacity] = useState(() => new Animated.Value(1))
+  const animate = live && !reduceMotion
 
   useEffect(() => {
-    if (live && !reduceMotion) {
-      opacity.value = 0.4
-      opacity.value = withRepeat(
-        withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) }),
-        -1,
-        true,
-      )
-    } else {
-      cancelAnimation(opacity)
-      opacity.value = 1
+    if (!animate) {
+      opacity.setValue(1)
+      return
     }
-    return () => cancelAnimation(opacity)
-  }, [live, reduceMotion, opacity])
-
-  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
+    opacity.setValue(0.4)
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: PULSE_HALF_MS,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: PULSE_HALF_MS,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [animate, opacity])
 
   return (
     <Animated.View
       style={[
-        styles.dot,
         { width: size, height: size, borderRadius: size / 2, backgroundColor: color },
-        animatedStyle,
+        { opacity },
       ]}
     />
   )
 }
-
-const styles = StyleSheet.create({
-  dot: {},
-})

@@ -1,14 +1,5 @@
-import React, { useEffect } from 'react'
-import { StyleSheet, View } from 'react-native'
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Animated, Easing, StyleSheet, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
@@ -45,21 +36,26 @@ function scannerPalette(theme: Theme): string[] {
 export function KnightRiderScanner({ testID, size = 'compact', accessibilityLabel }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
-  const progress = useSharedValue(0)
+  const [progress] = useState(() => new Animated.Value(0))
   const reduceMotion = useReduceMotion()
   const spec = SIZES[size]
   const colors = scannerPalette(theme)
 
   useEffect(() => {
-    progress.value = 0
-    if (!reduceMotion) {
-      progress.value = withRepeat(
-        withTiming(1, { duration: CYCLE_MS, easing: Easing.inOut(Easing.sin) }),
-        -1,
-        true,
-      )
+    if (reduceMotion) {
+      progress.setValue(0)
+      return
     }
-    return () => cancelAnimation(progress)
+    const sweep = (toValue: number) =>
+      Animated.timing(progress, {
+        toValue,
+        duration: CYCLE_MS,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: true,
+      })
+    const loop = Animated.loop(Animated.sequence([sweep(1), sweep(0)]))
+    loop.start()
+    return () => loop.stop()
   }, [progress, reduceMotion])
 
   return (
@@ -95,6 +91,12 @@ export function KnightRiderScanner({ testID, size = 'compact', accessibilityLabe
   )
 }
 
+// The native driver takes numbers, not worklets, so the glow curve is sampled
+// into an interpolation instead of recomputed per frame. It is piecewise linear
+// in `progress`, so SAMPLES points reproduce it; the alternative is a Reanimated
+// worklet, which commits the whole shadow tree on every one of those frames.
+const SAMPLES = 21
+
 function ScannerSegment({
   index,
   count,
@@ -105,21 +107,27 @@ function ScannerSegment({
 }: {
   index: number
   count: number
-  progress: SharedValue<number>
+  progress: Animated.Value
   color: string
   width: number
   height: number
 }) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const head = progress.value * (count - 1)
-    const dist = Math.abs(index - head)
-    const glow = Math.max(UNLIT, 1 - dist / TRAIL)
-    const scaleY = 1 + Math.max(0, 1 - dist) * 0.2
-    return {
-      opacity: glow,
-      transform: [{ scaleY }],
+  const { opacity, scaleY } = useMemo(() => {
+    const inputRange: number[] = []
+    const glow: number[] = []
+    const scale: number[] = []
+    for (let s = 0; s < SAMPLES; s++) {
+      const p = s / (SAMPLES - 1)
+      const dist = Math.abs(index - p * (count - 1))
+      inputRange.push(p)
+      glow.push(Math.max(UNLIT, 1 - dist / TRAIL))
+      scale.push(1 + Math.max(0, 1 - dist) * 0.2)
     }
-  })
+    return {
+      opacity: progress.interpolate({ inputRange, outputRange: glow }),
+      scaleY: progress.interpolate({ inputRange, outputRange: scale }),
+    }
+  }, [index, count, progress])
 
   return (
     <Animated.View
@@ -130,7 +138,7 @@ function ScannerSegment({
           borderRadius: height / 2,
           backgroundColor: color,
         },
-        animatedStyle,
+        { opacity, transform: [{ scaleY }] },
       ]}
     />
   )
