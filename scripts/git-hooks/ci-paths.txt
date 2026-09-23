@@ -32,6 +32,7 @@ widgets/
 __tests__/
 __mocks__/
 test-utils/
+design/figma-plugin/
 
 # build / lint / type config
 tsconfig.json
