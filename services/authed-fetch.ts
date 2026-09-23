@@ -84,6 +84,13 @@ export interface AuthedTarget {
 
 export interface AuthedFetchInit extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>
+  /**
+   * The caller's own cancel, when `signal` also carries a timeout. React
+   * Native's AbortController records no reason, so this is the only way to tell
+   * a cancel — which says nothing about the address — from a timeout, which
+   * may mean the address stopped answering. Never passed on to `fetch`.
+   */
+  cancelSignal?: AbortSignal
 }
 
 // eslint-disable-next-line i18next/no-literal-string -- protocol header name, never rendered
@@ -215,13 +222,17 @@ export async function authedFetch(
   try {
     const response = sealed
       ? await sealedFetch(target, path, init, false, trace)
-      : await plaintextFetch(target, path, init)
+      : await plaintextFetch(target, path, withoutCancelSignal(init))
     report(String(response.status))
     return response
   } catch (err) {
     report(outcomeOf(err))
     throw err
   }
+}
+
+function withoutCancelSignal({ cancelSignal: _cancelSignal, ...init }: AuthedFetchInit): AuthedFetchInit {
+  return init
 }
 
 function isPinned(target: AuthedTarget): boolean {
@@ -480,17 +491,18 @@ async function sealedFetch(
   let response: Response
   try {
     response = await fetch(serverUrl({ url: context.baseUrl }, path), {
-      ...init,
+      ...withoutCancelSignal(init),
       method,
       headers,
       body,
     })
   } catch (err) {
-    // The address this context found has stopped answering (walked out of the
-    // LAN). Drop the context so the next request reopens from the user's
-    // address — one handshake per such event, and none for a single-address
-    // server, whose behaviour this leaves alone.
-    if (serverAddresses(target).length > 1) invalidateRestContext(serverId)
+    // The address this context found may have stopped answering (walked out
+    // of the LAN, which often surfaces as the caller's timeout). Drop the
+    // context so the next request reopens from the user's address — one
+    // handshake per such event, and none for a single-address server, whose
+    // behaviour this leaves alone. A caller's cancel is not such an event.
+    if (serverAddresses(target).length > 1 && !init.cancelSignal?.aborted) invalidateRestContext(serverId)
     throw err
   }
 

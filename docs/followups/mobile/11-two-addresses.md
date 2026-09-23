@@ -37,6 +37,7 @@ The address stays bound to the *connection* that found it and dies with that con
 
 - **WebSocket.** Each `_doConnect` starts at `url`. The socket that opens is bound to its address for as long as it lives. `liveUrl` is cleared when it closes, and the next dial starts at `url` again.
 - **Sealed REST.** The REST context *is* the connection. `acquireRestContext` opens it on the first reachable address, and the context carries that `baseUrl`. Sealed requests go to the context's address. The context already rolls over on every foreground, at 24 h, and at 1 GiB, and each reopen starts at `url`. A network failure on a context whose server has two addresses invalidates it, so walking out of Wi-Fi mid-session costs one reopen and doesn't strand requests on a dead LAN address until the next foreground.
+  `authedFetch` does not replay the request that found the address dead. The api-client's own single retry (`request()`, `requestWithMeta()`) reopens the dropped context, and the reopen moves on to `publicUrl`, so a read through the api-client costs a slower load, not an error.
 - **Plaintext REST.** There is no connection object, so each request is its own attempt: `url`, then `publicUrl`.
 
 **`url` is never overwritten.** Nothing writes the answering address into the record.
@@ -52,11 +53,30 @@ On each backoff tick of a failed WebSocket, the dial makes at most one extra att
 If the first address never answered, that attempt spent no handshake: an unreachable `/open` never reaches the streamer.
 The worst case is a first `/open` that did reach the streamer but answered after 4 s. That spends two handshakes on that tick instead of one, and the existing 1–30 s backoff still paces it.
 
+## Known limits
+
+**A refused plaintext WebSocket upgrade falls back as if unreachable.**
+React Native's WebSocket reports a refused upgrade and an unreachable address the same way — an error, then close `1006`, with no HTTP status — so the client cannot tell them apart.
+The cost is at most one extra dial to `publicUrl` per connection attempt, made sequentially and paced by the existing backoff.
+On a pinned server it never happens unsealed or with `?key=`: a pinned dial picks its address by which one answered `/open`, and never takes the plaintext branch.
+No probe or pre-flight HTTP request is added to tell the two apart: that would add a request per dial, which is exactly the cost the reconnect rule warns against.
+
+**A direct sealed read with no retry of its own fails once after walking out.**
+A read that bypasses the api-client — the server-info refresh (`stores/servers.ts:426`) — surfaces the network error of the request that found the address dead; the context is already dropped, so the next refresh reopens and moves on to `publicUrl`.
+A replay inside `authedFetch` was built and dropped (see "Commit 2 dropped" below): the api-client retry already covers every read that goes through it, and a second retry layer would stack handshakes on top of D1.
+
+**A reachable but slow server pays a handshake per timed-out sealed request.**
+On a server with two addresses, a sealed request that times out drops its REST context, so the next request reopens it: one Noise `/open` against the five-per-minute budget.
+It cannot be avoided without losing the walk-out case: a LAN address dialled from outside is usually black-holed, and that surfaces as exactly this timeout.
+The api-client's retry makes it at most two handshakes per slow request (the 8 s attempt and the 15 s retry). It is not a loop, and a `429` from `/open` is retryable, never a permanent verdict.
+A caller's cancel does not drop the context (`AuthedFetchInit.cancelSignal`, D1).
+Keeping the context on a timeout only when it sits on the last address (`publicUrl`) was considered and rejected: at home behind a router without hairpin NAT, `publicUrl` can time out rather than error, and that rule would never drop a context stuck on it.
+
 ## Files
 
 | File | Change |
 |---|---|
-| `services/server-addresses.ts` (new) | `serverAddresses(target)` → ordered, de-duplicated list; `FIRST_ADDRESS_TIMEOUT_MS`; `wasUnreachable(err)` |
+| `services/server-addresses.ts` (new) | `serverAddresses(target)` → ordered, de-duplicated list; `FIRST_ADDRESS_TIMEOUT_MS` |
 | `services/e2ee/context.ts` | `OpenContextArgs.timeoutMs?`; `OpenError.unreachable` (set only when the `/open` fetch threw); `TransportContext.baseUrl`; permanent-refusal memory keyed by server and address |
 | `services/e2ee/rest-session.ts` | open over the address list; return the context bound to the address that answered |
 | `services/authed-fetch.ts` | `AuthedTarget.publicUrl?`; plaintext per-request order; sealed requests to `context.baseUrl`; invalidate on network failure when two addresses |
@@ -115,6 +135,75 @@ A caveat marks a sub-case where a strict reader could answer the other way.
 | `idle-reconnect-cost-bounded` | yes | yes | No new timer; at most one extra dial or `/open` per backoff tick |
 | `refusal-scoped-to-address` | no | no | Refusal memory keyed by server and address |
 
+**Commit 2 dropped.** The owner's first plan replayed a sealed `GET`/`HEAD` once inside `authedFetch` after a network error.
+The planner then pointed out that `request()` and `requestWithMeta()` in `services/api-client.ts` already retry once on any network error or timeout, and the retry reopens the context; I verified it at `:383` and `:565`.
+Stacked, two failures in a row cost up to four fetches and three reopens instead of two and one, so the owner dropped the replay and asked instead for a test proving the recovery through the api-client retry.
+Run 2 below judged the dropped replay; it is kept as data.
+
+**Blind change for the dropped replay, written before run 2.** Not fully blind: run 1's output was already read.
+Only two answers change. `rest-falls-back` loses its caveat and stays yes: the read that finds a dead address is now replayed on the reopened context.
+`idle-reconnect-cost-bounded` becomes no on the strict reading: the replay is a new, single retry, and D1 still stands.
+
+**Blind change for the D1 fix (commit 2), written before run 4.** No answer changes.
+`idle-reconnect-cost-bounded` stays no on the strict reading: the first-address timers remain, and so does the slow-server timeout cost (Known limits). The fix only removes the caller-cancel share of it.
+
+### Runs
+
+`p` is Jev's probability that the answer is yes; `status` compares it with the expected answer at threshold 0.7.
+Run 1 is commit `dc735e29` (implementation) against `origin/main`, 52,644 input tokens, 5 batches.
+Run 2 is commit 1 plus the uncommitted, later dropped, sealed read replay, against `origin/main`, 53,289 input tokens, 5 batches.
+Run 3 re-judged commit 1's exact code diff (only a test and this doc had changed, both outside every criterion's `paths`): 52,644 input tokens, as in run 1. Same statuses; `p` moved by at most 0.03 on an identical input.
+Run 4 is commit 1 plus the D1 fix (commit 2), 55,144 input tokens. Same statuses; `idle-reconnect-cost-bounded` rose from 0.10 to 0.16 and stayed CHECK.
+The two runs agree on every status; the largest move in `p` is 0.05 (`pinned-never-plaintext`).
+
+| Criterion | Expect | Run 1 p | Run 1 | Run 2 p | Run 2 | Run 3 p | Run 3 | Run 4 p | Run 4 | Blind agrees (run 1) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `user-address-first` | yes | 0.92 | PASS | 0.92 | PASS | 0.91 | PASS | 0.89 | PASS | yes |
+| `sequential-not-raced` | yes | 0.97 | PASS | 0.97 | PASS | 0.97 | PASS | 0.97 | PASS | yes |
+| `bounded-first-attempt` | yes | 0.96 | PASS | 0.96 | PASS | 0.96 | PASS | 0.96 | PASS | yes |
+| `no-sticky-switch` | no | 0.05 | PASS | 0.05 | PASS | 0.06 | PASS | 0.06 | PASS | yes |
+| `url-never-overwritten` | no | 0.08 | PASS | 0.07 | PASS | 0.09 | PASS | 0.08 | PASS | yes |
+| `websocket-falls-back` | yes | 0.97 | PASS | 0.97 | PASS | 0.97 | PASS | 0.97 | PASS | yes |
+| `rest-falls-back` | yes | 0.90 | PASS | 0.92 | PASS | 0.92 | PASS | 0.90 | PASS | yes |
+| `live-address-shown` | yes | 0.92 | PASS | 0.90 | PASS | 0.92 | PASS | 0.92 | PASS | yes |
+| `no-identity-key-comparison` | no | 0.04 | PASS | 0.04 | PASS | 0.05 | PASS | 0.04 | PASS | yes |
+| `fallback-only-when-unreachable` | yes | 0.95 | PASS | 0.94 | PASS | 0.94 | PASS | 0.94 | PASS | yes |
+| `pinned-never-plaintext` | no | 0.25 | PASS | 0.20 | PASS | 0.22 | PASS | 0.21 | PASS | yes |
+| `idle-reconnect-cost-bounded` | yes | 0.12 | **CHECK** | 0.11 | **CHECK** | 0.10 | **CHECK** | 0.16 | **CHECK** | no — I said yes |
+| `refusal-scoped-to-address` | no | 0.17 | PASS | 0.18 | PASS | 0.16 | PASS | 0.19 | PASS | yes |
+
+**Known true caveat not flagged.** `fallback-only-when-unreachable` passed at 0.95 although caveat 3 (a refused plaintext upgrade falls back, see Known limits) is a real sub-case where the strict answer is no.
+Jev did not surface it.
+
+### CHECK verdicts
+
+Line numbers are at the commit each run judged.
+
+**`idle-reconnect-cost-bounded`, run 1 (p 0.12).** Two parts, one of each kind.
+
+- *Wording conflict — false alarm.* The question's clause "adds no new timer" is literally false: the change adds a per-request timer (`services/authed-fetch.ts:273`, `boundedSignal`) and shortens two existing ones (`services/ws-client.ts:324`, `services/e2ee/context.ts:321`).
+  Those are the bound `bounded-first-attempt` asks for; they cap how long an attempt runs and schedule no new attempt.
+  The cost bound itself holds on the WebSocket: a plaintext dial that never opened moves to the next address with no backoff only while one remains (`services/ws-client.ts:459`), then falls through to the existing backoff (`:468`, `:483`), whose tick restarts at index 0. The address loops are capped at two (`services/e2ee/context.ts:502`, `services/authed-fetch.ts:244`).
+  Mine; the planner agreed.
+- *Real finding — bounded REST handshake cost.* **Planner-sourced; I verified it in the code.** The sealed catch (`services/authed-fetch.ts:493`) drops the REST context on any rejection, including an abort.
+  `request()` and `requestWithMeta()` in `services/api-client.ts` hand `authedFetch` one merged signal — the caller's React Query signal plus their own 8 s / 15 s timeout — and React Native's `AbortController` (`abort-controller@3.0.0`) carries no `reason`, so `authedFetch` cannot tell the two apart.
+  A caller cancel (a query losing its last observer mid-fetch) and a timeout on a reachable-but-slow server therefore each cost a Noise `/open` on the next request, against the five-per-minute budget. Not a loop, but more than the design's "one handshake per walk-out".
+  Ignoring aborts is not the fix: a black-holed LAN address after walking out surfaces as exactly that timeout abort. Logged as D1 below.
+
+**`idle-reconnect-cost-bounded`, run 2 (p 0.11), on the dropped replay.** Same two parts as run 1, plus the replay itself, which was a real but bounded retry.
+The replay retried a sealed `GET`/`HEAD` once after a network error, never a write, never an aborted request, and never the replay itself (the diff was never committed, so there are no line numbers to cite).
+It stacks with the api-client's own single retry: two network errors in a row on both calls cost up to four fetches and three reopens, where commit 1 cost two and one.
+A reopen through an unreachable address spends no handshake, so the handshakes land only on an address that answered `/open` and then failed the request.
+Mine.
+
+**`idle-reconnect-cost-bounded`, run 4 (p 0.16), on the D1 fix.** Unchanged from run 1: a wording conflict on the timers, plus the slow-server timeout cost, which is now a documented known limit rather than an open defect. Mine.
+
+### Defects found later
+
+| # | Found by | What | Criterion covering it | Jev flagged it |
+|---|---|---|---|---|
+| D1 | Planner, from the run 1 CHECK row | An aborted sealed request (caller cancel or api-client timeout) drops the REST context on a two-address server, so the next request pays a handshake (`services/authed-fetch.ts:493` at `dc735e29`). Fixed in commit 2: `api-client` passes the caller's own signal as `cancelSignal`, and a cancel keeps the context; a timeout still drops it. The slow-server timeout cost remains, in Known limits. | `idle-reconnect-cost-bounded`, partly: it asks about retry loops and backoff ticks, not about per-request context drops | The row was CHECK, but for a reason Jev did not state; the wording conflict alone would have produced it |
+
 ## Criteria change log
 
 Pre-freeze edits, from the owner's plan review on 2026-09-23:
@@ -126,4 +215,4 @@ Pre-freeze edits, from the owner's plan review on 2026-09-23:
 
 Changes to the trial run itself, not to the criteria (the criteria file is unchanged, and so is its hash):
 
-- Added recall mutation **M5**: revert only the refusal memory in `services/e2ee/context.ts` to per-server keying. It is the only mutation that exercises `refusal-scoped-to-address`, which none of M0–M4 touch. The planner session requested it and relayed that the owner asked for it. The owner's confirmation in this session is pending.
+- Added recall mutation **M5**: revert only the refusal memory in `services/e2ee/context.ts` to per-server keying. It is the only mutation that exercises `refusal-scoped-to-address`, which none of M0–M4 touch. The planner session requested it and relayed that the owner asked for it. The owner confirmed it in this session on 2026-09-23.

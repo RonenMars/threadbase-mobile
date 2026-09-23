@@ -23,6 +23,8 @@ import {
   restTargetHash,
 } from '@/services/e2ee/record'
 import { OpenError, type TransportContext } from '@/services/e2ee/context'
+import { createApiForServer } from '@/services/api-client'
+import { useServersStore } from '@/stores/servers'
 import {
   _resetRestSessionsForTests,
   _restLiveCount,
@@ -521,6 +523,73 @@ describe('authedFetch REST envelope – two addresses', () => {
 
     expect(opened).toEqual([LAN, LAN])
     expect(spy.mock.calls.map(([url]) => String(url))).toEqual([`${LAN}/api/info`, `${LAN}/api/info`])
+  })
+
+  const seedServer = () =>
+    useServersStore.setState({
+      servers: {
+        'srv-1': { ...twoAddresses(), label: 'Studio', isConnected: true, serverInfo: null, connectionError: null },
+      },
+    })
+  // A request that never answers, and rejects only once its signal fires.
+  const hangUntilAborted = async (_url: RequestInfo | URL, init?: RequestInit) =>
+    new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener('abort', () => reject(new Error('Aborted')))
+    })
+
+  it('keeps the context when the caller cancels — a cancel says nothing about the address', async () => {
+    seedServer()
+    const opened = opener([])
+    const caller = new AbortController()
+    fetchSpy().mockImplementation(async (url, init) => {
+      const pending = hangUntilAborted(url, init)
+      caller.abort()
+      return pending
+    })
+
+    await expect(
+      createApiForServer('srv-1').get('/api/info', { signal: caller.signal, retry: false }),
+    ).rejects.toThrow('Request cancelled')
+
+    expect(opened).toEqual([LAN])
+    expect(_restLiveCount()).toBe(1)
+  })
+
+  it('still drops the context when the request times out — the address may have stopped answering', async () => {
+    seedServer()
+    const opened = opener([])
+    fetchSpy().mockImplementation(hangUntilAborted)
+
+    await expect(
+      createApiForServer('srv-1').get('/api/info', { signal: new AbortController().signal, timeoutMs: 20, retry: false }),
+    ).rejects.toThrow()
+
+    expect(opened).toEqual([LAN])
+    expect(_restLiveCount()).toBe(0)
+  })
+
+  it('recovers a sealed read through the api-client retry after the user address stops answering', async () => {
+    // No retry of its own in authedFetch: the api-client's single retry reopens
+    // the dropped context, and the reopen moves on to publicUrl.
+    seedServer()
+    const unreachable: string[] = []
+    const opened = opener(unreachable)
+    const spy = fetchSpy().mockImplementation(async (url, init) => {
+      if (String(url).startsWith(LAN)) {
+        unreachable.push(LAN)
+        throw new TypeError('Network request failed')
+      }
+      const seq = BigInt((init?.headers as Record<string, string>)[HEADER_SEQ])
+      return new Response(asBody(sealServerResponse(seq, '/api/info', 'GET', '{"ok":true}')), {
+        status: 200,
+        headers: { [HEADER_E2EE]: '1', 'Content-Type': 'application/octet-stream' },
+      })
+    })
+
+    await expect(createApiForServer('srv-1').get('/api/info')).resolves.toEqual({ ok: true })
+
+    expect(opened).toEqual([LAN, LAN, PUBLIC])
+    expect(spy.mock.calls.map(([url]) => String(url))).toEqual([`${LAN}/api/info`, `${PUBLIC}/api/info`])
   })
 
   it('keeps the context of a single-address server through a network failure', async () => {
