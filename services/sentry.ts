@@ -57,6 +57,9 @@ import { getSentryInstallId, clearSentryInstallId } from './sentry-install-id'
  * only in the EAS build environment, never here. */
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN
 const SENTRY_DEBUG = process.env.EXPO_PUBLIC_SENTRY_DEBUG === '1'
+/** Explicit runtime environment. Deploy (`.github/workflows/deploy.yml`) pins
+ * it to `production`; unset falls back to `__DEV__` / the EAS channel. */
+const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV
 
 /** Conservative error sampling. We are not doing performance tracing at all. */
 const ERROR_SAMPLE_RATE = 1.0
@@ -77,6 +80,7 @@ let diagnosticsEnabled = false
 
 /** Resolve the environment name for tagging (safe, coarse). */
 function resolveEnvironment(): string {
+  if (APP_ENV) return APP_ENV
   if (__DEV__) return 'development'
   // `channel` distinguishes preview/internal vs production EAS builds.
   const channel = (Constants.expoConfig as { extra?: { eas?: { channel?: string } } } | null)?.extra
@@ -93,7 +97,21 @@ function resolveEnvironment(): string {
 export function environmentPermitsReporting(): boolean {
   // Allow an explicit override for internal QA of the pipeline.
   if (process.env.EXPO_PUBLIC_SENTRY_ALLOW_DEV === '1') return true
-  return !__DEV__
+  return !__DEV__ || isDevEnvironment()
+}
+
+/** A DEV run: a Metro `__DEV__` bundle, or an explicit `EXPO_PUBLIC_APP_ENV=development`. */
+export function isDevEnvironment(): boolean {
+  return resolveEnvironment() === 'development'
+}
+
+/**
+ * DEV runs with a DSN always report, for QA: consent is forced on (by
+ * `useCrashReportingSync`) and `performInit` adds replay, screenshots and
+ * tracing. Every other environment keeps the opt-in consent gate untouched.
+ */
+export function isDevDiagnosticsForced(): boolean {
+  return isDevEnvironment() && isDsnConfigured()
 }
 
 /** Whether a DSN is configured. */
@@ -196,6 +214,7 @@ function applySafeTags(): void {
  * life of this process (see module doc: that flag cannot be changed later).
  */
 async function performInit(startupConsent: boolean): Promise<void> {
+  const dev = isDevEnvironment()
   Sentry.init({
     dsn: DSN,
     environment: resolveEnvironment(),
@@ -205,13 +224,14 @@ async function performInit(startupConsent: boolean): Promise<void> {
     debug: SENTRY_DEBUG, // opt-in only: the SDK's native debug logger is very noisy
 
     // ---- Privacy hardening: disable everything that could capture content ----
+    // DEV runs (never a store build) turn the QA aids back on; see isDevDiagnosticsForced.
     sendDefaultPii: false,
-    attachScreenshot: false,
-    attachViewHierarchy: false,
+    attachScreenshot: dev,
+    attachViewHierarchy: dev,
     attachStacktrace: true, // stack traces are scrubbed by our sanitizer
     enableCaptureFailedRequests: false,
-    enableUserInteractionTracing: false,
-    enableAutoPerformanceTracing: false,
+    enableUserInteractionTracing: dev,
+    enableAutoPerformanceTracing: dev,
     // A session is a start/end timestamp plus an ok/errored/crashed status —
     // no content, no PII — and it is the only source of crash-free rate and
     // release adoption. It is fixed at native-init time (see module doc), so
@@ -221,17 +241,19 @@ async function performInit(startupConsent: boolean): Promise<void> {
     enableWatchdogTerminationTracking: false,
     enableNativeNagger: false,
 
-    // No Session Replay — sample rates pinned to zero as belt-and-suspenders.
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: 0,
+    // No Session Replay outside DEV — sample rates pinned to zero as belt-and-suspenders.
+    // DEV replay keeps the SDK's default masking of all text and images.
+    replaysSessionSampleRate: dev ? 1 : 0,
+    replaysOnErrorSampleRate: dev ? 1 : 0,
 
-    // No performance tracing at all.
-    tracesSampleRate: 0,
+    // No performance tracing outside DEV.
+    tracesSampleRate: dev ? 1 : 0,
     sampleRate: ERROR_SAMPLE_RATE,
     maxBreadcrumbs: 20,
 
     // Strip risky default integrations; our hooks are the final guard.
-    integrations: (defaults) => filterIntegrations(defaults),
+    integrations: (defaults) =>
+      dev ? [...defaults, Sentry.mobileReplayIntegration()] : filterIntegrations(defaults),
 
     beforeSend: (event) => beforeSend(event as unknown as SentryLikeEvent) as never,
     beforeBreadcrumb: (breadcrumb) =>

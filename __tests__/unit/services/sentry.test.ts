@@ -18,7 +18,8 @@ function loadService(env: Record<string, string | undefined>) {
   let sdk!: typeof import('@sentry/react-native')
   jest.isolateModules(() => {
     const prev = { ...process.env }
-    for (const [key, value] of Object.entries(env)) {
+    // jest runs with __DEV__ true; pin production unless a test asks for DEV.
+    for (const [key, value] of Object.entries({ EXPO_PUBLIC_APP_ENV: 'production', ...env })) {
       // Assigning `undefined` coerces to the string "undefined" on
       // process.env — delete the key instead so "unset" means unset.
       if (value === undefined) delete process.env[key]
@@ -398,5 +399,43 @@ describe('sentry service — submitFeedbackViaSentry (independent of consent, by
     const id = await mod.submitFeedbackViaSentry({ message: 'it broke' })
     expect(id).toBeUndefined()
     expect(sdk.captureFeedback).not.toHaveBeenCalled()
+  })
+})
+
+describe('sentry service — DEV runs report with QA aids', () => {
+  it('forces diagnostics only in DEV with a DSN', () => {
+    expect(loadService({ EXPO_PUBLIC_APP_ENV: 'development', EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isDevDiagnosticsForced()).toBe(true)
+    expect(loadService({ EXPO_PUBLIC_APP_ENV: 'development', EXPO_PUBLIC_SENTRY_DSN: undefined }).mod.isDevDiagnosticsForced()).toBe(false)
+    expect(loadService({ EXPO_PUBLIC_APP_ENV: 'production', EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isDevDiagnosticsForced()).toBe(false)
+  })
+
+  it('treats an unset APP_ENV in a __DEV__ bundle as DEV', () => {
+    const { mod } = loadService({ EXPO_PUBLIC_APP_ENV: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN })
+    expect(mod.isDevEnvironment()).toBe(true)
+  })
+
+  it('initializes in DEV without the ALLOW_DEV override, with replay, screenshots and tracing on', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_APP_ENV: 'development', EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: undefined })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    const opts = (sdk.init as jest.Mock).mock.calls[0][0]
+    expect(opts.environment).toBe('development')
+    expect(opts.sendDefaultPii).toBe(false)
+    expect(opts.attachScreenshot).toBe(true)
+    expect(opts.attachViewHierarchy).toBe(true)
+    expect(opts.replaysSessionSampleRate).toBe(1)
+    expect(opts.replaysOnErrorSampleRate).toBe(1)
+    expect(opts.tracesSampleRate).toBe(1)
+    const integrations = opts.integrations([{ name: 'Breadcrumbs' }])
+    expect(integrations.map((i: { name: string }) => i.name)).toEqual(['Breadcrumbs', 'MobileReplay'])
+  })
+
+  it('tags a production build production and keeps replay off', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_APP_ENV: 'production', EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    const opts = (sdk.init as jest.Mock).mock.calls[0][0]
+    expect(opts.environment).toBe('production')
+    expect(opts.replaysSessionSampleRate).toBe(0)
+    expect(opts.attachScreenshot).toBe(false)
+    expect(sdk.mobileReplayIntegration).not.toHaveBeenCalled()
   })
 })

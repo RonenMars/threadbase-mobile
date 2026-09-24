@@ -23,6 +23,7 @@ function loadService() {
     const prev = { ...process.env }
     process.env.EXPO_PUBLIC_SENTRY_DSN = DSN
     process.env.EXPO_PUBLIC_SENTRY_ALLOW_DEV = '1'
+    process.env.EXPO_PUBLIC_APP_ENV = 'production'
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     sdk = require('@sentry/react-native')
     // eslint-disable-next-line @typescript-eslint/no-require-imports

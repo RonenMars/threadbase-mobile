@@ -382,6 +382,7 @@ jest.mock('@sentry/react-native', () => {
     setTags: jest.fn(),
     withScope: jest.fn((cb) => cb(scope)),
     wrap: jest.fn((c) => c),
+    mobileReplayIntegration: jest.fn(() => ({ name: 'MobileReplay' })),
     ErrorBoundary: ({ children }) => children,
     __scope: scope,
   }
