@@ -26,11 +26,37 @@ const src = fs.readFileSync(PLUGIN, 'utf8');
 function catalogRuntime() {
   const entry = src.indexOf('// ---------- plugin entry ----------');
   expect(entry).toBeGreaterThan(-1);
-  const sandbox = {};
+  const pages = [];
+  const root = {
+    children: pages,
+    findAll(predicate) {
+      return pages.flatMap((page) => page.children || []).filter(predicate);
+    },
+  };
+  const sandbox = {
+    figma: {
+      root,
+      createPage() {
+        const page = { type: 'PAGE', name: '', children: [] };
+        pages.push(page);
+        return page;
+      },
+      setCurrentPageAsync: jest.fn(async (page) => {
+        sandbox.figma.currentPage = page;
+      }),
+    },
+  };
   const expose = `
 globalThis.catalog = CATALOG;
 globalThis.steps = buildSteps();
 globalThis.assets = sourceAssets();
+globalThis.requiredPages = CATALOG_PAGE_ORDER;
+globalThis.ensurePages = ensureCatalogPages;
+globalThis.findComponent = findComp;
+globalThis.runJob = runBuildJob;
+globalThis.runPageJobs = runBuildPage;
+globalThis.tagBuildNode = tagBuildNode;
+globalThis.applySourceLinks = linkSources;
 `;
   new vm.Script(src.slice(0, entry) + expose, { filename: PLUGIN }).runInNewContext(sandbox);
   return sandbox;
@@ -81,9 +107,96 @@ describe('figma plugin: code.js', () => {
     ))).toEqual([]);
   });
 
-  it('feeds the build and source-link paths from the catalog', () => {
-    expect(src).toContain('const steps = buildSteps();');
-    expect(src).toContain('for (const entry of sourceAssets()) {');
+  it('applies repository links to every cataloged public asset', async () => {
+    const runtime = catalogRuntime();
+    const page = { type: 'PAGE', name: 'Components', children: [] };
+    runtime.figma.root.children.push(page);
+    for (const { name } of runtime.assets) {
+      page.children.push({ type: 'COMPONENT', name, documentationLinks: [] });
+    }
+
+    await runtime.applySourceLinks();
+
+    const badge = page.children.find(({ name }) => name === 'Badge');
+    expect(badge.documentationLinks).toEqual([{
+      uri: 'https://github.com/RonenMars/threadbase-mobile/blob/main/components/ui/Badge.tsx',
+    }]);
+  });
+
+  it('creates the complete page structure idempotently and keeps Screens separate from Visual QA', () => {
+    const runtime = catalogRuntime();
+    runtime.figma.root.children.push({ type: 'PAGE', name: '10 Foundations', children: [] });
+
+    const first = runtime.ensurePages();
+    const second = runtime.ensurePages();
+
+    expect([...runtime.requiredPages]).toEqual([
+      '00 Start Here',
+      '10 Foundations',
+      '20 Core & Shared',
+      '30 Sessions',
+      '40 Conversation & Terminal',
+      '50 Connectivity',
+      '60 Product Experience',
+      '70 Patterns',
+      '80 Screens',
+      '90 Visual QA',
+      '99 Deprecated',
+    ]);
+    expect(runtime.figma.root.children).toHaveLength(11);
+    expect(second.get('10 Foundations')).toBe(first.get('10 Foundations'));
+    expect(first.get('80 Screens')).not.toBe(first.get('90 Visual QA'));
+  });
+
+  it('finds components across pages and refuses ambiguous public names', () => {
+    const runtime = catalogRuntime();
+    const firstPage = { type: 'PAGE', name: 'First', children: [] };
+    const secondPage = {
+      type: 'PAGE',
+      name: 'Second',
+      children: [{ type: 'COMPONENT', name: 'Shared' }],
+    };
+    runtime.figma.root.children.push(firstPage, secondPage);
+
+    expect(runtime.findComponent('Shared')).toBe(secondPage.children[0]);
+    firstPage.children.push({ type: 'COMPONENT_SET', name: 'Shared' });
+    expect(() => runtime.findComponent('Shared')).toThrow('Duplicate component name "Shared"');
+  });
+
+  it('runs a build job on its catalog page and tags generated nodes with its group', async () => {
+    const runtime = catalogRuntime();
+    const pages = runtime.ensurePages();
+    const node = { setPluginData: jest.fn() };
+    const job = {
+      buildName: 'Example',
+      builder: () => runtime.tagBuildNode(node),
+      page: '40 Conversation & Terminal',
+      group: 'Messages',
+    };
+
+    await runtime.runJob(job, pages);
+
+    expect(runtime.figma.currentPage).toBe(pages.get('40 Conversation & Terminal'));
+    expect(node.setPluginData).toHaveBeenCalledWith('threadbase-group', 'Messages');
+  });
+
+  it('switches pages once when running multiple jobs for the same destination', async () => {
+    const runtime = catalogRuntime();
+    const pages = runtime.ensurePages();
+    const page = pages.get('20 Core & Shared');
+    const first = { setPluginData: jest.fn() };
+    const second = { setPluginData: jest.fn() };
+    runtime.figma.setCurrentPageAsync.mockClear();
+
+    await runtime.runPageJobs([
+      { builder: () => runtime.tagBuildNode(first), group: 'Feedback' },
+      { builder: () => runtime.tagBuildNode(second), group: 'Actions' },
+    ], page);
+
+    expect(runtime.figma.setCurrentPageAsync).toHaveBeenCalledTimes(1);
+    expect(runtime.figma.setCurrentPageAsync).toHaveBeenCalledWith(page);
+    expect(first.setPluginData).toHaveBeenCalledWith('threadbase-group', 'Feedback');
+    expect(second.setPluginData).toHaveBeenCalledWith('threadbase-group', 'Actions');
   });
 });
 

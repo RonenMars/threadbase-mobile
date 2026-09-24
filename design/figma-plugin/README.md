@@ -11,12 +11,14 @@ It uses the same Plugin API and needs no MCP calls.
 2. Menu → Plugins → Development → **Import plugin from manifest…** → pick `manifest.json` in this folder.
 3. Plugins → Development → Threadbase DS Builder → **Build remaining components + screens**.
 
+The plugin creates or reuses the required pages, then runs all jobs for one page before switching to the next.
 Each step skips itself if its output already exists, so it is safe to run again after a partial failure.
+Public component names must be unique across the file; the build stops on an ambiguous lookup instead of linking or instancing the wrong asset.
 Errors are listed in the toast and in the plugin console (Plugins → Development → Show/Hide console).
 
 ## What it adds
 
-- **Components page:**
+- **20 Core & Shared, 30 Sessions, 40 Conversation & Terminal, 50 Connectivity and 60 Product Experience:**
   - icons: `Icon/SlidersHorizontal`, `Icon/Gear`, `Mark/Claude`
   - component sets: Banner, EmptyState, FAB, StateBadge, ServerChip, LiveCard, EarlierRow, ServerListCard
   - batch 1 (ui): ProviderMark, SkeletonBox, TimeBucketPills, MessagePreview, LoadingOverlay
@@ -29,10 +31,11 @@ Errors are listed in the toast and in the plugin console (Plugins → Developmen
   - batch 8 (review, terminal, misc): DiagnosticsPreview, ReviewSheet, QuietHoursEditor, SlashCommandBoard, SlashCommandArgModal, TourOverlay, ConversationSearchView (match bar), SessionHistoryFeed, TerminalOutput, RootErrorBoundary and RenderErrorBoundary fallbacks
   - batch 9 (onboarding, literal palette): PagerDots, PrimaryButton, TerminalCard, InfoTooltip, ThreadField, and an `Onboarding` set with all five steps and their states
   - `Asset/AppIcon`: a placeholder until a bridge job fills it with `assets/icon.png`, because the plugin can't read files from disk
-- **Screens page:**
+- **80 Screens:**
   - `Now — dark`, rebuilt from component instances to match `e2e/visual/theme-gallery/theme-gallery-dark-now.png`
   - `Now — empty`
   - `Settings — servers`
+- **90 Visual QA:**
   - the 16 `e2e/visual/theme-gallery/*.png` reference screenshots, moved here and laid out 1/3 scale in two rows (Now, Projects) with one column per theme.
     They were uploaded over the MCP, which places them on another page, so this step collects them wherever they landed.
 - **Source links:** every component set, plus `ServerChip`, gets a `documentationLinks` entry pointing at its `.tsx` file on GitHub, shown in the Inspect panel.
@@ -62,6 +65,22 @@ If the code changes, edit this plugin or the variables to match; don't edit the 
 `code.js` keeps build jobs and public assets in one `CATALOG`.
 Each record carries the build or source-link data plus its target page, group, kind and lifecycle status, so organization does not drift into a second hand-maintained map.
 The page metadata does not move live Figma nodes by itself; a separate migration phase owns that change.
+
+The builder creates or reuses these pages in this order:
+
+1. `00 Start Here`
+2. `10 Foundations`
+3. `20 Core & Shared`
+4. `30 Sessions`
+5. `40 Conversation & Terminal`
+6. `50 Connectivity`
+7. `60 Product Experience`
+8. `70 Patterns`
+9. `80 Screens`
+10. `90 Visual QA`
+11. `99 Deprecated`
+
+Generated sections carry their catalog group in the private `threadbase-group` plugin-data key so a later migration can organize existing nodes without changing component identity.
 
 ## Live bridge (for agent-driven edits)
 

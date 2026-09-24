@@ -77,6 +77,7 @@ const CLAUDE_MARK = 'M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487
 let V = {};
 let S = {};
 let compPage = null;
+let activeBuildGroup = null;
 
 // ---------- helpers ----------
 function P(name, opacity) {
@@ -141,7 +142,9 @@ function rad(n, key) {
 function fill(parent, child) { parent.appendChild(child); child.layoutSizingHorizontal = 'FILL'; return child; }
 function wrapText(parent, t) { parent.appendChild(t); t.layoutSizingHorizontal = 'FILL'; t.textAutoResize = 'HEIGHT'; return t; }
 function findComp(name) {
-  return compPage.findOne(n => (n.type === 'COMPONENT' || n.type === 'COMPONENT_SET') && n.name === name);
+  const matches = figma.root.findAll(n => (n.type === 'COMPONENT' || n.type === 'COMPONENT_SET') && n.name === name);
+  if (matches.length > 1) throw new Error('Duplicate component name "' + name + '"');
+  return matches[0] || null;
 }
 function variant(setName, variantName) {
   const set = findComp(setName);
@@ -175,6 +178,7 @@ function spacer() { const s = AL('HORIZONTAL', 'spacer'); s.counterAxisSizingMod
 function newSection(name, desc) {
   const bottom = Math.max(0, ...compPage.children.map(c => c.y + c.height));
   const s = figma.createSection();
+  tagBuildNode(s);
   s.name = name;
   s.x = 0;
   s.y = bottom + 80;
@@ -1213,8 +1217,8 @@ function clearDesc(sec) {
   sec.resizeWithoutConstraints(sec.width, sec.height + delta);
 }
 // Growing a section overlaps the one below, so restack them all afterwards.
-function clearDescs() {
-  const secs = compPage.children.filter(n => n.type === 'SECTION').sort((a, b) => a.y - b.y);
+function clearDescs(page) {
+  const secs = (page || compPage).children.filter(n => n.type === 'SECTION').sort((a, b) => a.y - b.y);
   let y = secs.length ? secs[0].y : 0;
   for (const sec of secs) { clearDesc(sec); sec.y = y; y += sec.height + 80; }
 }
@@ -3322,13 +3326,56 @@ async function switchTheme(theme) {
 // ---------- source links (Code Connect needs an Org plan; this is the Starter substitute) ----------
 const REPO = 'https://github.com/RonenMars/threadbase-mobile/blob/main/';
 const CATALOG_PAGES = {
+  start: '00 Start Here',
+  foundations: '10 Foundations',
   core: '20 Core & Shared',
   sessions: '30 Sessions',
   conversation: '40 Conversation & Terminal',
   connectivity: '50 Connectivity',
   experience: '60 Product Experience',
   patterns: '70 Patterns',
+  screens: '80 Screens',
+  visualQa: '90 Visual QA',
+  deprecated: '99 Deprecated',
 };
+const CATALOG_PAGE_ORDER = Object.values(CATALOG_PAGES);
+function ensureCatalogPages() {
+  const pages = new Map();
+  for (const name of CATALOG_PAGE_ORDER) {
+    const matches = figma.root.children.filter(node => node.type === 'PAGE' && node.name === name);
+    if (matches.length > 1) throw new Error('Duplicate page name "' + name + '"');
+    const page = matches[0] || figma.createPage();
+    page.name = name;
+    pages.set(name, page);
+  }
+  return pages;
+}
+function tagBuildNode(node) {
+  if (activeBuildGroup) node.setPluginData('threadbase-group', activeBuildGroup);
+  return node;
+}
+async function runBuildJob(entry, pages) {
+  const page = pages.get(entry.page);
+  if (!page) throw new Error('Unknown catalog page "' + entry.page + '"');
+  const errors = await runBuildPage([entry], page);
+  if (errors.length) throw errors[0].error;
+}
+async function runBuildPage(entries, page) {
+  compPage = page;
+  await figma.setCurrentPageAsync(page);
+  const errors = [];
+  for (const entry of entries) {
+    activeBuildGroup = entry.group;
+    try {
+      await entry.builder();
+    } catch (error) {
+      errors.push({ entry, error });
+    } finally {
+      activeBuildGroup = null;
+    }
+  }
+  return errors;
+}
 function job(buildName, builder, page, group, kind) {
   return { buildName, builder, page, group, kind: kind || 'component', status: 'stable' };
 }
@@ -3598,28 +3645,30 @@ async function arrangeReferences(screensPage) {
 
 // ---------- entry ----------
 async function init() {
+  await figma.loadAllPagesAsync();
   const all = await figma.variables.getLocalVariablesAsync();
   for (const v of all) V[v.name] = v;
   for (const s of await figma.getLocalTextStylesAsync()) S[s.name] = s;
   for (const st of ['Regular', 'Medium', 'Semi Bold', 'Bold', 'Italic']) await figma.loadFontAsync({ family: 'Inter', style: st });
   await figma.loadFontAsync({ family: 'JetBrains Mono', style: 'Regular' });
-  compPage = figma.root.children.find(p => p.name === 'Components');
-  const screensPage = figma.root.children.find(p => p.name === 'Screens');
-  if (!compPage || !screensPage) throw new Error('Expected pages "Components" and "Screens"');
-  await figma.setCurrentPageAsync(compPage);
-  return screensPage;
+  const pages = ensureCatalogPages();
+  compPage = pages.get(CATALOG_PAGES.core);
+  return pages;
 }
 async function build() {
-  const screensPage = await init();
+  const pages = await init();
   const errors = [];
-  const steps = buildSteps();
-  for (const [name, fn] of steps) {
-    try { await fn(); } catch (e) { errors.push(name + ': ' + e.message); }
+  const jobs = CATALOG.filter(x => x.builder);
+  for (const pageName of CATALOG_PAGE_ORDER) {
+    const pageJobs = jobs.filter(entry => entry.page === pageName);
+    if (!pageJobs.length) continue;
+    const pageErrors = await runBuildPage(pageJobs, pages.get(pageName));
+    for (const { entry, error } of pageErrors) errors.push(entry.buildName + ': ' + error.message);
   }
-  clearDescs();
-  try { await buildScreens(screensPage); } catch (e) { errors.push('screens: ' + e.message); }
+  for (const page of pages.values()) clearDescs(page);
+  try { await buildScreens(pages.get(CATALOG_PAGES.screens)); } catch (e) { errors.push('screens: ' + e.message); }
   try { await linkSources(); } catch (e) { errors.push('links: ' + e.message); }
-  try { await arrangeReferences(screensPage); } catch (e) { errors.push('references: ' + e.message); }
+  try { await arrangeReferences(pages.get(CATALOG_PAGES.visualQa)); } catch (e) { errors.push('references: ' + e.message); }
   return errors;
 }
 
