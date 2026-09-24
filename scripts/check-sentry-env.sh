@@ -57,8 +57,9 @@ case "$APP_ENV" in
     # must never carry it. Expo inlines EXPO_PUBLIC_* from the shell *and* from
     # .env / .env.local in the working directory (ship scripts run from the repo
     # root), so both are checked.
-    if [[ "${EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING:-0}" == "1" ]] ||
-       grep -qsE '^[[:space:]]*EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING[[:space:]]*=[[:space:]]*"?1' .env .env.local .env.production .env.production.local; then
+    # Same values services/sentry.ts accepts: 1 or true, any case.
+    if [[ "${EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING:-}" =~ ^(1|[Tt][Rr][Uu][Ee])$ ]] ||
+       grep -qsiE '^[[:space:]]*EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING[[:space:]]*=[[:space:]]*["'"'"']?(1|true)["'"'"']?[[:space:]]*(#.*)?$' .env .env.local .env.production .env.production.local; then
       echo "::error::EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING bypasses diagnostics consent and must not be set in a production build" >&2
       exit 1
     fi

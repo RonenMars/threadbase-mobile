@@ -51,7 +51,7 @@ props, so this repo carries no Sentry account details. `app.config.js` forwards
 | Variable | Where | Purpose |
 |---|---|---|
 | `EXPO_PUBLIC_SENTRY_DSN` | `.env` | Runtime DSN the app sends events to. Public by design (not a secret). |
-| `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING` | `.env` / `.env.local` | Internal QA only. Set to `1` with a DSN to always report: Anonymous Diagnostics is forced on and Session Replay (default text/image masking), screenshots, view hierarchy, tracing, profiling, stall/app-hang/watchdog tracking, TTID, failed-request capture, logs and API request metrics (count, in-flight gauge, duration; method and status only) are enabled. `check-sentry-env.sh` fails any production ship that carries it. See [`privacy-and-verifiable-builds.md`](./privacy-and-verifiable-builds.md). |
+| `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING` | `.env` / `.env.local` | Internal QA only. Set to `1` or `true` (any case) to always report once the tester agrees to the launch notice: Anonymous Diagnostics is forced on and Session Replay (default text/image masking), screenshots, view hierarchy, tracing, profiling, stall/app-hang/watchdog tracking, TTID, failed-request capture, logs and API request metrics (count, in-flight gauge, duration; method and status only) are enabled. It requires `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT`: `app.config.js` throws, stopping `expo start/run/prebuild`, if any is missing, and `services/sentry.ts` throws at load if a bundle still arrives without a DSN. `check-sentry-env.sh` fails any production ship that carries it. See [`privacy-and-verifiable-builds.md`](./privacy-and-verifiable-builds.md). |
 | `EXPO_PUBLIC_SENTRY_ALLOW_DEV` | `.env` | Optional local QA override. Set to `1` only when you want a development build to transmit Sentry events. |
 | `EXPO_PUBLIC_SENTRY_DEBUG` | `.env` | Optional SDK troubleshooting flag. Set to `1` only when you need verbose Sentry SDK logs in Metro. |
 | `EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI` | `.env` / `.env.local` | Development/QA-only override that forces diagnostics-consent UI surfaces (hub banner + onboarding toggle) to render regardless of the persisted onboarding experiment assignment. It does not enable diagnostics, modify persisted consent, or bypass Sentry transmission gates. Honoured only in a `__DEV__` Metro bundle; production builds ignore it. |
@@ -63,3 +63,24 @@ Without `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN`, Anonymous Diagnostics
 still works end-to-end (events transmit with `EXPO_PUBLIC_SENTRY_DSN` + consent
 on, or via an explicit one-shot report/feedback submission) — stack traces
 just show up unsymbolicated in the Sentry dashboard.
+
+## Environments and the launch notice
+
+One Sentry project, split by the `environment` tag so each environment has its own issues, logs, replays and performance data:
+
+| Environment | Build | How the app knows |
+|---|---|---|
+| `development` | A Metro (`__DEV__`) bundle | `__DEV__` |
+| `staging` | TestFlight, and the Play `internal`, `alpha` and `beta` tracks | iOS: the App Store receipt is a sandbox receipt (`modules/app-distribution`). Android: `ship-android.sh` bakes `EXPO_PUBLIC_ANDROID_PLAY_TRACK` into the bundle, because Play gives an app no way to learn its own track. |
+| `production` | The App Store and the Play `production` track | Anything that is neither of the above |
+
+Source maps are uploaded per release and shared by every environment the release runs in.
+Sentry deploy markers use the same names: `ship-ios.sh` records `staging` for `--target testflight`, and `ship-android.sh` records `staging` for any track but `production`.
+A build promoted with `ship-android.sh --promote` keeps the track it was bundled with, so a build promoted from `internal` to `production` still reports `staging`.
+
+Whenever a build can send anything (a DSN, and an environment that permits reporting), `components/diagnostics/DiagnosticsTermsGate.tsx` blocks the app on launch until the user answers the diagnostics notice.
+Standard builds offer "Allow diagnostics" and "Don't allow", and the app works either way.
+Enforced builds (`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`) offer only "I agree".
+Until the notice is answered, `useCrashReportingSync` holds consent off whatever the stored setting says.
+The answer is stored against a terms key (`standard-1`, `enforced-1`), so bumping `DIAGNOSTICS_TERMS_VERSION` in `services/sentry.ts` asks everyone again, and moving from a test build to a store build (which keeps app data) asks again too.
+Local E2E builds (`e2e/ensure-release-build.js`) blank the DSN so the notice never sits in front of a Maestro flow.

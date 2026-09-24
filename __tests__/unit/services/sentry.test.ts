@@ -404,8 +404,28 @@ describe('sentry service — submitFeedbackViaSentry (independent of consent, by
 describe('sentry service — EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING', () => {
   it('enforces tracking only with the flag and a DSN', () => {
     expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(true)
-    expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: undefined }).mod.isSentryTrackingEnforced()).toBe(false)
     expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(false)
+  })
+
+  it('accepts true in any case, and nothing else', () => {
+    for (const value of ['true', 'TRUE', 'True']) {
+      expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: value, EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(true)
+    }
+    for (const value of ['0', 'false', 'yes', '']) {
+      expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: value, EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(false)
+    }
+  })
+
+  it('refuses to load with the flag on and no DSN', () => {
+    for (const value of ['1', 'true', 'TRUE']) {
+      expect(() => loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: value, EXPO_PUBLIC_SENTRY_DSN: undefined })).toThrow(
+        'EXPO_PUBLIC_SENTRY_DSN'
+      )
+    }
+  })
+
+  it('loads without a DSN when tracking is not enforced', () => {
+    expect(() => loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: undefined })).not.toThrow()
   })
 
   it('initializes without the ALLOW_DEV override and turns every telemetry feature on', async () => {

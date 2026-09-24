@@ -74,6 +74,15 @@ describe('check-sentry-env.sh', () => {
     expect(res.status).toBe(1);
   });
 
+  it('refuses the flag spelled true, in the shell env and in .env', () => {
+    expect(run({ APP_ENV: 'production', ...CREDS, EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: 'TRUE' }).status).toBe(1);
+    expect(run({ APP_ENV: 'production', ...CREDS }, 'EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING="true"\n').status).toBe(1);
+  });
+
+  it('allows the flag set to 0', () => {
+    expect(run({ APP_ENV: 'production', ...CREDS }, 'EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=0\n').status).toBe(0);
+  });
+
   it('ignores a commented-out enforced-tracking line', () => {
     const res = run({ APP_ENV: 'production', ...CREDS }, '# EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1\n');
     expect(res.status).toBe(0);

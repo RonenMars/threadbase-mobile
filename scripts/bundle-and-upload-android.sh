@@ -314,8 +314,8 @@ if [[ -n "${SENTRY_RELEASE:-}" && -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_OR
   SENTRY_CLI="node_modules/@sentry/cli/bin/sentry-cli"
   if "$SENTRY_CLI" releases new "$SENTRY_RELEASE" &&
      "$SENTRY_CLI" releases finalize "$SENTRY_RELEASE" &&
-     "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "$ANDROID_TRACK"; then
-    echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${ANDROID_TRACK}"
+     "$SENTRY_CLI" deploys new -r "$SENTRY_RELEASE" -e "${SENTRY_ENV:-staging}"; then
+    echo "  ✓ Sentry release ${SENTRY_RELEASE} created → ${SENTRY_ENV:-staging}"
     # Mirrors iOS: pin the exact commit instead of --auto, so Sentry derives the
     # range server-side from the previous release rather than from whatever local
     # lineage this checkout happens to have.

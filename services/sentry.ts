@@ -33,7 +33,6 @@
  * See `docs/sentry-setup.md` for configuration and required EAS secrets.
  */
 
-import Constants from 'expo-constants'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sentry from '@sentry/react-native'
 import {
@@ -51,6 +50,7 @@ import {
   type ConnectionMode,
 } from './safe-metadata'
 import { getSentryInstallId, clearSentryInstallId } from './sentry-install-id'
+import { getDistribution } from '../modules/app-distribution'
 
 /** Public runtime env var for the DSN. Never a secret token — the DSN is safe
  * to embed in a client bundle by design. Auth tokens (source-map upload) live
@@ -59,7 +59,14 @@ const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN
 const SENTRY_DEBUG = process.env.EXPO_PUBLIC_SENTRY_DEBUG === '1'
 /** Full-telemetry QA switch. Never set in a store build: `check-sentry-env.sh`
  * refuses a production ship that carries it. See `isSentryTrackingEnforced`. */
-const ENFORCE_TRACKING = process.env.EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING === '1'
+const ENFORCE_TRACKING = /^(1|true)$/i.test(process.env.EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING ?? '')
+
+// app.config.js refuses to start a build like this; this catches a bundle that got
+// past it anyway (a stale Metro cache, a hand-edited config). A QA build that
+// silently reports nothing is exactly what the flag exists to prevent.
+if (ENFORCE_TRACKING && !DSN) {
+  throw new Error('EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING is on but EXPO_PUBLIC_SENTRY_DSN is not set')
+}
 
 /** Conservative error sampling. We are not doing performance tracing at all. */
 const ERROR_SAMPLE_RATE = 1.0
@@ -78,14 +85,11 @@ let sdkReady = false
  * explicit one-shot report (tagged with ONE_SHOT_TAG). */
 let diagnosticsEnabled = false
 
-/** Resolve the environment name for tagging (safe, coarse). */
+/** Sentry environment: development (Metro), staging (TestFlight, Play testing
+ * tracks) or production (App Store, Play production). One project, split by tag. */
 function resolveEnvironment(): string {
   if (__DEV__) return 'development'
-  // `channel` distinguishes preview/internal vs production EAS builds.
-  const channel = (Constants.expoConfig as { extra?: { eas?: { channel?: string } } } | null)?.extra
-    ?.eas?.channel
-  const meta = getSafeBuildMetadata()
-  return meta.easChannel || channel || 'production'
+  return getDistribution()
 }
 
 /**
@@ -106,6 +110,24 @@ export function environmentPermitsReporting(): boolean {
  */
 export function isSentryTrackingEnforced(): boolean {
   return ENFORCE_TRACKING && isDsnConfigured()
+}
+
+/** Bump when the launch diagnostics notice changes in substance, so everyone is
+ * asked again. */
+const DIAGNOSTICS_TERMS_VERSION = 1
+
+/**
+ * Which diagnostics terms this build asks the user to accept. Enforced builds
+ * carry different terms, so moving from a test build to a store build (which
+ * keeps app data) asks again rather than inheriting the test-build agreement.
+ */
+export function currentDiagnosticsTermsKey(): string {
+  return `${isSentryTrackingEnforced() ? 'enforced' : 'standard'}-${DIAGNOSTICS_TERMS_VERSION}`
+}
+
+/** Whether this build can send anything to Sentry, and so must ask first. */
+export function diagnosticsTermsApply(): boolean {
+  return isDsnConfigured() && environmentPermitsReporting()
 }
 
 /** Counters, a gauge and a duration per API request, from the SDK's own

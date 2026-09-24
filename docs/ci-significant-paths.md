@@ -66,6 +66,7 @@ Source dirs (consumed at runtime or by tests):
 - `plugins/` — Expo config plugins
 - `assets/` — icons referenced by `app.json`
 - `widgets/` — Live Activity layouts compiled into the iOS widget extension
+- `modules/` — local Expo native modules, autolinked into the iOS/Android builds and imported by `services/`
 
 Tests + test infra:
 

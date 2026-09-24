@@ -160,9 +160,12 @@ fi
 
 # 7. Archive + upload
 echo "▸ [7/$TOTAL_STEPS] Archive and upload"
-# SENTRY_DEPLOY_ENV becomes the environment on the Sentry deploy marker, so the
-# release timeline shows whether a build went to TestFlight or the App Store.
-SENTRY_DEPLOY_ENV="$TARGET" "$SCRIPT_DIR/archive-and-upload.sh"
+# SENTRY_DEPLOY_ENV becomes the environment on the Sentry deploy marker. It uses
+# the names the app reports at runtime (modules/app-distribution): TestFlight is
+# staging, the App Store is production.
+SENTRY_DEPLOY_ENV=staging
+[[ "$TARGET" == production ]] && SENTRY_DEPLOY_ENV=production
+SENTRY_DEPLOY_ENV="$SENTRY_DEPLOY_ENV" "$SCRIPT_DIR/archive-and-upload.sh"
 
 # Resolve bundle id + build number for polling. The buildNumber pin prevents
 # the script from latching onto the previous VALID build during the 30–120s

@@ -176,15 +176,22 @@ function resolveSentryEnv() {
     env: { ...process.env, APP_ENV: 'development' },
     encoding: 'utf8',
   })
-  return Object.fromEntries(
-    out
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => {
-        const at = line.indexOf('=')
-        return [line.slice(0, at), line.slice(at + 1)]
-      }),
-  )
+  return {
+    ...Object.fromEntries(
+      out
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => {
+          const at = line.indexOf('=')
+          return [line.slice(0, at), line.slice(at + 1)]
+        }),
+    ),
+    // A DSN in a local .env would put the blocking diagnostics notice
+    // (DiagnosticsTermsGate) in front of every flow. An empty value in the build
+    // env beats .env, so the E2E binary stays DSN-less, like the CI one.
+    EXPO_PUBLIC_SENTRY_DSN: '',
+    EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '',
+  }
 }
 
 function ensureCocoaPods() {

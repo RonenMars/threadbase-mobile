@@ -76,6 +76,12 @@ interface SettingsStore {
   anonymousDiagnosticsEnabled: boolean
   /** Whether the post-upgrade crash-reporting notice has been dismissed. */
   crashReportingNoticeDismissed: boolean
+  /** Which diagnostics terms the user answered (`currentDiagnosticsTermsKey()` in
+   * services/sentry.ts). `null` until they answer the launch notice. */
+  diagnosticsTermsAccepted: string | null
+  /** True once `hydrate()` has finished, so launch UI can tell "not answered" from
+   * "not loaded yet". Not persisted. */
+  hydrated: boolean
   /** This installation's onboarding Anonymous Diagnostics experiment arm
    * (spec §7): 40% treatment / 60% control. Assigned once on first hydrate,
    * persisted, and never reassigned. `null` until assigned. */
@@ -104,6 +110,7 @@ interface SettingsStore {
   setBiometricLock: (v: boolean) => void
   setAnonymousDiagnosticsEnabled: (v: boolean) => void
   setCrashReportingNoticeDismissed: (v: boolean) => void
+  setDiagnosticsTermsAccepted: (key: string) => void
   /** Appends now() to the impression history (spec §14 frequency tracking). */
   recordPostFeedbackDiagnosticsSuggestionImpression: () => void
   setRowPreviewMode: (v: RowPreviewMode) => void
@@ -144,6 +151,7 @@ interface PersistedSettings {
   biometricLock: boolean
   anonymousDiagnosticsEnabled: boolean
   crashReportingNoticeDismissed: boolean
+  diagnosticsTermsAccepted: string | null
   onboardingDiagnosticsExperimentVariant: 'treatment' | 'control' | null
   postFeedbackDiagnosticsSuggestionImpressions: number[]
   rowPreviewMode: RowPreviewMode
@@ -177,6 +185,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   biometricLock: false,
   anonymousDiagnosticsEnabled: false,
   crashReportingNoticeDismissed: false,
+  diagnosticsTermsAccepted: null,
+  hydrated: false,
   onboardingDiagnosticsExperimentVariant: null,
   postFeedbackDiagnosticsSuggestionImpressions: [],
   autoNameFromMessage: true,
@@ -209,6 +219,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setAnonymousDiagnosticsEnabled: (anonymousDiagnosticsEnabled) => set({ anonymousDiagnosticsEnabled }),
   setCrashReportingNoticeDismissed: (crashReportingNoticeDismissed) =>
     set({ crashReportingNoticeDismissed }),
+  setDiagnosticsTermsAccepted: (diagnosticsTermsAccepted) => set({ diagnosticsTermsAccepted }),
   recordPostFeedbackDiagnosticsSuggestionImpression: () =>
     set((state) => ({
       postFeedbackDiagnosticsSuggestionImpressions: [
@@ -251,6 +262,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         anonymousDiagnosticsEnabled: parsed.anonymousDiagnosticsEnabled ?? state.anonymousDiagnosticsEnabled,
         crashReportingNoticeDismissed:
           parsed.crashReportingNoticeDismissed ?? state.crashReportingNoticeDismissed,
+        diagnosticsTermsAccepted: parsed.diagnosticsTermsAccepted ?? state.diagnosticsTermsAccepted,
         // Assigned once, ever, for this installation (spec §7). Preference
         // order: what's already persisted > what's already in memory (guards
         // a second hydrate() before the first assignment finishes persisting)
@@ -282,6 +294,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     } catch {
       // storage unavailable or corrupted — ignore
     }
+    set({ hydrated: true })
   },
 }))
 
@@ -301,6 +314,7 @@ export function persistSettingsNow(): Promise<void> {
     biometricLock: state.biometricLock,
     anonymousDiagnosticsEnabled: state.anonymousDiagnosticsEnabled,
     crashReportingNoticeDismissed: state.crashReportingNoticeDismissed,
+    diagnosticsTermsAccepted: state.diagnosticsTermsAccepted,
     onboardingDiagnosticsExperimentVariant: state.onboardingDiagnosticsExperimentVariant,
     postFeedbackDiagnosticsSuggestionImpressions: state.postFeedbackDiagnosticsSuggestionImpressions,
     autoNameFromMessage: state.autoNameFromMessage,
