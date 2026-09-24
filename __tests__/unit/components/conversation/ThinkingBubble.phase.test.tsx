@@ -28,7 +28,7 @@ const ptyQuestionLines = [
 describe('ThinkingBubble agent phase', () => {
   it('renders the phase label while the agent is working', async () => {
     const { getByTestId } = await render(
-      <ThinkingBubble lines={['Reading file…']} isStreaming subStatus="working" />,
+      <ThinkingBubble lines={['Reading file…']} subStatus="working" />,
     )
     expect(getByTestId('thinking-phase')).toBeTruthy()
   })
@@ -38,7 +38,7 @@ describe('ThinkingBubble agent phase', () => {
   // is dropped. The footer's mount gate is what means "the agent is working".
   it('still shows the working scanner when there is no phase', async () => {
     const { queryByTestId } = await render(
-      <ThinkingBubble lines={['Reading file…']} isStreaming subStatus={null} />,
+      <ThinkingBubble lines={['Reading file…']} subStatus={null} />,
     )
     expect(queryByTestId('thinking-bubble')).toBeTruthy()
     expect(queryByTestId('thinking-scanner')).toBeTruthy()
@@ -46,7 +46,7 @@ describe('ThinkingBubble agent phase', () => {
 
   it('shows the scanner alongside the phase label when a phase is present', async () => {
     const { queryByTestId } = await render(
-      <ThinkingBubble lines={['Reading file…']} isStreaming subStatus="working" />,
+      <ThinkingBubble lines={['Reading file…']} subStatus="working" />,
     )
     expect(queryByTestId('thinking-scanner')).toBeTruthy()
     expect(queryByTestId('thinking-phase')).toBeTruthy()
@@ -54,7 +54,7 @@ describe('ThinkingBubble agent phase', () => {
 
   it('still renders a question card when there is no phase', async () => {
     const { queryByTestId } = await render(
-      <ThinkingBubble lines={['x']} isStreaming subStatus={null} activeQuestion={structured} />,
+      <ThinkingBubble lines={['x']} subStatus={null} activeQuestion={structured} />,
     )
     expect(queryByTestId('thinking-bubble')).toBeTruthy()
   })
@@ -63,7 +63,6 @@ describe('ThinkingBubble agent phase', () => {
     const { queryByTestId } = await render(
       <ThinkingBubble
         lines={['Reading file…']}
-        isStreaming
         subStatus="working"
         activeQuestion={structured}
       />,
@@ -75,7 +74,6 @@ describe('ThinkingBubble agent phase', () => {
     const { queryByTestId } = await render(
       <ThinkingBubble
         lines={ptyQuestionLines}
-        isStreaming
         subStatus="working"
         onSendKeys={() => {}}
       />,

@@ -39,7 +39,7 @@ const OSC_GATE: PermissionOption[] = [
 
 describe.each([
   ['ThinkingBubble', (block: ReturnType<typeof mapPermissionToBlock>, onAnswerPermission: jest.Mock) => (
-    <ThinkingBubble lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onAnswerPermission={onAnswerPermission} />
+    <ThinkingBubble lines={[]} activeQuestion={block} onSendKeys={jest.fn()} onAnswerPermission={onAnswerPermission} />
   )],
   ['TerminalOutput', (block: ReturnType<typeof mapPermissionToBlock>, onAnswerPermission: jest.Mock) => (
     <TerminalOutput lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onAnswerPermission={onAnswerPermission} />

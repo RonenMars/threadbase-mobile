@@ -12,7 +12,7 @@ describe('ThinkingBubble structured question', () => {
   it('renders the structured QuestionCard and routes answers to onAnswer', async () => {
     const onAnswer = jest.fn()
     const { getByLabelText } = await render(
-      <ThinkingBubble lines={[]} isStreaming={false} activeQuestion={aq} onAnswer={onAnswer} />,
+      <ThinkingBubble lines={[]} activeQuestion={aq} onAnswer={onAnswer} />,
     )
     await fireEvent.press(getByLabelText('B'))
     expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'B' })
