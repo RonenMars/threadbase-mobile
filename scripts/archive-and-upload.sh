@@ -138,6 +138,12 @@ if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJEC
     else
       sentry_warn "Sentry commit association failed for ${SENTRY_RELEASE} — is the repo connected in Sentry?"
     fi
+    # Size Analysis: the archive itself (binary, assets, frameworks), no user data.
+    if "$SENTRY_CLI" build upload "$ARCHIVE_PATH" ${HEAD_SHA:+--head-sha "$HEAD_SHA"}; then
+      echo "  ✓ Sentry size analysis uploaded"
+    else
+      sentry_warn "Sentry size analysis upload failed for ${SENTRY_RELEASE}"
+    fi
   else
     sentry_warn "Sentry release ${SENTRY_RELEASE} not created — check SENTRY_* credentials"
   fi

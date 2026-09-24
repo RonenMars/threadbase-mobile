@@ -9,6 +9,8 @@
 'use strict';
 
 const { spawnSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 const SCRIPT = path.resolve(__dirname, '../../../scripts/check-sentry-env.sh');
@@ -18,9 +20,13 @@ const CREDS = {
   SENTRY_PROJECT: 'project',
 };
 
-/** Runs the script with a clean env plus `vars` — never the ambient SENTRY_*. */
-function run(vars) {
+/** Runs the script with a clean env plus `vars` — never the ambient SENTRY_* —
+ * from an empty directory, so a developer's own .env never leaks in. */
+function run(vars, envFile) {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'check-sentry-env-'));
+  if (envFile) fs.writeFileSync(path.join(cwd, '.env'), envFile);
   return spawnSync('/bin/bash', [SCRIPT], {
+    cwd,
     env: { PATH: process.env.PATH, ...vars },
     encoding: 'utf8',
   });
@@ -55,5 +61,21 @@ describe('check-sentry-env.sh', () => {
     const res = run({ APP_ENV: 'develpoment', ...CREDS });
     expect(res.status).toBe(2);
     expect(res.stderr).toContain('develpoment');
+  });
+
+  it('refuses a production build with enforced tracking in the shell env', () => {
+    const res = run({ APP_ENV: 'production', ...CREDS, EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1' });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING');
+  });
+
+  it('refuses a production build with enforced tracking in .env', () => {
+    const res = run({ APP_ENV: 'production', ...CREDS }, 'EXPO_PUBLIC_SENTRY_DSN=x\nEXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1\n');
+    expect(res.status).toBe(1);
+  });
+
+  it('ignores a commented-out enforced-tracking line', () => {
+    const res = run({ APP_ENV: 'production', ...CREDS }, '# EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1\n');
+    expect(res.status).toBe(0);
   });
 });

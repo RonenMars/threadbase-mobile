@@ -242,6 +242,14 @@ else
 fi
 ANDROID_TRACK="$TRACK" SKIP_BUNDLE="$SKIP_BUNDLE" "$SCRIPT_DIR/bundle-and-upload-android.sh"
 
+# Sentry Size Analysis: the AAB itself (binary, assets, libraries), no user data.
+# Non-fatal — the build is already on Play.
+if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
+  node_modules/@sentry/cli/bin/sentry-cli build upload \
+    "${AAB_PATH:-android/app/build/outputs/bundle/release/app-release.aab}" ||
+    echo "  ! Sentry size analysis upload failed" >&2
+fi
+
 echo
 echo "✅  Build is live on Play ($TRACK track)."
 echo "    Open Play Console to promote to a wider track when ready."

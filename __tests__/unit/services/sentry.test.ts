@@ -18,8 +18,7 @@ function loadService(env: Record<string, string | undefined>) {
   let sdk!: typeof import('@sentry/react-native')
   jest.isolateModules(() => {
     const prev = { ...process.env }
-    // jest runs with __DEV__ true; pin production unless a test asks for DEV.
-    for (const [key, value] of Object.entries({ EXPO_PUBLIC_APP_ENV: 'production', ...env })) {
+    for (const [key, value] of Object.entries(env)) {
       // Assigning `undefined` coerces to the string "undefined" on
       // process.env — delete the key instead so "unset" means unset.
       if (value === undefined) delete process.env[key]
@@ -402,40 +401,61 @@ describe('sentry service — submitFeedbackViaSentry (independent of consent, by
   })
 })
 
-describe('sentry service — DEV runs report with QA aids', () => {
-  it('forces diagnostics only in DEV with a DSN', () => {
-    expect(loadService({ EXPO_PUBLIC_APP_ENV: 'development', EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isDevDiagnosticsForced()).toBe(true)
-    expect(loadService({ EXPO_PUBLIC_APP_ENV: 'development', EXPO_PUBLIC_SENTRY_DSN: undefined }).mod.isDevDiagnosticsForced()).toBe(false)
-    expect(loadService({ EXPO_PUBLIC_APP_ENV: 'production', EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isDevDiagnosticsForced()).toBe(false)
+describe('sentry service — EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING', () => {
+  it('enforces tracking only with the flag and a DSN', () => {
+    expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(true)
+    expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: undefined }).mod.isSentryTrackingEnforced()).toBe(false)
+    expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(false)
   })
 
-  it('treats an unset APP_ENV in a __DEV__ bundle as DEV', () => {
-    const { mod } = loadService({ EXPO_PUBLIC_APP_ENV: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN })
-    expect(mod.isDevEnvironment()).toBe(true)
-  })
-
-  it('initializes in DEV without the ALLOW_DEV override, with replay, screenshots and tracing on', async () => {
-    const { mod, sdk } = loadService({ EXPO_PUBLIC_APP_ENV: 'development', EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: undefined })
+  it('initializes without the ALLOW_DEV override and turns every telemetry feature on', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: undefined })
     await mod.setAnonymousDiagnosticsEnabled(true)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
-    expect(opts.environment).toBe('development')
     expect(opts.sendDefaultPii).toBe(false)
-    expect(opts.attachScreenshot).toBe(true)
-    expect(opts.attachViewHierarchy).toBe(true)
-    expect(opts.replaysSessionSampleRate).toBe(1)
-    expect(opts.replaysOnErrorSampleRate).toBe(1)
-    expect(opts.tracesSampleRate).toBe(1)
+    expect(opts).toMatchObject({
+      attachScreenshot: true,
+      attachViewHierarchy: true,
+      enableCaptureFailedRequests: true,
+      enableStallTracking: true,
+      enableAppHangTracking: true,
+      enableLogs: true,
+      enableMetrics: true,
+      replaysSessionSampleRate: 1,
+      replaysOnErrorSampleRate: 1,
+      tracesSampleRate: 1,
+      profilesSampleRate: 1,
+    })
     const integrations = opts.integrations([{ name: 'Breadcrumbs' }])
-    expect(integrations.map((i: { name: string }) => i.name)).toEqual(['Breadcrumbs', 'MobileReplay'])
+    expect(integrations.map((i: { name: string }) => i.name)).toEqual(['Breadcrumbs', 'MobileReplay', 'ExpoRouter', 'HttpClient'])
+    expect(sdk.expoRouterIntegration).toHaveBeenCalledWith({ enableTimeToInitialDisplay: true })
   })
 
-  it('tags a production build production and keeps replay off', async () => {
-    const { mod, sdk } = loadService({ EXPO_PUBLIC_APP_ENV: 'production', EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+  it('records API request counters, gauge and duration from http.client spans, without the URL', async () => {
+    const handlers: Record<string, (span: object) => void> = {}
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN })
+    ;(sdk.getClient as jest.Mock).mockReturnValue({ on: (hook: string, cb: (span: object) => void) => { handlers[hook] = cb } })
+    ;(sdk.spanToJSON as jest.Mock).mockReturnValue({
+      op: 'http.client',
+      start_timestamp: 1,
+      timestamp: 1.25,
+      data: { 'http.request.method': 'GET', 'http.response.status_code': 500, url: 'https://host/secret' },
+    })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    handlers.spanStart({})
+    expect(sdk.metrics.gauge).toHaveBeenLastCalledWith('api.requests.in_flight', 1)
+    handlers.spanEnd({})
+    const attributes = { method: 'GET', status: '500' }
+    expect(sdk.metrics.count).toHaveBeenCalledWith('api.requests', 1, { attributes })
+    expect(sdk.metrics.gauge).toHaveBeenLastCalledWith('api.requests.in_flight', 0)
+    expect(sdk.metrics.distribution).toHaveBeenCalledWith('api.request.duration', 250, { unit: 'millisecond', attributes })
+  })
+
+  it('keeps the locked-down config without the flag', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
     await mod.setAnonymousDiagnosticsEnabled(true)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
-    expect(opts.environment).toBe('production')
-    expect(opts.replaysSessionSampleRate).toBe(0)
-    expect(opts.attachScreenshot).toBe(false)
+    expect(opts).toMatchObject({ replaysSessionSampleRate: 0, tracesSampleRate: 0, profilesSampleRate: 0, enableLogs: false, enableMetrics: false, attachScreenshot: false })
     expect(sdk.mobileReplayIntegration).not.toHaveBeenCalled()
   })
 })

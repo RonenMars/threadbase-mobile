@@ -37,8 +37,8 @@ Everything that leaves the device passes through the centralized sanitizer
 
 Session Replay, screenshots, view-hierarchy attachment, console capture,
 network breadcrumbs, and default PII are all **disabled** in
-`services/sentry.ts` — except in a DEV run (see `EXPO_PUBLIC_APP_ENV` below), which never
-ships to a store.
+`services/sentry.ts` — except under `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING` (see below), which a
+production ship refuses.
 
 ## Configuration (fork-friendly — no org/project hardcoded)
 
@@ -51,7 +51,7 @@ props, so this repo carries no Sentry account details. `app.config.js` forwards
 | Variable | Where | Purpose |
 |---|---|---|
 | `EXPO_PUBLIC_SENTRY_DSN` | `.env` | Runtime DSN the app sends events to. Public by design (not a secret). |
-| `EXPO_PUBLIC_APP_ENV` | build env / `.env` | Runtime Sentry environment. `deploy.yml` pins it to `production`. `development` (or unset in a Metro `__DEV__` bundle) is a DEV run: with a DSN configured, Anonymous Diagnostics is forced on and Session Replay (default text/image masking), screenshots, view hierarchy and tracing are enabled for QA. Any other value keeps the opt-in consent gate and the locked-down config. |
+| `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING` | `.env` / `.env.local` | Internal QA only. Set to `1` with a DSN to always report: Anonymous Diagnostics is forced on and Session Replay (default text/image masking), screenshots, view hierarchy, tracing, profiling, stall/app-hang/watchdog tracking, TTID, failed-request capture, logs and API request metrics (count, in-flight gauge, duration; method and status only) are enabled. `check-sentry-env.sh` fails any production ship that carries it. See [`privacy-and-verifiable-builds.md`](./privacy-and-verifiable-builds.md). |
 | `EXPO_PUBLIC_SENTRY_ALLOW_DEV` | `.env` | Optional local QA override. Set to `1` only when you want a development build to transmit Sentry events. |
 | `EXPO_PUBLIC_SENTRY_DEBUG` | `.env` | Optional SDK troubleshooting flag. Set to `1` only when you need verbose Sentry SDK logs in Metro. |
 | `EXPO_PUBLIC_QA_FORCE_DIAGNOSTICS_CONSENT_UI` | `.env` / `.env.local` | Development/QA-only override that forces diagnostics-consent UI surfaces (hub banner + onboarding toggle) to render regardless of the persisted onboarding experiment assignment. It does not enable diagnostics, modify persisted consent, or bypass Sentry transmission gates. Honoured only in a `__DEV__` Metro bundle; production builds ignore it. |

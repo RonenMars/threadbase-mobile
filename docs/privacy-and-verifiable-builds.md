@@ -1,0 +1,50 @@
+# Privacy promise and verifiable builds
+
+Threadbase never uses a user's personal information or diagnostics data without that user's permission.
+This document states that promise and explains how anyone can check it against the app they installed.
+
+Commit that introduced this document: _pending_
+
+## The promise
+
+- **Nothing is collected by default.**
+  Anonymous Diagnostics (crash and error reports, session health) is off on a fresh install and only turns on when the user switches it on in Settings.
+- **Every other send is a deliberate act by the user.**
+  Tapping "Report this crash" sends that one report; submitting feedback sends that one message. Neither turns on standing collection.
+- **What is sent is scrubbed.**
+  Every event passes through an allowlist sanitizer (`services/sanitize.ts`), and prompts, terminal output, source code, credentials, server URLs, hostnames and file paths are never sent.
+  The full list is in [`sentry-setup.md`](./sentry-setup.md#what-is-and-isnt-sent).
+- **Session content never leaves the user's own machines.**
+  There is no Threadbase-run server in the path (see [`no-hosted-service.md`](./no-hosted-service.md)).
+
+## The one switch that bypasses consent, and why it cannot ship
+
+`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1` turns on full Sentry telemetry (replay, tracing, profiling, logs, metrics) and forces diagnostics on regardless of the user's setting.
+It exists only for internal QA builds on the developer's own devices.
+
+It cannot reach a store build:
+
+- `scripts/check-sentry-env.sh` runs at the start of every ship, and in production it fails the build if the flag is set in the shell environment or in `.env`, `.env.local`, `.env.production` or `.env.production.local`.
+- The Deploy workflow (`.github/workflows/deploy.yml`) never sets it, and the repository holds no `.env` file for it to read.
+
+## How a user can verify a store build
+
+Production releases to the App Store and Google Play are made only by the Deploy workflow, from this public repository.
+That makes each store build traceable to the exact source it was built from:
+
+1. **Find your build number.**
+   Open Settings → About in the app; the number in parentheses after the version is the iOS build number or the Android versionCode, e.g. `Threadbase Mobile v1.2.3 (236)`.
+2. **Find the matching tag.**
+   Every successful deploy tags the shipped commit and publishes a GitHub Release: `ios-v<build number>` for iOS and `android-v<versionCode>` for Android.
+   See the [releases page](https://github.com/RonenMars/threadbase-mobile/releases).
+3. **Read the source at that tag.**
+   The data-collection code lives in `services/sentry.ts`, `services/sanitize.ts` and `hooks/useCrashReportingSync.ts`; any collection that is not described here would have to appear there, in public history.
+4. **Read the build that produced it.**
+   The Deploy run for that release is public under the repository's Actions tab, with every step's log, including the `check-sentry-env.sh` result.
+
+The binaries are built on GitHub's runners and signed with the publisher's store keys, so a user cannot reproduce them byte for byte.
+What a user can check is that the store build carries a tag, that the tag points to public source, and that this source contains no collection beyond what this document describes.
+
+## When this document must change
+
+Any change that adds a new kind of data, a new recipient, or a new way to send without the user's action must update this document in the same pull request.

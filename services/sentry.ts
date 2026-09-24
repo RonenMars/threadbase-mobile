@@ -57,9 +57,9 @@ import { getSentryInstallId, clearSentryInstallId } from './sentry-install-id'
  * only in the EAS build environment, never here. */
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN
 const SENTRY_DEBUG = process.env.EXPO_PUBLIC_SENTRY_DEBUG === '1'
-/** Explicit runtime environment. Deploy (`.github/workflows/deploy.yml`) pins
- * it to `production`; unset falls back to `__DEV__` / the EAS channel. */
-const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV
+/** Full-telemetry QA switch. Never set in a store build: `check-sentry-env.sh`
+ * refuses a production ship that carries it. See `isSentryTrackingEnforced`. */
+const ENFORCE_TRACKING = process.env.EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING === '1'
 
 /** Conservative error sampling. We are not doing performance tracing at all. */
 const ERROR_SAMPLE_RATE = 1.0
@@ -80,7 +80,6 @@ let diagnosticsEnabled = false
 
 /** Resolve the environment name for tagging (safe, coarse). */
 function resolveEnvironment(): string {
-  if (APP_ENV) return APP_ENV
   if (__DEV__) return 'development'
   // `channel` distinguishes preview/internal vs production EAS builds.
   const channel = (Constants.expoConfig as { extra?: { eas?: { channel?: string } } } | null)?.extra
@@ -97,21 +96,45 @@ function resolveEnvironment(): string {
 export function environmentPermitsReporting(): boolean {
   // Allow an explicit override for internal QA of the pipeline.
   if (process.env.EXPO_PUBLIC_SENTRY_ALLOW_DEV === '1') return true
-  return !__DEV__ || isDevEnvironment()
-}
-
-/** A DEV run: a Metro `__DEV__` bundle, or an explicit `EXPO_PUBLIC_APP_ENV=development`. */
-export function isDevEnvironment(): boolean {
-  return resolveEnvironment() === 'development'
+  return ENFORCE_TRACKING || !__DEV__
 }
 
 /**
- * DEV runs with a DSN always report, for QA: consent is forced on (by
- * `useCrashReportingSync`) and `performInit` adds replay, screenshots and
- * tracing. Every other environment keeps the opt-in consent gate untouched.
+ * `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1` with a DSN: always report, for QA.
+ * Consent is forced on (by `useCrashReportingSync`) and `performInit` turns on
+ * every telemetry feature. Without it the opt-in consent gate is untouched.
  */
-export function isDevDiagnosticsForced(): boolean {
-  return isDevEnvironment() && isDsnConfigured()
+export function isSentryTrackingEnforced(): boolean {
+  return ENFORCE_TRACKING && isDsnConfigured()
+}
+
+/** Counters, a gauge and a duration per API request, from the SDK's own
+ * `http.client` spans. Attributes are method and status only — never a URL. */
+function recordApiRequestMetrics(): void {
+  let inFlight = 0
+  const client = Sentry.getClient()
+  client?.on('spanStart', (span) => {
+    if (Sentry.spanToJSON(span).op !== 'http.client') return
+    inFlight += 1
+    Sentry.metrics.gauge('api.requests.in_flight', inFlight)
+  })
+  client?.on('spanEnd', (span) => {
+    const json = Sentry.spanToJSON(span)
+    if (json.op !== 'http.client') return
+    inFlight = Math.max(0, inFlight - 1)
+    const attributes = {
+      method: String(json.data?.['http.request.method'] ?? 'unknown'),
+      status: String(json.data?.['http.response.status_code'] ?? 'failed'),
+    }
+    Sentry.metrics.count('api.requests', 1, { attributes })
+    Sentry.metrics.gauge('api.requests.in_flight', inFlight)
+    if (json.timestamp && json.start_timestamp) {
+      Sentry.metrics.distribution('api.request.duration', (json.timestamp - json.start_timestamp) * 1000, {
+        unit: 'millisecond',
+        attributes,
+      })
+    }
+  })
 }
 
 /** Whether a DSN is configured. */
@@ -214,7 +237,7 @@ function applySafeTags(): void {
  * life of this process (see module doc: that flag cannot be changed later).
  */
 async function performInit(startupConsent: boolean): Promise<void> {
-  const dev = isDevEnvironment()
+  const full = ENFORCE_TRACKING
   Sentry.init({
     dsn: DSN,
     environment: resolveEnvironment(),
@@ -224,36 +247,49 @@ async function performInit(startupConsent: boolean): Promise<void> {
     debug: SENTRY_DEBUG, // opt-in only: the SDK's native debug logger is very noisy
 
     // ---- Privacy hardening: disable everything that could capture content ----
-    // DEV runs (never a store build) turn the QA aids back on; see isDevDiagnosticsForced.
+    // Enforced tracking (never a store build) turns it all back on; see isSentryTrackingEnforced.
     sendDefaultPii: false,
-    attachScreenshot: dev,
-    attachViewHierarchy: dev,
+    attachScreenshot: full,
+    attachViewHierarchy: full,
     attachStacktrace: true, // stack traces are scrubbed by our sanitizer
-    enableCaptureFailedRequests: false,
-    enableUserInteractionTracing: dev,
-    enableAutoPerformanceTracing: dev,
+    enableCaptureFailedRequests: full,
+    enableUserInteractionTracing: full,
+    enableAutoPerformanceTracing: full,
+    enableStallTracking: full,
+    enableAppHangTracking: full,
     // A session is a start/end timestamp plus an ok/errored/crashed status —
     // no content, no PII — and it is the only source of crash-free rate and
     // release adoption. It is fixed at native-init time (see module doc), so
     // it reflects consent AT STARTUP, not later toggles this process.
     enableAutoSessionTracking: startupConsent,
-    enableAutoConsoleLogs: false,
-    enableWatchdogTerminationTracking: false,
+    enableLogs: full,
+    enableAutoConsoleLogs: full,
+    enableMetrics: full,
+    enableWatchdogTerminationTracking: full,
     enableNativeNagger: false,
 
-    // No Session Replay outside DEV — sample rates pinned to zero as belt-and-suspenders.
-    // DEV replay keeps the SDK's default masking of all text and images.
-    replaysSessionSampleRate: dev ? 1 : 0,
-    replaysOnErrorSampleRate: dev ? 1 : 0,
+    // No Session Replay unless enforced — sample rates pinned to zero as belt-and-suspenders.
+    // Enforced replay keeps the SDK's default masking of all text and images.
+    replaysSessionSampleRate: full ? 1 : 0,
+    replaysOnErrorSampleRate: full ? 1 : 0,
 
-    // No performance tracing outside DEV.
-    tracesSampleRate: dev ? 1 : 0,
+    // No performance tracing or profiling unless enforced.
+    tracesSampleRate: full ? 1 : 0,
+    profilesSampleRate: full ? 1 : 0,
     sampleRate: ERROR_SAMPLE_RATE,
     maxBreadcrumbs: 20,
 
     // Strip risky default integrations; our hooks are the final guard.
+    // Enforced: expo-router spans carry TTID; TTFD needs a <TimeToFullDisplay record> per screen.
     integrations: (defaults) =>
-      dev ? [...defaults, Sentry.mobileReplayIntegration()] : filterIntegrations(defaults),
+      full
+        ? [
+            ...defaults,
+            Sentry.mobileReplayIntegration(),
+            Sentry.expoRouterIntegration({ enableTimeToInitialDisplay: true }),
+            Sentry.httpClientIntegration(),
+          ]
+        : filterIntegrations(defaults),
 
     beforeSend: (event) => beforeSend(event as unknown as SentryLikeEvent) as never,
     beforeBreadcrumb: (breadcrumb) =>
@@ -261,6 +297,7 @@ async function performInit(startupConsent: boolean): Promise<void> {
   })
 
   applySafeTags()
+  if (full) recordApiRequestMetrics()
   sdkReady = true
   if (__DEV__) console.log('[sentry] SDK ready (consent gate still applies to passive capture)')
 }
