@@ -1,4 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { CaretDown, CaretRight } from 'phosphor-react-native'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { MONO_FONT } from '@/constants/mono'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -14,6 +15,11 @@ interface Props {
   count?: number
   /** Trailing link, e.g. the OLDER tier's Show / Hide. */
   action?: { label: string; onPress: () => void; testID?: string }
+  /** Makes the whole row a toggle, e.g. the Now list's day-bucket accordions. */
+  collapsible?: boolean
+  isExpanded?: boolean
+  onToggle?: () => void
+  testID?: string
 }
 
 /**
@@ -21,24 +27,52 @@ interface Props {
  * live tiers, plain secondary text for history. Same device as onboarding's
  * `> 01 / LANGUAGE`, on the existing mono stack rather than a new font.
  */
-export function SectionEyebrow({ label, tone, count, action }: Props) {
+export function SectionEyebrow({ label, tone, count, action, collapsible, isExpanded, onToggle, testID }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const color =
     tone === 'needsYou' ? theme.status.waiting : tone === 'working' ? theme.status.running : theme.text.secondary
   const live = tone !== 'muted'
 
-  return (
-    <View style={styles.row} accessibilityRole="header" accessibilityLabel={label}>
+  const content = (
+    <>
       {live ? <LiveDot live color={color} size={8} /> : null}
       <Text style={[styles.label, { color }]}>{label}</Text>
       <View style={[styles.rule, live ? { backgroundColor: color, opacity: 0.28 } : styles.ruleMuted]} />
       {count != null ? <Text style={styles.count}>{count}</Text> : null}
+      {collapsible ? (
+        isExpanded ? (
+          <CaretDown size={14} color={theme.text.accent} weight="bold" />
+        ) : (
+          <CaretRight size={14} color={theme.text.secondary} weight="bold" />
+        )
+      ) : null}
       {action ? (
         <Pressable onPress={action.onPress} hitSlop={12} accessibilityRole="button" testID={action.testID}>
           <Text style={styles.action}>{action.label}</Text>
         </Pressable>
       ) : null}
+    </>
+  )
+
+  if (collapsible) {
+    return (
+      <Pressable
+        style={styles.row}
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isExpanded }}
+        accessibilityLabel={label}
+        testID={testID}
+      >
+        {content}
+      </Pressable>
+    )
+  }
+
+  return (
+    <View style={styles.row} accessibilityRole="header" accessibilityLabel={label}>
+      {content}
     </View>
   )
 }

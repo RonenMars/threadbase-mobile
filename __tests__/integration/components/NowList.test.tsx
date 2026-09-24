@@ -1,11 +1,13 @@
 import React from 'react'
 import { StyleSheet, Text } from 'react-native'
+import { fireEvent, waitFor } from '@testing-library/react-native'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { renderWithI18n } from '@/test-utils/render'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -95,7 +97,7 @@ describe('NowList', () => {
 
     expect(getByText('NEEDS YOU · 1')).toBeTruthy()
     expect(getByText('WORKING · 1')).toBeTruthy()
-    expect(getByText('EARLIER TODAY')).toBeTruthy()
+    expect(getByText('LAST 7 DAYS')).toBeTruthy()
     expect(getByTestId('session-row-w')).toBeTruthy()
     expect(getByTestId('session-row-r')).toBeTruthy()
     expect(getByTestId('first-session-card')).toBeTruthy()
@@ -167,7 +169,7 @@ describe('NowList', () => {
     const ms = NOW - 120_000
     const { getByText, queryByText } = await renderList([asItem(old, ms)])
 
-    expect(getByText('EARLIER TODAY')).toBeTruthy()
+    expect(getByText('LAST 7 DAYS')).toBeTruthy()
     expect(queryByText('EARLIER')).toBeNull()
     expect(getByText(formatListTime(ms))).toBeTruthy()
     expect(queryByText(formatListTime(startedAt))).toBeNull()
@@ -282,7 +284,7 @@ describe('NowList', () => {
     expect(getByTestId(`session-row-${id}`)).toBeTruthy()
     expect(queryByTestId(`conversation-row-${id}`)).toBeNull()
     expect(getByText('NEEDS YOU · 1')).toBeTruthy()
-    expect(queryByText('EARLIER TODAY')).toBeNull()
+    expect(queryByText('LAST 7 DAYS')).toBeNull()
   })
 
   it('offers New session on an empty list', async () => {
@@ -312,6 +314,32 @@ describe('NowList', () => {
     } finally {
       useServerFetchStatusStore.getState().reset()
       useServersStore.setState({ activeServerIds: [], servers: {} })
+    }
+  })
+
+  it('collapses the earlier day buckets except Last 7 days, and expands one on press', async () => {
+    const dayMs = 86_400_000
+    const c7 = asConv(conversation({ id: 'c7', sessionName: 'Fix the resume collision copy' }), NOW - 1_000)
+    const c14 = asConv(conversation({ id: 'c14', sessionName: 'Scan all worktrees for stale ones' }), NOW - 10 * dayMs)
+    const cMonth = asConv(conversation({ id: 'cmonth', sessionName: 'Report slow streamer requests' }), NOW - 20 * dayMs)
+    const cEarlier = asConv(conversation({ id: 'cearlier', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 40 * dayMs)
+    try {
+      const { getByText, getByTestId, queryByTestId } = await renderList([c7, c14, cMonth, cEarlier])
+
+      expect(getByText('LAST 7 DAYS')).toBeTruthy()
+      expect(getByTestId('conversation-row-c7')).toBeTruthy()
+
+      expect(getByText('LAST 14 DAYS')).toBeTruthy()
+      expect(getByText('LAST MONTH')).toBeTruthy()
+      expect(getByText('EARLIER')).toBeTruthy()
+      expect(queryByTestId('conversation-row-c14')).toBeNull()
+      expect(queryByTestId('conversation-row-cmonth')).toBeNull()
+      expect(queryByTestId('conversation-row-cearlier')).toBeNull()
+
+      fireEvent.press(getByTestId('day-bucket-last14Days'))
+      await waitFor(() => expect(getByTestId('conversation-row-c14')).toBeTruthy())
+    } finally {
+      useViewPrefsStore.setState({ collapsedDayBuckets: ['last14Days', 'lastMonth', 'earlier'] })
     }
   })
 
