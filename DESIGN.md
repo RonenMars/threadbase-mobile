@@ -282,6 +282,9 @@ Values come from `constants/theme.ts` and `constants/providers.ts`; component ge
 **If the code changes, re-run the plugin or edit the variables — never edit the code to match Figma.**
 Every component set carries a `documentationLinks` entry pointing at its source file on GitHub, which stands in for Code Connect (an Organization-plan feature).
 
+The plugin's `CATALOG` is the repository-owned inventory for build order, source links, target page/group, asset kind and lifecycle status.
+Its page metadata is preparatory until the cross-page builder and live-file migration land; the current Figma page layout is unchanged.
+
 ### Running it
 
 1. Open the file in the Figma **desktop** app.

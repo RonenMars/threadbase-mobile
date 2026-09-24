@@ -59,6 +59,10 @@ All values come from the tb-mobile code:
 
 If the code changes, edit this plugin or the variables to match; don't edit the code to match Figma.
 
+`code.js` keeps build jobs and public assets in one `CATALOG`.
+Each record carries the build or source-link data plus its target page, group, kind and lifecycle status, so organization does not drift into a second hand-maintained map.
+The page metadata does not move live Figma nodes by itself; a separate migration phase owns that change.
+
 ## Live bridge (for agent-driven edits)
 
 Lets a shell script drive the open file through the full Plugin API, with no MCP call limit.
@@ -82,7 +86,7 @@ The relay mints it on first run. Delete the file to roll it; the plugin will ask
 
 ## Tests
 
-`npm run test:scripts` runs `__tests__/unit/scripts/figma-plugin.test.js`, which reads `code.js` as text and checks that it parses, that every `SOURCES` path still resolves to a file, that no `SOURCES` key is repeated, and that every builder named in the build steps exists.
-`code.js` is outside the lint globs and has no type checking, so those four are the only automated net it has — everything else needs Figma.
+`npm run test:scripts` runs `__tests__/unit/scripts/figma-plugin.test.js`, which checks that `code.js` parses, evaluates its prelude without calling Figma, and validates the catalog's builders, organization metadata, source paths, unique public names and build/link consumers.
+`code.js` is outside the lint globs and has no type checking, so everything beyond those structural contracts still needs Figma.
 
 The same file starts `bridge.mjs` on a spare port and drives one job end to end, asserting that `/run`, `/next` and `/result` all refuse a request without the token.

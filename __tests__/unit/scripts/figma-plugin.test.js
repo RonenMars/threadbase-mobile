@@ -9,7 +9,8 @@
  * there is no type checking, so a broken edit is otherwise discovered by
  * importing the plugin into Figma by hand.
  *
- * These read the file as text and assert the things that rot silently.
+ * These parse the file, evaluate its prelude without calling Figma, and assert
+ * the structural contracts that otherwise rot silently.
  */
 
 'use strict';
@@ -22,13 +23,17 @@ const ROOT = path.resolve(__dirname, '../../..');
 const PLUGIN = path.join(ROOT, 'design/figma-plugin/code.js');
 const src = fs.readFileSync(PLUGIN, 'utf8');
 
-/** The `const SOURCES = { ... };` object literal, as raw text. */
-function sourcesBlock() {
-  const start = src.indexOf('\nconst SOURCES = {');
-  expect(start).toBeGreaterThan(-1);
-  const end = src.indexOf('\n};', start);
-  expect(end).toBeGreaterThan(start);
-  return src.slice(start, end + 3);
+function catalogRuntime() {
+  const entry = src.indexOf('// ---------- plugin entry ----------');
+  expect(entry).toBeGreaterThan(-1);
+  const sandbox = {};
+  const expose = `
+globalThis.catalog = CATALOG;
+globalThis.steps = buildSteps();
+globalThis.assets = sourceAssets();
+`;
+  new vm.Script(src.slice(0, entry) + expose, { filename: PLUGIN }).runInNewContext(sandbox);
+  return sandbox;
 }
 
 describe('figma plugin: code.js', () => {
@@ -38,41 +43,47 @@ describe('figma plugin: code.js', () => {
     expect(() => new vm.Script(src, { filename: PLUGIN })).not.toThrow();
   });
 
-  it('points every SOURCES entry at a file that exists', () => {
-    const block = sourcesBlock();
-    const entries = [...block.matchAll(/^\s+([A-Za-z0-9_$]+):\s*'([^']+)',?$/gm)];
-    // Guard against the regex silently matching nothing after a reformat.
-    expect(entries.length).toBeGreaterThan(100);
+  it('catalogs every build job with valid organization metadata', () => {
+    const { catalog, steps } = catalogRuntime();
+    const allowedPages = [
+      '20 Core & Shared',
+      '30 Sessions',
+      '40 Conversation & Terminal',
+      '50 Connectivity',
+      '60 Product Experience',
+      '70 Patterns',
+    ];
+    const jobs = catalog.filter(({ builder }) => builder);
 
-    const missing = entries
-      .map(([, name, file]) => ({ name, file }))
-      .filter(({ file }) => !fs.existsSync(path.join(ROOT, file)));
-
-    expect(missing).toEqual([]);
+    expect(steps).toHaveLength(100);
+    expect(steps[0][0]).toBe('icons');
+    expect(steps.at(-1)[0]).toBe('Onboarding');
+    expect(jobs.map(({ buildName }) => buildName)).toEqual(steps.map(([name]) => name));
+    expect(new Set(jobs.map(({ buildName }) => buildName)).size).toBe(jobs.length);
+    expect(jobs.filter(({ builder }) => typeof builder !== 'function')).toEqual([]);
+    expect(jobs.filter(({ page }) => !allowedPages.includes(page))).toEqual([]);
+    expect(jobs.filter(({ group }) => typeof group !== 'string' || group.length === 0)).toEqual([]);
+    expect(jobs.filter(({ kind }) => !['asset', 'component', 'pattern'].includes(kind))).toEqual([]);
+    expect(jobs.filter(({ status }) => status !== 'stable')).toEqual([]);
   });
 
-  it('has no duplicate SOURCES keys', () => {
-    // An object literal keeps the last of a repeated key, so a duplicate drops
-    // one component's documentation link with no error anywhere.
-    const names = [...sourcesBlock().matchAll(/^\s+([A-Za-z0-9_$]+):\s*'/gm)].map((m) => m[1]);
-    const seen = new Set();
-    const duplicates = names.filter((n) => (seen.has(n) ? true : (seen.add(n), false)));
+  it('catalogs every source-linked public asset exactly once', () => {
+    const { assets } = catalogRuntime();
+    const names = assets.map(({ name }) => name);
+    const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+    const missing = assets.filter(({ source }) => !fs.existsSync(path.join(ROOT, source)));
 
+    expect(assets).toHaveLength(114);
     expect(duplicates).toEqual([]);
+    expect(missing).toEqual([]);
+    expect(assets.filter(({ page, group, kind, status }) => (
+      !page || !group || !kind || !status
+    ))).toEqual([]);
   });
 
-  it('defines every builder named in the build steps', () => {
-    const line = src.split('\n').find((l) => l.includes('const steps = [['));
-    expect(line).toBeDefined();
-
-    const referenced = [...line.matchAll(/,\s*([A-Za-z0-9_$]+)\]/g)].map((m) => m[1]);
-    expect(referenced.length).toBeGreaterThan(50);
-
-    const undefinedFns = referenced.filter(
-      (fn) => !new RegExp(`(async )?function ${fn}\\s*\\(`).test(src),
-    );
-
-    expect(undefinedFns).toEqual([]);
+  it('feeds the build and source-link paths from the catalog', () => {
+    expect(src).toContain('const steps = buildSteps();');
+    expect(src).toContain('for (const entry of sourceAssets()) {');
   });
 });
 
