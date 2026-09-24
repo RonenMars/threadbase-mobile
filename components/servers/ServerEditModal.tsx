@@ -237,13 +237,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
 
-        <KeyboardAwareScrollView
-          style={[styles.avoidingView, directionStyle]}
-          contentContainerStyle={styles.avoidingViewContent}
-          keyboardShouldPersistTaps="handled"
-          bottomOffset={16}
-          pointerEvents="box-none"
-        >
+        <View style={[styles.centerer, directionStyle]} pointerEvents="box-none">
           <View style={styles.modal}>
             {/* Header */}
             <View style={styles.header}>
@@ -253,7 +247,13 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.body}>
+            {/* Scroll inside the card so the header stays put; wrapping the card
+                itself only dragged the clipped card around. */}
+            <KeyboardAwareScrollView
+              contentContainerStyle={styles.body}
+              keyboardShouldPersistTaps="handled"
+              bottomOffset={16}
+            >
               {/* key remount on open resets internal eye/protocol-picker state */}
               <ServerFormFields
                 key={String(visible)}
@@ -301,9 +301,9 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
               {/* Only in edit mode: the flags are fetched from the server, which
                   must already exist (and be reachable) to have any. */}
               {isEditMode && serverId ? <ServerClaudeFlagsSection serverId={serverId} /> : null}
-            </View>
+            </KeyboardAwareScrollView>
           </View>
-        </KeyboardAwareScrollView>
+        </View>
       </Modal>
 
       <PairScannerModal
@@ -340,11 +340,8 @@ function makeStyles(theme: Theme) {
       position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.6)',
     },
-    avoidingView: {
+    centerer: {
       flex: 1,
-    },
-    avoidingViewContent: {
-      flexGrow: 1,
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: spacing.xl,
