@@ -179,6 +179,8 @@ security cms -D -i <profile>.mobileprovision | plutil -p - | grep -A2 applicatio
 
 ## Measuring the wrong thing
 
+For continuous cost rather than per-action cost — battery, heat, "the app is hot doing nothing" — the device Time Profiler method, its traps and a worked case study are in [`on-device-profiling.md`](./on-device-profiling.md).
+
 Every entry below is the same failure mode, and it is the dangerous one: the run **starts, looks healthy, and measures the wrong thing**. Nothing in the output announces the problem, so a profile or a screenshot taken this way is plausible and wrong. Each has a different cause — the bundle comes from the wrong tree, the bundler is a different process than you think, or the profiler is pointed at the debugger instead of the app — so fixing one does not protect you from the others.
 
 ### Metro bundles the main repo instead of your worktree
