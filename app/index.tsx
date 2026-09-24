@@ -23,6 +23,7 @@ import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useFetchSessionNames } from '@/hooks/useSessionName'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
+import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { NowList } from '@/components/sessions/now/NowList'
 import { ChromeBackdrop } from '@/components/sessions/shared/ChromeBackdrop'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
@@ -99,6 +100,8 @@ export default function ProjectsHub() {
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
+  const sessionsTreeView = useSettingsStore((s) => s.sessionsTreeView)
+  const setSessionsTreeView = useSettingsStore((s) => s.setSessionsTreeView)
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -549,6 +552,20 @@ export default function ProjectsHub() {
         <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
           <NoServersWelcome />
         </View>
+      ) : sessionsLayout === 'projects' && sessionsTreeView ? (
+        <TreeSessionsList
+          sessions={filteredSessions}
+          summaries={summaries}
+          unsupportedServerIds={unsupportedServerIds}
+          refreshing={manualRefreshing}
+          onRefresh={handleRefresh}
+          searchOpen={searchOpen}
+          isBackgroundRefreshing={isBackgroundRefreshing}
+          topInset={chromeHeight}
+          ListHeaderComponent={listHeader}
+          onNewSession={handleFABPress}
+          onScroll={onScroll}
+        />
       ) : sessionsLayout === 'projects' ? (
         <ProjectHubList
           sessions={filteredSessions}
@@ -631,6 +648,8 @@ export default function ProjectsHub() {
         tierCounts={tierCounts}
         providerCounts={providerCounts}
         resultCount={resultCount}
+        treeView={sessionsTreeView}
+        onChangeTreeView={setSessionsTreeView}
       />
       <NewSessionServerPicker
         visible={pickerVisible}

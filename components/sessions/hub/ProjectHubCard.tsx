@@ -30,7 +30,7 @@ if (Platform.OS === 'android') {
 // Memoized: the hub re-renders on every fetch-progress tick, and a project
 // card is a native glass surface — re-running every mounted one per tick is
 // what made the accordions feel unresponsive on a host with many projects.
-export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false, onBrowsePath }: ProjectHubCardProps) {
+export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
   const { t, i18n } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
@@ -175,28 +175,18 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
                   {hasMore && convCount > 0 ? (
                     <TouchableOpacity
                       onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
-                      activeOpacity={0.75}
+                      activeOpacity={0.6}
                       style={styles.seeAllRow}
+                      testID={`hub-see-all-${group.projectPath}`}
                     >
                       <Text style={styles.seeAllText}>{t('hub.seeAll', { count: convCount })}</Text>
-                      <CaretRight size={14} color={theme.text.accent} />
+                      <CaretRight size={16} color={theme.text.accent} />
                     </TouchableOpacity>
                   ) : null}
                 </>
               )
             })()}
           </View>
-              {onBrowsePath ? (
-                <TouchableOpacity
-                  onPress={() => onBrowsePath(group)}
-                  activeOpacity={0.75}
-                  style={styles.seeAllRow}
-                  testID={`hub-browse-path-${group.projectPath}`}
-                >
-                  <Text style={styles.seeAllText}>{t('hub.browsePath')}</Text>
-                  <CaretRight size={14} color={theme.text.accent} />
-                </TouchableOpacity>
-              ) : null}
             </View>
           )}
         </View>

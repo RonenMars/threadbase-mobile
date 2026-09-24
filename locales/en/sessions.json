@@ -45,7 +45,6 @@
     "prompts_other": "{{count}} prompts"
   },
   "hub": {
-    "browsePath": "Browse path",
     "seeAll_one": "All {{count}} conversation",
     "seeAll_other": "All {{count}} conversations",
     "activityLive_one": "{{count}} live",
@@ -74,6 +73,10 @@
     "done": "Done"
   },
   "live": {
+    "headerLive_one": "LIVE · {{count}}",
+    "headerLive_other": "LIVE · {{count}}",
+    "headerIdle_one": "IDLE · {{count}}",
+    "headerIdle_other": "IDLE · {{count}}",
     "headerNeedsYou_one": "NEEDS YOU · {{count}}",
     "headerNeedsYou_other": "NEEDS YOU · {{count}}",
     "headerWorking_one": "WORKING · {{count}}",

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, useWindowDimensions } from 'react-native'
+import { View, Text, TouchableOpacity, Switch, StyleSheet, useWindowDimensions } from 'react-native'
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetScrollView,
@@ -48,6 +48,9 @@ interface Props {
   providerCounts: Record<ProviderName, number>
   /** Rows the current filters keep; drives the primary button. */
   resultCount: number
+  /** Renders Projects as the flat multi-server tree instead of project cards. */
+  treeView: boolean
+  onChangeTreeView: (v: boolean) => void
 }
 
 const ORDER_OPTIONS: readonly SortBy[] = ['state', 'lastActivity', 'projectName']
@@ -89,6 +92,8 @@ export function FilterSortSheet({
   tierCounts,
   providerCounts,
   resultCount,
+  treeView,
+  onChangeTreeView,
 }: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -345,6 +350,20 @@ export function FilterSortSheet({
           />
         </View>
       ) : null}
+
+      {/* Tree view toggle */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{eyebrow(t('servers:filter.treeView'))}</Text>
+          <Switch
+            value={treeView}
+            onValueChange={onChangeTreeView}
+            trackColor={{ false: theme.border, true: theme.text.accent }}
+            thumbColor="#fff"
+            testID="filter-sort-tree-view-toggle"
+          />
+        </View>
+      </View>
     </>
   )
 

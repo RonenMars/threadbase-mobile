@@ -46,7 +46,6 @@
     "prompts_other": "{{count}} פרומפטים"
   },
   "hub": {
-    "browsePath": "עיון בנתיב",
     "seeAll_one": "ראה את כל השיחה",
     "seeAll_two": "ראה את שתי השיחות",
     "seeAll_other": "ראה את כל {{count}} השיחות",
@@ -79,6 +78,12 @@
     "done": "הושלם"
   },
   "live": {
+    "headerLive_one": "פעיל · {{count}}",
+    "headerLive_two": "פעיל · {{count}}",
+    "headerLive_other": "פעיל · {{count}}",
+    "headerIdle_one": "לא פעיל · {{count}}",
+    "headerIdle_two": "לא פעיל · {{count}}",
+    "headerIdle_other": "לא פעיל · {{count}}",
     "headerNeedsYou_one": "צריך אותך · {{count}}",
     "headerNeedsYou_two": "צריך אותך · {{count}}",
     "headerNeedsYou_other": "צריך אותך · {{count}}",

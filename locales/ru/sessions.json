@@ -47,7 +47,6 @@
     "prompts_other": "{{count}} промптов"
   },
   "hub": {
-    "browsePath": "Обзор пути",
     "seeAll_one": "Показать {{count}} беседу",
     "seeAll_few": "Показать {{count}} беседы",
     "seeAll_many": "Показать все {{count}} бесед",
@@ -84,6 +83,14 @@
     "done": "Готово"
   },
   "live": {
+    "headerLive_one": "АКТИВНО · {{count}}",
+    "headerLive_few": "АКТИВНО · {{count}}",
+    "headerLive_many": "АКТИВНО · {{count}}",
+    "headerLive_other": "АКТИВНО · {{count}}",
+    "headerIdle_one": "БЕЗ ДЕЙСТВИЙ · {{count}}",
+    "headerIdle_few": "БЕЗ ДЕЙСТВИЙ · {{count}}",
+    "headerIdle_many": "БЕЗ ДЕЙСТВИЙ · {{count}}",
+    "headerIdle_other": "БЕЗ ДЕЙСТВИЙ · {{count}}",
     "headerNeedsYou_one": "ЖДЁТ ВАС · {{count}}",
     "headerNeedsYou_few": "ЖДЁТ ВАС · {{count}}",
     "headerNeedsYou_many": "ЖДЁТ ВАС · {{count}}",

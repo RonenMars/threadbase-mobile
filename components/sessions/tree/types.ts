@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react'
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { MultiSession } from '@/types/api'
 import type { SessionTier } from '@/lib/sessionPresentation'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
@@ -69,4 +71,10 @@ export interface TreeSessionsListProps {
   /** Servers whose streamer predates /api/projects/summary — the tree can't be
    *  built for them, so the list renders an upgrade prompt instead. */
   unsupportedServerIds?: string[]
+  /** Height of the floating chrome; the list scrolls under it. */
+  topInset?: number
+  /** Scrolls with the tree: the quick-access strip and banners. */
+  ListHeaderComponent?: ReactElement | null
+  onNewSession?: () => void
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
 }
