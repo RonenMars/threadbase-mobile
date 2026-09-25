@@ -33,7 +33,6 @@
  * See `docs/sentry-setup.md` for configuration and required EAS secrets.
  */
 
-import Constants from 'expo-constants'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sentry from '@sentry/react-native'
 import {
@@ -51,12 +50,23 @@ import {
   type ConnectionMode,
 } from './safe-metadata'
 import { getSentryInstallId, clearSentryInstallId } from './sentry-install-id'
+import { getDistribution } from '../modules/app-distribution'
 
 /** Public runtime env var for the DSN. Never a secret token — the DSN is safe
  * to embed in a client bundle by design. Auth tokens (source-map upload) live
  * only in the EAS build environment, never here. */
 const DSN = process.env.EXPO_PUBLIC_SENTRY_DSN
 const SENTRY_DEBUG = process.env.EXPO_PUBLIC_SENTRY_DEBUG === '1'
+/** Full-telemetry QA switch. Never set in a store build: `check-sentry-env.sh`
+ * refuses a production ship that carries it. See `isSentryTrackingEnforced`. */
+const ENFORCE_TRACKING = /^(1|true)$/i.test(process.env.EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING ?? '')
+
+// app.config.js refuses to start a build like this; this catches a bundle that got
+// past it anyway (a stale Metro cache, a hand-edited config). A QA build that
+// silently reports nothing is exactly what the flag exists to prevent.
+if (ENFORCE_TRACKING && !DSN) {
+  throw new Error('EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING is on but EXPO_PUBLIC_SENTRY_DSN is not set')
+}
 
 /** Conservative error sampling. We are not doing performance tracing at all. */
 const ERROR_SAMPLE_RATE = 1.0
@@ -75,14 +85,11 @@ let sdkReady = false
  * explicit one-shot report (tagged with ONE_SHOT_TAG). */
 let diagnosticsEnabled = false
 
-/** Resolve the environment name for tagging (safe, coarse). */
+/** Sentry environment: development (Metro), staging (TestFlight, Play testing
+ * tracks) or production (App Store, Play production). One project, split by tag. */
 function resolveEnvironment(): string {
   if (__DEV__) return 'development'
-  // `channel` distinguishes preview/internal vs production EAS builds.
-  const channel = (Constants.expoConfig as { extra?: { eas?: { channel?: string } } } | null)?.extra
-    ?.eas?.channel
-  const meta = getSafeBuildMetadata()
-  return meta.easChannel || channel || 'production'
+  return getDistribution()
 }
 
 /**
@@ -93,7 +100,63 @@ function resolveEnvironment(): string {
 export function environmentPermitsReporting(): boolean {
   // Allow an explicit override for internal QA of the pipeline.
   if (process.env.EXPO_PUBLIC_SENTRY_ALLOW_DEV === '1') return true
-  return !__DEV__
+  return ENFORCE_TRACKING || !__DEV__
+}
+
+/**
+ * `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1` with a DSN: always report, for QA.
+ * Consent is forced on (by `useCrashReportingSync`) and `performInit` turns on
+ * every telemetry feature. Without it the opt-in consent gate is untouched.
+ */
+export function isSentryTrackingEnforced(): boolean {
+  return ENFORCE_TRACKING && isDsnConfigured()
+}
+
+/** Bump when the launch diagnostics notice changes in substance, so everyone is
+ * asked again. */
+const DIAGNOSTICS_TERMS_VERSION = 1
+
+/**
+ * Which diagnostics terms this build asks the user to accept. Enforced builds
+ * carry different terms, so moving from a test build to a store build (which
+ * keeps app data) asks again rather than inheriting the test-build agreement.
+ */
+export function currentDiagnosticsTermsKey(): string {
+  return `${isSentryTrackingEnforced() ? 'enforced' : 'standard'}-${DIAGNOSTICS_TERMS_VERSION}`
+}
+
+/** Whether this build can send anything to Sentry, and so must ask first. */
+export function diagnosticsTermsApply(): boolean {
+  return isDsnConfigured() && environmentPermitsReporting()
+}
+
+/** Counters, a gauge and a duration per API request, from the SDK's own
+ * `http.client` spans. Attributes are method and status only — never a URL. */
+function recordApiRequestMetrics(): void {
+  let inFlight = 0
+  const client = Sentry.getClient()
+  client?.on('spanStart', (span) => {
+    if (Sentry.spanToJSON(span).op !== 'http.client') return
+    inFlight += 1
+    Sentry.metrics.gauge('api.requests.in_flight', inFlight)
+  })
+  client?.on('spanEnd', (span) => {
+    const json = Sentry.spanToJSON(span)
+    if (json.op !== 'http.client') return
+    inFlight = Math.max(0, inFlight - 1)
+    const attributes = {
+      method: String(json.data?.['http.request.method'] ?? 'unknown'),
+      status: String(json.data?.['http.response.status_code'] ?? 'failed'),
+    }
+    Sentry.metrics.count('api.requests', 1, { attributes })
+    Sentry.metrics.gauge('api.requests.in_flight', inFlight)
+    if (json.timestamp && json.start_timestamp) {
+      Sentry.metrics.distribution('api.request.duration', (json.timestamp - json.start_timestamp) * 1000, {
+        unit: 'millisecond',
+        attributes,
+      })
+    }
+  })
 }
 
 /** Whether a DSN is configured. */
@@ -196,6 +259,7 @@ function applySafeTags(): void {
  * life of this process (see module doc: that flag cannot be changed later).
  */
 async function performInit(startupConsent: boolean): Promise<void> {
+  const full = ENFORCE_TRACKING
   Sentry.init({
     dsn: DSN,
     environment: resolveEnvironment(),
@@ -205,33 +269,49 @@ async function performInit(startupConsent: boolean): Promise<void> {
     debug: SENTRY_DEBUG, // opt-in only: the SDK's native debug logger is very noisy
 
     // ---- Privacy hardening: disable everything that could capture content ----
+    // Enforced tracking (never a store build) turns it all back on; see isSentryTrackingEnforced.
     sendDefaultPii: false,
-    attachScreenshot: false,
-    attachViewHierarchy: false,
+    attachScreenshot: full,
+    attachViewHierarchy: full,
     attachStacktrace: true, // stack traces are scrubbed by our sanitizer
-    enableCaptureFailedRequests: false,
-    enableUserInteractionTracing: false,
-    enableAutoPerformanceTracing: false,
+    enableCaptureFailedRequests: full,
+    enableUserInteractionTracing: full,
+    enableAutoPerformanceTracing: full,
+    enableStallTracking: full,
+    enableAppHangTracking: full,
     // A session is a start/end timestamp plus an ok/errored/crashed status —
     // no content, no PII — and it is the only source of crash-free rate and
     // release adoption. It is fixed at native-init time (see module doc), so
     // it reflects consent AT STARTUP, not later toggles this process.
     enableAutoSessionTracking: startupConsent,
-    enableAutoConsoleLogs: false,
-    enableWatchdogTerminationTracking: false,
+    enableLogs: full,
+    enableAutoConsoleLogs: full,
+    enableMetrics: full,
+    enableWatchdogTerminationTracking: full,
     enableNativeNagger: false,
 
-    // No Session Replay — sample rates pinned to zero as belt-and-suspenders.
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: 0,
+    // No Session Replay unless enforced — sample rates pinned to zero as belt-and-suspenders.
+    // Enforced replay keeps the SDK's default masking of all text and images.
+    replaysSessionSampleRate: full ? 1 : 0,
+    replaysOnErrorSampleRate: full ? 1 : 0,
 
-    // No performance tracing at all.
-    tracesSampleRate: 0,
+    // No performance tracing or profiling unless enforced.
+    tracesSampleRate: full ? 1 : 0,
+    profilesSampleRate: full ? 1 : 0,
     sampleRate: ERROR_SAMPLE_RATE,
     maxBreadcrumbs: 20,
 
     // Strip risky default integrations; our hooks are the final guard.
-    integrations: (defaults) => filterIntegrations(defaults),
+    // Enforced: expo-router spans carry TTID; TTFD needs a <TimeToFullDisplay record> per screen.
+    integrations: (defaults) =>
+      full
+        ? [
+            ...defaults,
+            Sentry.mobileReplayIntegration(),
+            Sentry.expoRouterIntegration({ enableTimeToInitialDisplay: true }),
+            Sentry.httpClientIntegration(),
+          ]
+        : filterIntegrations(defaults),
 
     beforeSend: (event) => beforeSend(event as unknown as SentryLikeEvent) as never,
     beforeBreadcrumb: (breadcrumb) =>
@@ -239,6 +319,7 @@ async function performInit(startupConsent: boolean): Promise<void> {
   })
 
   applySafeTags()
+  if (full) recordApiRequestMetrics()
   sdkReady = true
   if (__DEV__) console.log('[sentry] SDK ready (consent gate still applies to passive capture)')
 }

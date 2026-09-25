@@ -70,7 +70,30 @@ function warnIfQaFlagIncomplete() {
   console.warn(yellow(banner))
 }
 
+/** The values services/sentry.ts accepts for EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING. */
+function isEnforcedTracking(value) {
+  return /^(1|true)$/i.test(typeof value === 'string' ? value.trim() : '')
+}
+
+/**
+ * Enforced tracking is for QA builds (TestFlight, Play testing tracks, local
+ * runs), and QA data is only useful with readable stack traces in the right
+ * Sentry environment. A run missing any of these would report nothing or
+ * report unsymbolicated, so it stops here, before Metro or a native build starts.
+ */
+function assertEnforcedTrackingEnv() {
+  if (!isEnforcedTracking(process.env.EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING)) return
+  const required = ['EXPO_PUBLIC_SENTRY_DSN', 'SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT']
+  const missing = required.filter((name) => !(process.env[name] || '').trim())
+  if (missing.length === 0) return
+  throw new Error(
+    `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING is on, but these required Sentry variables are missing: ${missing.join(', ')}. ` +
+      'Set them in .env or the shell, or turn the flag off. See docs/sentry-setup.md.'
+  )
+}
+
 module.exports = ({ config }) => {
+  assertEnforcedTrackingEnv()
   warnIfQaFlagIncomplete()
   return applySentryPluginEnv(config)
 }

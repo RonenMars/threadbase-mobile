@@ -27,6 +27,7 @@ locales/
 plugins/
 assets/
 widgets/
+modules/
 
 # tests + infra
 __tests__/

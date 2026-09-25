@@ -66,6 +66,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Sentry environment for this track, matching what the app reports at runtime.
+SENTRY_ENV=staging
+[[ "$TRACK" == production ]] && SENTRY_ENV=production
 case "$TRACK" in internal|alpha|beta|production) ;;
   *) echo "--track must be one of: internal alpha beta production" >&2; exit 2 ;;
 esac
@@ -123,8 +126,8 @@ if [[ -n "$PROMOTE_VERSION" ]]; then
   # hasn't moved since that build, which is what makes the release name match.
   if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
     PROMOTE_RELEASE="threadbase-mobile-android@$(jq -r '.expo.version' app.json)+${PROMOTE_VERSION}"
-    if node_modules/@sentry/cli/bin/sentry-cli deploys new -r "$PROMOTE_RELEASE" -e "$TRACK"; then
-      echo "  ✓ Sentry deploy recorded: ${PROMOTE_RELEASE} → ${TRACK}"
+    if node_modules/@sentry/cli/bin/sentry-cli deploys new -r "$PROMOTE_RELEASE" -e "$SENTRY_ENV"; then
+      echo "  ✓ Sentry deploy recorded: ${PROMOTE_RELEASE} → ${SENTRY_ENV}"
     else
       echo "  ! Sentry deploy not recorded for ${PROMOTE_RELEASE} — release may not exist" >&2
     fi
@@ -240,7 +243,19 @@ if (( SKIP_BUNDLE )); then
 else
   echo "▸ [8/$TOTAL_STEPS] Bundle and upload"
 fi
-ANDROID_TRACK="$TRACK" SKIP_BUNDLE="$SKIP_BUNDLE" "$SCRIPT_DIR/bundle-and-upload-android.sh"
+# EXPO_PUBLIC_ANDROID_PLAY_TRACK is inlined into the JS bundle: Play gives an app no
+# way to learn its own track, and the app reports it as its Sentry environment. A
+# later --promote ships this same bundle, so a promoted build keeps reporting staging.
+EXPO_PUBLIC_ANDROID_PLAY_TRACK="$TRACK" SENTRY_ENV="$SENTRY_ENV" ANDROID_TRACK="$TRACK" SKIP_BUNDLE="$SKIP_BUNDLE" \
+  "$SCRIPT_DIR/bundle-and-upload-android.sh"
+
+# Sentry Size Analysis: the AAB itself (binary, assets, libraries), no user data.
+# Non-fatal — the build is already on Play.
+if [[ -n "${SENTRY_AUTH_TOKEN:-}" && -n "${SENTRY_ORG:-}" && -n "${SENTRY_PROJECT:-}" ]]; then
+  node_modules/@sentry/cli/bin/sentry-cli build upload \
+    "${AAB_PATH:-android/app/build/outputs/bundle/release/app-release.aab}" ||
+    echo "  ! Sentry size analysis upload failed" >&2
+fi
 
 echo
 echo "✅  Build is live on Play ($TRACK track)."

@@ -382,6 +382,12 @@ jest.mock('@sentry/react-native', () => {
     setTags: jest.fn(),
     withScope: jest.fn((cb) => cb(scope)),
     wrap: jest.fn((c) => c),
+    mobileReplayIntegration: jest.fn(() => ({ name: 'MobileReplay' })),
+    expoRouterIntegration: jest.fn(() => ({ name: 'ExpoRouter' })),
+    httpClientIntegration: jest.fn(() => ({ name: 'HttpClient' })),
+    getClient: jest.fn(() => undefined),
+    spanToJSON: jest.fn(() => ({})),
+    metrics: { count: jest.fn(), gauge: jest.fn(), distribution: jest.fn() },
     ErrorBoundary: ({ children }) => children,
     __scope: scope,
   }

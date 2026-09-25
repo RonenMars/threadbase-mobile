@@ -45,6 +45,7 @@ import { basename } from '@/components/sessions/shared/pathTail'
 import { AlertHost } from '@/components/alerts/AlertHost'
 import { ChatShelf } from '@/components/shelf/ChatShelf'
 import { NavigationLockOverlay } from '@/components/ui/NavigationLockOverlay'
+import { DiagnosticsTermsGate } from '@/components/diagnostics/DiagnosticsTermsGate'
 import * as SplashScreen from 'expo-splash-screen'
 import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { I18nextProvider } from 'react-i18next';
@@ -631,6 +632,7 @@ function RootLayout() {
                 <ChatShelf />
                 <AlertHost />
                 <NavigationLockOverlay />
+                <DiagnosticsTermsGate />
               </BiometricLockGate>
             </AuthGate>
           </PersistQueryClientProvider>

@@ -400,3 +400,82 @@ describe('sentry service — submitFeedbackViaSentry (independent of consent, by
     expect(sdk.captureFeedback).not.toHaveBeenCalled()
   })
 })
+
+describe('sentry service — EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING', () => {
+  it('enforces tracking only with the flag and a DSN', () => {
+    expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(true)
+    expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(false)
+  })
+
+  it('accepts true in any case, and nothing else', () => {
+    for (const value of ['true', 'TRUE', 'True']) {
+      expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: value, EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(true)
+    }
+    for (const value of ['0', 'false', 'yes', '']) {
+      expect(loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: value, EXPO_PUBLIC_SENTRY_DSN: DSN }).mod.isSentryTrackingEnforced()).toBe(false)
+    }
+  })
+
+  it('refuses to load with the flag on and no DSN', () => {
+    for (const value of ['1', 'true', 'TRUE']) {
+      expect(() => loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: value, EXPO_PUBLIC_SENTRY_DSN: undefined })).toThrow(
+        'EXPO_PUBLIC_SENTRY_DSN'
+      )
+    }
+  })
+
+  it('loads without a DSN when tracking is not enforced', () => {
+    expect(() => loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: undefined })).not.toThrow()
+  })
+
+  it('initializes without the ALLOW_DEV override and turns every telemetry feature on', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: undefined })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    const opts = (sdk.init as jest.Mock).mock.calls[0][0]
+    expect(opts.sendDefaultPii).toBe(false)
+    expect(opts).toMatchObject({
+      attachScreenshot: true,
+      attachViewHierarchy: true,
+      enableCaptureFailedRequests: true,
+      enableStallTracking: true,
+      enableAppHangTracking: true,
+      enableLogs: true,
+      enableMetrics: true,
+      replaysSessionSampleRate: 1,
+      replaysOnErrorSampleRate: 1,
+      tracesSampleRate: 1,
+      profilesSampleRate: 1,
+    })
+    const integrations = opts.integrations([{ name: 'Breadcrumbs' }])
+    expect(integrations.map((i: { name: string }) => i.name)).toEqual(['Breadcrumbs', 'MobileReplay', 'ExpoRouter', 'HttpClient'])
+    expect(sdk.expoRouterIntegration).toHaveBeenCalledWith({ enableTimeToInitialDisplay: true })
+  })
+
+  it('records API request counters, gauge and duration from http.client spans, without the URL', async () => {
+    const handlers: Record<string, (span: object) => void> = {}
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN })
+    ;(sdk.getClient as jest.Mock).mockReturnValue({ on: (hook: string, cb: (span: object) => void) => { handlers[hook] = cb } })
+    ;(sdk.spanToJSON as jest.Mock).mockReturnValue({
+      op: 'http.client',
+      start_timestamp: 1,
+      timestamp: 1.25,
+      data: { 'http.request.method': 'GET', 'http.response.status_code': 500, url: 'https://host/secret' },
+    })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    handlers.spanStart({})
+    expect(sdk.metrics.gauge).toHaveBeenLastCalledWith('api.requests.in_flight', 1)
+    handlers.spanEnd({})
+    const attributes = { method: 'GET', status: '500' }
+    expect(sdk.metrics.count).toHaveBeenCalledWith('api.requests', 1, { attributes })
+    expect(sdk.metrics.gauge).toHaveBeenLastCalledWith('api.requests.in_flight', 0)
+    expect(sdk.metrics.distribution).toHaveBeenCalledWith('api.request.duration', 250, { unit: 'millisecond', attributes })
+  })
+
+  it('keeps the locked-down config without the flag', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    const opts = (sdk.init as jest.Mock).mock.calls[0][0]
+    expect(opts).toMatchObject({ replaysSessionSampleRate: 0, tracesSampleRate: 0, profilesSampleRate: 0, enableLogs: false, enableMetrics: false, attachScreenshot: false })
+    expect(sdk.mobileReplayIntegration).not.toHaveBeenCalled()
+  })
+})

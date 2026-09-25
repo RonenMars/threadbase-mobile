@@ -1,4 +1,6 @@
 PODS:
+  - AppDistribution (1.0.0):
+    - ExpoModulesCore
   - AsyncStorage (3.1.1):
     - hermes-engine
     - RCTRequired
@@ -2674,6 +2676,7 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
+  - AppDistribution (from `../modules/app-distribution/ios`)
   - "AsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - EASClient (from `../node_modules/expo-eas-client/ios`)
   - EXApplication (from `../node_modules/expo-application/ios`)
@@ -2817,6 +2820,8 @@ SPEC REPOS:
     - SwiftUIIntrospect
 
 EXTERNAL SOURCES:
+  AppDistribution:
+    :path: "../modules/app-distribution/ios"
   AsyncStorage:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   EASClient:
@@ -3090,6 +3095,7 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
+  AppDistribution: 74902e4a60ddfac68e20f50e1227f8b659a9acf1
   AsyncStorage: 163ab23f6aa37a58b7f2379d0b4ee7ac84d6655c
   EASClient: 81f44ce9f07ec3d01606507213d21510a5f97388
   EXApplication: bbd517d50878ca1d121fb3843392beb210181e28

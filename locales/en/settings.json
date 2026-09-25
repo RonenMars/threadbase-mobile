@@ -282,5 +282,22 @@
     "testCrashConfirmTitle": "Send a test crash?",
     "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
     "testCrashSend": "Send test crash"
+  },
+  "diagnosticsTerms": {
+    "title": "Diagnostics and your privacy",
+    "intro": "Threadbase can send anonymous diagnostic reports to Sentry, the error-monitoring service we use, so we can find and fix problems. Nothing is sent unless you allow it.",
+    "collected": "What is sent: crash reports, error details and basic stability data, such as the app version and your device's operating system.",
+    "pseudonymous": "Reports carry a random installation ID so reports from the same install can be grouped. It is not linked to your name, email, account or device identity.",
+    "never": "What is never sent: your conversations, terminal output, code, file paths, server addresses or credentials. App errors are filtered on your device, and Sentry scrubs every report again before storing it.",
+    "purpose": "Diagnostics are used only to find and fix problems in Threadbase. They are never sold, used for advertising, or used to identify you.",
+    "changeLater": "Threadbase works the same either way, and you can change your answer at any time in Settings under Anonymous diagnostics.",
+    "allow": "Allow diagnostics",
+    "decline": "Don't allow",
+    "enforcedTitle": "Internal test build: full diagnostics",
+    "enforcedIntro": "This is an internal test build of Threadbase. It sends detailed diagnostic data to Sentry for as long as you use it, and it can only be used if you agree.",
+    "enforcedCollected": "What is sent: crash and error reports, recordings of your use of the app with text and images masked, performance traces and profiles, app logs, and the timing and outcome of network requests.",
+    "enforcedScreenshots": "When an error happens, an unmasked screenshot of the app is attached, so it can show whatever was on screen at that moment, including conversation text.",
+    "enforcedNoChoice": "If you don't agree, close the app and install Threadbase from the App Store or Google Play instead. Store versions never send anything without your permission.",
+    "agree": "I agree"
   }
 }

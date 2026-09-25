@@ -15,6 +15,7 @@
     "e2e",
     ".storybook",
     "widgets",
+    "modules",
     "nativewind-env.d.ts"
   ]
 }
