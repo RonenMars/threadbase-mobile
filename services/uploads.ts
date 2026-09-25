@@ -20,6 +20,15 @@ export interface UploadedFile {
   sizeBytes: number
 }
 
+/** An upload plus the on-device file it came from, so the composer can preview it without fetching it back. */
+export interface ComposerAttachment extends UploadedFile {
+  localUri: string
+}
+
+export function isPreviewableImage(attachment: ComposerAttachment): boolean {
+  return attachment.mimeType.startsWith('image/')
+}
+
 const SINGLE_PICKER_OPTIONS: ImagePicker.ImagePickerOptions = {
   mediaTypes: ['images'],
   base64: false,
