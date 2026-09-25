@@ -30,6 +30,112 @@ async function hasPermission(): Promise<boolean> {
   return granted
 }
 
+/**
+ * The notification feature this build registers with once it has set up what
+ * the streamer's attention pushes name: the `needs-you` / `updates` Android
+ * channels and the `permission` action category. A push naming a channel the
+ * app never created is not displayed at all, so the streamer sends those fields
+ * only to a token that lists the feature, and the feature is only listed once
+ * setup has succeeded.
+ */
+export const ATTENTION_FEATURE = 'attention-v1'
+export const ALLOW_ACTION = 'allow'
+export const DENY_ACTION = 'deny'
+
+let attentionSetup: { lang: string; done: Promise<boolean> } | null = null
+
+/** Channel and button names are localized, so a language change sets them up again. */
+export function ensureAttentionSetup(): Promise<boolean> {
+  const lang = i18n.resolvedLanguage ?? i18n.language
+  if (attentionSetup?.lang !== lang) attentionSetup = { lang, done: setUpAttention() }
+  return attentionSetup.done
+}
+
+async function setUpAttention(): Promise<boolean> {
+  try {
+    // No-ops on iOS, which has no channels.
+    await Notifications.setNotificationChannelAsync('needs-you', {
+      name: i18n.t('settings:notification.channelNeedsYou'),
+      importance: Notifications.AndroidImportance.HIGH,
+      // Three short pulses: "the agent is blocked on you" can be told apart
+      // from "finished" without looking at the phone.
+      vibrationPattern: [0, 200, 120, 200, 120, 200],
+    })
+    await Notifications.setNotificationChannelAsync('updates', {
+      name: i18n.t('settings:notification.channelUpdates'),
+      importance: Notifications.AndroidImportance.DEFAULT,
+    })
+    // Both buttons open the app: on iOS an action that does not foreground it
+    // never reaches JS once the app has been killed (expo-notifications 57).
+    const options = { opensAppToForeground: true, isAuthenticationRequired: true }
+    await Notifications.setNotificationCategoryAsync(
+      'permission',
+      [
+        { identifier: ALLOW_ACTION, buttonTitle: i18n.t('settings:notification.actionAllow'), options },
+        {
+          identifier: DENY_ACTION,
+          buttonTitle: i18n.t('settings:notification.actionDeny'),
+          options: { ...options, isDestructive: true },
+        },
+      ],
+      { previewPlaceholder: i18n.t('settings:notification.needsAnswer') },
+    )
+    return true
+  } catch {
+    // Retried on the next registration rather than remembered as failed.
+    attentionSetup = null
+    return false
+  }
+}
+
+const answeredActions = new Set<string>()
+
+/**
+ * An Allow or Deny tap on a permission push: answer the gate it names, with the
+ * `gateId` and option position the streamer put in `data`. Resolves whether an
+ * answer was accepted; the caller opens the session either way, and a gate that
+ * is still open shows its card there.
+ *
+ * Nothing is sent when the app's own biometric lock is on (a tap on the lock
+ * screen is not the user unlocking this app), or when the push names a server
+ * this app does not know.
+ */
+export async function answerFromNotification(
+  response: Notifications.NotificationResponse,
+  isKnownServer: (serverId: string) => boolean,
+): Promise<boolean> {
+  const action = response.actionIdentifier
+  if (action !== ALLOW_ACTION && action !== DENY_ACTION) return false
+  const data = response.notification.request.content.data as Record<string, unknown>
+  const { sessionId, serverId, gateId } = data
+  const position = action === ALLOW_ACTION ? data.allowOption : data.denyOption
+  if (
+    typeof sessionId !== 'string' ||
+    typeof serverId !== 'string' ||
+    typeof gateId !== 'string' ||
+    typeof position !== 'string' ||
+    !/^\d+$/.test(position) ||
+    !isKnownServer(serverId) ||
+    useSettingsStore.getState().biometricLock
+  ) {
+    return false
+  }
+  // The launch read-back and the warm listener can both see one tap.
+  const key = `${response.notification.request.identifier}:${action}`
+  if (answeredActions.has(key)) return false
+  answeredActions.add(key)
+  try {
+    await createApiForServer(serverId).post(`/api/sessions/${sessionId}/permission/answer`, {
+      gateId,
+      optionIndex: Number(position),
+    })
+    return true
+  } catch {
+    // A gate that moved on answers 409; the session screen shows what is open now.
+    return false
+  }
+}
+
 export type RegisterPushResult =
   | { ok: true }
   | { ok: false; reason: 'permission_denied' | 'token_unavailable' }
@@ -59,6 +165,7 @@ export async function registerPushToken(serverId: string): Promise<RegisterPushR
     // a language in Settings, and the push should match the screen it opens.
     locale: i18n.resolvedLanguage ?? i18n.language,
     notificationPrefs: toWirePrefs(useSettingsStore.getState().notifications),
+    ...((await ensureAttentionSetup()) && { notificationFeatures: [ATTENTION_FEATURE] }),
   }
 
   const api = createApiForServer(serverId)

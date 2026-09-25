@@ -77,7 +77,12 @@
   },
   "notification": {
     "testTitle": "התראת בדיקה",
-    "testBody": "התראות Threadbase עובדות!"
+    "testBody": "התראות Threadbase עובדות!",
+    "actionAllow": "אישור",
+    "actionDeny": "דחייה",
+    "needsAnswer": "ממתין לתשובה שלך",
+    "channelNeedsYou": "דורש אותך",
+    "channelUpdates": "עדכונים"
   },
   "addServer": {
     "selectedAction": "פעולה נבחרת ביצירה",

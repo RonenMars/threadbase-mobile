@@ -72,7 +72,10 @@ jest.mock('@/services/ws-client', () => ({
     disconnectAll: jest.fn(),
   },
 }))
-jest.mock('@/services/push', () => ({ registerPushTokenForAll: jest.fn().mockResolvedValue(undefined) }))
+jest.mock('@/services/push', () => ({
+  registerPushTokenForAll: jest.fn().mockResolvedValue(undefined),
+  answerFromNotification: jest.fn().mockResolvedValue(false),
+}))
 jest.mock('@/services/live-activity', () => ({
   adoptRunningActivities: jest.fn().mockResolvedValue(undefined),
   reconcile: jest.fn().mockResolvedValue(undefined),
