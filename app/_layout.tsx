@@ -31,7 +31,7 @@ import { wsManager } from '@/services/ws-client'
 import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
 import { isHostPressureLevel, parseHostPressureOs, parseHostPressureReasons, type Session } from '@/types/api'
 import { authToken } from '@/services/authed-fetch'
-import { registerPushTokenForAll } from '@/services/push'
+import { answerFromNotification, registerPushTokenForAll } from '@/services/push'
 import { useNotificationPrefsSync } from '@/hooks/useNotificationPrefsSync'
 import {
   adoptRunningActivities,
@@ -331,6 +331,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (Platform.OS === 'web') return
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      // Allow / Deny: answer first; the session opens either way below.
+      void answerFromNotification(response, isKnownServer)
       const target = sessionRouteFromNotificationData(
         response.notification.request.content.data as { sessionId?: string; serverId?: string },
         isKnownServer,
@@ -358,6 +360,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       const response =
         Platform.OS === 'web' ? null : await Notifications.getLastNotificationResponseAsync()
       if (cancelled) return
+      if (response) void answerFromNotification(response, isKnownServer)
       const target = resolveColdStartRoute(
         {
           url,

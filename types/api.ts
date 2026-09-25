@@ -723,6 +723,12 @@ export interface PushRegisterPayload {
    */
   locale?: string
   notificationPrefs: WireNotificationPrefs
+  /**
+   * What this build set up for notifications (`attention-v1`: the Android
+   * channels and the permission buttons). The streamer sends channel, urgency
+   * and buttons only to a token that lists it. Older streamers ignore it.
+   */
+  notificationFeatures?: string[]
 }
 
 export interface PushTestResult {
