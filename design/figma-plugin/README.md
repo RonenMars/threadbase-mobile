@@ -11,12 +11,14 @@ It uses the same Plugin API and needs no MCP calls.
 2. Menu → Plugins → Development → **Import plugin from manifest…** → pick `manifest.json` in this folder.
 3. Plugins → Development → Threadbase DS Builder → **Build remaining components + screens**.
 
+The plugin creates or reuses the required pages, then runs all jobs for one page before switching to the next.
 Each step skips itself if its output already exists, so it is safe to run again after a partial failure.
+Public component names must be unique across the file; the build stops on an ambiguous lookup instead of linking or instancing the wrong asset.
 Errors are listed in the toast and in the plugin console (Plugins → Development → Show/Hide console).
 
 ## What it adds
 
-- **Components page:**
+- **20 Core & Shared, 30 Sessions, 40 Conversation & Terminal, 50 Connectivity and 60 Product Experience:**
   - icons: `Icon/SlidersHorizontal`, `Icon/Gear`, `Mark/Claude`
   - component sets: Banner, EmptyState, FAB, StateBadge, ServerChip, LiveCard, EarlierRow, ServerListCard
   - batch 1 (ui): ProviderMark, SkeletonBox, TimeBucketPills, MessagePreview, LoadingOverlay
@@ -29,10 +31,11 @@ Errors are listed in the toast and in the plugin console (Plugins → Developmen
   - batch 8 (review, terminal, misc): DiagnosticsPreview, ReviewSheet, QuietHoursEditor, SlashCommandBoard, SlashCommandArgModal, TourOverlay, ConversationSearchView (match bar), SessionHistoryFeed, TerminalOutput, RootErrorBoundary and RenderErrorBoundary fallbacks
   - batch 9 (onboarding, literal palette): PagerDots, PrimaryButton, TerminalCard, InfoTooltip, ThreadField, and an `Onboarding` set with all five steps and their states
   - `Asset/AppIcon`: a placeholder until a bridge job fills it with `assets/icon.png`, because the plugin can't read files from disk
-- **Screens page:**
+- **80 Screens:**
   - `Now — dark`, rebuilt from component instances to match `e2e/visual/theme-gallery/theme-gallery-dark-now.png`
   - `Now — empty`
   - `Settings — servers`
+- **90 Visual QA:**
   - the 16 `e2e/visual/theme-gallery/*.png` reference screenshots, moved here and laid out 1/3 scale in two rows (Now, Projects) with one column per theme.
     They were uploaded over the MCP, which places them on another page, so this step collects them wherever they landed.
 - **Source links:** every component set, plus `ServerChip`, gets a `documentationLinks` entry pointing at its `.tsx` file on GitHub, shown in the Inspect panel.
@@ -59,6 +62,33 @@ All values come from the tb-mobile code:
 
 If the code changes, edit this plugin or the variables to match; don't edit the code to match Figma.
 
+`code.js` keeps build jobs and public assets in one `CATALOG`.
+Each record carries the build or source-link data plus its target page, group, kind and lifecycle status, so organization does not drift into a second hand-maintained map.
+The page metadata does not move live Figma nodes by itself; a separate migration phase owns that change.
+
+The builder creates or reuses these pages in this order:
+
+1. `00 Start Here`
+2. `10 Foundations`
+3. `20 Core & Shared`
+4. `30 Sessions`
+5. `40 Conversation & Terminal`
+6. `50 Connectivity`
+7. `60 Product Experience`
+8. `70 Patterns`
+9. `80 Screens`
+10. `90 Visual QA`
+11. `99 Deprecated`
+
+Generated sections carry their catalog group in the private `threadbase-group` plugin-data key so a later migration can organize existing nodes without changing component identity.
+The builder also generates `00 Start Here` and an intro guide above every other page from `CATALOG_PAGE_GUIDANCE`.
+Those guides define scope, included groups, the change path, lifecycle meanings, usage, and repository links without adding canvas-only documentation to the source of truth.
+
+Every source-linked public component receives a `threadbase-status` plugin-data value and a matching lifecycle line in its description.
+Current code-backed and live-validated assets are `stable`.
+`LeaveNotice`, `SessionActionSheet`, `EndSessionStatus`, `EndSessionDialogs`, and `SlowQueryBanner` are reserved as `beta` until issue #1167 completes live validation.
+Move an asset to `99 Deprecated` only when its replacement and migration note are both recorded.
+
 ## Live bridge (for agent-driven edits)
 
 Lets a shell script drive the open file through the full Plugin API, with no MCP call limit.
@@ -70,6 +100,7 @@ Lets a shell script drive the open file through the full Plugin API, with no MCP
 
 A job is the body of an async function, with everything above `// ---------- plugin entry ----------` in `code.js` in scope.
 Call `await init()` first to load variables, text styles and fonts.
+Start a job with `// bridge:bare` when it needs only the `figma` and `snap` arguments; the relay then skips the large plugin prelude, which is preferable for bounded inventory and migration jobs.
 Close the bridge window to stop it; the plugin runs nothing on its own.
 
 ### Why there is a token
@@ -77,12 +108,16 @@ Close the bridge window to stop it; the plugin runs nothing on its own.
 `/run` executes whatever it is handed inside the open Figma document, and any page in the browser can reach a port on localhost.
 Binding to `127.0.0.1` stops the network but not the browser, and CORS does not help: a cross-origin `POST` is still *sent*, CORS only decides who may read the reply.
 
-So every request must carry `x-bridge-token`. A custom header forces a preflight that a forged request cannot satisfy, and the value lives in `design/figma-plugin/.bridge-token` — gitignored, `0600`, readable only by local processes.
+Every request must carry the secret from `design/figma-plugin/.bridge-token`, which is gitignored, `0600`, and readable only by local processes.
+The CLI sends it in the `x-bridge-token` header for `/run`, which forces a preflight that a forged browser request cannot satisfy.
+The Figma sandbox sends it as an encoded query parameter for `/next` and `/result` because the desktop sandbox strips the custom header; those endpoints still reject requests without the exact secret and remain bound to loopback.
+
+Set `BRIDGE_TOKEN_FILE` to use another local token file without copying or printing its value.
 The relay mints it on first run. Delete the file to roll it; the plugin will ask for the new one.
 
 ## Tests
 
-`npm run test:scripts` runs `__tests__/unit/scripts/figma-plugin.test.js`, which reads `code.js` as text and checks that it parses, that every `SOURCES` path still resolves to a file, that no `SOURCES` key is repeated, and that every builder named in the build steps exists.
-`code.js` is outside the lint globs and has no type checking, so those four are the only automated net it has — everything else needs Figma.
+`npm run test:scripts` runs `__tests__/unit/scripts/figma-plugin.test.js`, which checks that `code.js` parses, evaluates its prelude without calling Figma, and validates the catalog's builders, organization metadata, source paths, unique public names and build/link consumers.
+`code.js` is outside the lint globs and has no type checking, so everything beyond those structural contracts still needs Figma.
 
 The same file starts `bridge.mjs` on a spare port and drives one job end to end, asserting that `/run`, `/next` and `/result` all refuse a request without the token.

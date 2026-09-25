@@ -14,9 +14,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 // Any page open in the browser can POST to a localhost port, and /run executes
 // whatever it is given inside the Figma document. The token is what a web page
-// cannot supply: it lives in a gitignored file only local processes can read,
-// and sending it as a header forces a preflight that a forged request fails.
-const TOKEN_FILE = join(here, '.bridge-token');
+// cannot supply: it lives in a gitignored file only local processes can read.
+// The CLI sends it as a header; the Figma sandbox uses a query parameter because
+// the desktop sandbox strips the custom header from its polling requests.
+const TOKEN_FILE = process.env.BRIDGE_TOKEN_FILE || join(here, '.bridge-token');
 if (!existsSync(TOKEN_FILE)) writeFileSync(TOKEN_FILE, randomBytes(16).toString('hex'), { mode: 0o600 });
 const TOKEN = readFileSync(TOKEN_FILE, 'utf8').trim();
 const authorized = given => {
@@ -28,12 +29,17 @@ const authorized = given => {
 if (process.argv[2] === 'run') {
   const job = readFileSync(process.argv[3], 'utf8');
   const out = process.argv[4] || join(here, 'out');
-  const src = readFileSync(join(here, 'code.js'), 'utf8');
-  const prelude = src.slice(0, src.indexOf('// ---------- plugin entry ----------'));
+  const bare = /^\/\/ bridge:bare(?:\r?\n|$)/.test(job);
+  let code = job;
+  if (!bare) {
+    const src = readFileSync(join(here, 'code.js'), 'utf8');
+    const prelude = src.slice(0, src.indexOf('// ---------- plugin entry ----------'));
+    code = prelude + '\n' + job;
+  }
   const res = await fetch(`http://localhost:${PORT}/run`, {
     method: 'POST',
     headers: { 'x-bridge-token': TOKEN, 'Content-Type': 'application/json' },
-    body: prelude + '\n' + job,
+    body: code,
   });
   const r = await res.json();
   if (r.images && r.images.length) {
@@ -67,9 +73,10 @@ function hand(res) {
 }
 
 http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
   if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
-  if (!authorized(req.headers['x-bridge-token'])) { res.writeHead(403, cors); return res.end(); }
-  if (req.url === '/next') {
+  if (!authorized(req.headers['x-bridge-token']) && !authorized(url.searchParams.get('token'))) { res.writeHead(403, cors); return res.end(); }
+  if (url.pathname === '/next') {
     if (!inFlight && queue.length) return hand(res);
     if (waiter) { waiter.writeHead(204, cors); waiter.end(); }
     waiter = res;
@@ -77,14 +84,14 @@ http.createServer(async (req, res) => {
     res.on('close', () => { clearTimeout(t); if (waiter === res) waiter = null; });
     return;
   }
-  if (req.url === '/result' && req.method === 'POST') {
+  if (url.pathname === '/result' && req.method === 'POST') {
     const r = JSON.parse(await body(req));
     if (inFlight && inFlight.id === r.id) { inFlight.done(r); inFlight = null; }
     res.writeHead(204, cors); res.end();
     if (waiter && queue.length && !inFlight) { const w = waiter; waiter = null; hand(w); }
     return;
   }
-  if (req.url === '/run' && req.method === 'POST') {
+  if (url.pathname === '/run' && req.method === 'POST') {
     const code = await body(req);
     const id = nextId++;
     const t = setTimeout(() => {
