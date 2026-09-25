@@ -55,6 +55,15 @@ if [[ -n "${CI:-}" ]]; then
   exit 1
 fi
 
+# Loaded before any check reads them, so a value kept in one of these files counts.
+# shellcheck disable=SC1091
+[[ -f .env.signing ]] && source .env.signing
+if [[ "$PLATFORM" == android ]]; then
+  [[ -f .env.signing.android ]] || { echo ".env.signing.android missing — see docs/deployment.md" >&2; exit 1; }
+  # shellcheck disable=SC1091
+  source .env.signing.android
+fi
+
 if [[ "$PLATFORM" == ios ]]; then
   FIREBASE_APP_ID="${FIREBASE_APP_ID_IOS:-}"
   APP_ID_VAR=FIREBASE_APP_ID_IOS
@@ -63,14 +72,6 @@ else
   APP_ID_VAR=FIREBASE_APP_ID_ANDROID
 fi
 [[ -n "$FIREBASE_APP_ID" ]] || { echo "$APP_ID_VAR is not set (Firebase console → Project settings → Your apps)" >&2; exit 1; }
-
-# shellcheck disable=SC1091
-if [[ "$PLATFORM" == ios ]]; then
-  [[ -f .env.signing ]] && source .env.signing
-else
-  [[ -f .env.signing.android ]] || { echo ".env.signing.android missing — see docs/deployment.md" >&2; exit 1; }
-  source .env.signing.android
-fi
 
 export EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1
 
@@ -90,13 +91,15 @@ if [[ "$PLATFORM" == ios ]]; then
   # Same per-target signing problem dev-device.sh solves: both targets declare
   # the App Group, so each needs its own profile. An Ad Hoc profile lists devices
   # but, unlike a development one, has get-task-allow false. Newest wins, so a
-  # profile regenerated after registering a device is picked up.
+  # profile regenerated after registering a device is picked up. Xcode's
+  # "Download Manual Profiles" saves to UserData, not MobileDevice, so scan both.
   read -r ADHOC_APP_UUID ADHOC_WIDGET_UUID <<<"$(
-    python3 - "$HOME/Library/MobileDevice/Provisioning Profiles" <<'PY'
+    python3 - "$HOME/Library/MobileDevice/Provisioning Profiles" \
+              "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" <<'PY'
 import datetime, glob, os, plistlib, subprocess, sys
 
-def profiles(directory):
-    for path in glob.glob(os.path.join(directory, "*.mobileprovision")):
+def profiles(directories):
+    for path in (p for d in directories for p in glob.glob(os.path.join(d, "*.mobileprovision"))):
         try:
             raw = subprocess.run(["security", "cms", "-D", "-i", path],
                                  capture_output=True, check=True).stdout
@@ -117,7 +120,7 @@ def pick(plists, suffix):
     matches.sort(key=lambda p: p.get("CreationDate"), reverse=True)
     return matches[0]["UUID"] if matches else "-"
 
-found = list(profiles(sys.argv[1]))
+found = list(profiles(sys.argv[1:]))
 print(pick(found, "com.ronenmars.threadbase"),
       pick(found, "com.ronenmars.threadbase.widgets"))
 PY
