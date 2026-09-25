@@ -478,4 +478,23 @@ describe('sentry service — EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING', () => {
     expect(opts).toMatchObject({ replaysSessionSampleRate: 0, tracesSampleRate: 0, profilesSampleRate: 0, enableLogs: false, enableMetrics: false, attachScreenshot: false })
     expect(sdk.mobileReplayIntegration).not.toHaveBeenCalled()
   })
+
+  describe('environment in a release build', () => {
+    const globalWithDev = global as typeof global & { __DEV__: boolean }
+    const previousDev = globalWithDev.__DEV__
+    beforeEach(() => { globalWithDev.__DEV__ = false })
+    afterEach(() => { globalWithDev.__DEV__ = previousDev })
+
+    it('is testing for an enforced build, whatever store it came from', async () => {
+      const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: '1', EXPO_PUBLIC_SENTRY_DSN: DSN })
+      await mod.setAnonymousDiagnosticsEnabled(true)
+      expect((sdk.init as jest.Mock).mock.calls[0][0].environment).toBe('testing')
+    })
+
+    it('follows the distribution without the flag', async () => {
+      const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN })
+      await mod.setAnonymousDiagnosticsEnabled(true)
+      expect((sdk.init as jest.Mock).mock.calls[0][0].environment).toBe('production')
+    })
+  })
 })

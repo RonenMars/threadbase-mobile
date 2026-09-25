@@ -22,7 +22,7 @@ Commit that introduced this document: [`6f82eb3b`](https://github.com/RonenMars/
 ## The one switch that removes the choice, and why it cannot ship
 
 `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING` (`1` or `true`) turns on full Sentry telemetry (replay, tracing, profiling, logs, metrics, unmasked screenshots on error) and forces diagnostics on.
-It exists only for internal QA builds, such as TestFlight or a Play testing track.
+It exists only for internal QA builds, which `scripts/ship-qa.sh` distributes through Firebase App Distribution to registered QA devices — never through TestFlight or Google Play.
 Even there it does not collect silently: the launch notice spells out what the test build sends, and the only way past it is "I agree".
 A tester who does not agree is told to install the store version instead.
 
