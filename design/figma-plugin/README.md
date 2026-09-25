@@ -93,6 +93,7 @@ Lets a shell script drive the open file through the full Plugin API, with no MCP
 
 A job is the body of an async function, with everything above `// ---------- plugin entry ----------` in `code.js` in scope.
 Call `await init()` first to load variables, text styles and fonts.
+Start a job with `// bridge:bare` when it needs only the `figma` and `snap` arguments; the relay then skips the large plugin prelude, which is preferable for bounded inventory and migration jobs.
 Close the bridge window to stop it; the plugin runs nothing on its own.
 
 ### Why there is a token
@@ -100,7 +101,11 @@ Close the bridge window to stop it; the plugin runs nothing on its own.
 `/run` executes whatever it is handed inside the open Figma document, and any page in the browser can reach a port on localhost.
 Binding to `127.0.0.1` stops the network but not the browser, and CORS does not help: a cross-origin `POST` is still *sent*, CORS only decides who may read the reply.
 
-So every request must carry `x-bridge-token`. A custom header forces a preflight that a forged request cannot satisfy, and the value lives in `design/figma-plugin/.bridge-token` — gitignored, `0600`, readable only by local processes.
+Every request must carry the secret from `design/figma-plugin/.bridge-token`, which is gitignored, `0600`, and readable only by local processes.
+The CLI sends it in the `x-bridge-token` header for `/run`, which forces a preflight that a forged browser request cannot satisfy.
+The Figma sandbox sends it as an encoded query parameter for `/next` and `/result` because the desktop sandbox strips the custom header; those endpoints still reject requests without the exact secret and remain bound to loopback.
+
+Set `BRIDGE_TOKEN_FILE` to use another local token file without copying or printing its value.
 The relay mints it on first run. Delete the file to roll it; the plugin will ask for the new one.
 
 ## Tests

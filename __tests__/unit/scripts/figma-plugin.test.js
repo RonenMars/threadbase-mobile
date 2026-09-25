@@ -16,6 +16,7 @@
 'use strict';
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const vm = require('vm');
 
@@ -67,6 +68,11 @@ describe('figma plugin: code.js', () => {
     // Never linted or type-checked; a syntax error would otherwise surface only
     // when someone imports the plugin into Figma.
     expect(() => new vm.Script(src, { filename: PLUGIN })).not.toThrow();
+  });
+
+  it('sends the bridge token in the URL from the Figma sandbox', () => {
+    expect(src).toContain("'/next?token=' + encodeURIComponent(TOKEN)");
+    expect(src).toContain("'/result?token=' + encodeURIComponent(TOKEN)");
   });
 
   it('catalogs every build job with valid organization metadata', () => {
@@ -148,6 +154,13 @@ describe('figma plugin: code.js', () => {
     expect(first.get('80 Screens')).not.toBe(first.get('90 Visual QA'));
   });
 
+  it('keeps the reference-screenshot label on Visual QA when rebuilding screens', () => {
+    expect(src).toContain('async function buildScreens(screensPage, visualQaPage)');
+    expect(src).toContain("const ref = visualQaPage.children.find(n => n.name === 'Reference screenshots')");
+    expect(src).toContain('visualQaPage.appendChild(note)');
+    expect(src).toContain('await buildScreens(pages.get(CATALOG_PAGES.screens), pages.get(CATALOG_PAGES.visualQa))');
+  });
+
   it('finds components across pages and refuses ambiguous public names', () => {
     const runtime = catalogRuntime();
     const firstPage = { type: 'PAGE', name: 'First', children: [] };
@@ -224,6 +237,47 @@ describe('figma plugin: bridge.mjs', () => {
 
   afterAll(() => relay && relay.kill());
 
+  it('can use an explicit local token file', async () => {
+    const port = PORT + 1;
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'figma-bridge-token-'));
+    const tokenFile = path.join(dir, 'bridge-token');
+    const customToken = 'a'.repeat(32);
+    fs.writeFileSync(tokenFile, customToken, { mode: 0o600 });
+    const customRelay = spawn(process.execPath, [BRIDGE], {
+      env: {
+        ...process.env,
+        BRIDGE_PORT: String(port),
+        BRIDGE_TOKEN_FILE: tokenFile,
+      },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+
+    try {
+      await new Promise((resolve, reject) => {
+        customRelay.stdout.on('data', (c) => { if (String(c).includes('bridge on')) resolve(); });
+        customRelay.on('error', reject);
+        setTimeout(() => reject(new Error('custom relay did not start')), 10000);
+      });
+      const base = `http://127.0.0.1:${port}`;
+      const auth = { 'x-bridge-token': customToken };
+      const job = fetch(`${base}/run`, {
+        method: 'POST',
+        headers: auth,
+        body: 'return true',
+      });
+      const handed = await fetch(`${base}/next`, { headers: auth }).then((res) => res.json());
+      await fetch(`${base}/result`, {
+        method: 'POST',
+        headers: auth,
+        body: JSON.stringify({ id: handed.id, ok: true, value: true }),
+      });
+      await expect(job.then((res) => res.json())).resolves.toMatchObject({ ok: true, value: true });
+    } finally {
+      customRelay.kill();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }, 15000);
+
   it('mints a token with enough entropy to be unguessable', () => {
     expect(token).toMatch(/^[0-9a-f]{32}$/);
   });
@@ -250,6 +304,20 @@ describe('figma plugin: bridge.mjs', () => {
     expect(res.headers.get('access-control-allow-headers')).not.toContain('*');
   });
 
+  it('accepts the token in the URL for Figma sandbox requests', async () => {
+    const job = fetch(`${BASE}/run`, {
+      method: 'POST',
+      headers: { 'x-bridge-token': token },
+      body: 'return true',
+    });
+    const handed = await fetch(`${BASE}/next?token=${encodeURIComponent(token)}`).then((res) => res.json());
+    await fetch(`${BASE}/result?token=${encodeURIComponent(token)}`, {
+      method: 'POST',
+      body: JSON.stringify({ id: handed.id, ok: true, value: true }),
+    });
+    await expect(job.then((res) => res.json())).resolves.toMatchObject({ ok: true, value: true });
+  });
+
   it('runs a job end to end for a caller holding the token', async () => {
     const auth = { 'x-bridge-token': token };
     const job = fetch(`${BASE}/run`, { method: 'POST', headers: auth, body: 'return 1 + 1' });
@@ -264,5 +332,35 @@ describe('figma plugin: bridge.mjs', () => {
     });
 
     await expect(job.then((r) => r.json())).resolves.toMatchObject({ ok: true, value: 2 });
+  }, 15000);
+
+  it('does not prepend the plugin source to an explicitly bare job', async () => {
+    const auth = { 'x-bridge-token': token };
+    const body = '// bridge:bare\nreturn figma.currentPage.name';
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'figma-bridge-bare-'));
+    const jobFile = path.join(dir, 'job.js');
+    fs.writeFileSync(jobFile, body);
+    const cli = spawn(process.execPath, [BRIDGE, 'run', jobFile], {
+      env: { ...process.env, BRIDGE_PORT: String(PORT) },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    let output = '';
+    cli.stdout.on('data', (chunk) => { output += String(chunk); });
+
+    const handed = await fetch(`${BASE}/next`, { headers: auth }).then((r) => r.json());
+    expect(handed.code).toBe(body);
+
+    await fetch(`${BASE}/result`, {
+      method: 'POST',
+      headers: auth,
+      body: JSON.stringify({ id: handed.id, ok: true, value: 'Screens' }),
+    });
+
+    await new Promise((resolve, reject) => {
+      cli.on('exit', (code) => code === 0 ? resolve() : reject(new Error(`bridge run exited ${code}`)));
+      cli.on('error', reject);
+    });
+    expect(JSON.parse(output)).toMatchObject({ ok: true, value: 'Screens' });
+    fs.rmSync(dir, { recursive: true, force: true });
   }, 15000);
 });

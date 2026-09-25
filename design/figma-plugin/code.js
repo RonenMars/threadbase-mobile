@@ -3241,7 +3241,7 @@ function fab(frame) {
   f.constraints = { horizontal: 'MAX', vertical: 'MAX' };
 }
 
-async function buildScreens(screensPage) {
+async function buildScreens(screensPage, visualQaPage) {
   await figma.setCurrentPageAsync(screensPage);
   const has = n => screensPage.children.some(c => c.name === n);
   if (!has('Now — dark')) {
@@ -3286,11 +3286,11 @@ async function buildScreens(screensPage) {
     setInstanceText(off, 'label', 'Studio');
     setInstanceText(off, 'url', 'https://studio-linux.tail:7071');
   }
-  const ref = screensPage.children.find(n => n.name === 'Reference screenshots');
+  const ref = visualQaPage.children.find(n => n.name === 'Reference screenshots');
   if (!ref) {
     const note = rawText('Reference screenshots below: e2e/visual/theme-gallery/*.png at 1/3 scale. Row 1 = Now, row 2 = Projects; one column per theme.', 14, 'Regular', hex('#888888'));
     note.name = 'Reference screenshots'; note.x = 0; note.y = 920; note.resize(1360, note.height); note.textAutoResize = 'HEIGHT';
-    screensPage.appendChild(note);
+    visualQaPage.appendChild(note);
   }
 }
 
@@ -3666,7 +3666,7 @@ async function build() {
     for (const { entry, error } of pageErrors) errors.push(entry.buildName + ': ' + error.message);
   }
   for (const page of pages.values()) clearDescs(page);
-  try { await buildScreens(pages.get(CATALOG_PAGES.screens)); } catch (e) { errors.push('screens: ' + e.message); }
+  try { await buildScreens(pages.get(CATALOG_PAGES.screens), pages.get(CATALOG_PAGES.visualQa)); } catch (e) { errors.push('screens: ' + e.message); }
   try { await linkSources(); } catch (e) { errors.push('links: ' + e.message); }
   try { await arrangeReferences(pages.get(CATALOG_PAGES.visualQa)); } catch (e) { errors.push('references: ' + e.message); }
   return errors;
@@ -3690,13 +3690,13 @@ onmessage = e => {
   const m = e.data.pluginMessage;
   if (!m) return;
   if (m.type === 'token') { if (m.token) TOKEN = m.token; else ask('paste the token the relay printed'); }
-  if (m.type === 'result') fetch(B + '/result', { method: 'POST', headers: { 'x-bridge-token': TOKEN }, body: JSON.stringify(m.payload) }).then(() => { s.textContent = 'idle (last job ' + m.payload.id + ')'; }, () => {});
+  if (m.type === 'result') fetch(B + '/result?token=' + encodeURIComponent(TOKEN), { method: 'POST', body: JSON.stringify(m.payload) }).then(() => { s.textContent = 'idle (last job ' + m.payload.id + ')'; }, () => {});
 };
 (async () => {
   for (;;) {
     if (!TOKEN) { await new Promise(r => setTimeout(r, 400)); continue; }
     try {
-      const r = await fetch(B + '/next', { headers: { 'x-bridge-token': TOKEN } });
+      const r = await fetch(B + '/next?token=' + encodeURIComponent(TOKEN));
       if (r.status === 403) ask('token rejected, paste the current one');
       else if (r.status === 200) { const job = await r.json(); s.textContent = 'running job ' + job.id; parent.postMessage({ pluginMessage: { type: 'job', job } }, '*'); }
       else if (!/job/.test(s.textContent)) s.textContent = 'connected, idle';

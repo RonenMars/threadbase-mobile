@@ -272,13 +272,8 @@ The richer reference is in `preview/` and `ui_kits/mobile/`. Inline summary:
 The [Threadbase Mobile Design System](https://www.figma.com/design/EhOoHrZG4C6A2lNz0i5ewK) file is built by `design/figma-plugin/`, a local Figma plugin, not by hand.
 Nothing in it is a screenshot — every component is a real Figma component with variants, auto-layout and variable-bound fills.
 
-The live file was rechecked on 2026-09-24 and still has this pre-migration layout:
-
-| Current page | Holds |
-|---|---|
-| Foundations | Colour, spacing, radius and type variables, plus the eight theme palettes |
-| Components | ~195 components across the ui, sessions, conversation, servers, terminal, alerts, tour and onboarding domains |
-| Screens | Assembled app screens, plus the `e2e/visual/theme-gallery/` reference screenshots |
+The live file was reorganized and verified on 2026-09-25.
+It uses the repository-owned page structure below, with reusable assets separated from route frames and visual-QA evidence.
 
 Values come from `constants/theme.ts` and `constants/providers.ts`; component geometry comes from the `.tsx` files themselves.
 **If the code changes, re-run the plugin or edit the variables — never edit the code to match Figma.**
@@ -286,9 +281,8 @@ Every component set carries a `documentationLinks` entry pointing at its source 
 
 The plugin's `CATALOG` is the repository-owned inventory for build order, source links, target page/group, asset kind and lifecycle status.
 The builder now creates or reuses the target pages, looks up public components across the whole file, batches jobs by destination page, and keeps route screens separate from visual-QA references.
-The live-file migration is still separate, so the current three pages remain authoritative until that migration runs and is verified.
 
-| Target page | Holds |
+| Page | Holds |
 |---|---|
 | 00 Start Here | Ownership, change workflow, naming, lifecycle and repository links |
 | 10 Foundations | Semantic variables, private theme palettes, type styles, spacing, radius and token examples |
