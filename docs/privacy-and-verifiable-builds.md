@@ -3,7 +3,7 @@
 Threadbase never uses a user's personal information or diagnostics data without that user's permission.
 This document states that promise and explains how anyone can check it against the app they installed.
 
-Commit that introduced this document: [`619aa802`](https://github.com/RonenMars/threadbase-mobile/commit/619aa802eb1ed41e4e3a7f178354ea8d8272dd5f)
+Commit that introduced this document: [`6f82eb3b`](https://github.com/RonenMars/threadbase-mobile/commit/6f82eb3be0b465bc8d945008b2cd58e8b2020a8e), from pull request #1179.
 
 ## The promise
 
