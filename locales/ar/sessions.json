@@ -49,7 +49,6 @@
     "prompts_other": "{{count}} برومبت"
   },
   "hub": {
-    "browsePath": "تصفح المسار",
     "seeAll_zero": "لا محادثات",
     "seeAll_one": "عرض المحادثة الوحيدة",
     "seeAll_two": "عرض المحادثتين",
@@ -94,6 +93,18 @@
     "done": "تم"
   },
   "live": {
+    "headerLive_zero": "مباشر · {{count}}",
+    "headerLive_one": "مباشر · {{count}}",
+    "headerLive_two": "مباشر · {{count}}",
+    "headerLive_few": "مباشر · {{count}}",
+    "headerLive_many": "مباشر · {{count}}",
+    "headerLive_other": "مباشر · {{count}}",
+    "headerIdle_zero": "خامل · {{count}}",
+    "headerIdle_one": "خامل · {{count}}",
+    "headerIdle_two": "خامل · {{count}}",
+    "headerIdle_few": "خامل · {{count}}",
+    "headerIdle_many": "خامل · {{count}}",
+    "headerIdle_other": "خامل · {{count}}",
     "headerNeedsYou_zero": "بحاجة إليك · {{count}}",
     "headerNeedsYou_one": "بحاجة إليك · {{count}}",
     "headerNeedsYou_two": "بحاجة إليك · {{count}}",

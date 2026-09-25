@@ -19,3 +19,5 @@ components/servers/CacheAlertBanner.tsx
 components/SlowQueryBanner.tsx
 # Root host over router, stores and the query cache — the visuals are ShelfBubble and ShelfPanel (both storied).
 components/shelf/ChatShelf.tsx
+# Screen-sized list composition over stores, router and the quick-access sheet — the pieces (rows, TreeRow, ServerRootRow, LiveSessionsHeader) have stories.
+components/sessions/tree/TreeSessionsList.tsx

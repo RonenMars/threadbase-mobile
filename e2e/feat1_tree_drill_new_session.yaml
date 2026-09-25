@@ -1,10 +1,11 @@
-# Maestro E2E — Feature 1: path drill pre-fills new-session cwd
+# Maestro E2E — Feature 1: tree-view drill pre-fills new-session cwd
 # Flow:
 #   1. Land on the hub (Now is the default sessionsLayout).
 #   2. Switch to Projects with the segmented control on the hub.
-#   3. Open the project card and tap its "Browse path" footer to drill in.
-#   4. Tap the FAB to start a new session.
-#   5. Assert the browse screen opened with cwd pre-filled to the drilled path.
+#   3. Open the Filter & Sort drawer and flip the Tree view toggle (its last item).
+#   4. Tap the auto-expanded leaf row to drill in.
+#   5. Tap the FAB to start a new session.
+#   6. Assert the browse screen opened with cwd pre-filled to the drilled path.
 #
 # Without this feature the FAB pushes /browse?server=<id> with no path, and
 # the breadcrumb would render only `~`. With the feature the breadcrumb
@@ -20,28 +21,36 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "hub-screen"
 
-# Now is the default; the path drill lives under Projects (the Tree layout's
-# successor, docs/design/session-list, PR 9).
+# Now is the default; the tree view lives under Projects, behind the drawer
+# toggle (docs/design/session-list, PR 9).
 - tapOn:
     id: "layout-projects"
 
-# Fixture has three sessions under /workspace/northstar-commerce/apps/storefront, so the hub renders
-# one card for it. Open the card, then drill into its directory.
-- extendedWaitUntil:
-    visible:
-      id: "hub-project-storefront"
-    timeout: 8000
-
 - tapOn:
-    id: "hub-project-storefront"
+    id: "filter-sort-button"
 
 - extendedWaitUntil:
     visible:
-      id: "hub-browse-path-/workspace/northstar-commerce/apps/storefront"
+      id: "filter-sort-sheet"
     timeout: 5000
 
 - tapOn:
-    id: "hub-browse-path-/workspace/northstar-commerce/apps/storefront"
+    id: "filter-sort-tree-view-toggle"
+
+# Dismiss the sheet via its backdrop (pressBehavior: close) — tapping the
+# dimmed area above the sheet's content, which the drawer never covers.
+- tapOn:
+    point: "50%,8%"
+
+# Fixture has three sessions under /workspace/northstar-commerce/apps/storefront,
+# a single root that auto-expands to that leaf. Tap it to drill in.
+- extendedWaitUntil:
+    visible:
+      id: "tree-row-/workspace/northstar-commerce/apps/storefront"
+    timeout: 8000
+
+- tapOn:
+    id: "tree-row-/workspace/northstar-commerce/apps/storefront"
 
 # DrillView mounts with a testID that encodes the drilled cwd. This is the
 # signal the FAB will read from the treeDrill store.

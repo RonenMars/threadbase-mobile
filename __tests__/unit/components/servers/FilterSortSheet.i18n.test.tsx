@@ -25,6 +25,8 @@ async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilte
       tierCounts={COUNTS}
       providerCounts={PROVIDERS}
       resultCount={overrides.resultCount ?? 44}
+      treeView={false}
+      onChangeTreeView={noop}
     />,
   )
 }

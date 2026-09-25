@@ -64,6 +64,9 @@ interface SettingsStore {
   /** "Skip this warning in the future" on the Keep running notice. */
   skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
+  /** Renders Projects as the flat multi-server tree instead of the project
+   *  card list. Toggled from the Filter & Sort drawer. */
+  sessionsTreeView: boolean
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
   locale: SupportedLocale
@@ -95,6 +98,7 @@ interface SettingsStore {
   setSessionLeaveAction: (v: SessionLeaveAction) => void
   setSkipLeaveNotice: (v: boolean) => void
   setSessionsLayout: (v: SessionsLayout) => void
+  setSessionsTreeView: (v: boolean) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
@@ -134,6 +138,7 @@ interface PersistedSettings {
   leaveAction: SessionLeaveAction
   skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
+  sessionsTreeView: boolean
   showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
@@ -166,6 +171,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   sessionLeaveAction: DEFAULT_SESSION_LEAVE_ACTION,
   skipLeaveNotice: false,
   sessionsLayout: 'now',
+  sessionsTreeView: false,
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
@@ -195,6 +201,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSessionLeaveAction: (sessionLeaveAction) => set({ sessionLeaveAction }),
   setSkipLeaveNotice: (skipLeaveNotice) => set({ skipLeaveNotice }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
+  setSessionsTreeView: (sessionsTreeView) => set({ sessionsTreeView }),
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
   setLocale: (locale) => set({ locale }),
@@ -234,6 +241,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         ),
         skipLeaveNotice: parsed.skipLeaveNotice ?? state.skipLeaveNotice,
         sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
+        sessionsTreeView: parsed.sessionsTreeView ?? state.sessionsTreeView,
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
         locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
@@ -287,6 +295,7 @@ export function persistSettingsNow(): Promise<void> {
     leaveAction: state.sessionLeaveAction,
     skipLeaveNotice: state.skipLeaveNotice,
     sessionsLayout: state.sessionsLayout,
+    sessionsTreeView: state.sessionsTreeView,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
     biometricLock: state.biometricLock,

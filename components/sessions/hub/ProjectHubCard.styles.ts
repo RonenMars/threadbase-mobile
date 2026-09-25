@@ -82,8 +82,13 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   seeAllRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.xs,
-    paddingVertical: spacing.xs,
+    minHeight: 44,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: 10,
+    backgroundColor: theme.bg.secondary,
   },
   bodySpinner: {
     paddingVertical: spacing.sm,
@@ -92,6 +97,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   seeAllText: {
     color: theme.text.accent,
     fontSize: font.sm,
+    fontWeight: '600',
   },
   })
 }
