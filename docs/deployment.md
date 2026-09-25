@@ -24,6 +24,12 @@ They differ in how much automation sits around the archive step.
 | --- | --- | --- |
 | **`ship-android.sh`** | You're the maintainer and have the Android signing + Play service account env vars. Builds a signed AAB, bumps versionCode if needed, uploads to the chosen track. | `./scripts/ship-android.sh` |
 
+### QA (enforced tracking, both platforms)
+
+| Path | Use when | Command |
+| --- | --- | --- |
+| **`ship-qa.sh`** | A build for registered QA devices with full Sentry telemetry (`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`). Uploads to Firebase App Distribution, never to a store. Local only. | `./scripts/ship-qa.sh --platform ios\|android` |
+
 ---
 
 ## Local credentials — the 1Password bootstrap
@@ -432,6 +438,75 @@ If the script exits with a timeout error, check your network connection and retr
 
 ---
 
+## Path F — `./scripts/ship-qa.sh` (enforced-tracking QA builds)
+
+The one channel that carries `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`.
+It builds a release binary with the flag on and uploads it to Firebase App Distribution.
+What the flag turns on, and the launch notice it changes, is in [`sentry-setup.md`](./sentry-setup.md).
+
+### Which channel carries what
+
+| Channel | Who installs it | Diagnostics | Sentry environment |
+|---|---|---|---|
+| TestFlight | Beta testers | Standard opt-in: the launch notice offers "Allow diagnostics" and "Don't allow", and Settings can change it later | `staging` |
+| Google Play testing tracks (`internal`, `alpha`, `beta`) | Beta testers | Standard opt-in | `staging` |
+| App Store | Everyone | Standard opt-in | `production` |
+| Google Play `production` | Everyone | Standard opt-in | `production` |
+| **Firebase App Distribution** (`ship-qa.sh`) | Registered QA devices only | **Enforced:** full telemetry, and the launch notice offers only "I agree" | `testing` |
+
+Paths A and E, and the GitHub Deploy workflow that calls them, refuse the flag: `ship-ios.sh` and `ship-android.sh` run `check-sentry-env.sh`, which fails when it is set in the shell, `.env` or `.env.local`.
+Fastlane (Path B) and manual Xcode (Path D) run no such check, so clear the flag from `.env` and `.env.local` before using either.
+
+### Why Firebase, not a Play track or a TestFlight group
+
+The flag is inlined into the JS bundle, so the binary itself is enforced for as long as it exists.
+A build uploaded to Play can be promoted from `internal` to `production`, and a TestFlight build can be added to the public external group, each by one click in a console.
+Firebase App Distribution has no path to either store, so an enforced build cannot reach the public by mistake.
+
+### Usage
+
+```bash
+./scripts/ship-qa.sh --platform ios                        # Ad Hoc .ipa → the `qa` group
+./scripts/ship-qa.sh --platform android                    # release APK → the `qa` group
+./scripts/ship-qa.sh --platform ios --groups qa,core --release-notes "Composer rewrite"
+```
+
+Nothing is bumped or committed.
+A build carries the current `app.json` build number (iOS) or `android/app/build.gradle` versionCode (Android), and Sentry's release and dist match it.
+
+Before any native build starts, the script stops if the Firebase app ID, the Android signing file or a Sentry variable is missing.
+
+### One-time setup
+
+1. **Firebase project.** In the Firebase console, register the iOS app (`com.ronenmars.threadbase`) and the Android app (`com.ronenmars.threadbase`).
+   Create a tester group named `qa` and invite the testers.
+2. **App IDs.** Copy both from Project settings → Your apps, and export them as `FIREBASE_APP_ID_IOS` and `FIREBASE_APP_ID_ANDROID`.
+3. **Firebase credentials.** Either run `npx firebase-tools login` once, or create a service account with the **Firebase App Distribution Admin** role and export `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json`.
+4. **iOS Ad Hoc signing.** In the Apple Developer portal:
+   - Register each QA iPhone's UDID. Firebase can collect UDIDs when a tester opens the invite on the device.
+   - Create **two** Ad Hoc distribution profiles, for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.widgets`, both with the App Group `group.com.ronenmars.threadbase`, and install both.
+   - The script picks the newest installed, unexpired pair, and needs `ASC_TEAM_ID` (from `.env.signing` or the shell).
+5. **Android signing.** `.env.signing.android`, the same upload-key file Path E uses (`./scripts/bootstrap-local-signing-op.sh --platform android`).
+6. **Sentry.** `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` in the shell, `.env` or `.env.signing`.
+   An enforced build refuses to start without all four.
+
+### First run on each platform
+
+Confirm three things before handing builds out:
+
+- the app opens on the diagnostics notice, and it offers only "I agree";
+- events arrive in Sentry under the `testing` environment;
+- their stack traces are symbolicated, which proves the source-map upload for that release worked.
+
+### Known limits
+
+- **Adding a device means re-signing.** An Ad Hoc profile lists its devices, so after registering one, regenerate both profiles, reinstall them and rebuild. Builds already distributed don't pick up the new device.
+- **100 iPhones per membership year.** Removing a device doesn't free its slot until the membership renews, so register only core testers.
+- **The APK can't upgrade a Play install.** Play re-signs with the app signing key, so a tester uninstalls the Play version first (and again before going back to Play).
+- **Local only.** Under `CI`, `expo export:embed` skips the Metro cache reset that local release builds do, and the transform cache isn't keyed on `EXPO_PUBLIC_*` values, so an enforced `services/sentry.ts` could be reused by a later store build on the same runner. The script refuses to run when `CI` is set. Running it from GitHub Actions would need an explicit Metro cache reset, or a runner that is discarded after the build.
+
+---
+
 ## GitHub Actions — iOS signing setup (CI secrets)
 
 The CI pipeline uses **Manual code signing** with a Distribution certificate stored
@@ -602,6 +677,7 @@ Notes:
 - `fastlane/.env.example` — env var template for Path B.
 - `scripts/ship-ios.sh` — iOS Path A entry point.
 - `scripts/ship-android.sh` — Android Path E entry point.
+- `scripts/ship-qa.sh` — Path F, enforced-tracking QA builds via Firebase App Distribution.
 - `scripts/land-version-bump.sh` — local post-ship version land (no-op in CI).
 - `scripts/admin-merge-pr.sh` — shared open-PR + admin squash-merge helper.
 - `scripts/promote-android.js` — promote an existing build between Play tracks.

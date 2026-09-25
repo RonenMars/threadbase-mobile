@@ -78,6 +78,8 @@ One Sentry project, split by the `environment` tag so each environment has its o
 Source maps are uploaded per release and shared by every environment the release runs in.
 Sentry deploy markers use the same names: `ship-ios.sh` records `staging` for `--target testflight`, and `ship-android.sh` records `staging` for any track but `production`.
 A build promoted with `ship-android.sh --promote` keeps the track it was bundled with, so a build promoted from `internal` to `production` still reports `staging`.
+TestFlight internal testers, external testers and public-link installs all report `staging`; the receipt can't tell them apart.
+`appStoreReceiptURL`, which the iOS module reads, is deprecated since iOS 18; StoreKit 2's `AppTransaction.shared.environment` is the replacement before Apple removes it.
 
 Whenever a build can send anything (a DSN, and an environment that permits reporting), `components/diagnostics/DiagnosticsTermsGate.tsx` blocks the app on launch until the user answers the diagnostics notice.
 Standard builds offer "Allow diagnostics" and "Don't allow", and the app works either way.
@@ -89,11 +91,11 @@ Local E2E builds (`e2e/ensure-release-build.js`) blank the DSN so the notice nev
 ## The QA channel
 
 Enforced tracking ships through one channel only: `scripts/ship-qa.sh --platform ios|android`, which builds with the flag on and uploads to Firebase App Distribution.
-Every store path refuses the flag (`check-sentry-env.sh`, run by `ship-ios.sh` and `ship-android.sh`), and the QA script never talks to App Store Connect or Google Play.
+The scripted store paths refuse the flag (`check-sentry-env.sh`, run by `ship-ios.sh` and `ship-android.sh`; fastlane and manual Xcode don't check), and the QA script never talks to App Store Connect or Google Play.
 The flag is inlined into the bundle, so a QA binary is enforced for good; keeping it out of every store means no promotion or TestFlight group assignment can put it in front of the public.
 
 - **iOS** exports an Ad Hoc (`release-testing`) build, so only devices registered in the Developer portal can install it. It needs an Ad Hoc profile for each target (`com.ronenmars.threadbase` and `.widgets`) that grants the App Group; the script picks the newest installed pair, so after registering a device, regenerate both profiles and install them.
 - **Android** builds a release APK signed with the upload key. It cannot upgrade a Play install (Play re-signs with the app signing key), so a tester uninstalls the Play version first.
-- **Setup:** a Firebase project with both apps registered, `FIREBASE_APP_ID_IOS` / `FIREBASE_APP_ID_ANDROID` in the shell, a tester group (default `qa`, change with `--groups`), and either `GOOGLE_APPLICATION_CREDENTIALS` pointing at a service account with the Firebase App Distribution Admin role or a prior `npx firebase-tools login`.
+- **Setup** (Firebase project, credentials, Ad Hoc profiles) and first-run checks: [`deployment.md`](./deployment.md) → "Path F".
 - **Local only.** Under `CI`, Expo skips the Metro cache reset that release builds rely on, and the transform cache is not keyed on `EXPO_PUBLIC_*` values, so an enforced `services/sentry.ts` could be reused by a later store build on the same runner. The script refuses to run when `CI` is set.
 - Builds are not bumped; they carry the current `app.json` build number (iOS) or `build.gradle` versionCode (Android), and report as `testing`.
