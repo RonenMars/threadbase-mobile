@@ -59,6 +59,11 @@
     "suggestionLabel": "Send suggestion: {{text}}",
     "suggestionHint": "Hold to edit before sending"
   },
+  "preview": {
+    "openLabel": "Preview {{name}}",
+    "close": "Close preview",
+    "counter": "{{current}} of {{total}}"
+  },
   "session": {
     "infoTitle": "Session Info",
     "renameLabel": "Rename session",

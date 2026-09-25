@@ -59,6 +59,11 @@
     "suggestionLabel": "Отправить подсказку: {{text}}",
     "suggestionHint": "Удерживайте, чтобы изменить перед отправкой"
   },
+  "preview": {
+    "openLabel": "Просмотр: {{name}}",
+    "close": "Закрыть просмотр",
+    "counter": "{{current}} из {{total}}"
+  },
   "session": {
     "infoTitle": "Информация о сессии",
     "renameLabel": "Переименовать сессию",

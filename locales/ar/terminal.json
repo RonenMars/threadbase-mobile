@@ -59,6 +59,11 @@
     "suggestionLabel": "إرسال الاقتراح: {{text}}",
     "suggestionHint": "اضغط مطولًا للتعديل قبل الإرسال"
   },
+  "preview": {
+    "openLabel": "معاينة {{name}}",
+    "close": "إغلاق المعاينة",
+    "counter": "{{current}} من {{total}}"
+  },
   "session": {
     "infoTitle": "معلومات السيشن",
     "renameLabel": "إعادة تسمية السيشن",
