@@ -288,7 +288,7 @@ PODS:
     - RNScreens
   - ExpoSecureStore (57.0.1):
     - ExpoModulesCore
-  - ExpoSpeechRecognition (56.0.1):
+  - ExpoSpeechRecognition (57.1.0):
     - ExpoModulesCore
   - ExpoSplashScreen (57.0.8):
     - ExpoModulesCore
@@ -296,7 +296,7 @@ PODS:
     - ExpoModulesCore
   - ExpoSystemUI (57.0.2):
     - ExpoModulesCore
-  - ExpoUI (57.0.14):
+  - ExpoUI (57.0.19):
     - ExpoModulesCore
     - ExpoModulesWorklets
     - React-RCTFabric
@@ -3122,19 +3122,19 @@ SPEC CHECKSUMS:
   ExpoLocalization: 659243b03b3a3e9589793cee2f728a899e181329
   ExpoLogBox: 80957303325cd4439137765c90a87d7f22aaf2ff
   ExpoMailComposer: 101933dc6bdb4d7a46495d1dd87420365325adb9
-  ExpoModulesCore: 2dfc09642ff86388bc7b08eb11ab25f2379f3f24
+  ExpoModulesCore: 45cb401819cbeb31915bd53242de0791faf9ccb7
   ExpoModulesJSI: 1529d4289b9a3647d8901a27b41f1af173598b45
   ExpoModulesWorklets: 57a11e6ae984c2680e7967b785ded96199caed8c
   ExpoModulesWorkletsAdapter: be52ecb2cbbed64febbb739971bd77d9c8e84569
   ExpoNotifications: 00256f6a101fc0aacd8cf39b8e5ca201e15b75ad
   ExpoRouter: 9bf293bba85908c1834190e6913b22da1e573689
   ExpoSecureStore: 94793113049a2d7478dfe1a13aa15081e9f61755
-  ExpoSpeechRecognition: 119acf84448579e53f841d040aad76982f945e2d
+  ExpoSpeechRecognition: fd92a178301c067e3a4919396820a8cd5ce7043f
   ExpoSplashScreen: 6f422fd595600d78520c6b7dcf8a908fb8a7fec0
   ExpoSymbols: 0efd93edf0f825bf3c762582b0769dd3b296235c
   ExpoSystemUI: ff3142b323ae7b4d11dc0b1dc4acfa30d92be7dc
-  ExpoUI: 6867422a567a251dcc25444c706b53f479e457ae
-  ExpoWidgets: 87840d7a989c172cada94543891e837e8b1d430b
+  ExpoUI: 98d4650d9d32daaf772597adc76525c645b1ff76
+  ExpoWidgets: 635479dee3c9e83b9ba1be420bbe08c070482ec5
   EXStructuredHeaders: 1423c3602a30eb078e03b63b251ef912267dd4c0
   EXUpdates: 9488e42335e66cbc29c9b7f68df3ad38e0fe5961
   EXUpdatesInterface: 4c96533f11c8cefe879bd506564cc2d537f56804
