@@ -1,6 +1,7 @@
 import {
   deriveConversationPresentation,
   deriveSessionPresentation,
+  failureTitleKind,
   sessionOpensAsHistory,
   sessionPhase,
 } from '@/lib/sessionPresentation'
@@ -282,6 +283,17 @@ describe('deriveSessionPresentation subStatus', () => {
   })
 })
 
+describe('failureTitleKind', () => {
+  it('is failedToStart when the session never took a prompt', () => {
+    expect(failureTitleKind(0)).toBe('failedToStart')
+    expect(failureTitleKind(undefined)).toBe('failedToStart')
+  })
+
+  it('is endedWithError once the session took at least one prompt', () => {
+    expect(failureTitleKind(5)).toBe('endedWithError')
+  })
+})
+
 describe('deriveConversationPresentation', () => {
   it('returns unavailable when resume is blocked', () => {
     expect(
@@ -298,6 +310,43 @@ describe('deriveConversationPresentation', () => {
 
   it('returns null when conversation is resumable', () => {
     expect(deriveConversationPresentation({ resumable: true })).toBeNull()
+  })
+})
+
+describe('hasOpenPrompt', () => {
+  it('marks a gated running session as needs-you, waiting', () => {
+    const p = deriveSessionPresentation(base({ status: 'running', hasOpenPrompt: true }))
+    expect(p.tier).toBe('needsYou')
+    expect(p.statusLabel).toBe('waiting')
+    expect(p.colorToken).toBe('waiting')
+  })
+
+  it('keeps a running session working when hasOpenPrompt is false or absent', () => {
+    expect(deriveSessionPresentation(base({ status: 'running', hasOpenPrompt: false })).tier).toBe(
+      'working',
+    )
+    expect(deriveSessionPresentation(base({ status: 'running' })).tier).toBe('working')
+  })
+
+  it('leaves waiting_input as needs-you when the field is absent', () => {
+    expect(deriveSessionPresentation(base({ status: 'waiting_input' })).tier).toBe('needsYou')
+  })
+
+  it('ignores hasOpenPrompt on a non-live session', () => {
+    expect(
+      deriveSessionPresentation(
+        base({ status: 'idle', ptyAttached: false, lifecycle: 'failed', hasOpenPrompt: true }),
+      ).tier,
+    ).toBe('cantResume')
+  })
+
+  it('also gates a resumed live session', () => {
+    const p = deriveSessionPresentation(
+      base({ status: 'running', resumedFromConversationId: 'c1', hasOpenPrompt: true }),
+    )
+    expect(p.kind).toBe('resumed')
+    expect(p.tier).toBe('needsYou')
+    expect(p.statusLabel).toBe('waiting')
   })
 })
 

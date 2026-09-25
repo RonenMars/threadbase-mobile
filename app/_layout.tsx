@@ -28,7 +28,11 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { wsManager } from '@/services/ws-client'
-import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
+import {
+  applySessionPhaseToCache,
+  applySessionUpdateToEagerCache,
+  refreshEagerConversations,
+} from '@/lib/eagerCacheSync'
 import { isHostPressureLevel, parseHostPressureOs, parseHostPressureReasons, type Session } from '@/types/api'
 import { authToken } from '@/services/authed-fetch'
 import { answerFromNotification, registerPushTokenForAll } from '@/services/push'
@@ -222,6 +226,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       // every status change passes through with its serverId already stamped.
       void reconcileLiveActivity(msg.serverId, msg.session)
     })
+    // Live agent-phase change within a running turn. Scoped to the session's
+    // subscribers, so — unlike session_update — there is no eager list to patch;
+    // the open session screen reads it off the session-detail query.
+    const unsubPhase = wsManager.onAll('session_phase', (msg) => {
+      if (msg.type !== 'session_phase') return
+      applySessionPhaseToCache(queryClient, msg.serverId, msg.sessionId, msg.phase)
+    })
     // External-session liveness ping: a conversation's JSONL grew without a PTY
     // the streamer owns. Refresh the eager conversations list so its row updates.
     const unsubConvUpdated = wsManager.onAll('conversation_updated', (msg) => {
@@ -312,6 +323,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       i18n.off('languageChanged', reregisterOnLanguage)
       unsubUpdate()
+      unsubPhase()
       unsubConvUpdated()
       unsubReady()
       unsubStatus()

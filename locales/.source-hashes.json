@@ -1141,6 +1141,7 @@
   "terminal.json:session.ended": "8874019c1c3f",
   "terminal.json:session.endedBody": "83d4b34eaff8",
   "terminal.json:session.failedToStart": "e6016b7ef412",
+  "terminal.json:session.endedWithError": "e52dfab836ce",
   "terminal.json:session.noTerminal": "250eac832403",
   "terminal.json:session.noTerminalBody": "629e24fc4947",
   "terminal.json:session.runningElsewhere": "f90a3053e7e5",

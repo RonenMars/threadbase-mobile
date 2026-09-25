@@ -107,6 +107,11 @@ export type SessionPresentationInput = {
   lifecycle?: SessionLifecycle
   /** Agent phase within a running turn. Optional here: session-like rows omit it. */
   subStatus?: AgentPhase | null
+  /**
+   * True while a permission or question gate is open. Additive; absent or
+   * anything but `true` means today's behavior (status alone decides waiting).
+   */
+  hasOpenPrompt?: boolean
 }
 
 export interface ConversationPresentationInput {
@@ -165,7 +170,7 @@ function activityAtFor(session: SessionPresentationInput): string | null {
 
 const AGENT_PHASES: AgentPhase[] = ['thinking', 'streaming', 'hooks', 'acting', 'working']
 
-function isAgentPhase(value: string | null | undefined): value is AgentPhase {
+export function isAgentPhase(value: string | null | undefined): value is AgentPhase {
   return value != null && (AGENT_PHASES as string[]).includes(value)
 }
 
@@ -355,13 +360,23 @@ function classifySession(
   }
 
   if (status === 'running' || status === 'waiting_input') {
+    // A permission/question gate holds `status: running` open for the duration
+    // of the turn (#962: the "finished" push must not fire mid-turn), so the
+    // turn axis alone cannot say "needs you". `hasOpenPrompt` is the session
+    // object's own signal for that — fold it in here so label, colour and tier
+    // (derived from colorToken below) agree.
+    const gated = session.hasOpenPrompt === true
+    const waiting = status === 'waiting_input' || gated
     if (resumed) {
+      // A resumed session otherwise always reads "Resumed" (unlike managed_live,
+      // it doesn't switch to "waiting" on status alone) — only an actual gate
+      // overrides that label, so a plain waiting_input resume is unaffected.
       return {
         kind: 'resumed',
-        statusLabel: 'resumed',
+        statusLabel: gated ? 'waiting' : 'resumed',
         live: true,
         externalLive: false,
-        colorToken: status === 'waiting_input' ? 'waiting' : 'running',
+        colorToken: waiting ? 'waiting' : 'running',
         confidence,
         activityAt,
         capabilities: MANAGED_LIVE_CAPS,
@@ -369,10 +384,10 @@ function classifySession(
     }
     return {
       kind: 'managed_live',
-      statusLabel: status === 'waiting_input' ? 'waiting' : 'running',
+      statusLabel: waiting ? 'waiting' : 'running',
       live: true,
       externalLive: false,
-      colorToken: status === 'waiting_input' ? 'waiting' : 'running',
+      colorToken: waiting ? 'waiting' : 'running',
       confidence,
       activityAt,
       capabilities: MANAGED_LIVE_CAPS,
@@ -389,6 +404,19 @@ function classifySession(
     activityAt,
     capabilities: IDLE_MANAGED_CAPS,
   }
+}
+
+export type FailureTitleKind = 'failedToStart' | 'endedWithError'
+
+/**
+ * "Failed to start" is only true of a session that never took a prompt.
+ * A session that ran and then died still carries a `failureReason` (and older
+ * streamers also keep a cleared Codex usage-limit reason) — that session ended
+ * with an error, it did not fail to start. Semantic only; the caller resolves
+ * the copy with `t()`.
+ */
+export function failureTitleKind(promptCount: number | undefined): FailureTitleKind {
+  return !promptCount ? 'failedToStart' : 'endedWithError'
 }
 
 export function deriveConversationPresentation(
