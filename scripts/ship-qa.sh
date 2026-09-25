@@ -56,6 +56,15 @@ if [[ -n "${CI:-}" ]]; then
 fi
 
 # Loaded before any check reads them, so a value kept in one of these files counts.
+# .env is exported because expo-updates' native build step evaluates app.config.js
+# without loading it, and the enforced-tracking check there then misses the DSN.
+# It goes first so .env.signing still wins, as it does for the Expo CLI.
+if [[ -f .env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
 # shellcheck disable=SC1091
 [[ -f .env.signing ]] && source .env.signing
 if [[ "$PLATFORM" == android ]]; then
