@@ -503,6 +503,7 @@ Confirm three things before handing builds out:
 - **Adding a device means re-signing.** An Ad Hoc profile lists its devices, so after registering one, regenerate both profiles, reinstall them and rebuild. Builds already distributed don't pick up the new device.
 - **100 iPhones per membership year.** Removing a device doesn't free its slot until the membership renews, so register only core testers.
 - **The APK can't upgrade a Play install.** Play re-signs with the app signing key, so a tester uninstalls the Play version first (and again before going back to Play).
+- **On iOS it replaces TestFlight.** The QA build, TestFlight, the App Store and the dev client all share `com.ronenmars.threadbase`, so a device holds one of them at a time; reinstalling from the TestFlight app switches back. What survives a swap: [`dev-on-physical-device-ios.md`](./dev-on-physical-device-ios.md) → "Coexistence with TestFlight Threadbase".
 - **Local only.** Under `CI`, `expo export:embed` skips the Metro cache reset that local release builds do, and the transform cache isn't keyed on `EXPO_PUBLIC_*` values, so an enforced `services/sentry.ts` could be reused by a later store build on the same runner. The script refuses to run when `CI` is set. Running it from GitHub Actions would need an explicit Metro cache reset, or a runner that is discarded after the build.
 
 ---
