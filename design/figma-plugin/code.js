@@ -3339,6 +3339,62 @@ const CATALOG_PAGES = {
   deprecated: '99 Deprecated',
 };
 const CATALOG_PAGE_ORDER = Object.values(CATALOG_PAGES);
+const CATALOG_PAGE_GUIDANCE = {
+  [CATALOG_PAGES.start]: {
+    scope: 'Entry point for ownership, contribution, naming, lifecycle, and navigation guidance.',
+    groups: ['Change path', 'Lifecycle', 'Naming', 'Repository links'],
+  },
+  [CATALOG_PAGES.foundations]: {
+    scope: 'Semantic variables, private theme palettes, type styles, spacing, radius, and token examples.',
+    groups: ['Color', 'Typography', 'Spacing', 'Radius'],
+  },
+  [CATALOG_PAGES.core]: {
+    scope: 'General UI, shared chrome, feedback, icons, and brand or provider marks.',
+    groups: ['Actions', 'Assets', 'Core', 'Errors', 'Feedback', 'Loading', 'Navigation', 'Overlays', 'Provider marks', 'Status'],
+  },
+  [CATALOG_PAGES.sessions]: {
+    scope: 'Now, Projects, tree, history, and session-state assets.',
+    groups: ['Banners', 'Controls', 'Dialogs', 'Hub', 'Loading', 'Now', 'Sessions', 'Shared', 'Sheets', 'Status', 'Tree'],
+  },
+  [CATALOG_PAGES.conversation]: {
+    scope: 'Messages, thinking, tools, diffs, composer, terminal, review, and search.',
+    groups: ['Composer', 'Conversation', 'Feedback', 'History', 'Messages', 'Review', 'Terminal'],
+  },
+  [CATALOG_PAGES.connectivity]: {
+    scope: 'Servers, pairing, browse, connection health, encryption, and related alerts.',
+    groups: ['Browse', 'Connectivity', 'Encryption', 'Pairing', 'Servers'],
+  },
+  [CATALOG_PAGES.experience]: {
+    scope: 'Onboarding, tour, settings, diagnostics, notifications, quick access, and shelf.',
+    groups: ['Banners', 'Diagnostics', 'Onboarding', 'Product experience', 'Quick access', 'Settings', 'Shelf', 'Tour'],
+  },
+  [CATALOG_PAGES.patterns]: {
+    scope: 'Stable reusable compositions assembled from published components.',
+    groups: ['Patterns'],
+  },
+  [CATALOG_PAGES.screens]: {
+    scope: 'Route and onboarding examples assembled from component instances.',
+    groups: ['Routes', 'Onboarding'],
+  },
+  [CATALOG_PAGES.visualQa]: {
+    scope: 'Theme references, audit matrices, and comparison fixtures used as QA evidence.',
+    groups: ['Theme gallery', 'Audit evidence'],
+  },
+  [CATALOG_PAGES.deprecated]: {
+    scope: 'Deprecated assets that have both a supported replacement and a migration note.',
+    groups: ['Replacement evidence', 'Migration notes'],
+  },
+};
+const PENDING_BETA_ASSETS = [
+  'LeaveNotice',
+  'SessionActionSheet',
+  'EndSessionStatus',
+  'EndSessionDialogs',
+  'SlowQueryBanner',
+];
+function lifecycleFor(name) {
+  return PENDING_BETA_ASSETS.includes(name) ? 'beta' : 'stable';
+}
 function ensureCatalogPages() {
   const pages = new Map();
   for (const name of CATALOG_PAGE_ORDER) {
@@ -3349,6 +3405,70 @@ function ensureCatalogPages() {
     pages.set(name, page);
   }
   return pages;
+}
+function guideCopy(pageName, guidance) {
+  const shared = [
+    guidance.scope,
+    '',
+    'Includes: ' + guidance.groups.join(' · '),
+    '',
+    'Lifecycle: Stable is code-backed and live-validated. Beta is code-backed but still needs live validation. Deprecated requires a supported replacement and migration note.',
+    'Usage: inspect component properties and variants here, open the component documentation link for source, and use 80 Screens for route context.',
+    'Contribute: change app code first, update design/figma-plugin/code.js, run the builder, then verify all eight themes.',
+    'Repository: ' + REPO.replace('/blob/main/', ''),
+    'Design guide: ' + REPO + 'DESIGN.md',
+    'Plugin guide: ' + REPO + 'design/figma-plugin/README.md',
+  ];
+  if (pageName !== CATALOG_PAGES.start) return shared.join('\n');
+  return [
+    guidance.scope,
+    '',
+    'Change path: app code → plugin catalog or builder → Figma builder → eight-theme visual check → review.',
+    'Naming: keep public component names unique across the file, use semantic family names, and express variants as Figma properties.',
+    'Lifecycle: Stable is code-backed and live-validated. Beta is code-backed but still needs live validation. Deprecated requires a supported replacement and migration note.',
+    'Pending beta validation from issue #1167: ' + PENDING_BETA_ASSETS.join(', ') + '.',
+    'Navigate: foundations in 10, shared assets in 20, product domains in 30–60, patterns in 70, route examples in 80, and QA evidence in 90.',
+    'Repository: ' + REPO.replace('/blob/main/', ''),
+    'Design guide: ' + REPO + 'DESIGN.md',
+    'Plugin guide: ' + REPO + 'design/figma-plugin/README.md',
+  ].join('\n');
+}
+async function upsertGuide(page, pageName, guidance) {
+  await figma.setCurrentPageAsync(page);
+  let guide = page.children.find(node => node.type === 'FRAME' && node.getPluginData('threadbase-guide') === pageName);
+  if (!guide) {
+    guide = AL('VERTICAL', 'Guide · ' + pageName, { itemSpacing: 16, cornerRadius: 12, strokeWeight: 1 });
+    guide.counterAxisSizingMode = 'FIXED';
+    guide.resize(1200, 100);
+    guide.paddingTop = guide.paddingBottom = 32;
+    guide.paddingLeft = guide.paddingRight = 40;
+    guide.fills = P('bg/card');
+    guide.strokes = P('border');
+    guide.setPluginData('threadbase-guide', pageName);
+    page.appendChild(guide);
+    fill(guide, rawText(pageName === CATALOG_PAGES.start ? 'Threadbase Mobile Design System' : pageName, 28, 'Semi Bold', P('text/primary'))).name = 'guide-title';
+    const body = fill(guide, rawText('', 14, 'Regular', P('text/secondary')));
+    body.name = 'guide-body';
+  }
+  guide.name = 'Guide · ' + pageName;
+  guide.x = 0;
+  guide.y = pageName === CATALOG_PAGES.start ? 0 : -600;
+  const title = guide.findOne(node => node.type === 'TEXT' && node.name === 'guide-title');
+  const body = guide.findOne(node => node.type === 'TEXT' && node.name === 'guide-body');
+  if (!title || !body) throw new Error('Incomplete generated guide on ' + pageName);
+  title.characters = pageName === CATALOG_PAGES.start ? 'Threadbase Mobile Design System' : pageName;
+  body.layoutSizingHorizontal = 'FIXED';
+  body.textAutoResize = 'NONE';
+  body.resize(1120, 20);
+  body.textAutoResize = 'HEIGHT';
+  body.characters = guideCopy(pageName, guidance);
+  body.layoutSizingHorizontal = 'FILL';
+  return guide;
+}
+async function buildGuidance(pages) {
+  for (const pageName of CATALOG_PAGE_ORDER) {
+    await upsertGuide(pages.get(pageName), pageName, CATALOG_PAGE_GUIDANCE[pageName]);
+  }
 }
 function tagBuildNode(node) {
   if (activeBuildGroup) node.setPluginData('threadbase-group', activeBuildGroup);
@@ -3376,8 +3496,8 @@ async function runBuildPage(entries, page) {
   }
   return errors;
 }
-function job(buildName, builder, page, group, kind) {
-  return { buildName, builder, page, group, kind: kind || 'component', status: 'stable' };
+function job(buildName, builder, page, group, kind, status) {
+  return { buildName, builder, page, group, kind: kind || 'component', status: status || lifecycleFor(buildName) };
 }
 function assetLocation(name, source) {
   if (name === 'ProviderMark') return [CATALOG_PAGES.core, 'Provider marks'];
@@ -3389,9 +3509,9 @@ function assetLocation(name, source) {
   if (/\/(onboarding|tour|diagnostics|feedback|settings|quick-access|shelf)\//.test(source)) return [CATALOG_PAGES.experience, 'Product experience'];
   return [CATALOG_PAGES.core, 'Core'];
 }
-function asset(name, source) {
+function asset(name, source, status) {
   const [page, group] = assetLocation(name, source);
-  return { name, source, page, group, kind: 'component', status: 'stable' };
+  return { name, source, page, group, kind: 'component', status: status || lifecycleFor(name) };
 }
 const CATALOG = [
   job('icons', ensureIcons, CATALOG_PAGES.core, 'Assets', 'asset'),
@@ -3622,6 +3742,10 @@ async function linkSources() {
     const node = findComp(entry.name);
     if (!node) { missing.push(entry.name); continue; }
     node.documentationLinks = [{ uri: REPO + entry.source }];
+    node.setPluginData('threadbase-status', entry.status);
+    const lifecycle = 'Lifecycle: ' + entry.status[0].toUpperCase() + entry.status.slice(1) + '.';
+    const existing = (node.description || '').replace(/^Lifecycle: (?:Stable|Beta|Deprecated)\.\s*/, '');
+    node.description = lifecycle + (existing ? '\n' + existing : '');
   }
   if (missing.length) throw new Error('not found: ' + missing.join(', '));
 }
@@ -3658,6 +3782,7 @@ async function init() {
 async function build() {
   const pages = await init();
   const errors = [];
+  try { await buildGuidance(pages); } catch (e) { errors.push('guidance: ' + e.message); }
   const jobs = CATALOG.filter(x => x.builder);
   for (const pageName of CATALOG_PAGE_ORDER) {
     const pageJobs = jobs.filter(entry => entry.page === pageName);
@@ -3669,6 +3794,7 @@ async function build() {
   try { await buildScreens(pages.get(CATALOG_PAGES.screens), pages.get(CATALOG_PAGES.visualQa)); } catch (e) { errors.push('screens: ' + e.message); }
   try { await linkSources(); } catch (e) { errors.push('links: ' + e.message); }
   try { await arrangeReferences(pages.get(CATALOG_PAGES.visualQa)); } catch (e) { errors.push('references: ' + e.message); }
+  await figma.setCurrentPageAsync(pages.get(CATALOG_PAGES.start));
   return errors;
 }
 

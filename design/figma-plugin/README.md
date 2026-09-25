@@ -81,6 +81,13 @@ The builder creates or reuses these pages in this order:
 11. `99 Deprecated`
 
 Generated sections carry their catalog group in the private `threadbase-group` plugin-data key so a later migration can organize existing nodes without changing component identity.
+The builder also generates `00 Start Here` and an intro guide above every other page from `CATALOG_PAGE_GUIDANCE`.
+Those guides define scope, included groups, the change path, lifecycle meanings, usage, and repository links without adding canvas-only documentation to the source of truth.
+
+Every source-linked public component receives a `threadbase-status` plugin-data value and a matching lifecycle line in its description.
+Current code-backed and live-validated assets are `stable`.
+`LeaveNotice`, `SessionActionSheet`, `EndSessionStatus`, `EndSessionDialogs`, and `SlowQueryBanner` are reserved as `beta` until issue #1167 completes live validation.
+Move an asset to `99 Deprecated` only when its replacement and migration note are both recorded.
 
 ## Live bridge (for agent-driven edits)
 

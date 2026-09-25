@@ -52,6 +52,9 @@ globalThis.catalog = CATALOG;
 globalThis.steps = buildSteps();
 globalThis.assets = sourceAssets();
 globalThis.requiredPages = CATALOG_PAGE_ORDER;
+globalThis.pageGuidance = CATALOG_PAGE_GUIDANCE;
+globalThis.pendingBetaAssets = PENDING_BETA_ASSETS;
+globalThis.lifecycleFor = lifecycleFor;
 globalThis.ensurePages = ensureCatalogPages;
 globalThis.findComponent = findComp;
 globalThis.runJob = runBuildJob;
@@ -118,7 +121,13 @@ describe('figma plugin: code.js', () => {
     const page = { type: 'PAGE', name: 'Components', children: [] };
     runtime.figma.root.children.push(page);
     for (const { name } of runtime.assets) {
-      page.children.push({ type: 'COMPONENT', name, documentationLinks: [] });
+      page.children.push({
+        type: 'COMPONENT',
+        name,
+        description: '',
+        documentationLinks: [],
+        setPluginData: jest.fn(),
+      });
     }
 
     await runtime.applySourceLinks();
@@ -127,6 +136,8 @@ describe('figma plugin: code.js', () => {
     expect(badge.documentationLinks).toEqual([{
       uri: 'https://github.com/RonenMars/threadbase-mobile/blob/main/components/ui/Badge.tsx',
     }]);
+    expect(badge.description).toBe('Lifecycle: Stable.');
+    expect(badge.setPluginData).toHaveBeenCalledWith('threadbase-status', 'stable');
   });
 
   it('creates the complete page structure idempotently and keeps Screens separate from Visual QA', () => {
@@ -152,6 +163,35 @@ describe('figma plugin: code.js', () => {
     expect(runtime.figma.root.children).toHaveLength(11);
     expect(second.get('10 Foundations')).toBe(first.get('10 Foundations'));
     expect(first.get('80 Screens')).not.toBe(first.get('90 Visual QA'));
+  });
+
+  it('owns guidance for every generated page and reserves Deprecated for migrations', () => {
+    const runtime = catalogRuntime();
+
+    expect(Object.keys(runtime.pageGuidance)).toEqual([...runtime.requiredPages]);
+    expect(Object.values(runtime.pageGuidance).filter(({ scope, groups }) => (
+      typeof scope !== 'string' || scope.length === 0 || !Array.isArray(groups)
+    ))).toEqual([]);
+    expect(runtime.pageGuidance['00 Start Here'].groups).toContain('Change path');
+    expect(runtime.pageGuidance['99 Deprecated'].scope).toContain('replacement');
+    expect(runtime.pageGuidance['99 Deprecated'].scope).toContain('migration note');
+    expect(src).toContain('await buildGuidance(pages)');
+    expect(src).toContain('body.resize(1120, 20)');
+    expect(src).toContain('await figma.setCurrentPageAsync(pages.get(CATALOG_PAGES.start))');
+  });
+
+  it('keeps the five issue 1167 assets beta until live validation', () => {
+    const runtime = catalogRuntime();
+
+    expect([...runtime.pendingBetaAssets]).toEqual([
+      'LeaveNotice',
+      'SessionActionSheet',
+      'EndSessionStatus',
+      'EndSessionDialogs',
+      'SlowQueryBanner',
+    ]);
+    expect(runtime.pendingBetaAssets.map(runtime.lifecycleFor)).toEqual(Array(5).fill('beta'));
+    expect(runtime.lifecycleFor('Button')).toBe('stable');
   });
 
   it('keeps the reference-screenshot label on Visual QA when rebuilding screens', () => {

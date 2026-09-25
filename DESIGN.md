@@ -281,6 +281,8 @@ Every component set carries a `documentationLinks` entry pointing at its source 
 
 The plugin's `CATALOG` is the repository-owned inventory for build order, source links, target page/group, asset kind and lifecycle status.
 The builder now creates or reuses the target pages, looks up public components across the whole file, batches jobs by destination page, and keeps route screens separate from visual-QA references.
+It also generates `00 Start Here` plus one guide frame per page with scope, included groups, lifecycle definitions, contribution steps, and repository links.
+Public component descriptions begin with their catalog lifecycle, and the five assets tracked by issue #1167 remain `beta` until their live validation is complete.
 
 | Page | Holds |
 |---|---|
@@ -301,6 +303,9 @@ The builder now creates or reuses the target pages, looks up public components a
 1. Open the file in the Figma **desktop** app.
 2. Plugins → Development → **Import plugin from manifest…** → `design/figma-plugin/manifest.json`.
 3. Plugins → Development → Threadbase DS Builder → **Build remaining components + screens**. Each step skips itself if its output already exists.
+
+Start in `00 Start Here` when browsing the file for the first time.
+Use the guide above each page to find its groups, open a component's documentation link for source, and use `80 Screens` for route context.
 
 For agent-driven edits there is a live bridge: `node bridge.mjs` starts a localhost relay, the plugin's **Bridge (live)** command connects to it, and `node bridge.mjs run job.js` executes a script against the open file with no MCP call limit.
 `design/figma-plugin/README.md` has the details and the gotchas.
