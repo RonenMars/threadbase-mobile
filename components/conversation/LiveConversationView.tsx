@@ -214,7 +214,7 @@ export function LiveConversationView({
 
   // PTY lines shown inside the thinking bubble while agent is running
   const { suggestion, chipSuggestion, dismiss: dismissSuggestion } = usePromptSuggestion(serverId, sessionId)
-  const { lines: ptyLines, isStreaming, parseConfidence } = useTerminalStream(
+  const { lines: ptyLines, parseConfidence } = useTerminalStream(
     serverId,
     sessionId,
     false,
@@ -520,7 +520,6 @@ export function LiveConversationView({
         ListFooterComponent={showThinkingFooter ? (
           <ThinkingBubble
             lines={ptyLines}
-            isStreaming={isStreaming}
             fadingOut={thinkingState === 'fading'}
             onFadeOutComplete={handleFadeOutComplete}
             onSendKeys={(keys) => sendKeys.mutate(keys)}

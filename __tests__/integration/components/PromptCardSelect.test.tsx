@@ -43,7 +43,7 @@ const PROMPT: Prompt = {
  */
 describe.each([
   ['ThinkingBubble', (block: QuestionBlock, onAnswerPrompt: jest.Mock, onAnswerPermission: jest.Mock) => (
-    <ThinkingBubble lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onCancelQuestion={jest.fn()} onAnswerPrompt={onAnswerPrompt} onAnswerPermission={onAnswerPermission} />
+    <ThinkingBubble lines={[]} activeQuestion={block} onSendKeys={jest.fn()} onCancelQuestion={jest.fn()} onAnswerPrompt={onAnswerPrompt} onAnswerPermission={onAnswerPermission} />
   )],
   ['TerminalOutput', (block: QuestionBlock, onAnswerPrompt: jest.Mock, onAnswerPermission: jest.Mock) => (
     <TerminalOutput lines={[]} isStreaming={false} activeQuestion={block} onSendKeys={jest.fn()} onCancelQuestion={jest.fn()} onAnswerPrompt={onAnswerPrompt} onAnswerPermission={onAnswerPermission} />

@@ -10,12 +10,10 @@ import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
-import { SkeletonBox } from '@/components/ui/Skeleton'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 
 interface Props {
   lines: string[]
-  isStreaming: boolean
   fadingOut?: boolean
   onFadeOutComplete?: () => void
   onSendKeys?: (keys: string) => void
@@ -36,7 +34,7 @@ interface Props {
   onSessionQuit?: () => void
 }
 
-export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus, onSessionQuit }: Props) {
+export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus, onSessionQuit }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -152,11 +150,6 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
   // card already means "the agent is working" — render it regardless of phase.
   const workingLabel = subStatus ? getAgentPhaseLabel(subStatus, t) : t('phase.working')
 
-  // The PTY has gone quiet mid-turn (Claude only repaints when it has something
-  // to draw, and 30s+ of silence is routine). The scraped terminal text would
-  // freeze, so swap it for the skeleton — the scanner keeps signalling activity.
-  const quiet = hasLines && !isStreaming
-
   return (
     <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
       <View style={styles.bubble}>
@@ -176,12 +169,6 @@ export function ThinkingBubble({ lines, isStreaming, fadingOut = false, onFadeOu
           {subStatus ? <Text style={styles.phase}>{workingLabel}</Text> : null}
           <KnightRiderScanner testID="thinking-scanner" accessibilityLabel={workingLabel} />
         </View>
-        {quiet ? (
-          <View style={styles.skeleton} testID="thinking-skeleton">
-            <SkeletonBox height={11} width="72%" />
-            <SkeletonBox height={11} width="54%" style={styles.skeletonLineGap} />
-          </View>
-        ) : null}
       </View>
     </Animated.View>
   )
@@ -227,13 +214,6 @@ function makeStyles(theme: Theme) {
     phase: {
       fontSize: font.xs,
       color: theme.text.secondary,
-    },
-    skeleton: {
-      marginTop: spacing.xs,
-      minWidth: 140,
-    },
-    skeletonLineGap: {
-      marginTop: spacing.xs,
     },
   })
 }

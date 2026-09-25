@@ -34,7 +34,6 @@ describe.each([
   ['ThinkingBubble', ({ phase, busy, onAnswerPermission }: CardProps) => (
     <ThinkingBubble
       lines={[]}
-      isStreaming={false}
       activeQuestion={block()}
       onSendKeys={jest.fn()}
       onAnswerPermission={onAnswerPermission}

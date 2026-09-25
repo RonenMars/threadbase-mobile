@@ -141,5 +141,5 @@ appId: com.ronenmars.threadbase
 # surface rather than a flow edit.
 #
 # The component itself is unit-tested in
-# __tests__/unit/components/conversation/ThinkingBubble.{question,skeleton}.test.tsx.
+# __tests__/unit/components/conversation/ThinkingBubble.{question,indicator}.test.tsx.
 # What is uncovered is the integration path: a running session actually showing it.

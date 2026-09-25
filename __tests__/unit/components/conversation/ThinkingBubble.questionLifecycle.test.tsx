@@ -34,7 +34,6 @@ describe('ThinkingBubble question lifecycle', () => {
     const { getByLabelText } = await render(
       <ThinkingBubble
         lines={[]}
-        isStreaming={false}
         fadingOut
         onFadeOutComplete={onFadeOutComplete}
         activeQuestion={aq}
@@ -59,7 +58,7 @@ describe('ThinkingBubble question lifecycle', () => {
     jest.useFakeTimers()
     try {
       const onFadeOutComplete = jest.fn()
-      const props = { lines: [], isStreaming: false, fadingOut: true, onFadeOutComplete }
+      const props = { lines: [], fadingOut: true, onFadeOutComplete }
       const { rerender } = await render(<ThinkingBubble {...props} />)
       // Before any timer runs: jest's native-animation mock ends every
       // animation 16ms after it starts.
@@ -80,7 +79,6 @@ describe('ThinkingBubble question lifecycle', () => {
     await render(
       <ThinkingBubble
         lines={[]}
-        isStreaming={false}
         fadingOut
         onFadeOutComplete={onFadeOutComplete}
         subStatus="thinking"
@@ -98,7 +96,6 @@ describe('ThinkingBubble question lifecycle', () => {
     const { getAllByLabelText } = await render(
       <ThinkingBubble
         lines={[]}
-        isStreaming={false}
         activeQuestion={aq}
         onSendKeys={onSendKeys}
         onCancelQuestion={onCancelQuestion}
@@ -128,7 +125,6 @@ describe('ThinkingBubble question lifecycle', () => {
     const { getByLabelText } = await render(
       <ThinkingBubble
         lines={[]}
-        isStreaming={false}
         activeQuestion={gate}
         onSendKeys={jest.fn()}
         onAnswerPermission={onAnswerPermission}
@@ -152,7 +148,6 @@ describe('ThinkingBubble question lifecycle', () => {
     const { getByLabelText } = await render(
       <ThinkingBubble
         lines={[]}
-        isStreaming={false}
         activeQuestion={aq}
         onAnswer={onAnswer}
         onCancelQuestion={onCancelQuestion}
