@@ -499,7 +499,8 @@ cp ../../tb-mobile/.env ../../tb-mobile/.env.signing ../../tb-mobile/.env.signin
 ### One-time setup
 
 1. **Firebase project.** In the Firebase console, register the iOS app (`com.ronenmars.threadbase`) and the Android app (`com.ronenmars.threadbase`).
-   Create a tester group named `qa` and invite the testers.
+   Create a tester group named `qa` and add the testers to that group; a tester added only to the project gets no email.
+   The script refuses to build for a group with no testers, because Firebase reports a distribution to an empty group as a success.
 2. **App IDs.** Copy both from Project settings → Your apps, and export them as `FIREBASE_APP_ID_IOS` and `FIREBASE_APP_ID_ANDROID`.
 3. **Firebase credentials.** Either run `npx firebase-tools login` once, or create a service account with the **Firebase App Distribution Admin** role and export `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json`.
 4. **iOS Ad Hoc signing.** In the Apple Developer portal:

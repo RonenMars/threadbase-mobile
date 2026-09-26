@@ -19,14 +19,21 @@ const SCRIPT = path.resolve(__dirname, '../../../scripts/ship-qa.sh');
  * Runs from a fresh directory holding only `files`, with a clean env, so no real
  * .env.signing* or ambient CI leaks in. A stub `npx` exits 42, so a run that gets
  * past every refusal stops at the first build step instead of building; it exits
- * 43 instead when EXPO_PUBLIC_SENTRY_DSN reached its environment.
+ * 43 instead when EXPO_PUBLIC_SENTRY_DSN reached its environment. Its Firebase
+ * group listing is `groups.json` from `files`, or one `qa` group with a tester.
  */
 function run(args, vars = {}, files = {}) {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'ship-qa-'));
   for (const [name, content] of Object.entries(files)) fs.writeFileSync(path.join(cwd, name), content);
   const bin = path.join(cwd, 'bin');
   fs.mkdirSync(bin);
-  fs.writeFileSync(path.join(bin, 'npx'), '#!/bin/sh\n[ -n "$EXPO_PUBLIC_SENTRY_DSN" ] && exit 43\nexit 42\n', { mode: 0o755 });
+  const npx = [
+    '#!/bin/sh',
+    'case "$*" in *groups:list*) cat groups.json 2>/dev/null || echo \'{"result":{"groups":[{"name":"projects/1/groups/qa","testerCount":1}]}}\'; exit 0 ;; esac',
+    '[ -n "$EXPO_PUBLIC_SENTRY_DSN" ] && exit 43',
+    'exit 42',
+  ];
+  fs.writeFileSync(path.join(bin, 'npx'), `${npx.join('\n')}\n`, { mode: 0o755 });
   return spawnSync('/bin/bash', [SCRIPT, ...args], {
     cwd,
     env: { PATH: `${bin}:${process.env.PATH}`, ...vars },
@@ -66,6 +73,13 @@ describe('ship-qa.sh', () => {
   it('exports .env to the build', () => {
     const res = run(['--platform', 'ios'], { FIREBASE_APP_ID_IOS: 'app' }, { '.env': 'EXPO_PUBLIC_SENTRY_DSN=dsn\n' });
     expect(res.status).toBe(43);
+  });
+
+  it('refuses a tester group with no testers', () => {
+    const groups = JSON.stringify({ result: { groups: [{ name: 'projects/1/groups/qa' }] } });
+    const res = run(['--platform', 'ios'], { FIREBASE_APP_ID_IOS: 'app' }, { 'groups.json': groups });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain("group 'qa' is missing or has no testers");
   });
 
   it('requires the Android signing env before building', () => {
