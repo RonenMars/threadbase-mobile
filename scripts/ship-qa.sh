@@ -49,9 +49,11 @@ esac
 # Under CI, `expo export:embed` skips the Metro cache reset the release build
 # phases ask for, and Metro's transform cache is not keyed on EXPO_PUBLIC_*
 # values — an enforced sentry.ts could then be reused by a later store build on
-# the same runner. Local runs always reset, so this channel is local-only.
-if [[ -n "${CI:-}" ]]; then
-  echo "ship-qa.sh does not run under CI: the Metro cache would carry the enforced flag into later builds" >&2
+# the same runner. Local runs always reset. A GitHub-hosted runner is a fresh VM
+# discarded after the job, so it has no later build to leak into; a self-hosted
+# one does. qa.yml must never cache Metro's transform cache for the same reason.
+if [[ -n "${CI:-}" && "${RUNNER_ENVIRONMENT:-}" != github-hosted ]]; then
+  echo "ship-qa.sh runs under CI only on a GitHub-hosted runner: elsewhere the Metro cache would carry the enforced flag into later builds" >&2
   exit 1
 fi
 
