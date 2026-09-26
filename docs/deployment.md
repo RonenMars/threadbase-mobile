@@ -476,6 +476,26 @@ A build carries the current `app.json` build number (iOS) or `android/app/build.
 
 Before any native build starts, the script stops if the Firebase app ID, the Android signing file or a Sentry variable is missing.
 
+### Shipping a branch or PR
+
+The script builds whatever is checked out where it runs, so a branch or PR ships from its own worktree:
+
+```bash
+cd ~/dev/ai-tools/tb-mobile
+git fetch origin pull/<N>/head:qa/pr-<N>                  # or an existing branch name
+git worktree add ../tb-mobile-worktrees/qa-pr-<N> qa/pr-<N>
+cd ../tb-mobile-worktrees/qa-pr-<N>
+npm ci
+cp ../../tb-mobile/.env ../../tb-mobile/.env.signing ../../tb-mobile/.env.signing.android .
+./scripts/ship-qa.sh --platform ios --release-notes "PR #<N>: <title>"
+./scripts/ship-qa.sh --platform android --release-notes "PR #<N>: <title>"
+```
+
+- Give the worktree its own `node_modules`. A symlink to the main checkout's makes Metro bundle the main checkout instead, and the build ships the wrong code ([`troubleshooting.md`](./troubleshooting.md) → "Metro bundles the main repo instead of your worktree").
+- The env files are gitignored, so a new worktree has none of them.
+- Name the PR in `--release-notes`. The build number is not bumped, so in Firebase the notes are what tells two PR builds apart.
+- Each install replaces the previous QA build on the device, since every build shares the bundle ID.
+
 ### One-time setup
 
 1. **Firebase project.** In the Firebase console, register the iOS app (`com.ronenmars.threadbase`) and the Android app (`com.ronenmars.threadbase`).
