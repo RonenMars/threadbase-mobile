@@ -1,5 +1,9 @@
 import { QueryClient } from '@tanstack/react-query'
-import { applySessionUpdateToEagerCache, refreshEagerConversations } from '@/lib/eagerCacheSync'
+import {
+  applySessionPhaseToCache,
+  applySessionUpdateToEagerCache,
+  refreshEagerConversations,
+} from '@/lib/eagerCacheSync'
 import type { MultiSession, Session } from '@/types/api'
 
 function makeSession(overrides: Partial<Session> = {}): Session {
@@ -64,6 +68,45 @@ describe('applySessionUpdateToEagerCache', () => {
     applySessionUpdateToEagerCache(qc, 'srv2', makeSession({ id: 'sess-1' }))
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['sessions-eager'] })
+  })
+})
+
+describe('applySessionPhaseToCache', () => {
+  const SESSION_KEY = ['session', 'srv1', 'sess-1']
+
+  it('merges a known phase into the cached session', () => {
+    const qc = new QueryClient()
+    qc.setQueryData(SESSION_KEY, makeSession({ id: 'sess-1', subStatus: null }))
+
+    applySessionPhaseToCache(qc, 'srv1', 'sess-1', 'thinking')
+
+    expect(qc.getQueryData<Session>(SESSION_KEY)?.subStatus).toBe('thinking')
+  })
+
+  it('clears subStatus when phase is null', () => {
+    const qc = new QueryClient()
+    qc.setQueryData(SESSION_KEY, makeSession({ id: 'sess-1', subStatus: 'working' }))
+
+    applySessionPhaseToCache(qc, 'srv1', 'sess-1', null)
+
+    expect(qc.getQueryData<Session>(SESSION_KEY)?.subStatus).toBeNull()
+  })
+
+  it('treats an unrecognised phase string as no phase', () => {
+    const qc = new QueryClient()
+    qc.setQueryData(SESSION_KEY, makeSession({ id: 'sess-1', subStatus: 'working' }))
+
+    applySessionPhaseToCache(qc, 'srv1', 'sess-1', 'compacting' as 'working')
+
+    expect(qc.getQueryData<Session>(SESSION_KEY)?.subStatus).toBeNull()
+  })
+
+  it('does nothing when the session is not cached', () => {
+    const qc = new QueryClient()
+
+    applySessionPhaseToCache(qc, 'srv1', 'sess-missing', 'thinking')
+
+    expect(qc.getQueryData<Session>(['session', 'srv1', 'sess-missing'])).toBeUndefined()
   })
 })
 

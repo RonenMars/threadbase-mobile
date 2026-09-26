@@ -11,6 +11,7 @@ import type {
   CacheAlertResolveAction,
   HostPressureLevel,
   HostPressureReason,
+  AgentPhase,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
 import { isCleartextAllowed } from './cleartext-policy'
@@ -29,6 +30,10 @@ export type WSMessage =
   // Scoped to the session's subscribers. `text` is always present; null means
   // "no suggestion / cleared". Additive; old streamers never send it.
   | { type: 'prompt_suggestion'; sessionId: string; text: string | null; updatedAt: string }
+  // Live agent-phase change within a running turn. Scoped to the session's
+  // subscribers, never routed through session_update (it can fire every scrape
+  // tick). `phase: null` clears it. Additive; old streamers never send it.
+  | { type: 'session_phase'; sessionId: string; phase: AgentPhase | null; updatedAt: string }
   // Liveness only. Carries nothing to render; its job is to reset the silence
   // watchdog in useTerminalStream on an otherwise idle socket (#946).
   | { type: 'ping'; ts: number }

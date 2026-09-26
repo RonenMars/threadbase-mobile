@@ -146,6 +146,12 @@ export interface Session {
    * is still idle and still needs a resume. Additive; older servers omit it.
    */
   interruptedStatus?: 'running' | 'waiting_input'
+  /**
+   * True while the session has a prompt in state `open` or `updated`, per the
+   * provider-neutral prompt contract. Additive; older servers omit it — treat
+   * absent as unknown, never as `false`.
+   */
+  hasOpenPrompt?: boolean
 }
 
 export interface MessageSnapshot {
