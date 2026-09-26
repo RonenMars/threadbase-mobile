@@ -28,7 +28,7 @@ They differ in how much automation sits around the archive step.
 
 | Path | Use when | Command |
 | --- | --- | --- |
-| **`ship-qa.sh`** | A build for registered QA devices with full Sentry telemetry (`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`). Uploads to Firebase App Distribution, never to a store. Local only. | `./scripts/ship-qa.sh --platform ios\|android` |
+| **`ship-qa.sh`** | A build for registered QA devices with full Sentry telemetry (`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`). Uploads to Firebase App Distribution, never to a store. Locally, or from the `QA (Firebase)` workflow. | `./scripts/ship-qa.sh --platform ios\|android` |
 
 ---
 
@@ -496,6 +496,28 @@ cp ../../tb-mobile/.env ../../tb-mobile/.env.signing ../../tb-mobile/.env.signin
 - Name the PR in `--release-notes`. The build number is not bumped, so in Firebase the notes are what tells two PR builds apart.
 - Each install replaces the previous QA build on the device, since every build shares the bundle ID.
 
+### From GitHub Actions
+
+`.github/workflows/qa.yml` (**QA (Firebase)**) runs the same script on GitHub-hosted runners, one job per platform.
+Dispatch it from the Actions tab or the CI dashboard with a `platform`, a `deploy_ref` (any branch, tag or SHA, so a PR ships by naming its branch), the tester `groups`, and optional `release_notes`.
+Without notes, the release is labelled with the ref and its short SHA.
+
+It is a separate workflow from Deploy on purpose: Deploy must never carry the enforced flag.
+It relies on the runner being discarded after the job, which is what keeps Metro's cache from leaking the flag into a later build, so it must never cache Metro's transform cache or move to a self-hosted runner.
+`ship-qa.sh` enforces the second half: under `CI` it runs only when `RUNNER_ENVIRONMENT` is `github-hosted`.
+
+It reuses Deploy's signing and Sentry secrets and the `EXPO_PUBLIC_SENTRY_DSN` variable, and needs these on top:
+
+| Name | Kind | Value |
+|---|---|---|
+| `FIREBASE_SA_JSON_B64` | secret | `base64 -i key.json` of a Google Cloud service account in the Firebase project with the **Firebase App Distribution Admin** role |
+| `IOS_ADHOC_PROFILE_B64` | secret | `base64 -i` of the app's Ad Hoc profile (`com.ronenmars.threadbase`) |
+| `IOS_WIDGET_ADHOC_PROFILE_B64` | secret | `base64 -i` of the widget's Ad Hoc profile (`com.ronenmars.threadbase.widgets`) |
+| `FIREBASE_APP_ID_IOS` | variable | The iOS app ID from Firebase → Project settings → Your apps |
+| `FIREBASE_APP_ID_ANDROID` | variable | The Android app ID from the same page |
+
+The workflow reads each profile's UUID from the profile itself, so after registering a device and regenerating the profiles, re-uploading the two profile secrets is the whole update.
+
 ### One-time setup
 
 1. **Firebase project.** In the Firebase console, register the iOS app (`com.ronenmars.threadbase`) and the Android app (`com.ronenmars.threadbase`).
@@ -525,7 +547,7 @@ Confirm three things before handing builds out:
 - **100 iPhones per membership year.** Removing a device doesn't free its slot until the membership renews, so register only core testers.
 - **The APK can't upgrade a Play install.** Play re-signs with the app signing key, so a tester uninstalls the Play version first (and again before going back to Play).
 - **On iOS it replaces TestFlight.** The QA build, TestFlight, the App Store and the dev client all share `com.ronenmars.threadbase`, so a device holds one of them at a time; reinstalling from the TestFlight app switches back. What survives a swap: [`dev-on-physical-device-ios.md`](./dev-on-physical-device-ios.md) → "Coexistence with TestFlight Threadbase".
-- **Local only.** Under `CI`, `expo export:embed` skips the Metro cache reset that local release builds do, and the transform cache isn't keyed on `EXPO_PUBLIC_*` values, so an enforced `services/sentry.ts` could be reused by a later store build on the same runner. The script refuses to run when `CI` is set. Running it from GitHub Actions would need an explicit Metro cache reset, or a runner that is discarded after the build.
+- **Only local or GitHub-hosted runners.** Under `CI`, `expo export:embed` skips the Metro cache reset that local release builds do, and the transform cache isn't keyed on `EXPO_PUBLIC_*` values, so an enforced `services/sentry.ts` could be reused by a later store build on the same runner. The script therefore refuses to run under `CI` unless `RUNNER_ENVIRONMENT` is `github-hosted`, whose VMs are discarded after the job.
 
 ---
 

@@ -2,8 +2,9 @@
  * @jest-environment node
  *
  * Tests for scripts/ship-qa.sh's refusals, which all run before any build or
- * network call. The CI refusal is the one that protects store builds: under CI
- * the Metro cache survives, and it would carry the enforced flag forward.
+ * network call. The CI refusal is the one that protects store builds: on a
+ * runner that outlives the job, the Metro cache survives and would carry the
+ * enforced flag forward.
  */
 
 'use strict';
@@ -47,10 +48,19 @@ describe('ship-qa.sh', () => {
     expect(run(['--platform', 'web']).status).toBe(2);
   });
 
-  it('refuses to run under CI', () => {
-    const res = run(['--platform', 'ios'], { CI: 'true', FIREBASE_APP_ID_IOS: 'app' });
+  it.each([
+    ['an unknown', {}],
+    ['a self-hosted', { RUNNER_ENVIRONMENT: 'self-hosted' }],
+  ])('refuses to run under CI on %s runner', (_label, runner) => {
+    const vars = { CI: 'true', FIREBASE_APP_ID_IOS: 'app', ...runner };
+    const res = run(['--platform', 'ios'], vars);
     expect(res.status).toBe(1);
-    expect(res.stderr).toContain('does not run under CI');
+    expect(res.stderr).toContain('only on a GitHub-hosted runner');
+  });
+
+  it('runs under CI on a GitHub-hosted runner', () => {
+    const res = run(['--platform', 'ios'], { CI: 'true', RUNNER_ENVIRONMENT: 'github-hosted', FIREBASE_APP_ID_IOS: 'app' });
+    expect(res.status).toBe(42);
   });
 
   it.each([
