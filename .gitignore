@@ -29,6 +29,9 @@ web-build/
 # android/ and ios/ are tracked — CNG is not used in this project
 # (prebuild does not run in the ship pipeline; native dirs are modified directly)
 android/.kotlin/
+# Firebase Android config (push tokens). Kept out of this public repo; the local
+# copy lives in ~/.config/threadbase/firebase/.
+android/app/google-services.json
 .env.*
 .env
 # Keep committed templates — real env files stay ignored.
