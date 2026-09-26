@@ -369,6 +369,19 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: ./scripts/bootstrap-android-signing.sh
 
+      - name: Write Firebase config
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          # Gitignored because the repo is public. Without it the google-services
+          # plugin is skipped and the build ships with no Android push tokens.
+          if [[ -z "$GOOGLE_SERVICES_JSON_B64" ]]; then
+            echo "::error::GOOGLE_SERVICES_JSON_B64 is not set; the build would ship without Android push."
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
+          jq -e '.client[].client_info.android_client_info.package_name == "com.ronenmars.threadbase"' android/app/google-services.json > /dev/null
+
       - name: Set git identity
         run: |
           git config --global user.name  "github-actions[bot]"
