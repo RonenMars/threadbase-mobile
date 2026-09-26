@@ -2,12 +2,11 @@
 
 ## Overview
 
-`threadbase-mobile` is an **Expo SDK 51 managed app** (React Native) distributed to iOS via **EAS Build + TestFlight**.
+`threadbase-mobile` is an Expo SDK 57 app with committed `ios/` and `android/` directories, shipped to TestFlight by `scripts/ship-ios.sh` from a local machine or the GitHub Deploy workflow.
+Every build path (fastlane, EAS cloud, manual Xcode, CI signing) is compared in [`docs/deployment.md`](docs/deployment.md); this file covers the TestFlight side only.
 
-- Bundle ID: defined in `app.json` → `expo.ios.bundleIdentifier`
-- App Store Connect App ID: in `app.json` → `expo.extra.storeListing.appId` (or check App Store Connect)
-- Expo project: configured in `app.json` → `expo.owner` and `eas.json`
-- Apple Team: configured via EAS and `app.json` → `expo.ios.appleTeamId`
+- Bundle ID: `app.json` → `expo.ios.bundleIdentifier` (`com.ronenmars.threadbase`)
+- Apple Team: `ASC_TEAM_ID` in `.env.signing`
 
 ---
 
@@ -46,77 +45,27 @@ bootstrapped from the cached files.
 
 ---
 
-## Credentials (managed by EAS)
-
-All signing credentials are stored on EAS servers and auto-managed:
-
-- **Distribution Certificate** — managed by EAS; view in App Store Connect → Certificates
-- **Provisioning Profile** — managed by EAS; view in Developer Portal → Profiles
-- **Push Notifications Key** — Created and assigned via EAS
-
-No manual certificate management needed.
-
----
-
-## Build & Submit
-
-```bash
-# Build for App Store
-eas build --platform ios --profile production
-
-# Submit to TestFlight (after build finishes)
-eas submit --platform ios
-```
-
-The `production` profile in `eas.json` uses `image: "latest"` to ensure Xcode 16+ (iOS 18 SDK) is used — required by Apple since early 2026.
-
-### Submit timing
-
-`eas submit` needs a finished `.ipa`, so the build must complete before submitting. Options:
-
-1. **Wait interactively** — let the build run to completion, then run `eas submit --platform ios` (picks the latest build).
-
-2. **One command, auto-submit** — queue the submit to run as soon as the build succeeds:
-   ```bash
-   eas build --platform ios --profile production --auto-submit
-   ```
-
-3. **Check status later** — if you closed the terminal:
-   ```bash
-   eas build:list --platform ios --limit 5
-   eas submit --platform ios --id <build-id>
-   ```
-
-Option 2 is usually the least friction for TestFlight releases.
-
----
-
-## Expo Account
-
-EAS CLI must be authenticated before running builds or submits:
-
-```bash
-eas login
-```
-
-To verify which account EAS is using: `eas whoami`
-
----
-
-## Local Development
-
-Run on iPhone via Expo Go (no build needed):
-
-```bash
-npm install
-npx expo start
-```
-
-Install **Expo Go** from the App Store, ensure iPhone and Mac are on the same WiFi, then scan the QR code.
-
----
-
 ## TestFlight Testers
 
-Managed in App Store Connect → Threadbase → TestFlight → Internal Testing.
-Testers receive an email invitation and install via the TestFlight app.
+App Store Connect → Threadbase → TestFlight.
+Testers install through the TestFlight app, and every build in both groups reports to Sentry as `staging`.
+
+| | Internal testing | External testing |
+|---|---|---|
+| Who | Members of the App Store Connect team, up to 100 | Anyone, up to 10,000 per app, split into up to 100 groups |
+| How they join | Added in App Store Connect; email invitation | Email invitation, or a **public link** anyone can open |
+| Review | None; available once processing finishes (usually minutes) | **Beta App Review** for the first build of each version (typically 24–48 hours); later builds of the same version usually clear within an hour |
+| Use for | The maintainer and teammates | QA and the public beta |
+
+### Running the public beta
+
+1. Create an external group and turn on its public link; cap the tester count on the link if you want a ceiling.
+2. Fill in Test Information: what to test, a feedback email, and **sign-in details**. Beta App Review cannot use the app without a reachable streamer, the same problem App Review had; see [`docs/app-review-demo-setup.md`](docs/app-review-demo-setup.md).
+3. Submit the first build of a new version for review **before** announcing it, so the 24–48 hours isn't on the critical path.
+4. Keep shipping: a build expires 90 days after upload, and a beta whose newest build has expired stops working for everyone.
+
+### Known limits
+
+- Internal, external and public-link installs all carry the same sandbox receipt, so Sentry can't tell them apart; they are all `staging`.
+- Builds are one linear stream per app. To test a branch before merge, use the QA channel (`scripts/ship-qa.sh`, [`docs/deployment.md`](docs/deployment.md) → "Path F") once it lands, or a dev-client build.
+- The TestFlight build shares its bundle ID with the dev client and the App Store build, so a device holds one at a time; see [`docs/dev-on-physical-device-ios.md`](docs/dev-on-physical-device-ios.md) → "Coexistence with TestFlight Threadbase".

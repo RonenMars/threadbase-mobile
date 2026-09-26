@@ -347,6 +347,21 @@ Play Console UI names → API track names: Internal testing=`internal`, Closed t
 
 Other flags: `--skip-preflight`, `--skip-prebuild`, `--skip-bundle` (reuse existing AAB without rebuilding), `--package <id>`.
 
+### Which track for a public beta
+
+| Track | Who can install | Fits |
+|---|---|---|
+| `internal` | Up to 100 testers named by email | The maintainer and teammates |
+| `alpha` (closed) | Testers named by email list or Google Group | An invited group; not a link posted on Reddit or Hacker News, because every tester must be on the list first |
+| `beta` (open) | Anyone who opens the opt-in link or finds the testing listing on Play | The public beta |
+| `production` | Everyone | Launch |
+
+Every track but `production` reports to Sentry as `staging`.
+
+**New personal developer accounts must earn open testing first.** A personal Play developer account created after 13 November 2023 has to run a closed test with at least 12 testers opted in continuously for 14 days before it can apply for production access, and "open testing becomes available after you gain production access" ([Play Console Help](https://support.google.com/googleplay/android-developer/answer/14151465)).
+Meeting the threshold makes the account eligible to apply; Google can still ask for more testing.
+If the account is personal, start that closed test well before the beta is announced; organisation accounts and personal accounts created before that date are exempt.
+
 ### Prerequisites
 
 1. **Android signing variables** set:
