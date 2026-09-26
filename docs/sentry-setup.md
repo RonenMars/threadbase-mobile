@@ -71,12 +71,15 @@ One Sentry project, split by the `environment` tag so each environment has its o
 | Environment | Build | How the app knows |
 |---|---|---|
 | `development` | A Metro (`__DEV__`) bundle | `__DEV__` |
+| `testing` | Enforced-tracking QA builds from `scripts/ship-qa.sh` (Firebase App Distribution) | `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING` in a release bundle; it wins over the store checks below |
 | `staging` | TestFlight, and the Play `internal`, `alpha` and `beta` tracks | iOS: the App Store receipt is a sandbox receipt (`modules/app-distribution`). Android: `ship-android.sh` bakes `EXPO_PUBLIC_ANDROID_PLAY_TRACK` into the bundle, because Play gives an app no way to learn its own track. |
 | `production` | The App Store and the Play `production` track | Anything that is neither of the above |
 
 Source maps are uploaded per release and shared by every environment the release runs in.
 Sentry deploy markers use the same names: `ship-ios.sh` records `staging` for `--target testflight`, and `ship-android.sh` records `staging` for any track but `production`.
 A build promoted with `ship-android.sh --promote` keeps the track it was bundled with, so a build promoted from `internal` to `production` still reports `staging`.
+TestFlight internal testers, external testers and public-link installs all report `staging`; the receipt can't tell them apart.
+`appStoreReceiptURL`, which the iOS module reads, is deprecated since iOS 18; StoreKit 2's `AppTransaction.shared.environment` is the replacement before Apple removes it.
 
 Whenever a build can send anything (a DSN, and an environment that permits reporting), `components/diagnostics/DiagnosticsTermsGate.tsx` blocks the app on launch until the user answers the diagnostics notice.
 Standard builds offer "Allow diagnostics" and "Don't allow", and the app works either way.
@@ -84,3 +87,15 @@ Enforced builds (`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`) offer only "I agree".
 Until the notice is answered, `useCrashReportingSync` holds consent off whatever the stored setting says.
 The answer is stored against a terms key (`standard-1`, `enforced-1`), so bumping `DIAGNOSTICS_TERMS_VERSION` in `services/sentry.ts` asks everyone again, and moving from a test build to a store build (which keeps app data) asks again too.
 Local E2E builds (`e2e/ensure-release-build.js`) blank the DSN so the notice never sits in front of a Maestro flow.
+
+## The QA channel
+
+Enforced tracking ships through one channel only: `scripts/ship-qa.sh --platform ios|android`, which builds with the flag on and uploads to Firebase App Distribution.
+The scripted store paths refuse the flag (`check-sentry-env.sh`, run by `ship-ios.sh` and `ship-android.sh`; fastlane and manual Xcode don't check), and the QA script never talks to App Store Connect or Google Play.
+The flag is inlined into the bundle, so a QA binary is enforced for good; keeping it out of every store means no promotion or TestFlight group assignment can put it in front of the public.
+
+- **iOS** exports an Ad Hoc (`release-testing`) build, so only devices registered in the Developer portal can install it. It needs an Ad Hoc profile for each target (`com.ronenmars.threadbase` and `.widgets`) that grants the App Group; the script picks the newest installed pair, so after registering a device, regenerate both profiles and install them.
+- **Android** builds a release APK signed with the upload key. It cannot upgrade a Play install (Play re-signs with the app signing key), so a tester uninstalls the Play version first.
+- **Setup** (Firebase project, credentials, Ad Hoc profiles) and first-run checks: [`deployment.md`](./deployment.md) → "Path F".
+- **Local only.** Under `CI`, Expo skips the Metro cache reset that release builds rely on, and the transform cache is not keyed on `EXPO_PUBLIC_*` values, so an enforced `services/sentry.ts` could be reused by a later store build on the same runner. The script refuses to run when `CI` is set.
+- Builds are not bumped; they carry the current `app.json` build number (iOS) or `build.gradle` versionCode (Android), and report as `testing`.

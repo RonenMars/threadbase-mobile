@@ -76,10 +76,10 @@ function isEnforcedTracking(value) {
 }
 
 /**
- * Enforced tracking is for QA builds (TestFlight, Play testing tracks, local
- * runs), and QA data is only useful with readable stack traces in the right
- * Sentry environment. A run missing any of these would report nothing or
- * report unsymbolicated, so it stops here, before Metro or a native build starts.
+ * Enforced tracking is for QA builds (scripts/ship-qa.sh, local runs), and QA
+ * data is only useful with readable stack traces in the right Sentry
+ * environment. A run missing any of these would report nothing or report
+ * unsymbolicated, so it stops here, before Metro or a native build starts.
  */
 function assertEnforcedTrackingEnv() {
   if (!isEnforcedTracking(process.env.EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING)) return
