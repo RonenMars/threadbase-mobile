@@ -87,7 +87,7 @@ describe('prompt suggestion chip', () => {
   it('is hidden while an attachment is staged', async () => {
     await renderComposer({
       ...handlers,
-      attachments: [{ id: 'a1', originalName: 'a.png', path: '/tmp/a.png', mimeType: 'image/png', sizeBytes: 1 }],
+      attachments: [{ id: 'a1', originalName: 'a.png', path: '/tmp/a.png', mimeType: 'image/png', sizeBytes: 1, localUri: 'file:///tmp/a.png' }],
     })
     expect(screen.queryByTestId('prompt-suggestion-chip')).toBeNull()
   })

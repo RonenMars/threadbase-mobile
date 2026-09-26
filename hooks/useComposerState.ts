@@ -10,7 +10,7 @@ import {
   pickFromLibraryMulti,
   pickFromFiles,
   uploadAttachment,
-  type UploadedFile,
+  type ComposerAttachment,
 } from '@/services/uploads'
 import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 import { useDraftsStore } from '@/stores/drafts'
@@ -36,7 +36,7 @@ export interface ComposerState {
   setPendingArgCommand: (c: SlashCommand | null) => void
   handleSlashCommandSelect: (command: SlashCommand) => void
   handleSlashArgConfirm: (command: SlashCommand, arg: string) => void
-  attachments: UploadedFile[]
+  attachments: ComposerAttachment[]
   isUploading: boolean
   attachError: string | null
   handleAttach: () => void
@@ -49,7 +49,7 @@ export interface ComposerState {
 export function useComposerState({ serverId, sessionId, onSend }: UseComposerStateOptions): ComposerState {
   const { t } = useTranslation('common')
   const [inputText, setInputText] = useState('')
-  const [attachments, setAttachments] = useState<UploadedFile[]>([])
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [attachError, setAttachError] = useState<string | null>(null)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
@@ -200,7 +200,9 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
         if (images.length === 0) return
       }
       setIsUploading(true)
-      const uploaded = await Promise.all(images.map((img) => uploadAttachment(serverId, sessionId, img)))
+      const uploaded = await Promise.all(
+        images.map(async (img) => ({ ...(await uploadAttachment(serverId, sessionId, img)), localUri: img.uri })),
+      )
       setAttachments((prev) => [...prev, ...uploaded])
     } catch (err) {
       if (err instanceof Error && err.message === 'CAMERA_PERMISSION_BLOCKED') {
