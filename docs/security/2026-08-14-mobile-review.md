@@ -109,6 +109,8 @@ The proposed design pins the streamer's identity key from the QR, runs a Noise `
 | **TB-M-17** | T | The pinned bit's storage location *is* the anti-downgrade control. In AsyncStorage it is clearable by anyone with device file access | design §6; contrast `services/query-client.ts:186-190` | That it goes to SecureStore and never to AsyncStorage | **Mit by specification** (design §6) |
 | **TB-M-18** | T | The app renders content it does not author. Under TB-M-01 every `terminal_output` frame, `permission` prompt and `question` card is attacker-written and rendered as trusted UI. **E2EE makes this narrowly worse:** a pinned, encrypted, fingerprint-confirmed connection is the strongest trust signal the app has, and it says nothing about whether the peer is benign | `services/virtual-terminal.ts`; permission and question cards (`tb-streamer/src/types.ts:253`, `:258`) | That the paired server is the user's own machine. Authentication proves *which* peer, never *whether it should be trusted* | **GAP — and partly created by the design** |
 
+**TB-M-03 status (2026-09-23).** The legacy path still stores an unauthenticated `publicUrl`, but nothing dials it: #726 stopped the relocation, and #734 dials `publicUrl` only for pinned servers, whose value came from the authenticated handshake (`services/server-addresses.ts`).
+
 ### Abuse cases
 
 | Use case | Abuse case | Covered by |

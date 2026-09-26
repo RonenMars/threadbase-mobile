@@ -11,6 +11,7 @@ jest.mock('@/services/e2ee/ticketed-socket', () =>
 )
 
 jest.mock('@/services/e2ee/context', () => ({
+  ...jest.requireActual('@/services/e2ee/context'),
   openContextOnce: jest.fn(),
 }))
 
@@ -67,6 +68,7 @@ const pin = { serverPublicKey: 'pinned-server-key', requireEncryption: true }
 const pinnedContext = () => ({
   ctxId: 'ctx',
   kind: 'ws' as const,
+  baseUrl: 'https://secure.host',
   expiresAt: Date.now() + 30_000,
   provisional: false,
   ticket: TICKET,

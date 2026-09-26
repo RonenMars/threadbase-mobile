@@ -33,7 +33,7 @@ jest.mock('@/components/pair/PairScannerModal', () => ({
 }))
 
 jest.mock('@/services/ws-client', () => ({
-  wsManager: { connect: jest.fn() },
+  wsManager: { connect: jest.fn(), onAnyStatusChange: () => () => {}, liveUrl: () => null },
 }))
 
 // ServerEditModal also mounts ServerClaudeFlagsSection, a real React Query

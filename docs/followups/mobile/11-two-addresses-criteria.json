@@ -1,0 +1,75 @@
+{
+  "context": "Threadbase Mobile (Expo / React Native) connects to a self-hosted streamer. A server record holds `url` (the address the user typed) and `publicUrl` (the address the server advertised at pairing). This change makes every connection attempt try `url` first and, only if it cannot be reached, `publicUrl` — for both the WebSocket (services/ws-client.ts) and REST (services/authed-fetch.ts, including the E2EE-sealed path and its REST context in services/e2ee/). It adds no new persisted state, and the server settings UI shows which address the live connection uses.",
+  "criteria": [
+    {
+      "id": "user-address-first",
+      "paths": ["services/"],
+      "question": "When a server has both `url` and `publicUrl`, does every connection attempt in the changed code — a WebSocket dial, an E2EE context open, and a plaintext REST request — try `url` before `publicUrl`?"
+    },
+    {
+      "id": "sequential-not-raced",
+      "paths": ["services/"],
+      "question": "Are the two addresses tried one after the other, with the second attempt started only after the first has failed, rather than raced (for example with `Promise.race`, `Promise.any`, or two sockets or fetches started together)?"
+    },
+    {
+      "id": "bounded-first-attempt",
+      "paths": ["services/"],
+      "question": "When a second address exists, is the attempt on the first address bounded by a timeout shorter than the existing 15 s WebSocket connect timeout and 10 s `/api/e2ee/open` timeout, so a black-holed first address hands over to the second without waiting the full timeout?"
+    },
+    {
+      "id": "no-sticky-switch",
+      "expect": false,
+      "paths": ["services/", "stores/", "hooks/"],
+      "question": "Does the change remember which address worked — in a store, AsyncStorage or SecureStore, a module-level variable, or a field that outlives the socket or E2EE context it was learned on — and start a later WebSocket dial or context open from that remembered address instead of from `url`?"
+    },
+    {
+      "id": "url-never-overwritten",
+      "expect": false,
+      "paths": ["services/", "stores/", "hooks/", "components/", "app/"],
+      "question": "Does any changed code write `publicUrl`, or whichever address answered, into a server record's `url` field (for example through `updateServer`, `addServer`, or `setState` on the servers store)?"
+    },
+    {
+      "id": "websocket-falls-back",
+      "paths": ["services/", "app/", "components/"],
+      "question": "Does the WebSocket path receive the server's `publicUrl` from its `wsManager.connect` callers and dial it when the dial to `url` fails?"
+    },
+    {
+      "id": "rest-falls-back",
+      "paths": ["services/"],
+      "question": "Do REST requests made through `authedFetch` reach the server's `publicUrl` when `url` is unreachable, on both the plaintext path and the E2EE-sealed path?"
+    },
+    {
+      "id": "live-address-shown",
+      "paths": ["components/", "app/", "hooks/", "services/", "locales/"],
+      "question": "Does the server settings UI show the server's `publicUrl` and which of the two addresses the current connection is using, with the text coming from `t()` keys?"
+    },
+    {
+      "id": "no-identity-key-comparison",
+      "expect": false,
+      "paths": ["services/", "stores/", "hooks/", "components/", "app/"],
+      "question": "Does the change compare a `serverIdentityKey` or `serverPublicKey` taken from a `GET /api/info` response against the stored key to decide whether an address is the same server, or describe any such comparison as verification or authentication?"
+    },
+    {
+      "id": "fallback-only-when-unreachable",
+      "paths": ["services/"],
+      "question": "Does the change move to the second address only when the first could not be reached (a network error or the first attempt's timeout), and never after the first address returned an HTTP response, a `429` or `5xx` from `/api/e2ee/open`, or a permanent E2EE refusal such as `E2EE_DEVICE_REVOKED`, `E2EE_HANDSHAKE_FAILED` or `E2EE_MALFORMED`?"
+    },
+    {
+      "id": "pinned-never-plaintext",
+      "expect": false,
+      "paths": ["services/"],
+      "question": "On a pinned server (`requireEncryption` true with a `serverPublicKey`), can any fallback path send a request or open a socket without sealing, or put the `?key=` credential in a WebSocket URL?"
+    },
+    {
+      "id": "idle-reconnect-cost-bounded",
+      "paths": ["services/"],
+      "question": "Is the reconnect cost bounded — the change adds no new timer, probe or retry loop, and a failed WebSocket reconnect starts again at the first address through the existing backoff — so a client that can reach neither address makes at most one extra connection attempt per backoff tick?"
+    },
+    {
+      "id": "refusal-scoped-to-address",
+      "expect": false,
+      "paths": ["services/"],
+      "question": "Can a permanent refusal learned on one address stop a later attempt on the other address?"
+    }
+  ]
+}

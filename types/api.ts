@@ -783,10 +783,10 @@ export interface ServerConfig {
   /** Capability list from pair exchange; absent means legacy owner key (full access). */
   deviceCapabilities?: DeviceCapability[]
   /**
-   * What the server advertised as its public address at pairing. Recorded, not
-   * applied: `url` above is always the address the user chose. Nothing reads
-   * this yet — it exists so a future "reach this server from outside" feature
-   * has the value without needing a re-pair. See threadbase-mobile#722.
+   * What the server advertised as its public address at pairing. Never
+   * substituted for `url`, which is always the address the user chose: each
+   * connection attempt tries `url` first and this only when `url` cannot be
+   * reached (`services/server-addresses.ts`, threadbase-mobile#734).
    */
   publicUrl?: string
   /**

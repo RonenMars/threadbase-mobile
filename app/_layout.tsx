@@ -201,6 +201,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         wsManager.connect(serverId, server.url, authToken(server), {
           serverPublicKey: server.serverPublicKey,
           requireEncryption: server.requireEncryption,
+          publicUrl: server.publicUrl,
         })
       }
     }

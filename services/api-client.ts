@@ -355,6 +355,7 @@ async function request<T>(
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: timeoutController.signal,
+      cancelSignal: options.signal,
     })
   } catch (err) {
     // A rejected credential is not a network failure: retrying presents the
@@ -570,6 +571,7 @@ async function requestWithMeta<T>(
         ...options.headers,
       },
       signal: timeoutController.signal,
+      cancelSignal: options.signal,
     })
   } catch (err) {
     if (err instanceof AuthError) throw err
