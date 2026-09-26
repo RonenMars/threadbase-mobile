@@ -103,7 +103,7 @@
     "expo-font": "~57.0.1",
     "expo-glass-effect": "~57.0.1",
     "expo-haptics": "~57.0.1",
-    "expo-image-manipulator": "~57.0.6",
+    "expo-image-manipulator": "~58.0.7",
     "expo-image-picker": "~57.0.6",
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.4",
