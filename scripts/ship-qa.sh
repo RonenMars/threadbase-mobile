@@ -82,6 +82,15 @@ else
 fi
 [[ -n "$FIREBASE_APP_ID" ]] || { echo "$APP_ID_VAR is not set (Firebase console → Project settings → Your apps)" >&2; exit 1; }
 
+# Firebase reports a distribution to an empty group as a success and emails no
+# one, so check before spending a build on it. A zero count may come back absent.
+PROJECT_NUMBER="$(cut -d: -f2 <<<"$FIREBASE_APP_ID")"
+GROUPS_JSON="$(npx --yes firebase-tools@15 appdistribution:groups:list --project "$PROJECT_NUMBER" --json)"
+for alias in ${TESTER_GROUPS//,/ }; do
+  count="$(jq -r --arg a "$alias" '.result.groups[] | select(.name | endswith("/groups/" + $a)) | .testerCount // 0' <<<"$GROUPS_JSON")"
+  [[ "${count:-0}" -gt 0 ]] || { echo "Firebase group '$alias' is missing or has no testers — add them in App Distribution → Testers & Groups" >&2; exit 1; }
+done
+
 export EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING=1
 
 # app.config.js refuses an enforced build without the DSN and the sentry-cli
