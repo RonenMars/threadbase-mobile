@@ -8,6 +8,20 @@ export function isToday(iso: string): boolean {
   )
 }
 
+export type EarlierBucket = 'last7Days' | 'last14Days' | 'lastMonth' | 'earlier'
+
+const DAY_MS = 86_400_000
+
+/** Rolling-window bucket for the Now list's "earlier" accordion — off the
+ * entry's own timestamp, not calendar-day boundaries like isToday. */
+export function earlierBucketFor(ms: number, now: number): EarlierBucket {
+  const diff = now - ms
+  if (diff < 7 * DAY_MS) return 'last7Days'
+  if (diff < 14 * DAY_MS) return 'last14Days'
+  if (diff < 30 * DAY_MS) return 'lastMonth'
+  return 'earlier'
+}
+
 /** Duration formatter used by session rows for "running for 4m 12s" elapsed
  * counters. Distinct from list-row timestamps (see formatListTime). */
 export function formatElapsed(ms: number): string {

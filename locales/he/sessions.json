@@ -90,7 +90,9 @@
     "headerWorking_one": "עובד · {{count}}",
     "headerWorking_two": "עובד · {{count}}",
     "headerWorking_other": "עובד · {{count}}",
-    "headerEarlierToday": "מוקדם יותר היום",
+    "headerLast7Days": "7 הימים האחרונים",
+    "headerLast14Days": "14 הימים האחרונים",
+    "headerLastMonth": "החודש האחרון",
     "headerEarlier": "מוקדם יותר"
   },
   "preview": {
