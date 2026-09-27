@@ -88,6 +88,7 @@ const { __wsTest } = jest.requireMock('@/services/ws-client') as {
 jest.mock('@/hooks/useTerminalStream', () => ({
   useTerminalStream: () => ({
     lines: [],
+    frameLines: [],
     isStreaming: false,
     userMessageTexts: new Set<string>(),
     prompts: [],
