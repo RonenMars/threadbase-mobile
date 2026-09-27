@@ -32,3 +32,11 @@ export const EarlierToday: Story = {
 export const QuietWithAction: Story = {
   args: { label: 'QUIET · 24', tone: 'muted', action: { label: 'Show', onPress: () => {} } },
 }
+
+export const CollapsibleExpanded: Story = {
+  args: { label: 'LAST 7 DAYS', tone: 'muted', count: 4, collapsible: true, isExpanded: true },
+}
+
+export const CollapsibleCollapsed: Story = {
+  args: { label: 'LAST 14 DAYS', tone: 'muted', count: 6, collapsible: true, isExpanded: false },
+}

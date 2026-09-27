@@ -77,6 +77,7 @@ const CLAUDE_MARK = 'M20.998 10.949H24v3.102h-3v3.028h-1.487V20H18v-2.921h-1.487
 let V = {};
 let S = {};
 let compPage = null;
+let activeBuildGroup = null;
 
 // ---------- helpers ----------
 function P(name, opacity) {
@@ -141,7 +142,9 @@ function rad(n, key) {
 function fill(parent, child) { parent.appendChild(child); child.layoutSizingHorizontal = 'FILL'; return child; }
 function wrapText(parent, t) { parent.appendChild(t); t.layoutSizingHorizontal = 'FILL'; t.textAutoResize = 'HEIGHT'; return t; }
 function findComp(name) {
-  return compPage.findOne(n => (n.type === 'COMPONENT' || n.type === 'COMPONENT_SET') && n.name === name);
+  const matches = figma.root.findAll(n => (n.type === 'COMPONENT' || n.type === 'COMPONENT_SET') && n.name === name);
+  if (matches.length > 1) throw new Error('Duplicate component name "' + name + '"');
+  return matches[0] || null;
 }
 function variant(setName, variantName) {
   const set = findComp(setName);
@@ -175,6 +178,7 @@ function spacer() { const s = AL('HORIZONTAL', 'spacer'); s.counterAxisSizingMod
 function newSection(name, desc) {
   const bottom = Math.max(0, ...compPage.children.map(c => c.y + c.height));
   const s = figma.createSection();
+  tagBuildNode(s);
   s.name = name;
   s.x = 0;
   s.y = bottom + 80;
@@ -1213,8 +1217,8 @@ function clearDesc(sec) {
   sec.resizeWithoutConstraints(sec.width, sec.height + delta);
 }
 // Growing a section overlaps the one below, so restack them all afterwards.
-function clearDescs() {
-  const secs = compPage.children.filter(n => n.type === 'SECTION').sort((a, b) => a.y - b.y);
+function clearDescs(page) {
+  const secs = (page || compPage).children.filter(n => n.type === 'SECTION').sort((a, b) => a.y - b.y);
   let y = secs.length ? secs[0].y : 0;
   for (const sec of secs) { clearDesc(sec); sec.y = y; y += sec.height + 80; }
 }
@@ -3237,7 +3241,7 @@ function fab(frame) {
   f.constraints = { horizontal: 'MAX', vertical: 'MAX' };
 }
 
-async function buildScreens(screensPage) {
+async function buildScreens(screensPage, visualQaPage) {
   await figma.setCurrentPageAsync(screensPage);
   const has = n => screensPage.children.some(c => c.name === n);
   if (!has('Now — dark')) {
@@ -3282,11 +3286,11 @@ async function buildScreens(screensPage) {
     setInstanceText(off, 'label', 'Studio');
     setInstanceText(off, 'url', 'https://studio-linux.tail:7071');
   }
-  const ref = screensPage.children.find(n => n.name === 'Reference screenshots');
+  const ref = visualQaPage.children.find(n => n.name === 'Reference screenshots');
   if (!ref) {
     const note = rawText('Reference screenshots below: e2e/visual/theme-gallery/*.png at 1/3 scale. Row 1 = Now, row 2 = Projects; one column per theme.', 14, 'Regular', hex('#888888'));
     note.name = 'Reference screenshots'; note.x = 0; note.y = 920; note.resize(1360, note.height); note.textAutoResize = 'HEIGHT';
-    screensPage.appendChild(note);
+    visualQaPage.appendChild(note);
   }
 }
 
@@ -3321,128 +3325,427 @@ async function switchTheme(theme) {
 
 // ---------- source links (Code Connect needs an Org plan; this is the Starter substitute) ----------
 const REPO = 'https://github.com/RonenMars/threadbase-mobile/blob/main/';
-const SOURCES = {
-  Badge: 'components/ui/Badge.tsx',
-  Card: 'components/ui/Card.tsx',
-  ProgressBar: 'components/ui/ProgressBar.tsx',
-  Toast: 'components/ui/Toast.tsx',
-  Banner: 'components/ui/Banner.tsx',
-  EmptyState: 'components/ui/EmptyState.tsx',
-  FAB: 'components/ui/FAB.tsx',
-  StateBadge: 'components/sessions/StateBadge.tsx',
-  ServerChip: 'components/sessions/shared/ServerChip.tsx',
-  LiveCard: 'components/sessions/now/LiveCard.tsx',
-  EarlierRow: 'components/sessions/now/EarlierRow.tsx',
-  ServerListCard: 'components/servers/ServerListCard.tsx',
-  ProviderMark: 'components/sessions/shared/ProviderMark.tsx',
-  SkeletonBox: 'components/ui/Skeleton.tsx',
-  TimeBucketPill: 'components/sessions/shared/TimeBucketPills.tsx',
-  TimeBucketPills: 'components/sessions/shared/TimeBucketPills.tsx',
-  MessagePreview: 'components/sessions/shared/MessagePreview.tsx',
-  LoadingOverlay: 'components/ui/LoadingOverlay.tsx',
-  LiveDot: 'components/sessions/LiveDot.tsx',
-  SectionEyebrow: 'components/sessions/now/SectionEyebrow.tsx',
-  HistorySkeletonRow: 'components/sessions/now/HistorySkeletonRow.tsx',
-  CantResumeRow: 'components/sessions/now/CantResumeRow.tsx',
-  DrillFolderRow: 'components/sessions/tree/DrillFolderRow.tsx',
-  KnightRiderScanner: 'components/sessions/KnightRiderScanner.tsx',
-  InlineError: 'components/alerts/InlineError.tsx',
-  ServerHeaderRow: 'components/sessions/tree/ServerHeaderRow.tsx',
-  SessionBanner: 'components/sessions/ConnectionBanner.tsx',
-  ServerStatusCard: 'components/sessions/banners/ServerUnsupportedBanner.tsx',
-  ConversationListItem: 'components/sessions/shared/ConversationListItem.tsx',
-  MessageBubble: 'components/conversation/MessageBubble.tsx',
-  ThinkingCard: 'components/conversation/ThinkingCard.tsx',
-  ThinkingBubble: 'components/conversation/ThinkingBubble.tsx',
-  ToolCard: 'components/conversation/ToolCard.tsx',
-  DiffViewer: 'components/conversation/DiffViewer.tsx',
-  MessageSkeletonRow: 'components/conversation/MessageSkeletonRow.tsx',
-  InheritedHistoryDivider: 'components/conversation/InheritedHistoryDivider.tsx',
-  LivePauseControl: 'components/conversation/LivePauseControl.tsx',
-  SlowLoadingBanner: 'components/conversation/SlowLoadingBanner.tsx',
-  ChatComposer: 'components/conversation/ChatComposer.tsx',
-  StatusPill: 'components/alerts/StatusPill.tsx',
-  AvatarMenu: 'components/ui/AvatarMenu.tsx',
-  StatusStrip: 'components/alerts/StatusStrip.tsx',
-  StatusRow: 'components/alerts/StatusRow.tsx',
-  StatusSheet: 'components/alerts/StatusSheet.tsx',
-  CriticalDialog: 'components/alerts/CriticalDialog.tsx',
-  NavigationLockOverlay: 'components/ui/NavigationLockOverlay.tsx',
-  ScreenHeader: 'components/shared/ScreenHeader.tsx',
-  HeaderOverflowMenu: 'components/shared/HeaderOverflowMenu.tsx',
-  InfoModal: 'components/shared/InfoModal.tsx',
-  QuestionCard: 'components/terminal/QuestionCard.tsx',
-  QuickAccessChip: 'components/quick-access/QuickAccessChip.tsx',
-  QuickAccessStrip: 'components/quick-access/QuickAccessStrip.tsx',
-  QuickAccessActionSheet: 'components/quick-access/QuickAccessActionSheet.tsx',
-  ShelfBubble: 'components/shelf/ShelfBubble.tsx',
-  ShelfPanel: 'components/shelf/ShelfPanel.tsx',
-  FirstShowBanner: 'components/tour/FirstShowBanner.tsx',
-  AnonymousDiagnosticsConsentBanner: 'components/diagnostics/AnonymousDiagnosticsConsentBanner.tsx',
-  SweepBar: 'components/SweepBar.tsx',
-  AddServerButton: 'components/servers/AddServerButton.tsx',
-  EncryptionRefusalBanner: 'components/servers/EncryptionRefusalBanner.tsx',
-  FilterPresets: 'components/servers/FilterPresets.tsx',
-  NoServersWelcome: 'components/servers/NoServersWelcome.tsx',
-  ServerBadge: 'components/servers/ServerBadge.tsx',
-  ServerIndexingBanner: 'components/servers/ServerIndexingBanner.tsx',
-  ServerFormFields: 'components/servers/ServerFormFields.tsx',
-  ServerErrorModal: 'components/servers/ServerErrorModal.tsx',
-  ServersStatusModal: 'components/servers/ServersStatusModal.tsx',
-  CacheAlertModal: 'components/servers/CacheAlertModal.tsx',
-  FilterSortSheet: 'components/servers/FilterSortSheet.tsx',
-  ServerMenuSheet: 'components/servers/ServersStatusModal.tsx',
-  IdentityFingerprintBlock: 'components/pair/IdentityFingerprintBlock.tsx',
-  PairCameraIdentityCard: 'components/pair/PairCameraIdentityCard.tsx',
-  NewSessionServerPicker: 'components/servers/NewSessionServerPicker.tsx',
-  ServerClaudeFlagsSection: 'components/servers/ServerClaudeFlagsSection.tsx',
-  ServerEncryptionSection: 'components/servers/ServerEncryptionSection.tsx',
-  ServerEditModal: 'components/servers/ServerEditModal.tsx',
-  ServerFilterSheet: 'components/servers/ServerFilterSheet.tsx',
-  PairConfirmGate: 'components/pair/PairConfirmGate.tsx',
-  PairScannerModal: 'components/pair/PairScannerModal.tsx',
-  RecentDirsModal: 'components/browse/RecentDirsModal.tsx',
-  BrowseSlowBanner: 'components/browse/BrowseSlowBanner.tsx',
-  SessionRow: 'components/sessions/hub/SessionRow.tsx',
-  ConvRow: 'components/sessions/hub/ConvRow.tsx',
-  MachineBadge: 'components/sessions/MachineBadge.tsx',
-  SessionStatusBadge: 'components/sessions/SessionStatusBadge.tsx',
-  NeedsYouCard: 'components/sessions/now/NeedsYouCard.tsx',
-  WorkingCard: 'components/sessions/now/WorkingCard.tsx',
-  ProjectHubCard: 'components/sessions/hub/ProjectHubCard.tsx',
-  ExternalSessionBanner: 'components/sessions/ExternalSessionBanner.tsx',
-  ServerWarmingBanner: 'components/sessions/banners/ServerWarmingBanner.tsx',
-  SessionDetailSlowBanner: 'components/sessions/SessionDetailSlowBanner.tsx',
-  SyncCachedNotice: 'components/sessions/SyncCachedNotice.tsx',
-  LeaveSessionModal: 'components/sessions/LeaveSessionModal.tsx',
-  NameSessionModal: 'components/sessions/NameSessionModal.tsx',
-  ModelEffortSheet: 'components/sessions/ModelEffortSheet.tsx',
-  ConversationPreviewSheet: 'components/sessions/shared/ConversationPreviewSheet.tsx',
-  RemoteKeyboardControls: 'components/sessions/RemoteKeyboardControls.tsx',
-  DiagnosticsPreview: 'components/feedback/DiagnosticsPreview.tsx',
-  ReviewSheet: 'components/review/ReviewSheet.tsx',
-  QuietHoursEditor: 'components/settings/QuietHoursEditor.tsx',
-  SlashCommandBoard: 'components/shared/SlashCommandBoard.tsx',
-  SlashCommandArgModal: 'components/shared/SlashCommandArgModal.tsx',
-  TourOverlay: 'components/tour/TourOverlay.tsx',
-  ConversationSearchView: 'components/conversation/ConversationSearchView.tsx',
-  SessionHistoryFeed: 'components/terminal/SessionHistoryFeed.tsx',
-  TerminalOutput: 'components/terminal/TerminalOutput.tsx',
-  RootErrorBoundary: 'components/RootErrorBoundary.tsx',
-  RenderErrorBoundary: 'components/RenderErrorBoundary.tsx',
-  PagerDots: 'components/onboarding/components/PagerDots.tsx',
-  PrimaryButton: 'components/onboarding/components/PrimaryButton.tsx',
-  TerminalCard: 'components/onboarding/components/TerminalCard.tsx',
-  InfoTooltip: 'components/onboarding/components/InfoTooltip.tsx',
-  ThreadField: 'components/onboarding/components/ThreadField.tsx',
-  Onboarding: 'components/onboarding/OnboardingNavigator.tsx',
+const CATALOG_PAGES = {
+  start: '00 Start Here',
+  foundations: '10 Foundations',
+  core: '20 Core & Shared',
+  sessions: '30 Sessions',
+  conversation: '40 Conversation & Terminal',
+  connectivity: '50 Connectivity',
+  experience: '60 Product Experience',
+  patterns: '70 Patterns',
+  screens: '80 Screens',
+  visualQa: '90 Visual QA',
+  deprecated: '99 Deprecated',
 };
+const CATALOG_PAGE_ORDER = Object.values(CATALOG_PAGES);
+const CATALOG_PAGE_GUIDANCE = {
+  [CATALOG_PAGES.start]: {
+    scope: 'Entry point for ownership, contribution, naming, lifecycle, and navigation guidance.',
+    groups: ['Change path', 'Lifecycle', 'Naming', 'Repository links'],
+  },
+  [CATALOG_PAGES.foundations]: {
+    scope: 'Semantic variables, private theme palettes, type styles, spacing, radius, and token examples.',
+    groups: ['Color', 'Typography', 'Spacing', 'Radius'],
+  },
+  [CATALOG_PAGES.core]: {
+    scope: 'General UI, shared chrome, feedback, icons, and brand or provider marks.',
+    groups: ['Actions', 'Assets', 'Core', 'Errors', 'Feedback', 'Loading', 'Navigation', 'Overlays', 'Provider marks', 'Status'],
+  },
+  [CATALOG_PAGES.sessions]: {
+    scope: 'Now, Projects, tree, history, and session-state assets.',
+    groups: ['Banners', 'Controls', 'Dialogs', 'Hub', 'Loading', 'Now', 'Sessions', 'Shared', 'Sheets', 'Status', 'Tree'],
+  },
+  [CATALOG_PAGES.conversation]: {
+    scope: 'Messages, thinking, tools, diffs, composer, terminal, review, and search.',
+    groups: ['Composer', 'Conversation', 'Feedback', 'History', 'Messages', 'Review', 'Terminal'],
+  },
+  [CATALOG_PAGES.connectivity]: {
+    scope: 'Servers, pairing, browse, connection health, encryption, and related alerts.',
+    groups: ['Browse', 'Connectivity', 'Encryption', 'Pairing', 'Servers'],
+  },
+  [CATALOG_PAGES.experience]: {
+    scope: 'Onboarding, tour, settings, diagnostics, notifications, quick access, and shelf.',
+    groups: ['Banners', 'Diagnostics', 'Onboarding', 'Product experience', 'Quick access', 'Settings', 'Shelf', 'Tour'],
+  },
+  [CATALOG_PAGES.patterns]: {
+    scope: 'Stable reusable compositions assembled from published components.',
+    groups: ['Patterns'],
+  },
+  [CATALOG_PAGES.screens]: {
+    scope: 'Route and onboarding examples assembled from component instances.',
+    groups: ['Routes', 'Onboarding'],
+  },
+  [CATALOG_PAGES.visualQa]: {
+    scope: 'Theme references, audit matrices, and comparison fixtures used as QA evidence.',
+    groups: ['Theme gallery', 'Audit evidence'],
+  },
+  [CATALOG_PAGES.deprecated]: {
+    scope: 'Deprecated assets that have both a supported replacement and a migration note.',
+    groups: ['Replacement evidence', 'Migration notes'],
+  },
+};
+const PENDING_BETA_ASSETS = [
+  'LeaveNotice',
+  'SessionActionSheet',
+  'EndSessionStatus',
+  'EndSessionDialogs',
+  'SlowQueryBanner',
+];
+function lifecycleFor(name) {
+  return PENDING_BETA_ASSETS.includes(name) ? 'beta' : 'stable';
+}
+function ensureCatalogPages() {
+  const pages = new Map();
+  for (const name of CATALOG_PAGE_ORDER) {
+    const matches = figma.root.children.filter(node => node.type === 'PAGE' && node.name === name);
+    if (matches.length > 1) throw new Error('Duplicate page name "' + name + '"');
+    const page = matches[0] || figma.createPage();
+    page.name = name;
+    pages.set(name, page);
+  }
+  return pages;
+}
+function guideCopy(pageName, guidance) {
+  const shared = [
+    guidance.scope,
+    '',
+    'Includes: ' + guidance.groups.join(' · '),
+    '',
+    'Lifecycle: Stable is code-backed and live-validated. Beta is code-backed but still needs live validation. Deprecated requires a supported replacement and migration note.',
+    'Usage: inspect component properties and variants here, open the component documentation link for source, and use 80 Screens for route context.',
+    'Contribute: change app code first, update design/figma-plugin/code.js, run the builder, then verify all eight themes.',
+    'Repository: ' + REPO.replace('/blob/main/', ''),
+    'Design guide: ' + REPO + 'DESIGN.md',
+    'Plugin guide: ' + REPO + 'design/figma-plugin/README.md',
+  ];
+  if (pageName !== CATALOG_PAGES.start) return shared.join('\n');
+  return [
+    guidance.scope,
+    '',
+    'Change path: app code → plugin catalog or builder → Figma builder → eight-theme visual check → review.',
+    'Naming: keep public component names unique across the file, use semantic family names, and express variants as Figma properties.',
+    'Lifecycle: Stable is code-backed and live-validated. Beta is code-backed but still needs live validation. Deprecated requires a supported replacement and migration note.',
+    'Pending beta validation from issue #1167: ' + PENDING_BETA_ASSETS.join(', ') + '.',
+    'Navigate: foundations in 10, shared assets in 20, product domains in 30–60, patterns in 70, route examples in 80, and QA evidence in 90.',
+    'Repository: ' + REPO.replace('/blob/main/', ''),
+    'Design guide: ' + REPO + 'DESIGN.md',
+    'Plugin guide: ' + REPO + 'design/figma-plugin/README.md',
+  ].join('\n');
+}
+async function upsertGuide(page, pageName, guidance) {
+  await figma.setCurrentPageAsync(page);
+  let guide = page.children.find(node => node.type === 'FRAME' && node.getPluginData('threadbase-guide') === pageName);
+  if (!guide) {
+    guide = AL('VERTICAL', 'Guide · ' + pageName, { itemSpacing: 16, cornerRadius: 12, strokeWeight: 1 });
+    guide.counterAxisSizingMode = 'FIXED';
+    guide.resize(1200, 100);
+    guide.paddingTop = guide.paddingBottom = 32;
+    guide.paddingLeft = guide.paddingRight = 40;
+    guide.fills = P('bg/card');
+    guide.strokes = P('border');
+    guide.setPluginData('threadbase-guide', pageName);
+    page.appendChild(guide);
+    fill(guide, rawText(pageName === CATALOG_PAGES.start ? 'Threadbase Mobile Design System' : pageName, 28, 'Semi Bold', P('text/primary'))).name = 'guide-title';
+    const body = fill(guide, rawText('', 14, 'Regular', P('text/secondary')));
+    body.name = 'guide-body';
+  }
+  guide.name = 'Guide · ' + pageName;
+  guide.x = 0;
+  guide.y = pageName === CATALOG_PAGES.start ? 0 : -600;
+  const title = guide.findOne(node => node.type === 'TEXT' && node.name === 'guide-title');
+  const body = guide.findOne(node => node.type === 'TEXT' && node.name === 'guide-body');
+  if (!title || !body) throw new Error('Incomplete generated guide on ' + pageName);
+  title.characters = pageName === CATALOG_PAGES.start ? 'Threadbase Mobile Design System' : pageName;
+  body.layoutSizingHorizontal = 'FIXED';
+  body.textAutoResize = 'NONE';
+  body.resize(1120, 20);
+  body.textAutoResize = 'HEIGHT';
+  body.characters = guideCopy(pageName, guidance);
+  body.layoutSizingHorizontal = 'FILL';
+  return guide;
+}
+async function buildGuidance(pages) {
+  for (const pageName of CATALOG_PAGE_ORDER) {
+    await upsertGuide(pages.get(pageName), pageName, CATALOG_PAGE_GUIDANCE[pageName]);
+  }
+}
+function tagBuildNode(node) {
+  if (activeBuildGroup) node.setPluginData('threadbase-group', activeBuildGroup);
+  return node;
+}
+async function runBuildJob(entry, pages) {
+  const page = pages.get(entry.page);
+  if (!page) throw new Error('Unknown catalog page "' + entry.page + '"');
+  const errors = await runBuildPage([entry], page);
+  if (errors.length) throw errors[0].error;
+}
+async function runBuildPage(entries, page) {
+  compPage = page;
+  await figma.setCurrentPageAsync(page);
+  const errors = [];
+  for (const entry of entries) {
+    activeBuildGroup = entry.group;
+    try {
+      await entry.builder();
+    } catch (error) {
+      errors.push({ entry, error });
+    } finally {
+      activeBuildGroup = null;
+    }
+  }
+  return errors;
+}
+function job(buildName, builder, page, group, kind, status) {
+  return { buildName, builder, page, group, kind: kind || 'component', status: status || lifecycleFor(buildName) };
+}
+function assetLocation(name, source) {
+  if (name === 'ProviderMark') return [CATALOG_PAGES.core, 'Provider marks'];
+  if (name === 'SweepBar' || name.indexOf('QuickAccess') === 0 || name.indexOf('Shelf') === 0) return [CATALOG_PAGES.experience, 'Product experience'];
+  if (name.indexOf('SlashCommand') === 0) return [CATALOG_PAGES.conversation, 'Terminal'];
+  if (/\/sessions\//.test(source)) return [CATALOG_PAGES.sessions, 'Sessions'];
+  if (/\/(conversation|terminal|review)\//.test(source)) return [CATALOG_PAGES.conversation, 'Conversation'];
+  if (/\/(servers|pair|browse)\//.test(source)) return [CATALOG_PAGES.connectivity, 'Connectivity'];
+  if (/\/(onboarding|tour|diagnostics|feedback|settings|quick-access|shelf)\//.test(source)) return [CATALOG_PAGES.experience, 'Product experience'];
+  return [CATALOG_PAGES.core, 'Core'];
+}
+function asset(name, source, status) {
+  const [page, group] = assetLocation(name, source);
+  return { name, source, page, group, kind: 'component', status: status || lifecycleFor(name) };
+}
+const CATALOG = [
+  job('icons', ensureIcons, CATALOG_PAGES.core, 'Assets', 'asset'),
+  job('Banner', buildBanner, CATALOG_PAGES.core, 'Feedback'),
+  job('EmptyState', buildEmptyState, CATALOG_PAGES.core, 'Feedback'),
+  job('FAB', buildFAB, CATALOG_PAGES.core, 'Actions'),
+  job('StateBadge', buildStateBadge, CATALOG_PAGES.sessions, 'Status'),
+  job('LiveCard', buildLiveCard, CATALOG_PAGES.sessions, 'Now'),
+  job('EarlierRow', buildEarlierRow, CATALOG_PAGES.sessions, 'Now'),
+  job('ServerListCard', buildServerListCard, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ProviderMark', buildProviderMark, CATALOG_PAGES.core, 'Provider marks'),
+  job('SkeletonBox', buildSkeleton, CATALOG_PAGES.core, 'Loading'),
+  job('TimeBucketPills', buildTimeBucketPills, CATALOG_PAGES.sessions, 'Shared'),
+  job('MessagePreview', buildMessagePreview, CATALOG_PAGES.sessions, 'Shared'),
+  job('LoadingOverlay', buildLoadingOverlay, CATALOG_PAGES.core, 'Loading'),
+  job('LiveDot', buildLiveDot, CATALOG_PAGES.sessions, 'Status'),
+  job('SectionEyebrow', buildSectionEyebrow, CATALOG_PAGES.sessions, 'Now'),
+  job('HistorySkeletonRow', buildHistorySkeletonRow, CATALOG_PAGES.sessions, 'Now'),
+  job('CantResumeRow', buildCantResumeRow, CATALOG_PAGES.sessions, 'Now'),
+  job('DrillFolderRow', buildDrillFolderRow, CATALOG_PAGES.sessions, 'Tree'),
+  job('KnightRiderScanner', buildKnightRiderScanner, CATALOG_PAGES.sessions, 'Loading'),
+  job('InlineError', buildInlineError, CATALOG_PAGES.core, 'Feedback'),
+  job('ServerHeaderRow', buildServerHeaderRow, CATALOG_PAGES.sessions, 'Tree'),
+  job('SessionBanner', buildSessionBanners, CATALOG_PAGES.sessions, 'Banners'),
+  job('ServerStatusCard', buildServerStatusCard, CATALOG_PAGES.sessions, 'Banners'),
+  job('ConversationListItem', buildConversationListItem, CATALOG_PAGES.sessions, 'Shared'),
+  job('MessageBubble', buildMessageBubble, CATALOG_PAGES.conversation, 'Messages'),
+  job('ThinkingCard', buildThinkingCard, CATALOG_PAGES.conversation, 'Messages'),
+  job('ThinkingBubble', buildThinkingBubble, CATALOG_PAGES.conversation, 'Messages'),
+  job('ToolCard', buildToolCard, CATALOG_PAGES.conversation, 'Messages'),
+  job('DiffViewer', buildDiffViewer, CATALOG_PAGES.conversation, 'Messages'),
+  job('MessageSkeletonRow', buildMessageSkeletonRow, CATALOG_PAGES.conversation, 'Messages'),
+  job('InheritedHistoryDivider', buildInheritedHistoryDivider, CATALOG_PAGES.conversation, 'History'),
+  job('LivePauseControl', buildLivePauseControl, CATALOG_PAGES.conversation, 'Controls'),
+  job('SlowLoadingBanner', buildSlowLoadingBanner, CATALOG_PAGES.conversation, 'Feedback'),
+  job('ChatComposer', buildChatComposer, CATALOG_PAGES.conversation, 'Composer'),
+  job('StatusPill', buildStatusPill, CATALOG_PAGES.core, 'Status'),
+  job('StatusStrip', buildStatusStrip, CATALOG_PAGES.core, 'Status'),
+  job('StatusRow', buildStatusRow, CATALOG_PAGES.core, 'Status'),
+  job('StatusSheet', buildStatusSheet, CATALOG_PAGES.core, 'Status'),
+  job('CriticalDialog', buildCriticalDialog, CATALOG_PAGES.core, 'Overlays'),
+  job('NavigationLockOverlay', buildNavigationLockOverlay, CATALOG_PAGES.core, 'Overlays'),
+  job('ScreenHeader', buildScreenHeader, CATALOG_PAGES.core, 'Navigation'),
+  job('HeaderOverflowMenu', buildHeaderOverflowMenu, CATALOG_PAGES.core, 'Navigation'),
+  job('InfoModal', buildInfoModal, CATALOG_PAGES.core, 'Overlays'),
+  job('QuestionCard', buildQuestionCard, CATALOG_PAGES.conversation, 'Terminal'),
+  job('QuickAccess', buildQuickAccess, CATALOG_PAGES.experience, 'Quick access'),
+  job('Shelf', buildShelf, CATALOG_PAGES.experience, 'Shelf'),
+  job('Small banners', buildSmallBanners, CATALOG_PAGES.experience, 'Banners'),
+  job('IdentityFingerprintBlock', buildIdentityFingerprint, CATALOG_PAGES.connectivity, 'Pairing'),
+  job('AddServerButton', buildAddServerButton, CATALOG_PAGES.connectivity, 'Servers'),
+  job('EncryptionRefusalBanner', buildEncryptionRefusalBanner, CATALOG_PAGES.connectivity, 'Encryption'),
+  job('FilterPresets', buildFilterPresets, CATALOG_PAGES.connectivity, 'Servers'),
+  job('NoServersWelcome', buildNoServersWelcome, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServerBadge', buildServerBadge, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServerIndexingBanner', buildServerIndexingBanner, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServerFormFields', buildServerFormFields, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServerErrorModal', buildServerErrorModal, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServersStatusModal', buildServersStatusModal, CATALOG_PAGES.connectivity, 'Servers'),
+  job('CacheAlertModal', buildCacheAlertModal, CATALOG_PAGES.connectivity, 'Servers'),
+  job('FilterSortSheet', buildFilterSortSheet, CATALOG_PAGES.connectivity, 'Servers'),
+  job('StatusRow server alerts', buildServerAlertRows, CATALOG_PAGES.core, 'Status'),
+  job('NewSessionServerPicker', buildNewSessionServerPicker, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServerClaudeFlagsSection', buildServerClaudeFlagsSection, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServerEncryptionSection', buildServerEncryptionSection, CATALOG_PAGES.connectivity, 'Encryption'),
+  job('ServerEditModal', buildServerEditModal, CATALOG_PAGES.connectivity, 'Servers'),
+  job('ServerFilterSheet', buildServerFilterSheet, CATALOG_PAGES.connectivity, 'Servers'),
+  job('PairConfirmGate', buildPairConfirmGate, CATALOG_PAGES.connectivity, 'Pairing'),
+  job('PairScannerModal', buildPairScannerModal, CATALOG_PAGES.connectivity, 'Pairing'),
+  job('RecentDirsModal', buildRecentDirsModal, CATALOG_PAGES.connectivity, 'Browse'),
+  job('BrowseSlowBanner', buildBrowseSlowBanner, CATALOG_PAGES.connectivity, 'Browse'),
+  job('SessionRow', buildSessionRows, CATALOG_PAGES.sessions, 'Hub'),
+  job('MachineBadge', buildMachineBadge, CATALOG_PAGES.sessions, 'Status'),
+  job('SessionStatusBadge', buildSessionStatusBadge, CATALOG_PAGES.sessions, 'Status'),
+  job('NeedsYouCard', buildLiveCardWrappers, CATALOG_PAGES.sessions, 'Now'),
+  job('ProjectHubCard', buildProjectHubCard, CATALOG_PAGES.sessions, 'Hub'),
+  job('ExternalSessionBanner', buildExternalSessionBanner, CATALOG_PAGES.sessions, 'Banners'),
+  job('ServerWarmingBanner', buildServerWarmingBanner, CATALOG_PAGES.sessions, 'Banners'),
+  job('SessionDetailSlowBanner', buildSessionDetailSlowBanner, CATALOG_PAGES.sessions, 'Banners'),
+  job('SyncCachedNotice', buildSyncCachedNotice, CATALOG_PAGES.sessions, 'Banners'),
+  job('LeaveSessionModal', buildLeaveSessionModal, CATALOG_PAGES.sessions, 'Dialogs'),
+  job('NameSessionModal', buildNameSessionModal, CATALOG_PAGES.sessions, 'Dialogs'),
+  job('ModelEffortSheet', buildModelEffortSheet, CATALOG_PAGES.sessions, 'Sheets'),
+  job('ConversationPreviewSheet', buildConversationPreviewSheet, CATALOG_PAGES.sessions, 'Sheets'),
+  job('RemoteKeyboardControls', buildRemoteKeyboardControls, CATALOG_PAGES.sessions, 'Controls'),
+  job('DiagnosticsPreview', buildDiagnosticsPreview, CATALOG_PAGES.experience, 'Diagnostics'),
+  job('ReviewSheet', buildReviewSheet, CATALOG_PAGES.conversation, 'Review'),
+  job('QuietHoursEditor', buildQuietHoursEditor, CATALOG_PAGES.experience, 'Settings'),
+  job('SlashCommandBoard', buildSlashCommandBoard, CATALOG_PAGES.conversation, 'Terminal'),
+  job('SlashCommandArgModal', buildSlashCommandArgModal, CATALOG_PAGES.conversation, 'Terminal'),
+  job('TourOverlay', buildTourOverlay, CATALOG_PAGES.experience, 'Tour'),
+  job('ConversationSearchView', buildConversationSearchView, CATALOG_PAGES.conversation, 'Conversation'),
+  job('SessionHistoryFeed', buildSessionHistoryFeed, CATALOG_PAGES.conversation, 'Terminal'),
+  job('TerminalOutput', buildTerminalOutput, CATALOG_PAGES.conversation, 'Terminal'),
+  job('RootErrorBoundary', buildRootErrorBoundary, CATALOG_PAGES.core, 'Errors'),
+  job('RenderErrorBoundary', buildRenderErrorBoundary, CATALOG_PAGES.core, 'Errors'),
+  job('PagerDots', buildPagerDots, CATALOG_PAGES.experience, 'Onboarding'),
+  job('PrimaryButton', buildPrimaryButton, CATALOG_PAGES.experience, 'Onboarding'),
+  job('TerminalCard', buildTerminalCard, CATALOG_PAGES.experience, 'Onboarding'),
+  job('InfoTooltip', buildInfoTooltip, CATALOG_PAGES.experience, 'Onboarding'),
+  job('ThreadField', buildThreadField, CATALOG_PAGES.experience, 'Onboarding'),
+  job('Onboarding', buildOnboardingSteps, CATALOG_PAGES.experience, 'Onboarding'),
+
+  asset('Badge', 'components/ui/Badge.tsx'),
+  asset('Card', 'components/ui/Card.tsx'),
+  asset('ProgressBar', 'components/ui/ProgressBar.tsx'),
+  asset('Toast', 'components/ui/Toast.tsx'),
+  asset('Banner', 'components/ui/Banner.tsx'),
+  asset('EmptyState', 'components/ui/EmptyState.tsx'),
+  asset('FAB', 'components/ui/FAB.tsx'),
+  asset('StateBadge', 'components/sessions/StateBadge.tsx'),
+  asset('ServerChip', 'components/sessions/shared/ServerChip.tsx'),
+  asset('LiveCard', 'components/sessions/now/LiveCard.tsx'),
+  asset('EarlierRow', 'components/sessions/now/EarlierRow.tsx'),
+  asset('ServerListCard', 'components/servers/ServerListCard.tsx'),
+  asset('ProviderMark', 'components/sessions/shared/ProviderMark.tsx'),
+  asset('SkeletonBox', 'components/ui/Skeleton.tsx'),
+  asset('TimeBucketPill', 'components/sessions/shared/TimeBucketPills.tsx'),
+  asset('TimeBucketPills', 'components/sessions/shared/TimeBucketPills.tsx'),
+  asset('MessagePreview', 'components/sessions/shared/MessagePreview.tsx'),
+  asset('LoadingOverlay', 'components/ui/LoadingOverlay.tsx'),
+  asset('LiveDot', 'components/sessions/LiveDot.tsx'),
+  asset('SectionEyebrow', 'components/sessions/now/SectionEyebrow.tsx'),
+  asset('HistorySkeletonRow', 'components/sessions/now/HistorySkeletonRow.tsx'),
+  asset('CantResumeRow', 'components/sessions/now/CantResumeRow.tsx'),
+  asset('DrillFolderRow', 'components/sessions/tree/DrillFolderRow.tsx'),
+  asset('KnightRiderScanner', 'components/sessions/KnightRiderScanner.tsx'),
+  asset('InlineError', 'components/alerts/InlineError.tsx'),
+  asset('ServerHeaderRow', 'components/sessions/tree/ServerHeaderRow.tsx'),
+  asset('SessionBanner', 'components/sessions/ConnectionBanner.tsx'),
+  asset('ServerStatusCard', 'components/sessions/banners/ServerUnsupportedBanner.tsx'),
+  asset('ConversationListItem', 'components/sessions/shared/ConversationListItem.tsx'),
+  asset('MessageBubble', 'components/conversation/MessageBubble.tsx'),
+  asset('ThinkingCard', 'components/conversation/ThinkingCard.tsx'),
+  asset('ThinkingBubble', 'components/conversation/ThinkingBubble.tsx'),
+  asset('ToolCard', 'components/conversation/ToolCard.tsx'),
+  asset('DiffViewer', 'components/conversation/DiffViewer.tsx'),
+  asset('MessageSkeletonRow', 'components/conversation/MessageSkeletonRow.tsx'),
+  asset('InheritedHistoryDivider', 'components/conversation/InheritedHistoryDivider.tsx'),
+  asset('LivePauseControl', 'components/conversation/LivePauseControl.tsx'),
+  asset('SlowLoadingBanner', 'components/conversation/SlowLoadingBanner.tsx'),
+  asset('ChatComposer', 'components/conversation/ChatComposer.tsx'),
+  asset('StatusPill', 'components/alerts/StatusPill.tsx'),
+  asset('AvatarMenu', 'components/ui/AvatarMenu.tsx'),
+  asset('StatusStrip', 'components/alerts/StatusStrip.tsx'),
+  asset('StatusRow', 'components/alerts/StatusRow.tsx'),
+  asset('StatusSheet', 'components/alerts/StatusSheet.tsx'),
+  asset('CriticalDialog', 'components/alerts/CriticalDialog.tsx'),
+  asset('NavigationLockOverlay', 'components/ui/NavigationLockOverlay.tsx'),
+  asset('ScreenHeader', 'components/shared/ScreenHeader.tsx'),
+  asset('HeaderOverflowMenu', 'components/shared/HeaderOverflowMenu.tsx'),
+  asset('InfoModal', 'components/shared/InfoModal.tsx'),
+  asset('QuestionCard', 'components/terminal/QuestionCard.tsx'),
+  asset('QuickAccessChip', 'components/quick-access/QuickAccessChip.tsx'),
+  asset('QuickAccessStrip', 'components/quick-access/QuickAccessStrip.tsx'),
+  asset('QuickAccessActionSheet', 'components/quick-access/QuickAccessActionSheet.tsx'),
+  asset('ShelfBubble', 'components/shelf/ShelfBubble.tsx'),
+  asset('ShelfPanel', 'components/shelf/ShelfPanel.tsx'),
+  asset('FirstShowBanner', 'components/tour/FirstShowBanner.tsx'),
+  asset('AnonymousDiagnosticsConsentBanner', 'components/diagnostics/AnonymousDiagnosticsConsentBanner.tsx'),
+  asset('SweepBar', 'components/SweepBar.tsx'),
+  asset('AddServerButton', 'components/servers/AddServerButton.tsx'),
+  asset('EncryptionRefusalBanner', 'components/servers/EncryptionRefusalBanner.tsx'),
+  asset('FilterPresets', 'components/servers/FilterPresets.tsx'),
+  asset('NoServersWelcome', 'components/servers/NoServersWelcome.tsx'),
+  asset('ServerBadge', 'components/servers/ServerBadge.tsx'),
+  asset('ServerIndexingBanner', 'components/servers/ServerIndexingBanner.tsx'),
+  asset('ServerFormFields', 'components/servers/ServerFormFields.tsx'),
+  asset('ServerErrorModal', 'components/servers/ServerErrorModal.tsx'),
+  asset('ServersStatusModal', 'components/servers/ServersStatusModal.tsx'),
+  asset('CacheAlertModal', 'components/servers/CacheAlertModal.tsx'),
+  asset('FilterSortSheet', 'components/servers/FilterSortSheet.tsx'),
+  asset('ServerMenuSheet', 'components/servers/ServersStatusModal.tsx'),
+  asset('IdentityFingerprintBlock', 'components/pair/IdentityFingerprintBlock.tsx'),
+  asset('PairCameraIdentityCard', 'components/pair/PairCameraIdentityCard.tsx'),
+  asset('NewSessionServerPicker', 'components/servers/NewSessionServerPicker.tsx'),
+  asset('ServerClaudeFlagsSection', 'components/servers/ServerClaudeFlagsSection.tsx'),
+  asset('ServerEncryptionSection', 'components/servers/ServerEncryptionSection.tsx'),
+  asset('ServerEditModal', 'components/servers/ServerEditModal.tsx'),
+  asset('ServerFilterSheet', 'components/servers/ServerFilterSheet.tsx'),
+  asset('PairConfirmGate', 'components/pair/PairConfirmGate.tsx'),
+  asset('PairScannerModal', 'components/pair/PairScannerModal.tsx'),
+  asset('RecentDirsModal', 'components/browse/RecentDirsModal.tsx'),
+  asset('BrowseSlowBanner', 'components/browse/BrowseSlowBanner.tsx'),
+  asset('SessionRow', 'components/sessions/hub/SessionRow.tsx'),
+  asset('ConvRow', 'components/sessions/hub/ConvRow.tsx'),
+  asset('MachineBadge', 'components/sessions/MachineBadge.tsx'),
+  asset('SessionStatusBadge', 'components/sessions/SessionStatusBadge.tsx'),
+  asset('NeedsYouCard', 'components/sessions/now/NeedsYouCard.tsx'),
+  asset('WorkingCard', 'components/sessions/now/WorkingCard.tsx'),
+  asset('ProjectHubCard', 'components/sessions/hub/ProjectHubCard.tsx'),
+  asset('ExternalSessionBanner', 'components/sessions/ExternalSessionBanner.tsx'),
+  asset('ServerWarmingBanner', 'components/sessions/banners/ServerWarmingBanner.tsx'),
+  asset('SessionDetailSlowBanner', 'components/sessions/SessionDetailSlowBanner.tsx'),
+  asset('SyncCachedNotice', 'components/sessions/SyncCachedNotice.tsx'),
+  asset('LeaveSessionModal', 'components/sessions/LeaveSessionModal.tsx'),
+  asset('NameSessionModal', 'components/sessions/NameSessionModal.tsx'),
+  asset('ModelEffortSheet', 'components/sessions/ModelEffortSheet.tsx'),
+  asset('ConversationPreviewSheet', 'components/sessions/shared/ConversationPreviewSheet.tsx'),
+  asset('RemoteKeyboardControls', 'components/sessions/RemoteKeyboardControls.tsx'),
+  asset('DiagnosticsPreview', 'components/feedback/DiagnosticsPreview.tsx'),
+  asset('ReviewSheet', 'components/review/ReviewSheet.tsx'),
+  asset('QuietHoursEditor', 'components/settings/QuietHoursEditor.tsx'),
+  asset('SlashCommandBoard', 'components/shared/SlashCommandBoard.tsx'),
+  asset('SlashCommandArgModal', 'components/shared/SlashCommandArgModal.tsx'),
+  asset('TourOverlay', 'components/tour/TourOverlay.tsx'),
+  asset('ConversationSearchView', 'components/conversation/ConversationSearchView.tsx'),
+  asset('SessionHistoryFeed', 'components/terminal/SessionHistoryFeed.tsx'),
+  asset('TerminalOutput', 'components/terminal/TerminalOutput.tsx'),
+  asset('RootErrorBoundary', 'components/RootErrorBoundary.tsx'),
+  asset('RenderErrorBoundary', 'components/RenderErrorBoundary.tsx'),
+  asset('PagerDots', 'components/onboarding/components/PagerDots.tsx'),
+  asset('PrimaryButton', 'components/onboarding/components/PrimaryButton.tsx'),
+  asset('TerminalCard', 'components/onboarding/components/TerminalCard.tsx'),
+  asset('InfoTooltip', 'components/onboarding/components/InfoTooltip.tsx'),
+  asset('ThreadField', 'components/onboarding/components/ThreadField.tsx'),
+  asset('Onboarding', 'components/onboarding/OnboardingNavigator.tsx'),
+];
+function buildSteps() {
+  return CATALOG.filter(x => x.builder).map(x => [x.buildName, x.builder]);
+}
+function sourceAssets() {
+  return CATALOG.filter(x => x.source);
+}
 async function linkSources() {
   const missing = [];
-  for (const name of Object.keys(SOURCES)) {
-    const node = findComp(name);
-    if (!node) { missing.push(name); continue; }
-    node.documentationLinks = [{ uri: REPO + SOURCES[name] }];
+  for (const entry of sourceAssets()) {
+    const node = findComp(entry.name);
+    if (!node) { missing.push(entry.name); continue; }
+    node.documentationLinks = [{ uri: REPO + entry.source }];
+    node.setPluginData('threadbase-status', entry.status);
+    const lifecycle = 'Lifecycle: ' + entry.status[0].toUpperCase() + entry.status.slice(1) + '.';
+    const existing = (node.description || '').replace(/^Lifecycle: (?:Stable|Beta|Deprecated)\.\s*/, '');
+    node.description = lifecycle + (existing ? '\n' + existing : '');
   }
   if (missing.length) throw new Error('not found: ' + missing.join(', '));
 }
@@ -3466,28 +3769,32 @@ async function arrangeReferences(screensPage) {
 
 // ---------- entry ----------
 async function init() {
+  await figma.loadAllPagesAsync();
   const all = await figma.variables.getLocalVariablesAsync();
   for (const v of all) V[v.name] = v;
   for (const s of await figma.getLocalTextStylesAsync()) S[s.name] = s;
   for (const st of ['Regular', 'Medium', 'Semi Bold', 'Bold', 'Italic']) await figma.loadFontAsync({ family: 'Inter', style: st });
   await figma.loadFontAsync({ family: 'JetBrains Mono', style: 'Regular' });
-  compPage = figma.root.children.find(p => p.name === 'Components');
-  const screensPage = figma.root.children.find(p => p.name === 'Screens');
-  if (!compPage || !screensPage) throw new Error('Expected pages "Components" and "Screens"');
-  await figma.setCurrentPageAsync(compPage);
-  return screensPage;
+  const pages = ensureCatalogPages();
+  compPage = pages.get(CATALOG_PAGES.core);
+  return pages;
 }
 async function build() {
-  const screensPage = await init();
+  const pages = await init();
   const errors = [];
-  const steps = [['icons', ensureIcons], ['Banner', buildBanner], ['EmptyState', buildEmptyState], ['FAB', buildFAB], ['StateBadge', buildStateBadge], ['LiveCard', buildLiveCard], ['EarlierRow', buildEarlierRow], ['ServerListCard', buildServerListCard], ['ProviderMark', buildProviderMark], ['SkeletonBox', buildSkeleton], ['TimeBucketPills', buildTimeBucketPills], ['MessagePreview', buildMessagePreview], ['LoadingOverlay', buildLoadingOverlay], ['LiveDot', buildLiveDot], ['SectionEyebrow', buildSectionEyebrow], ['HistorySkeletonRow', buildHistorySkeletonRow], ['CantResumeRow', buildCantResumeRow], ['DrillFolderRow', buildDrillFolderRow], ['KnightRiderScanner', buildKnightRiderScanner], ['InlineError', buildInlineError], ['ServerHeaderRow', buildServerHeaderRow], ['SessionBanner', buildSessionBanners], ['ServerStatusCard', buildServerStatusCard], ['ConversationListItem', buildConversationListItem], ['MessageBubble', buildMessageBubble], ['ThinkingCard', buildThinkingCard], ['ThinkingBubble', buildThinkingBubble], ['ToolCard', buildToolCard], ['DiffViewer', buildDiffViewer], ['MessageSkeletonRow', buildMessageSkeletonRow], ['InheritedHistoryDivider', buildInheritedHistoryDivider], ['LivePauseControl', buildLivePauseControl], ['SlowLoadingBanner', buildSlowLoadingBanner], ['ChatComposer', buildChatComposer], ['StatusPill', buildStatusPill], ['StatusStrip', buildStatusStrip], ['StatusRow', buildStatusRow], ['StatusSheet', buildStatusSheet], ['CriticalDialog', buildCriticalDialog], ['NavigationLockOverlay', buildNavigationLockOverlay], ['ScreenHeader', buildScreenHeader], ['HeaderOverflowMenu', buildHeaderOverflowMenu], ['InfoModal', buildInfoModal], ['QuestionCard', buildQuestionCard], ['QuickAccess', buildQuickAccess], ['Shelf', buildShelf], ['Small banners', buildSmallBanners], ['IdentityFingerprintBlock', buildIdentityFingerprint], ['AddServerButton', buildAddServerButton], ['EncryptionRefusalBanner', buildEncryptionRefusalBanner], ['FilterPresets', buildFilterPresets], ['NoServersWelcome', buildNoServersWelcome], ['ServerBadge', buildServerBadge], ['ServerIndexingBanner', buildServerIndexingBanner], ['ServerFormFields', buildServerFormFields], ['ServerErrorModal', buildServerErrorModal], ['ServersStatusModal', buildServersStatusModal], ['CacheAlertModal', buildCacheAlertModal], ['FilterSortSheet', buildFilterSortSheet], ['StatusRow server alerts', buildServerAlertRows], ['NewSessionServerPicker', buildNewSessionServerPicker], ['ServerClaudeFlagsSection', buildServerClaudeFlagsSection], ['ServerEncryptionSection', buildServerEncryptionSection], ['ServerEditModal', buildServerEditModal], ['ServerFilterSheet', buildServerFilterSheet], ['PairConfirmGate', buildPairConfirmGate], ['PairScannerModal', buildPairScannerModal], ['RecentDirsModal', buildRecentDirsModal], ['BrowseSlowBanner', buildBrowseSlowBanner], ['SessionRow', buildSessionRows], ['MachineBadge', buildMachineBadge], ['SessionStatusBadge', buildSessionStatusBadge], ['NeedsYouCard', buildLiveCardWrappers], ['ProjectHubCard', buildProjectHubCard], ['ExternalSessionBanner', buildExternalSessionBanner], ['ServerWarmingBanner', buildServerWarmingBanner], ['SessionDetailSlowBanner', buildSessionDetailSlowBanner], ['SyncCachedNotice', buildSyncCachedNotice], ['LeaveSessionModal', buildLeaveSessionModal], ['NameSessionModal', buildNameSessionModal], ['ModelEffortSheet', buildModelEffortSheet], ['ConversationPreviewSheet', buildConversationPreviewSheet], ['RemoteKeyboardControls', buildRemoteKeyboardControls], ['DiagnosticsPreview', buildDiagnosticsPreview], ['ReviewSheet', buildReviewSheet], ['QuietHoursEditor', buildQuietHoursEditor], ['SlashCommandBoard', buildSlashCommandBoard], ['SlashCommandArgModal', buildSlashCommandArgModal], ['TourOverlay', buildTourOverlay], ['ConversationSearchView', buildConversationSearchView], ['SessionHistoryFeed', buildSessionHistoryFeed], ['TerminalOutput', buildTerminalOutput], ['RootErrorBoundary', buildRootErrorBoundary], ['RenderErrorBoundary', buildRenderErrorBoundary], ['PagerDots', buildPagerDots], ['PrimaryButton', buildPrimaryButton], ['TerminalCard', buildTerminalCard], ['InfoTooltip', buildInfoTooltip], ['ThreadField', buildThreadField], ['Onboarding', buildOnboardingSteps]];
-  for (const [name, fn] of steps) {
-    try { await fn(); } catch (e) { errors.push(name + ': ' + e.message); }
+  try { await buildGuidance(pages); } catch (e) { errors.push('guidance: ' + e.message); }
+  const jobs = CATALOG.filter(x => x.builder);
+  for (const pageName of CATALOG_PAGE_ORDER) {
+    const pageJobs = jobs.filter(entry => entry.page === pageName);
+    if (!pageJobs.length) continue;
+    const pageErrors = await runBuildPage(pageJobs, pages.get(pageName));
+    for (const { entry, error } of pageErrors) errors.push(entry.buildName + ': ' + error.message);
   }
-  clearDescs();
-  try { await buildScreens(screensPage); } catch (e) { errors.push('screens: ' + e.message); }
+  for (const page of pages.values()) clearDescs(page);
+  try { await buildScreens(pages.get(CATALOG_PAGES.screens), pages.get(CATALOG_PAGES.visualQa)); } catch (e) { errors.push('screens: ' + e.message); }
   try { await linkSources(); } catch (e) { errors.push('links: ' + e.message); }
-  try { await arrangeReferences(screensPage); } catch (e) { errors.push('references: ' + e.message); }
+  try { await arrangeReferences(pages.get(CATALOG_PAGES.visualQa)); } catch (e) { errors.push('references: ' + e.message); }
+  await figma.setCurrentPageAsync(pages.get(CATALOG_PAGES.start));
   return errors;
 }
 
@@ -3509,13 +3816,13 @@ onmessage = e => {
   const m = e.data.pluginMessage;
   if (!m) return;
   if (m.type === 'token') { if (m.token) TOKEN = m.token; else ask('paste the token the relay printed'); }
-  if (m.type === 'result') fetch(B + '/result', { method: 'POST', headers: { 'x-bridge-token': TOKEN }, body: JSON.stringify(m.payload) }).then(() => { s.textContent = 'idle (last job ' + m.payload.id + ')'; }, () => {});
+  if (m.type === 'result') fetch(B + '/result?token=' + encodeURIComponent(TOKEN), { method: 'POST', body: JSON.stringify(m.payload) }).then(() => { s.textContent = 'idle (last job ' + m.payload.id + ')'; }, () => {});
 };
 (async () => {
   for (;;) {
     if (!TOKEN) { await new Promise(r => setTimeout(r, 400)); continue; }
     try {
-      const r = await fetch(B + '/next', { headers: { 'x-bridge-token': TOKEN } });
+      const r = await fetch(B + '/next?token=' + encodeURIComponent(TOKEN));
       if (r.status === 403) ask('token rejected, paste the current one');
       else if (r.status === 200) { const job = await r.json(); s.textContent = 'running job ' + job.id; parent.postMessage({ pluginMessage: { type: 'job', job } }, '*'); }
       else if (!/job/.test(s.textContent)) s.textContent = 'connected, idle';

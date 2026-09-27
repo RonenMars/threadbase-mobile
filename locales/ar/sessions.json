@@ -117,7 +117,9 @@
     "headerWorking_few": "يعمل · {{count}}",
     "headerWorking_many": "يعمل · {{count}}",
     "headerWorking_other": "يعمل · {{count}}",
-    "headerEarlierToday": "في وقت سابق اليوم",
+    "headerLast7Days": "آخر 7 أيام",
+    "headerLast14Days": "آخر 14 يومًا",
+    "headerLastMonth": "الشهر الماضي",
     "headerEarlier": "في وقت سابق"
   },
   "preview": {

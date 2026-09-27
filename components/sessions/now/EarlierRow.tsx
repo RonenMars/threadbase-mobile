@@ -109,7 +109,7 @@ function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, domin
 /**
  * A history row in the Now list: title, one subtitle line, clock stamp. Two lines, no card.
  * The stamp is `item.ms`, the same clock NowList buckets by, so a row can never sit under
- * EARLIER TODAY while showing last week's date.
+ * LAST 7 DAYS while showing last week's date.
  */
 export function EarlierRow({ item, title, isFirst, highlight, dominantProvider, onLongPressConversation }: Props) {
   const rowPreviewMode = useSettingsStore((s) => s.rowPreviewMode)

@@ -200,6 +200,7 @@ describe('useComposerState', () => {
         originalName: 'photo.jpg',
         mimeType: 'image/jpeg',
         sizeBytes: 4,
+        localUri: 'file:///tmp/photo.jpg',
       },
     ])
   })

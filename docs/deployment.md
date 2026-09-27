@@ -24,6 +24,12 @@ They differ in how much automation sits around the archive step.
 | --- | --- | --- |
 | **`ship-android.sh`** | You're the maintainer and have the Android signing + Play service account env vars. Builds a signed AAB, bumps versionCode if needed, uploads to the chosen track. | `./scripts/ship-android.sh` |
 
+### QA (enforced tracking, both platforms)
+
+| Path | Use when | Command |
+| --- | --- | --- |
+| **`ship-qa.sh`** | A build for registered QA devices with full Sentry telemetry (`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`). Uploads to Firebase App Distribution, never to a store. Locally, or from the `QA (Firebase)` workflow. | `./scripts/ship-qa.sh --platform ios\|android` |
+
 ---
 
 ## Local credentials — the 1Password bootstrap
@@ -341,6 +347,21 @@ Play Console UI names → API track names: Internal testing=`internal`, Closed t
 
 Other flags: `--skip-preflight`, `--skip-prebuild`, `--skip-bundle` (reuse existing AAB without rebuilding), `--package <id>`.
 
+### Which track for a public beta
+
+| Track | Who can install | Fits |
+|---|---|---|
+| `internal` | Up to 100 testers named by email | The maintainer and teammates |
+| `alpha` (closed) | Testers named by email list or Google Group | An invited group; not a link posted on Reddit or Hacker News, because every tester must be on the list first |
+| `beta` (open) | Anyone who opens the opt-in link or finds the testing listing on Play | The public beta |
+| `production` | Everyone | Launch |
+
+Every track but `production` reports to Sentry as `staging`.
+
+**New personal developer accounts must earn open testing first.** A personal Play developer account created after 13 November 2023 has to run a closed test with at least 12 testers opted in continuously for 14 days before it can apply for production access, and "open testing becomes available after you gain production access" ([Play Console Help](https://support.google.com/googleplay/android-developer/answer/14151465)).
+Meeting the threshold makes the account eligible to apply; Google can still ask for more testing.
+If the account is personal, start that closed test well before the beta is announced; organisation accounts and personal accounts created before that date are exempt.
+
 ### Prerequisites
 
 1. **Android signing variables** set:
@@ -429,6 +450,119 @@ Each `https.request` in `promote-android.js` carries a **30-second timeout**.
 | Server connected but never responds | Timeout fires after 30 s → `req.destroy()` → `ERROR: … timed out after 30s` → exit 1 |
 
 If the script exits with a timeout error, check your network connection and retry. No Play edit is left open — the edit is only committed in the final step, so a mid-flight timeout leaves no side effects in Play Console.
+
+---
+
+## Path F — `./scripts/ship-qa.sh` (enforced-tracking QA builds)
+
+The one channel that carries `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`.
+It builds a release binary with the flag on and uploads it to Firebase App Distribution.
+What the flag turns on, and the launch notice it changes, is in [`sentry-setup.md`](./sentry-setup.md).
+
+### Which channel carries what
+
+| Channel | Who installs it | Diagnostics | Sentry environment |
+|---|---|---|---|
+| TestFlight | Beta testers | Standard opt-in: the launch notice offers "Allow diagnostics" and "Don't allow", and Settings can change it later | `staging` |
+| Google Play testing tracks (`internal`, `alpha`, `beta`) | Beta testers | Standard opt-in | `staging` |
+| App Store | Everyone | Standard opt-in | `production` |
+| Google Play `production` | Everyone | Standard opt-in | `production` |
+| **Firebase App Distribution** (`ship-qa.sh`) | Registered QA devices only | **Enforced:** full telemetry, and the launch notice offers only "I agree" | `testing` |
+
+Paths A and E, and the GitHub Deploy workflow that calls them, refuse the flag: `ship-ios.sh` and `ship-android.sh` run `check-sentry-env.sh`, which fails when it is set in the shell, `.env` or `.env.local`.
+Fastlane (Path B) and manual Xcode (Path D) run no such check, so clear the flag from `.env` and `.env.local` before using either.
+
+### Why Firebase, not a Play track or a TestFlight group
+
+The flag is inlined into the JS bundle, so the binary itself is enforced for as long as it exists.
+A build uploaded to Play can be promoted from `internal` to `production`, and a TestFlight build can be added to the public external group, each by one click in a console.
+Firebase App Distribution has no path to either store, so an enforced build cannot reach the public by mistake.
+
+### Usage
+
+```bash
+./scripts/ship-qa.sh --platform ios                        # Ad Hoc .ipa → the `qa` group
+./scripts/ship-qa.sh --platform android                    # release APK → the `qa` group
+./scripts/ship-qa.sh --platform ios --groups qa,core --release-notes "Composer rewrite"
+```
+
+Nothing is bumped or committed.
+A build carries the current `app.json` build number (iOS) or `android/app/build.gradle` versionCode (Android), and Sentry's release and dist match it.
+
+Before any native build starts, the script stops if the Firebase app ID, the Android signing file or a Sentry variable is missing.
+
+### Shipping a branch or PR
+
+The script builds whatever is checked out where it runs, so a branch or PR ships from its own worktree:
+
+```bash
+cd ~/dev/ai-tools/tb-mobile
+git fetch origin pull/<N>/head:qa/pr-<N>                  # or an existing branch name
+git worktree add ../tb-mobile-worktrees/qa-pr-<N> qa/pr-<N>
+cd ../tb-mobile-worktrees/qa-pr-<N>
+npm ci
+cp ../../tb-mobile/.env ../../tb-mobile/.env.signing ../../tb-mobile/.env.signing.android .
+./scripts/ship-qa.sh --platform ios --release-notes "PR #<N>: <title>"
+./scripts/ship-qa.sh --platform android --release-notes "PR #<N>: <title>"
+```
+
+- Give the worktree its own `node_modules`. A symlink to the main checkout's makes Metro bundle the main checkout instead, and the build ships the wrong code ([`troubleshooting.md`](./troubleshooting.md) → "Metro bundles the main repo instead of your worktree").
+- The env files are gitignored, so a new worktree has none of them.
+- Name the PR in `--release-notes`. The build number is not bumped, so in Firebase the notes are what tells two PR builds apart.
+- Each install replaces the previous QA build on the device, since every build shares the bundle ID.
+
+### From GitHub Actions
+
+`.github/workflows/qa.yml` (**QA (Firebase)**) runs the same script on GitHub-hosted runners, one job per platform.
+Dispatch it from the Actions tab or the CI dashboard with a `platform`, a `deploy_ref` (any branch, tag or SHA, so a PR ships by naming its branch), the tester `groups`, and optional `release_notes`.
+Without notes, the release is labelled with the ref and its short SHA.
+
+It is a separate workflow from Deploy on purpose: Deploy must never carry the enforced flag.
+It relies on the runner being discarded after the job, which is what keeps Metro's cache from leaking the flag into a later build, so it must never cache Metro's transform cache or move to a self-hosted runner.
+`ship-qa.sh` enforces the second half: under `CI` it runs only when `RUNNER_ENVIRONMENT` is `github-hosted`.
+
+It reuses Deploy's signing and Sentry secrets and the `EXPO_PUBLIC_SENTRY_DSN` variable, and needs these on top:
+
+| Name | Kind | Value |
+|---|---|---|
+| `FIREBASE_SA_JSON_B64` | secret | `base64 -i key.json` of a Google Cloud service account in the Firebase project with the **Firebase App Distribution Admin** role |
+| `IOS_ADHOC_PROFILE_B64` | secret | `base64 -i` of the app's Ad Hoc profile (`com.ronenmars.threadbase`) |
+| `IOS_WIDGET_ADHOC_PROFILE_B64` | secret | `base64 -i` of the widget's Ad Hoc profile (`com.ronenmars.threadbase.widgets`) |
+| `FIREBASE_APP_ID_IOS` | variable | The iOS app ID from Firebase → Project settings → Your apps |
+| `FIREBASE_APP_ID_ANDROID` | variable | The Android app ID from the same page |
+
+The workflow reads each profile's UUID from the profile itself, so after registering a device and regenerating the profiles, re-uploading the two profile secrets is the whole update.
+
+### One-time setup
+
+1. **Firebase project.** In the Firebase console, register the iOS app (`com.ronenmars.threadbase`) and the Android app (`com.ronenmars.threadbase`).
+   Create a tester group named `qa` and add the testers to that group; a tester added only to the project gets no email.
+   The script refuses to build for a group with no testers, because Firebase reports a distribution to an empty group as a success.
+2. **App IDs.** Copy both from Project settings → Your apps, and export them as `FIREBASE_APP_ID_IOS` and `FIREBASE_APP_ID_ANDROID`.
+3. **Firebase credentials.** Either run `npx firebase-tools login` once, or create a service account with the **Firebase App Distribution Admin** role and export `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json`.
+4. **iOS Ad Hoc signing.** In the Apple Developer portal:
+   - Register each QA iPhone's UDID. Firebase can collect UDIDs when a tester opens the invite on the device.
+   - Create **two** Ad Hoc distribution profiles, for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.widgets`, both with the App Group `group.com.ronenmars.threadbase`, and install both.
+   - The script picks the newest installed, unexpired pair, and needs `ASC_TEAM_ID` (from `.env.signing` or the shell).
+5. **Android signing.** `.env.signing.android`, the same upload-key file Path E uses (`./scripts/bootstrap-local-signing-op.sh --platform android`).
+6. **Sentry.** `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` in the shell, `.env` or `.env.signing`.
+   An enforced build refuses to start without all four.
+
+### First run on each platform
+
+Confirm three things before handing builds out:
+
+- the app opens on the diagnostics notice, and it offers only "I agree";
+- events arrive in Sentry under the `testing` environment;
+- their stack traces are symbolicated, which proves the source-map upload for that release worked.
+
+### Known limits
+
+- **Adding a device means re-signing.** An Ad Hoc profile lists its devices, so after registering one, regenerate both profiles, reinstall them and rebuild. Builds already distributed don't pick up the new device.
+- **100 iPhones per membership year.** Removing a device doesn't free its slot until the membership renews, so register only core testers.
+- **The APK can't upgrade a Play install.** Play re-signs with the app signing key, so a tester uninstalls the Play version first (and again before going back to Play).
+- **On iOS it replaces TestFlight.** The QA build, TestFlight, the App Store and the dev client all share `com.ronenmars.threadbase`, so a device holds one of them at a time; reinstalling from the TestFlight app switches back. What survives a swap: [`dev-on-physical-device-ios.md`](./dev-on-physical-device-ios.md) → "Coexistence with TestFlight Threadbase".
+- **Only local or GitHub-hosted runners.** Under `CI`, `expo export:embed` skips the Metro cache reset that local release builds do, and the transform cache isn't keyed on `EXPO_PUBLIC_*` values, so an enforced `services/sentry.ts` could be reused by a later store build on the same runner. The script therefore refuses to run under `CI` unless `RUNNER_ENVIRONMENT` is `github-hosted`, whose VMs are discarded after the job.
 
 ---
 
@@ -602,6 +736,7 @@ Notes:
 - `fastlane/.env.example` — env var template for Path B.
 - `scripts/ship-ios.sh` — iOS Path A entry point.
 - `scripts/ship-android.sh` — Android Path E entry point.
+- `scripts/ship-qa.sh` — Path F, enforced-tracking QA builds via Firebase App Distribution.
 - `scripts/land-version-bump.sh` — local post-ship version land (no-op in CI).
 - `scripts/admin-merge-pr.sh` — shared open-PR + admin squash-merge helper.
 - `scripts/promote-android.js` — promote an existing build between Play tracks.

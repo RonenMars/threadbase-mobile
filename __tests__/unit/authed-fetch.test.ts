@@ -201,3 +201,21 @@ describe('authedFetch', () => {
     expect(res.status).toBe(409)
   })
 })
+
+// #734, TB-M-03: an unpinned server's publicUrl came from an unauthenticated
+// pairing reply, so the API key is never sent to it. Reserved addresses only.
+it('never dials the publicUrl of an unpinned server', async () => {
+  const LAN = 'https://192.0.2.10:8766'
+  const calls: string[] = []
+  jest.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+    calls.push(String(input))
+    return Promise.reject(new TypeError('Network request failed'))
+  })
+
+  await expect(
+    authedFetch({ url: LAN, apiKey: 'tb_shared', publicUrl: 'https://tb.example.com' }, '/api/info'),
+  ).rejects.toThrow('Network request failed')
+
+  expect(calls).toEqual([`${LAN}/api/info`])
+  jest.restoreAllMocks()
+})

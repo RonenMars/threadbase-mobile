@@ -199,3 +199,8 @@ dependencies {
         implementation jscFlavor
     }
 }
+// google-services.json is gitignored, so a checkout without it still builds; it
+// just can't get a push token.
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+}

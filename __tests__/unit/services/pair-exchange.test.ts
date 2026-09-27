@@ -1082,7 +1082,7 @@ describe('exchangeToken — the pairing handshake', () => {
   const restCtxId = Uint8Array.from(Buffer.from(recordVectors.ctxId, 'base64'))
   const restKey = (k: string) => Uint8Array.from(Buffer.from(k, 'base64'))
 
-  function restContext(): TransportContext {
+  function restContext(): Omit<TransportContext, 'baseUrl'> {
     const send = createRecordState({
       key: restKey(recordVectors.clientToServerKey),
       ctxId: restCtxId,
@@ -1119,7 +1119,7 @@ describe('exchangeToken — the pairing handshake', () => {
     const calls: { url: string; headers: Record<string, string> }[] = []
     _setRestOpenForTests(async (args) => {
       opens.push(args)
-      return restContext()
+      return { ...restContext(), baseUrl: args.baseUrl }
     })
     const impl = jest.fn<Promise<Response>, [RequestInfo | URL, RequestInit?]>(async (input, init) => {
       const url = String(input)

@@ -312,5 +312,13 @@
       "connecting": "Establishing a connection to the server.",
       "indexing": "The server is building its conversation index. History will appear when it is ready."
     }
+  },
+  "addresses": {
+    "publicLabel": "Public address",
+    "liveLabel": "Connected through",
+    "viaYours": "Your address",
+    "viaPublic": "Public address",
+    "notConnected": "Not connected",
+    "hint": "Each connection tries your address first and uses the public one only when yours cannot be reached."
   }
 }

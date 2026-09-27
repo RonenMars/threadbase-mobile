@@ -91,6 +91,7 @@ describe('restoreBackup (apply)', () => {
     const ctx: TransportContext = {
       ctxId: 'Dx4tPEtaaXiHlqW0w9Lh8A',
       kind: 'rest',
+      baseUrl: 'https://box.example.com',
       expiresAt: Date.now() + 86_400_000,
       provisional: false,
       send,

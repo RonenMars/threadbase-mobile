@@ -7,7 +7,8 @@
     "__tests__/unit/scripts/promote-android.test.js",
     "__tests__/unit/scripts/ship-ios.test.js",
     "__tests__/unit/scripts/ship-android.test.js",
-    "__tests__/unit/scripts/pre-commit-hook.test.js"
+    "__tests__/unit/scripts/pre-commit-hook.test.js",
+    "__tests__/unit/scripts/ship-qa.test.js"
   ],
   "3": [
     "__tests__/unit/scripts/check-story-coverage.test.js",

@@ -77,7 +77,12 @@
   },
   "notification": {
     "testTitle": "Тестовое уведомление",
-    "testBody": "Уведомления Threadbase работают!"
+    "testBody": "Уведомления Threadbase работают!",
+    "actionAllow": "Разрешить",
+    "actionDeny": "Отклонить",
+    "needsAnswer": "Ждёт вашего ответа",
+    "channelNeedsYou": "Нужно ваше участие",
+    "channelUpdates": "Обновления"
   },
   "addServer": {
     "selectedAction": "Выбранное действие при создании",

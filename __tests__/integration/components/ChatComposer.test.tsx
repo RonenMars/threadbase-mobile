@@ -338,6 +338,45 @@ describe('ChatComposer', () => {
     expect(screen.queryByText('That question isn\'t open anymore.')).toBeNull()
   })
 
+  describe('attachment preview', () => {
+    const photo = {
+      id: 'att-1',
+      path: '/uploads/photo.jpg',
+      originalName: 'photo.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 4,
+      localUri: 'file:///tmp/photo.jpg',
+    }
+    const log = { ...photo, id: 'att-2', path: '/uploads/build.log', originalName: 'build.log', mimeType: 'text/plain' }
+
+    it('opens the image preview when an image chip is tapped and closes it again', async () => {
+      await renderComposer({ attachments: [photo] })
+      expect(screen.queryByTestId('attachment-preview')).toBeNull()
+
+      await fireEvent.press(screen.getByTestId('attachment-chip-att-1'))
+      expect(screen.getByTestId('attachment-preview')).toBeTruthy()
+      expect(screen.getByLabelText('photo.jpg').props.source).toEqual({ uri: 'file:///tmp/photo.jpg' })
+
+      await fireEvent.press(screen.getByTestId('attachment-preview-close'))
+      expect(screen.queryByTestId('attachment-preview')).toBeNull()
+    })
+
+    it('does not open a preview for a non-image attachment', async () => {
+      await renderComposer({ attachments: [log] })
+      expect(screen.getByTestId('attachment-chip-att-2').props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: true }),
+      )
+      await fireEvent.press(screen.getByTestId('attachment-chip-att-2'))
+      expect(screen.queryByTestId('attachment-preview')).toBeNull()
+    })
+
+    it('shows a position counter when several images are attached', async () => {
+      await renderComposer({ attachments: [photo, { ...photo, id: 'att-3', originalName: 'second.png' }] })
+      await fireEvent.press(screen.getByTestId('attachment-chip-att-3'))
+      expect(screen.getByText('2 of 2')).toBeTruthy()
+    })
+  })
+
   it('mirrors the send plane, follows locale writing direction, and pins iOS chrome LTR', async () => {
     function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
       const style = StyleSheet.flatten(element.props.style)

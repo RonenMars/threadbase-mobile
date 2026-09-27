@@ -77,7 +77,12 @@
   },
   "notification": {
     "testTitle": "Test Notification",
-    "testBody": "Threadbase notifications are working!"
+    "testBody": "Threadbase notifications are working!",
+    "actionAllow": "Allow",
+    "actionDeny": "Deny",
+    "needsAnswer": "Needs your answer",
+    "channelNeedsYou": "Needs you",
+    "channelUpdates": "Updates"
   },
   "addServer": {
     "selectedAction": "Selected action on create",
