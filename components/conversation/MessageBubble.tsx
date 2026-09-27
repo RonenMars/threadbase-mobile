@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Linking,
 } from 'react-native'
+import Markdown from 'react-native-markdown-display'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
@@ -269,6 +271,64 @@ function parseTextParts(text: string): ParsedPart[] {
   })
 }
 
+function makeMarkdownStyles(theme: Theme) {
+  return {
+    // Base text props cascade to all leaf text nodes via inheritedStyles
+    body: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      lineHeight: 22,
+    },
+    // Tighten the default 10/10 top+bottom margins so paragraphs sit compactly
+    // inside the bubble rather than adding double spacing around code blocks.
+    paragraph: {
+      marginTop: 0,
+      marginBottom: spacing.xs,
+    },
+    heading1: { color: theme.text.primary, fontSize: font.xxl, fontWeight: '700' as const, marginBottom: spacing.xs },
+    heading2: { color: theme.text.primary, fontSize: font.xl,  fontWeight: '700' as const, marginBottom: spacing.xs },
+    heading3: { color: theme.text.primary, fontSize: font.lg,  fontWeight: '700' as const, marginBottom: spacing.xs },
+    heading4: { color: theme.text.primary, fontSize: font.base, fontWeight: '700' as const },
+    heading5: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '700' as const },
+    heading6: { color: theme.text.secondary, fontSize: font.sm },
+    strong: { fontWeight: '700' as const },
+    em: { fontStyle: 'italic' as const },
+    s: { textDecorationLine: 'line-through' as const },
+    code_inline: {
+      fontFamily: 'monospace',
+      fontSize: font.sm,
+      backgroundColor: `${theme.text.accent}22`,
+      color: theme.text.accent,
+      borderRadius: 3,
+    },
+    link: { color: theme.text.accent, textDecorationLine: 'underline' as const },
+    blockquote: {
+      borderStartWidth: 3,
+      borderStartColor: theme.text.secondary,
+      paddingStart: spacing.sm,
+      marginStart: 0,
+      color: theme.text.secondary,
+    },
+    bullet_list: { marginStart: spacing.sm },
+    ordered_list: { marginStart: spacing.sm },
+    hr: { backgroundColor: theme.border, height: 1, marginVertical: spacing.xs },
+  }
+}
+
+function MarkdownProse({ text }: { text: string }) {
+  const { theme } = useBubbleStyles()
+  const mdStyle = useMemo(() => makeMarkdownStyles(theme), [theme])
+  const onLinkPress = useCallback((url: string) => {
+    void Linking.openURL(url)
+    return false
+  }, [])
+  return (
+    <Markdown style={mdStyle} onLinkPress={onLinkPress} mergeStyle>
+      {text}
+    </Markdown>
+  )
+}
+
 function TextBlockBody({
   text,
   isUser,
@@ -292,6 +352,8 @@ function TextBlockBody({
       {parts.map((part, i) =>
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
+        ) : !isUser && !highlight ? (
+          <MarkdownProse key={i} text={part.text} />
         ) : (
           <TextContent
             key={i}
