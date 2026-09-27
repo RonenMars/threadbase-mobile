@@ -1,4 +1,4 @@
-import { splitTerminalView } from '@/lib/splitTerminalView'
+import { hasReplyInTranscript, resolveTurnFold, splitTerminalView } from '@/lib/splitTerminalView'
 import type { Message } from '@/types/api'
 
 function msg(role: Message['role'], text: string, index: number): Message {
@@ -126,5 +126,55 @@ describe('splitTerminalView', () => {
       turnOpen: true,
     })
     expect(out.anchor).toBe('frame')
+  })
+})
+
+describe('hasReplyInTranscript', () => {
+  const prompt = { text: 'now run the tests', ts: 2 }
+
+  it('is false while the JSONL has not recorded the prompt', () => {
+    expect(hasReplyInTranscript(history.slice(0, 2), prompt)).toBe(false)
+  })
+
+  it('is false when the prompt is the last message', () => {
+    expect(hasReplyInTranscript(history, prompt)).toBe(false)
+  })
+
+  it('is true once an assistant message follows the prompt', () => {
+    expect(hasReplyInTranscript([...history, msg('assistant', 'All 6 pass.', 3)], prompt)).toBe(true)
+  })
+
+  it('measures from the latest copy of a repeated prompt', () => {
+    const repeated = [...history, msg('assistant', 'Failed.', 3), msg('user', 'now run the tests', 4)]
+    expect(hasReplyInTranscript(repeated, prompt)).toBe(false)
+  })
+})
+
+describe('resolveTurnFold', () => {
+  it('stays open while running or while a card is up, whatever the transcript says', () => {
+    expect(resolveTurnFold({ status: 'running', cardOpen: false, replyLanded: true })).toBe('open')
+    expect(resolveTurnFold({ status: 'waiting_input', statusSource: 'turn-signal', cardOpen: true, replyLanded: true })).toBe('open')
+  })
+
+  it('folds as soon as the reply is in the transcript', () => {
+    expect(resolveTurnFold({ status: 'waiting_input', statusSource: 'prompt-marker', cardOpen: false, replyLanded: true })).toBe('fold')
+  })
+
+  it('folds a gone PTY however the turn ended', () => {
+    expect(resolveTurnFold({ status: 'idle', statusSource: 'process-exit', cardOpen: false, replyLanded: false })).toBe('fold')
+  })
+
+  it('settles a signalled end whose reply has not landed', () => {
+    expect(resolveTurnFold({ status: 'waiting_input', statusSource: 'turn-signal', cardOpen: false, replyLanded: false })).toBe('fold-after-settle')
+  })
+
+  it('treats a streamer that sends no statusSource as signalled', () => {
+    expect(resolveTurnFold({ status: 'waiting_input', cardOpen: false, replyLanded: false })).toBe('fold-after-settle')
+  })
+
+  it('does not fold on a guessed status', () => {
+    for (const statusSource of ['prompt-marker', 'screen-marker', 'timeout-fallback', 'quiet-fallback']) {
+      expect(resolveTurnFold({ status: 'waiting_input', statusSource, cardOpen: false, replyLanded: false })).toBe('open')
+    }
   })
 })

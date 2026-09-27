@@ -9,6 +9,7 @@ import { VirtualTerminal } from '@/services/virtual-terminal'
 import { dropGhostPromptLine } from '@/lib/terminalChrome'
 import type { ProviderName } from '@/constants/providers'
 import type { ParseConfidence } from '@/lib/renderConfidence'
+import type { TerminalPrompt } from '@/lib/splitTerminalView'
 
 export type TerminalLine = string
 
@@ -48,14 +49,27 @@ export function useTerminalStream(
   // Empty when the streamer is old (no user_message / replay.userMessages) →
   // the caller falls back to the `❯ <text>` heuristic.
   const [userMessageTexts, setUserMessageTexts] = useState<Set<string>>(() => new Set())
+  // The same prompts in submit order with their timestamps: the transcript /
+  // live-frame join anchors on the latest one (lib/splitTerminalView.ts). The
+  // Set above answers "is this row a prompt?"; this answers "which prompt
+  // opened the current turn?", which a Set cannot.
+  const [prompts, setPrompts] = useState<TerminalPrompt[]>([])
 
-  const addUserMessages = useCallback((texts: string[]) => {
-    const next = texts.map((t) => t.trim()).filter(Boolean)
+  const addUserMessages = useCallback((entries: TerminalPrompt[]) => {
+    const next = entries
+      .map((e) => ({ text: e.text.trim(), ts: e.ts }))
+      .filter((e) => e.text.length > 0)
     if (next.length === 0) return
     setUserMessageTexts((prev) => {
       const merged = new Set(prev)
-      for (const t of next) merged.add(t)
+      for (const e of next) merged.add(e.text)
       return merged.size === prev.size ? prev : merged
+    })
+    setPrompts((prev) => {
+      const seen = new Set(prev.map((p) => `${p.ts}\u0000${p.text}`))
+      const fresh = next.filter((e) => !seen.has(`${e.ts}\u0000${e.text}`))
+      if (fresh.length === 0) return prev
+      return [...prev, ...fresh].sort((a, b) => a.ts - b.ts)
     })
   }, [])
   const vtRef = useRef<VirtualTerminal | null>(null)
@@ -169,6 +183,7 @@ export function useTerminalStream(
       setParseConfidence('high')
       setHttpFallbackEnabled(false)
       setUserMessageTexts(new Set())
+      setPrompts([])
     })
   }, [serverId, sessionId])
 
@@ -232,7 +247,7 @@ export function useTerminalStream(
           clearTimeout(fallbackTimer)
           fallbackTimer = null
         }
-        if (msg.userMessages) addUserMessages(msg.userMessages.map((m) => m.text))
+        if (msg.userMessages) addUserMessages(msg.userMessages)
         feedHistory(msg.lines.join('\n'), msg.seq ?? 0)
       })
 
@@ -286,7 +301,7 @@ export function useTerminalStream(
       if (!client) return
       unsubUserMessage = client.on('user_message', (msg) => {
         if (msg.type !== 'user_message' || msg.sessionId !== sessionId) return
-        addUserMessages([msg.text])
+        addUserMessages([{ text: msg.text, ts: msg.ts }])
       })
     }
 
@@ -357,6 +372,7 @@ export function useTerminalStream(
     lines: visibleLines,
     isStreaming,
     userMessageTexts,
+    prompts,
     parseConfidence,
     isLoadingHistory: historyQuery.isPending && httpFallbackEnabled,
     clear,

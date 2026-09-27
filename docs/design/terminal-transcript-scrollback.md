@@ -1,7 +1,7 @@
 # Terminal scrollback from the transcript
 
-Status: proposed, not started.
-Date: 2026-09-25.
+Status: in progress on `feat/terminal-transcript-scrollback` — steps 1–5 of the work plan landed; the Maestro flow (step 6) is open.
+Date: 2026-09-25, updated 2026-09-27.
 
 ## Problem
 
@@ -172,12 +172,12 @@ Each one takes one capture.
 
 Mobile:
 
-1. `lib/splitTerminalView.ts` and its unit tests, with fixtures taken from real captures (see above).
-2. Feed `useConversationStream` + `mergeLiveMessages` into the terminal screen instead of the `SessionHistoryFeed` snapshot.
-3. A single list in `TerminalView`: transcript rows, then the live divider, then `TerminalOutput` rows. Remove `historyFull`.
-4. A compact terminal-styled transcript row, with a story (required for new components).
-5. Fold logic keyed on the turn signal, with the 2 s fallback.
-6. A Maestro flow using `e2e/mock-server.js`: a long turn with a scripted `2J 3J H` in the middle must keep the earlier turns visible.
+1. Done — `lib/splitTerminalView.ts` (`splitTerminalView`, `hasReplyInTranscript`, `resolveTurnFold`) and `__tests__/unit/lib/splitTerminalView.test.ts`. Fixtures are synthetic until the captures above exist.
+2. Done — `hooks/useTerminalTranscript.ts` merges `useConversation` + `useConversationStream` with `mergeLiveMessages`; `SessionHistoryFeed` is removed.
+3. Done — `TerminalOutput` renders one FlashList over transcript rows, a `live` divider and PTY rows; `TerminalView` keeps a one-line header (count + search, which opens the conversation screen's search).
+4. Done — `components/terminal/TranscriptRow.tsx` + story.
+5. Done — the fold lives in `useTerminalTranscript`; `Session.statusSource` is now read on the client.
+6. Open — a Maestro flow using `e2e/mock-server.js`: a long turn with a scripted `2J 3J H` in the middle must keep the earlier turns visible.
 
 Streamer: no change is required.
 Optional and additive: stamp `terminal_output` with a `clearEpoch` counter so the client can tell "since last clear" without parsing escapes.

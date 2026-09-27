@@ -94,3 +94,52 @@ export function splitTerminalView({
   const transcript = promptMessage === -1 ? messages : messages.slice(0, promptMessage)
   return { transcript, live: gridLines.slice(promptRow), anchor: 'prompt-row' }
 }
+
+/**
+ * Whether the transcript already holds the agent's reply to `prompt`: an
+ * assistant message after the JSONL copy of that prompt. False while the JSONL
+ * has not recorded the prompt itself, since nothing after it can exist yet.
+ */
+export function hasReplyInTranscript(messages: Message[], prompt: TerminalPrompt): boolean {
+  const text = prompt.text.trim()
+  const promptIndex = lastIndex(
+    messages,
+    (m) => m.role === 'user' && cliPromptText(messageText(m)).trim() === text,
+  )
+  if (promptIndex === -1) return false
+  return messages.slice(promptIndex + 1).some((m) => m.role === 'assistant')
+}
+
+export interface TurnFoldInput {
+  status: 'running' | 'waiting_input' | 'idle'
+  /** `Session.statusSource`; absent on a streamer too old to send it. */
+  statusSource?: string
+  /** A permission or question card is open. */
+  cardOpen: boolean
+  /** The transcript already shows the reply (`hasReplyInTranscript`). */
+  replyLanded: boolean
+}
+
+export type TurnFold = 'open' | 'fold' | 'fold-after-settle'
+
+/**
+ * What to do with the live region once the session reports a status.
+ *
+ * `running` and an open card keep it open. A reply already in the transcript
+ * folds it whatever the status said. Otherwise only a signalled end folds —
+ * after `TURN_FOLD_SETTLE_MS`, matching the streamer's own settle window —
+ * because a marker or timer status is a guess, and folding on a guess would
+ * hide the tail of a turn that is still running. A streamer that sends no
+ * `statusSource` is treated as signalled; otherwise nothing would ever fold.
+ * `idle` means the PTY is gone, which is the end of the turn however it ended.
+ */
+export function resolveTurnFold({ status, statusSource, cardOpen, replyLanded }: TurnFoldInput): TurnFold {
+  if (status === 'running' || cardOpen) return 'open'
+  if (replyLanded) return 'fold'
+  if (status === 'idle') return 'fold'
+  const signalled = statusSource == null || statusSource === 'turn-signal' || statusSource === 'process-exit'
+  return signalled ? 'fold-after-settle' : 'open'
+}
+
+/** Mirrors the streamer's `TURN_DONE_SETTLE_MS`. */
+export const TURN_FOLD_SETTLE_MS = 2000

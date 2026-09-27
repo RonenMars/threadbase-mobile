@@ -1,9 +1,13 @@
-import React, { useCallback, useState } from 'react'
-import { Alert, View, StyleSheet } from 'react-native'
+import React, { useCallback } from 'react'
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { MagnifyingGlass } from 'phosphor-react-native'
 import Reanimated from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
+import { useTerminalTranscript } from '@/hooks/useTerminalTranscript'
+import { useTheme } from '@/contexts/ThemeContext'
+import { font, spacing } from '@/constants/theme'
 import { usePromptSuggestion } from '@/hooks/usePromptSuggestion'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
@@ -12,7 +16,6 @@ import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
 import { useQuestionCancel } from '@/hooks/useQuestionCancel'
 import { isPromptPendingError } from '@/services/api-client'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
-import { SessionHistoryFeed } from '@/components/terminal/SessionHistoryFeed'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
@@ -29,7 +32,7 @@ interface Props {
   composerAccessory?: React.ReactNode
   /** Conversation that was resumed into this session — when set, disclose missing PTY scrollback. */
   resumedConversationId?: string | null
-  /** Conversation backing this session — seeds a history region above the live terminal tail. */
+  /** Conversation backing this session — its transcript is the terminal's scrollback. */
   conversationId?: string | null
 }
 
@@ -43,10 +46,11 @@ export function TerminalView({
   conversationId = null,
 }: Props) {
   const { t } = useTranslation('terminal')
+  const theme = useTheme()
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
   const { suggestion, chipSuggestion, dismiss: dismissSuggestion } = usePromptSuggestion(serverId, sessionId)
-  const { lines, isStreaming, userMessageTexts } = useTerminalStream(
+  const { lines, isStreaming, userMessageTexts, prompts } = useTerminalStream(
     serverId,
     sessionId,
     false,
@@ -75,14 +79,28 @@ export function TerminalView({
   const { cancelQuestion, cancelErrorMessage, cancelNoticeMessage } =
     useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
 
-  // Full-screen history reading mode (see SessionHistoryFeed) — owned here,
-  // not in SessionHistoryFeed itself, because entering it also has to hide
-  // this component's own TerminalOutput region below. Derived (not reset via
-  // an effect) against conversationId: without a conversationId,
-  // SessionHistoryFeed doesn't render at all, so honoring a stale `true`
-  // here would hide the terminal with no minimize control left to undo it.
-  const [historyFull, setHistoryFull] = useState(false)
-  const isHistoryFull = historyFull && conversationId != null
+  // Scrollback comes from the transcript, the PTY grid only covers the turn in
+  // progress: Claude Code wipes its own scrollback mid-turn, so the grid can
+  // never hold more than the current frame. Without a conversationId the grid
+  // is all there is, and `transcript` stays empty.
+  const { transcript, live, totalMessages, hasOlder, isFetchingOlder, fetchOlder } = useTerminalTranscript({
+    serverId,
+    sessionId,
+    conversationId,
+    gridLines: lines,
+    prompts,
+    cardOpen: activeQuestion != null,
+  })
+
+  const onSearchHistory = useCallback(() => {
+    if (!conversationId) return
+    router.push(
+      conversationHref(conversationId, serverId, undefined, {
+        fromSession: sessionId,
+        openSearch: true,
+      }),
+    )
+  }, [conversationId, router, serverId, sessionId])
 
   const onViewResumedConversation = useCallback(() => {
     if (!resumedConversationId) return
@@ -167,6 +185,8 @@ export function TerminalView({
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage ?? cancelErrorMessage
   const sendNoticeMessage = answerNoticeMessage ?? cancelNoticeMessage
+  // message_pagination.total, not what the byte-bounded seed has loaded.
+  const historyHeaderText = t('history.header', { count: totalMessages })
 
   // The prompt_pending refusal is server-side and applies to `{ input }` only;
   // `{ keys }` is deliberately not arbitrated there, because Escape and arrow
@@ -182,20 +202,28 @@ export function TerminalView({
 
   return (
     <Reanimated.View style={[styles.container, keyboardInset]}>
-      {conversationId ? (
-        <SessionHistoryFeed
-          serverId={serverId}
-          conversationId={conversationId}
-          isFull={isHistoryFull}
-          onToggleFull={() => setHistoryFull((full) => !full)}
-        />
+      {conversationId && totalMessages > 0 ? (
+        <View style={[styles.historyHeader, { borderBottomColor: theme.border }]} testID="session-history-header">
+          <Text style={[styles.historyLabel, { color: theme.text.secondary }]}>{historyHeaderText}</Text>
+          <Pressable
+            onPress={onSearchHistory}
+            accessibilityRole="button"
+            accessibilityLabel={t('history.searchLabel')}
+            testID="session-history-search-btn"
+            hitSlop={8}
+            style={styles.historySearch}
+          >
+            <MagnifyingGlass size={16} color={theme.text.secondary} />
+          </Pressable>
+        </View>
       ) : null}
-      {/* Wrapped (not conditionally rendered) so full-screen history hides the
-          terminal via style, not unmount — its live PTY stream and scroll
-          position must survive being hidden. See SessionHistoryFeed. */}
-      <View testID="terminal-output-region" style={isHistoryFull ? styles.terminalHidden : styles.terminalVisible}>
+      <View testID="terminal-output-region" style={styles.terminalVisible}>
         <TerminalOutput
-          lines={lines}
+          lines={conversationId ? live : lines}
+          transcript={transcript}
+          hasOlder={hasOlder}
+          isFetchingOlder={isFetchingOlder}
+          onLoadOlder={fetchOlder}
           isStreaming={isStreaming}
           userMessageTexts={userMessageTexts}
           onSendInput={(text) => sendInput.mutate(text)}
@@ -272,7 +300,20 @@ const styles = StyleSheet.create({
   terminalVisible: {
     flex: 1,
   },
-  terminalHidden: {
-    display: 'none',
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+  },
+  historyLabel: {
+    fontSize: font.xs,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+  },
+  historySearch: {
+    padding: spacing.xs,
   },
 })

@@ -24,7 +24,11 @@ import { isCodexTrustQuitOption, parseQuestionBlock, type QuestionBlock } from '
 import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
+import { TranscriptRow } from '@/components/terminal/TranscriptRow'
+import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
+import { messageItemType } from '@/utils/messageItemType'
+import type { Message } from '@/types/api'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
 function stripAnsi(str: string): string {
@@ -88,9 +92,24 @@ const LineRow = memo(function LineRow({ line, userMessageTexts }: LineRowProps) 
   )
 })
 
+// One list holds both sources so the reader scrolls one surface: transcript
+// messages (finished turns, from the JSONL), then a divider, then the PTY rows
+// of the turn in progress. See docs/design/terminal-transcript-scrollback.md.
+type Row =
+  | { kind: 'message'; message: Message }
+  | { kind: 'divider' }
+  | { kind: 'line'; line: TerminalLine }
+
 interface Props {
   lines: TerminalLine[]
   isStreaming: boolean
+  /** Finished turns from the conversation transcript, oldest first. Empty when the session has none. */
+  transcript?: Message[]
+  /** Older transcript pages remain above the first one loaded. */
+  hasOlder?: boolean
+  isFetchingOlder?: boolean
+  /** Fetch the next older transcript page (top-of-list reach). */
+  onLoadOlder?: () => void
   /** Ground-truth user-message texts from the stream; empty → heuristic fallback. */
   userMessageTexts?: Set<string>
   onSendInput?: (text: string) => void
@@ -129,6 +148,10 @@ interface Props {
 export function TerminalOutput({
   lines,
   isStreaming: _isStreaming,
+  transcript = [],
+  hasOlder = false,
+  isFetchingOlder = false,
+  onLoadOlder,
   userMessageTexts,
   onSendInput,
   onSendKeys,
@@ -151,7 +174,13 @@ export function TerminalOutput({
     () => collapseWrappedUserLines(lines, userMessageTexts),
     [lines, userMessageTexts],
   )
-  const listRef = useRef<FlashListRef<TerminalLine>>(null)
+  const rows = useMemo<Row[]>(() => {
+    const out: Row[] = transcript.map((message) => ({ kind: 'message', message }))
+    if (out.length > 0 && collapsedLines.length > 0) out.push({ kind: 'divider' })
+    for (const line of collapsedLines) out.push({ kind: 'line', line })
+    return out
+  }, [transcript, collapsedLines])
+  const listRef = useRef<FlashListRef<Row>>(null)
   // mVCP handles the "follow" decision itself; we only track scroll position
   // here to drive the jump-to-top / jump-to-bottom pill visibility. Plain
   // useState (not Reanimated shared values) because FlashList v2 calls
@@ -207,11 +236,11 @@ export function TerminalOutput({
   }, [])
 
   const handleContentSizeChange = useCallback(() => {
-    const hasLines = collapsedLines.length > 0
+    const hasLines = rows.length > 0
     const firstContent = hasLines && !hadLinesRef.current
     hadLinesRef.current = hasLines
     if (firstContent) stickToBottom()
-  }, [collapsedLines.length, stickToBottom])
+  }, [rows.length, stickToBottom])
 
   const handleContainerLayout = useCallback((e: LayoutChangeEvent) => {
     const height = e.nativeEvent.layout.height
@@ -221,23 +250,23 @@ export function TerminalOutput({
       prevHeight > 0 &&
       Math.abs(height - prevHeight) > 2 &&
       followingRef.current &&
-      collapsedLines.length > 0
+      rows.length > 0
     ) {
       stickToBottom()
     }
-  }, [collapsedLines.length, stickToBottom])
+  }, [rows.length, stickToBottom])
 
   useEffect(() => {
-    if (collapsedLines.length === 0) {
+    if (rows.length === 0) {
       hadLinesRef.current = false
       followingRef.current = true
     }
-  }, [collapsedLines.length])
+  }, [rows.length])
 
   useEffect(() => {
     const justUnlocked = prevDisabledRef.current && !disabled
     prevDisabledRef.current = disabled
-    if (!justUnlocked || collapsedLines.length === 0 || !followingRef.current) return
+    if (!justUnlocked || rows.length === 0 || !followingRef.current) return
     let cancelled = false
     queueMicrotask(() => {
       if (!cancelled) stickToBottom()
@@ -245,7 +274,7 @@ export function TerminalOutput({
     return () => {
       cancelled = true
     }
-  }, [disabled, collapsedLines.length, stickToBottom])
+  }, [disabled, rows.length, stickToBottom])
 
   const scrollToBottom = useCallback((animated: boolean) => {
     listRef.current?.scrollToEnd({ animated })
@@ -257,23 +286,51 @@ export function TerminalOutput({
     setShowJumpButton(0)
   }, [scrollToBottom])
 
-  const renderItem = useCallback(({ item }: { item: TerminalLine }) => {
-    return <LineRow line={item} userMessageTexts={userMessageTexts} />
-  }, [userMessageTexts])
+  const liveDividerLabel = tTerminal('transcript.live')
+  const renderItem = useCallback(({ item }: { item: Row }) => {
+    switch (item.kind) {
+      case 'message':
+        return (
+          <RenderErrorBoundary tag="transcript_row" rawFallback={item.message.role}>
+            <TranscriptRow message={item.message} />
+          </RenderErrorBoundary>
+        )
+      case 'divider':
+        return (
+          <View style={styles.divider} testID="terminal-live-divider">
+            <View style={styles.dividerRule} />
+            <Text style={styles.dividerLabel}>{liveDividerLabel}</Text>
+            <View style={styles.dividerRule} />
+          </View>
+        )
+      case 'line':
+        return <LineRow line={item.line} userMessageTexts={userMessageTexts} />
+    }
+  }, [liveDividerLabel, userMessageTexts])
 
-  // Stable keys by content + per-content occurrence. Positional keys broke
-  // memoisation: every WS frame's `.slice(-maxLines)` shifted indices, so
-  // FlatList unmounted and remounted every row instead of reusing them.
-  // Computed once per `lines` change so FlatList can call keyExtractor in any order.
+  // Stable keys: a message by id; a PTY row by content + per-content occurrence.
+  // Positional keys broke memoisation: every WS frame's `.slice(-maxLines)`
+  // shifted indices, so the list unmounted and remounted every row instead of
+  // reusing them. Computed once per `rows` change so keyExtractor can be
+  // called in any order.
   const keys = useMemo(() => {
     const counts = new Map<string, number>()
-    return collapsedLines.map((item) => {
-      const c = counts.get(item) ?? 0
-      counts.set(item, c + 1)
-      return `${item}#${c}`
+    return rows.map((row) => {
+      if (row.kind === 'message') return `m:${row.message.id}`
+      if (row.kind === 'divider') return 'divider'
+      const c = counts.get(row.line) ?? 0
+      counts.set(row.line, c + 1)
+      return `${row.line}#${c}`
     })
-  }, [collapsedLines])
-  const keyExtractor = useCallback((_item: TerminalLine, i: number) => keys[i], [keys])
+  }, [rows])
+  const keyExtractor = useCallback((_item: Row, i: number) => keys[i], [keys])
+  // Per-type recycling pools and height averages — a transcript message and a
+  // 18pt PTY row share nothing, and messageItemType splits the messages the
+  // way the chat list does (see utils/messageItemType.ts for why).
+  const getItemType = useCallback((item: Row) => {
+    if (item.kind === 'message') return `msg:${messageItemType(item.message)}`
+    return item.kind
+  }, [])
 
   const questionBlock = useMemo(() => {
     if (!onSendKeys) return null
@@ -316,6 +373,9 @@ export function TerminalOutput({
   }, [activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt])
 
   const listHeader = useMemo(() => {
+    if (transcript.length > 0) {
+      return <HistoryLoadBoundary hasOlder={hasOlder} isFetching={isFetchingOlder} />
+    }
     if (!onViewResumedConversation) return null
     const onSearch = onSearchResumedConversation ?? onViewResumedConversation
     const linkA11y = [
@@ -365,7 +425,7 @@ export function TerminalOutput({
         </Text>
       </View>
     )
-  }, [chrome, onSearchResumedConversation, onViewResumedConversation, tTerminal])
+  }, [chrome, hasOlder, isFetchingOlder, onSearchResumedConversation, onViewResumedConversation, tTerminal, transcript.length])
 
   return (
     <View style={styles.container} onLayout={handleContainerLayout} testID="terminal-output">
@@ -373,13 +433,19 @@ export function TerminalOutput({
         <FlashList
           ref={listRef}
           testID="terminal-output-list"
-          data={collapsedLines}
-          // Remount once the first PTY rows exist so startRenderingFromBottom
+          data={rows}
+          // Remount once the first rows exist so startRenderingFromBottom
           // measures against real content, not the empty waking list.
-          key={collapsedLines.length === 0 ? 'empty' : 'ready'}
+          key={rows.length === 0 ? 'empty' : 'ready'}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
+          getItemType={getItemType}
           ListHeaderComponent={listHeader}
+          onStartReached={onLoadOlder && hasOlder ? onLoadOlder : undefined}
+          onStartReachedThreshold={0.3}
+          // A transcript message can be far taller than the iOS default 250px
+          // draw distance; see SessionHistoryFeed's history (Shopify/flash-list#2136).
+          drawDistance={2000}
           onScroll={handleScroll}
           onLoad={stickToBottom}
           onContentSizeChange={handleContentSizeChange}
@@ -474,6 +540,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  dividerRule: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#30363d',
+  },
+  dividerLabel: {
+    color: '#8b949e',
+    fontSize: 10,
+    fontFamily: 'monospace',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   lineRow: {
     ...layoutDirectionStyle('ltr'),
