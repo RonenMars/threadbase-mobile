@@ -59,8 +59,7 @@
     "tierRecent": "RECENT",
     "tierOlder": "OLDER",
     "showOlder": "Show",
-    "hideOlder": "Hide",
-    "filterPlaceholder": "Filter projects or paths…"
+    "hideOlder": "Hide"
   },
   "loading": {
     "title": "Loading sessions",

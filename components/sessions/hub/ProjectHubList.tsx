@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { FlatList, View, Text, TextInput, SectionList, RefreshControl } from 'react-native'
-import { MagnifyingGlass } from 'phosphor-react-native'
+import { FlatList, View, Text, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -14,7 +13,7 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { conversationRowTitle, sessionRowTitle, storedNameFor } from '@/components/sessions/shared/rowTitle'
 import { useNavLockStore } from '@/stores/navLock'
 import { ProjectHubCard } from './ProjectHubCard'
-import { matchesProjectFilter, splitProjectTiers } from './projectTiers'
+import { splitProjectTiers } from './projectTiers'
 import { SectionEyebrow, type SectionTone } from '@/components/sessions/now/SectionEyebrow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
@@ -72,14 +71,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
-  const allGroups = useProjectGroups(sessions, summaries, sortBy, sortOrder)
-  // The path filter narrows cards by name or path; it is separate from the
-  // chrome's search, which goes to the server for conversations.
-  const [filterQuery, setFilterQuery] = useState('')
-  const groups = useMemo(
-    () => allGroups.filter((group) => matchesProjectFilter(group, filterQuery)),
-    [allGroups, filterQuery],
-  )
+  const groups = useProjectGroups(sessions, summaries, sortBy, sortOrder)
   // The OLDER tier stays collapsed until expanded; keyed per server so a
   // second machine's tail unfolds on its own.
   const [olderOpen, setOlderOpen] = useState<Set<string>>(() => new Set())
@@ -428,21 +420,6 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             // The header is full-bleed; undo the card gutter around it.
             <View style={{ marginHorizontal: -spacing.sm, paddingTop: spacing.xs }}>
               {ListHeaderComponent}
-              <View style={styles.filterField}>
-                <MagnifyingGlass size={14} color={theme.text.secondary} />
-                <TextInput
-                  testID="hub-project-filter"
-                  style={styles.filterInput}
-                  value={filterQuery}
-                  onChangeText={setFilterQuery}
-                  placeholder={t('hub.filterPlaceholder')}
-                  placeholderTextColor={theme.text.secondary}
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  clearButtonMode="while-editing"
-                  returnKeyType="search"
-                />
-              </View>
             </View>
           }
           refreshControl={
