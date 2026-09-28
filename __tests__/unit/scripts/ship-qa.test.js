@@ -21,7 +21,8 @@ const SCRIPT = path.resolve(__dirname, '../../../scripts/ship-qa.sh');
  * .env.signing* or ambient CI leaks in. A stub `npx` exits 42, so a run that gets
  * past every refusal stops at the first build step instead of building; it exits
  * 43 instead when EXPO_PUBLIC_SENTRY_DSN reached its environment. Its Firebase
- * group listing is `groups.json` from `files`, or one `qa` group with a tester.
+ * group listing is `groups.json` from `files`, or one `qa` group with a tester,
+ * and exits with the status in `groups.status` from `files`, or 0.
  */
 function run(args, vars = {}, files = {}) {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'ship-qa-'));
@@ -30,7 +31,7 @@ function run(args, vars = {}, files = {}) {
   fs.mkdirSync(bin);
   const npx = [
     '#!/bin/sh',
-    'case "$*" in *groups:list*) cat groups.json 2>/dev/null || echo \'{"result":{"groups":[{"name":"projects/1/groups/qa","testerCount":1}]}}\'; exit 0 ;; esac',
+    'case "$*" in *groups:list*) cat groups.json 2>/dev/null || echo \'{"result":{"groups":[{"name":"projects/1/groups/qa","testerCount":1}]}}\'; exit "$(cat groups.status 2>/dev/null || echo 0)" ;; esac',
     '[ -n "$EXPO_PUBLIC_SENTRY_DSN" ] && exit 43',
     'exit 42',
   ];
@@ -90,6 +91,16 @@ describe('ship-qa.sh', () => {
     const res = run(['--platform', 'ios'], { FIREBASE_APP_ID_IOS: 'app' }, { 'groups.json': groups });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain("group 'qa' is missing or has no testers");
+  });
+
+  // firebase-tools writes its error to stdout under --json, where the script
+  // captures it, so without an explicit echo the job log shows only the exit code.
+  it('prints the Firebase error when the group lookup fails', () => {
+    const error = JSON.stringify({ status: 'error', error: 'The caller does not have permission' });
+    const res = run(['--platform', 'ios'], { FIREBASE_APP_ID_IOS: 'app' }, { 'groups.json': error, 'groups.status': '1' });
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain('Firebase tester group lookup failed');
+    expect(res.stderr).toContain('The caller does not have permission');
   });
 
   it('requires the Android signing env before building', () => {
