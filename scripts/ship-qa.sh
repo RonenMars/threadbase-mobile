@@ -87,7 +87,13 @@ fi
 # Firebase reports a distribution to an empty group as a success and emails no
 # one, so check before spending a build on it. A zero count may come back absent.
 PROJECT_NUMBER="$(cut -d: -f2 <<<"$FIREBASE_APP_ID")"
-GROUPS_JSON="$(npx --yes firebase-tools@15 appdistribution:groups:list --project "$PROJECT_NUMBER" --json)"
+# Under --json, firebase-tools reports its error on stdout, which this captures;
+# without the echo a failure (bad credentials, missing IAM role) leaves only an exit code.
+GROUPS_JSON="$(npx --yes firebase-tools@15 appdistribution:groups:list --project "$PROJECT_NUMBER" --json)" || {
+  echo "Firebase tester group lookup failed for project $PROJECT_NUMBER:" >&2
+  echo "$GROUPS_JSON" >&2
+  exit 1
+}
 for alias in ${TESTER_GROUPS//,/ }; do
   count="$(jq -r --arg a "$alias" '.result.groups[] | select(.name | endswith("/groups/" + $a)) | .testerCount // 0' <<<"$GROUPS_JSON")"
   [[ "${count:-0}" -gt 0 ]] || { echo "Firebase group '$alias' is missing or has no testers — add them in App Distribution → Testers & Groups" >&2; exit 1; }
