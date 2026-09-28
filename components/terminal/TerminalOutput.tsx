@@ -444,7 +444,8 @@ export function TerminalOutput({
           onStartReached={onLoadOlder && hasOlder ? onLoadOlder : undefined}
           onStartReachedThreshold={0.3}
           // A transcript message can be far taller than the iOS default 250px
-          // draw distance; see SessionHistoryFeed's history (Shopify/flash-list#2136).
+          // draw distance, which puts mVCP corrections in the regime that
+          // teleports the viewport while scrolling up (Shopify/flash-list#2136).
           drawDistance={2000}
           onScroll={handleScroll}
           onLoad={stickToBottom}

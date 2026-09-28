@@ -2753,34 +2753,26 @@ async function buildConversationSearchView() {
   simpleSet(comps, sec, 'ConversationSearchView', 900, 'components/conversation/ConversationSearchView.tsx. <ConversationSearchView query messages onClose />.');
 }
 
-async function buildSessionHistoryFeed() {
-  if (findComp('SessionHistoryFeed')) return;
-  const sec = newSection('SessionHistoryFeed', 'components/terminal/SessionHistoryFeed.tsx — 1px bottom border; collapsed = header only, mini = 35% height, full = flex 1. Header 8×12, gap 8: "History · N messages" 11/600 +0.4 secondary; icon buttons padding 4, secondary: CaretDown bold 14 (collapsed); MagnifyingGlass 16, CaretUp bold 14, ArrowsOut 16 (mini); MagnifyingGlass, ArrowsIn (full). Active search: rgba(88,166,255,0.12), radius 8, primary icon. Search bar 8×16: bg-card input, radius 8, 1px border, 15.');
+// The mono font has no ⏺ (Claude Code's bullet), so these samples use ●.
+const TRANSCRIPT_ROWS = {
+  Prompt: [['❯ fix the flaky auth test', '#58a6ff', true]],
+  Reply: [['● The race was in token refresh: two requests could both', '#e6edf3'], ['  see an expired token and refresh twice.', '#e6edf3']],
+  ToolFolded: [['● Bash(npm test -- auth)', '#d2a8ff'], ['  ⎿  PASS tests/auth.test.ts (12 tests)', '#8b949e'], ['     PASS tests/session.test.ts (8 tests)', '#8b949e'], ['     PASS tests/refresh.test.ts (5 tests)', '#8b949e'], ['     … +9 lines', '#58a6ff']],
+  ToolError: [['● Bash(npm run build)', '#d2a8ff'], ['  ⎿  exit=1', '#ff7b72'], ['     error TS2345: Argument of type string…', '#ff7b72']],
+};
+async function buildTranscriptRow() {
+  if (findComp('TranscriptRow')) return;
+  const sec = newSection('TranscriptRow', 'components/terminal/TranscriptRow.tsx — hard-coded literals, drawn inside TerminalOutput\'s #0d1117 list. Row padding 2×8, LTR. Mono 12/18: text #e6edf3; user prompt "❯ " #58a6ff 600; tool call "● Name(argument)" #d2a8ff; tool result "  ⎿  " #8b949e, #ff7b72 when it errored; thinking "✻ first line" #8b949e. A result longer than 3 lines folds behind a "… +N lines" / "… hide" row in #58a6ff.');
   const comps = [];
-  for (const mode of ['Collapsed', 'Mini', 'Full']) {
-    const c = colComp('Mode=' + mode, 402, Object.assign({ clipsContent: true }, LINE_B)); c.fills = P('bg/primary'); c.strokes = P('border');
-    const head = AL('HORIZONTAL', 'header', { counterAxisAlignItems: 'CENTER', primaryAxisAlignItems: 'SPACE_BETWEEN', itemSpacing: 8, paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12 }); fill(c, head);
-    const lbl = await T('History · 148 messages', 'label/xs', 'text/secondary', { name: 'label' }); lbl.letterSpacing = { unit: 'PIXELS', value: 0.4 }; head.appendChild(lbl);
-    const tr = AL('HORIZONTAL', 'trailing', { itemSpacing: 8, counterAxisAlignItems: 'CENTER' }); head.appendChild(tr);
-    const btns = mode === 'Collapsed' ? [['CaretDown-bold', 14]] : mode === 'Mini' ? [['MagnifyingGlass', 16], ['CaretUp-bold', 14], ['ArrowsOut', 16]] : [['MagnifyingGlass', 16, true], ['ArrowsIn', 16]];
-    for (const [ic, s, on] of btns) {
-      const b = AL('HORIZONTAL', ic, { paddingTop: 4, paddingBottom: 4, paddingLeft: 4, paddingRight: 4, cornerRadius: 8 }); tr.appendChild(b);
-      if (on) b.fills = hex('#58a6ff', 0.12);
-      b.appendChild(icon(ic, s, on ? 'text/primary' : 'text/secondary'));
+  for (const state of Object.keys(TRANSCRIPT_ROWS)) {
+    const c = colComp('State=' + state, 402, { paddingTop: 2, paddingBottom: 2, paddingLeft: 8, paddingRight: 8 }); c.fills = hex('#0d1117');
+    for (const [text, color, bold] of TRANSCRIPT_ROWS[state]) {
+      const t = await T(text, 'mono/xs', hex(color), Object.assign({ name: 'text', fontSize: 12 }, lh(18))); wrapText(c, t);
+      if (bold) await monoBold(t);
     }
-    if (mode === 'Collapsed') { comps.push(c); continue; }
-    if (mode === 'Full') {
-      const sb = AL('HORIZONTAL', 'search bar', Object.assign({ paddingTop: 8, paddingBottom: 8, paddingLeft: 16, paddingRight: 16 }, LINE_B)); sb.strokes = P('border'); fill(c, sb);
-      const inp = AL('HORIZONTAL', 'input', { strokeWeight: 1, cornerRadius: 8, paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12 }); inp.fills = P('bg/card'); inp.strokes = P('border'); fill(sb, inp);
-      inp.appendChild(await T('refresh', 'body/base', 'text/primary', { name: 'value' }));
-      fill(c, inst('ConversationSearchView', 'State=Default'));
-    }
-    const list = AL('VERTICAL', 'messages', { itemSpacing: 8, paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12, clipsContent: true }); fill(c, list);
-    for (const r of ['Role=User', 'Role=Assistant', 'Role=AssistantCode']) fill(list, inst('MessageBubble', r));
-    c.primaryAxisSizingMode = 'FIXED'; c.resize(402, mode === 'Mini' ? 306 : 640); list.layoutGrow = 1;
     comps.push(c);
   }
-  simpleSet(comps, sec, 'SessionHistoryFeed', 1400, 'components/terminal/SessionHistoryFeed.tsx. <SessionHistoryFeed mode onModeChange messages />. The list header is HistoryLoadBoundary; an active search swaps the list for ConversationSearchView. The active search button uses a literal accent.');
+  simpleSet(comps, sec, 'TranscriptRow', 1400, 'components/terminal/TranscriptRow.tsx. <TranscriptRow message />. One transcript message in terminal style, above the live PTY rows. Fixed dark colors in every theme.');
 }
 
 // The mono font has no ⏺ (Claude Code's bullet), so the sample uses ●.
@@ -3604,7 +3596,7 @@ const CATALOG = [
   job('SlashCommandArgModal', buildSlashCommandArgModal, CATALOG_PAGES.conversation, 'Terminal'),
   job('TourOverlay', buildTourOverlay, CATALOG_PAGES.experience, 'Tour'),
   job('ConversationSearchView', buildConversationSearchView, CATALOG_PAGES.conversation, 'Conversation'),
-  job('SessionHistoryFeed', buildSessionHistoryFeed, CATALOG_PAGES.conversation, 'Terminal'),
+  job('TranscriptRow', buildTranscriptRow, CATALOG_PAGES.conversation, 'Terminal'),
   job('TerminalOutput', buildTerminalOutput, CATALOG_PAGES.conversation, 'Terminal'),
   job('RootErrorBoundary', buildRootErrorBoundary, CATALOG_PAGES.core, 'Errors'),
   job('RenderErrorBoundary', buildRenderErrorBoundary, CATALOG_PAGES.core, 'Errors'),
@@ -3719,7 +3711,7 @@ const CATALOG = [
   asset('SlashCommandArgModal', 'components/shared/SlashCommandArgModal.tsx'),
   asset('TourOverlay', 'components/tour/TourOverlay.tsx'),
   asset('ConversationSearchView', 'components/conversation/ConversationSearchView.tsx'),
-  asset('SessionHistoryFeed', 'components/terminal/SessionHistoryFeed.tsx'),
+  asset('TranscriptRow', 'components/terminal/TranscriptRow.tsx'),
   asset('TerminalOutput', 'components/terminal/TerminalOutput.tsx'),
   asset('RootErrorBoundary', 'components/RootErrorBoundary.tsx'),
   asset('RenderErrorBoundary', 'components/RenderErrorBoundary.tsx'),
