@@ -52,6 +52,10 @@ export type WSMessage =
       lines: string[]
       userMessages?: { text: string; ts: number }[]
       seq?: number
+      // Leading entries of `lines` drawn before the streamer's render terminal
+      // last cleared its screen (ESC[2J / ESC[3J); the rest is the current
+      // frame. Additive: absent on older streamers, which means 0.
+      archivedLineCount?: number
       // Geometry these lines were rendered at. Absent on a streamer that
       // predates it, which means the spawn defaults — what this client
       // assumed unconditionally before the field existed.

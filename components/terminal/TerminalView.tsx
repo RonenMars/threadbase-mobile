@@ -50,7 +50,7 @@ export function TerminalView({
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
   const { suggestion, chipSuggestion, dismiss: dismissSuggestion } = usePromptSuggestion(serverId, sessionId)
-  const { lines, isStreaming, userMessageTexts, prompts } = useTerminalStream(
+  const { lines, frameLines, isStreaming, userMessageTexts, prompts } = useTerminalStream(
     serverId,
     sessionId,
     false,
@@ -80,14 +80,15 @@ export function TerminalView({
     useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
 
   // Scrollback comes from the transcript, the PTY grid only covers the turn in
-  // progress: Claude Code wipes its own scrollback mid-turn, so the grid can
-  // never hold more than the current frame. Without a conversationId the grid
-  // is all there is, and `transcript` stays empty.
+  // progress: Claude Code wipes its own scrollback mid-turn, so the join works
+  // on the frame drawn since the last clear. Without a conversationId the
+  // stream's own kept history is all there is (`lines`), and `transcript`
+  // stays empty.
   const { transcript, live, totalMessages, hasOlder, isFetchingOlder, fetchOlder } = useTerminalTranscript({
     serverId,
     sessionId,
     conversationId,
-    gridLines: lines,
+    gridLines: frameLines,
     prompts,
     cardOpen: activeQuestion != null,
   })

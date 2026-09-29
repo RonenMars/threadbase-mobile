@@ -54,10 +54,13 @@ let mockRespondToQuestionState: { isError: boolean; error: Error | null } = {
 // PTY rows and the prompts the streamer submitted. Tests that open a turn set
 // both: the join anchors on the latest prompt's `❯` row.
 let mockLines: string[] = ['line one', 'line two']
+// Rows drawn since the last full clear; null means "same as mockLines".
+let mockFrameLines: string[] | null = null
 let mockPrompts: { text: string; ts: number }[] = []
 jest.mock('@/hooks/useTerminalStream', () => ({
   useTerminalStream: () => ({
     lines: mockLines,
+    frameLines: mockFrameLines ?? mockLines,
     isStreaming: false,
     userMessageTexts: new Set(mockPrompts.map((p) => p.text)),
     prompts: mockPrompts,
@@ -211,6 +214,7 @@ describe('TerminalView', () => {
     mockHistoryFetchNextPage.mockClear()
     mockHistoryFetchNewerPage.mockClear()
     mockLines = ['line one', 'line two']
+    mockFrameLines = null
     mockPrompts = []
     mockSession = undefined
     for (const key of Object.keys(wsHandlers)) delete wsHandlers[key]
@@ -283,6 +287,31 @@ describe('TerminalView', () => {
       mockLines = ['❯ now run the tests', '⏺ Still going.']
       await renderView({ conversationId: 'conv-1' })
       expect(screen.getAllByTestId('terminal-line-row').length).toBe(2)
+    })
+
+    // History a clear erased: kept by the stream in `lines`, absent from
+    // `frameLines`. It is the only history a transcript-less session has, and
+    // it must not reach the join, which would show it next to the transcript.
+    it('renders history kept across a clear when there is no transcript', async () => {
+      mockLines = ['before the clear', 'frame row']
+      mockFrameLines = ['frame row']
+      await renderView()
+      expect(screen.getByText('before the clear')).toBeTruthy()
+      expect(screen.getByText('frame row')).toBeTruthy()
+    })
+
+    it('joins the transcript against the frame only, so kept history does not repeat it', async () => {
+      mockHistoryMessages = [user('before the clear', 0), assistant('reply', 1)]
+      mockHistoryTotalMessages = 2
+      mockPrompts = [{ text: 'before the clear', ts: 1 }]
+      mockSession = { id: 'sess1', status: 'running' }
+      mockLines = ['❯ before the clear', 'reply', 'frame row']
+      mockFrameLines = ['frame row']
+      await renderView({ conversationId: 'conv-1' })
+      expect(screen.getAllByTestId('terminal-line-row')).toHaveLength(1)
+      expect(screen.getByText('frame row')).toBeTruthy()
+      expect(screen.queryByText('❯ before the clear', { exact: true })).toBeTruthy()
+      expect(screen.getAllByTestId('terminal-transcript-row')).toHaveLength(2)
     })
 
     it('shows no header when the conversation has no messages yet', async () => {

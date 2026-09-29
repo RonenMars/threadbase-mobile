@@ -86,7 +86,9 @@ describe('VirtualTerminal – VT100 emulation', () => {
     vt.feed('line1\nline2')
     vt.feed(`${CSI}2J`)
     vt.feed('fresh')
-    expect(vt.getLines()).toEqual(['fresh'])
+    // The screen holds only the new frame; the erased rows are kept as history.
+    expect(vt.getFrameLines()).toEqual(['fresh'])
+    expect(vt.getLines()).toEqual(['line1', 'line2', 'fresh'])
   })
 
   it('erase in display: clear to end (CSI 0J)', () => {
@@ -544,7 +546,13 @@ describe('VirtualTerminal – realistic Claude Code PTY data', () => {
     vt.feed('old stale content\nmore old content')
     vt.feed(`${CSI}2J${CSI}1;1H`)
     vt.feed('New session started\nWorking on task')
-    expect(vt.getLines()).toEqual(['New session started', 'Working on task'])
+    expect(vt.getFrameLines()).toEqual(['New session started', 'Working on task'])
+    expect(vt.getLines()).toEqual([
+      'old stale content',
+      'more old content',
+      'New session started',
+      'Working on task',
+    ])
   })
 
   it('handles status bar redraw cycle (cursor up, erase, rewrite)', () => {
@@ -613,9 +621,56 @@ describe('VirtualTerminal – realistic Claude Code PTY data', () => {
     vt.feed('Working on task 2\n')
     vt.feed('Done with task 2\n')
 
-    const lines = vt.getLines()
-    // Only second task visible after screen clear
-    expect(lines).toEqual(['Working on task 2', 'Done with task 2'])
+    // The frame is only the second task; the first survives as history.
+    expect(vt.getFrameLines()).toEqual(['Working on task 2', 'Done with task 2'])
+    expect(vt.getLines()).toEqual([
+      'Working on task 1',
+      'Done with task 1',
+      'Working on task 2',
+      'Done with task 2',
+    ])
+  })
+
+  // Claude Code's full reset, as its renderer writes it. The 3J straight after
+  // the 2J must not archive anything a second time.
+  it('keeps history through Claude Code\'s ESC[2J ESC[3J ESC[H reset, once', () => {
+    const vt = new VirtualTerminal()
+    vt.feed('turn one\nturn two\n')
+    vt.feed(`${CSI}2J${CSI}3J${CSI}H`)
+    vt.feed('frame row')
+    expect(vt.getLines()).toEqual(['turn one', 'turn two', 'frame row'])
+    expect(vt.getFrameLines()).toEqual(['frame row'])
+
+    vt.feed(`${CSI}2J${CSI}3J${CSI}H`)
+    vt.feed('next frame')
+    expect(vt.getLines()).toEqual(['turn one', 'turn two', 'frame row', 'next frame'])
+    expect(vt.getFrameLines()).toEqual(['next frame'])
+  })
+
+  it('addresses rows against the new screen after a clear, never into kept history', () => {
+    const vt = new VirtualTerminal()
+    vt.feed('kept\n')
+    vt.feed(`${CSI}2J${CSI}3J${CSI}H`)
+    vt.feed(`top${CSI}5;1Hfifth`)
+    vt.feed(`${CSI}1;1HTOP`)
+    expect(vt.getLines()).toEqual(['kept', 'TOP', 'fifth'])
+  })
+
+  it('seeds kept history from a replay and puts it ahead of the screen', () => {
+    const vt = new VirtualTerminal()
+    vt.seedArchive(['from the server   ', 'second'])
+    vt.feed('screen')
+    expect(vt.getLines()).toEqual(['from the server', 'second', 'screen'])
+    expect(vt.getFrameLines()).toEqual(['screen'])
+  })
+
+  it('drops kept history on reset', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`old${CSI}2J${CSI}H`)
+    vt.feed('new')
+    vt.reset()
+    vt.feed('after reset')
+    expect(vt.getLines()).toEqual(['after reset'])
   })
 
   it('handles \r\n line endings (Windows-style)', () => {

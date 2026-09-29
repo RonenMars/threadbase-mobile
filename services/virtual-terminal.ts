@@ -42,6 +42,10 @@ const HANDLED_CSI = new Set(['A', 'B', 'C', 'D', 'G', 'H', 'f', 'J', 'K', 'L', '
 // — box-drawing/block glyphs and whitespace only, nothing else.
 const BOX_BORDER_RE = /^[\s─-╿▀-▟]+$/
 
+function isVisibleRow(line: string): boolean {
+  return line.length > 0 && !BOX_BORDER_RE.test(line)
+}
+
 export class VirtualTerminal {
   private grid: string[][] = [[]]
   private row = 0
@@ -69,6 +73,16 @@ export class VirtualTerminal {
   private viewportTop(): number {
     return Math.max(0, this.grid.length - this.viewportRows)
   }
+
+  /**
+   * Rows a full clear (`ESC[2J` / `ESC[3J`) erased, oldest first, as rendered
+   * text. Claude Code clears its scrollback mid-turn and repaints only the
+   * current frame, so without these a session with no transcript to fall back
+   * on lost everything above one screen. Kept outside `grid` on purpose: the
+   * grid's row addressing derives its origin from `grid.length`, and history
+   * that no escape sequence can ever address has no business in it.
+   */
+  private archived: string[] = []
 
   /** Incomplete escape sequence retained across WebSocket frame boundaries. */
   private pendingEscape = ''
@@ -134,15 +148,23 @@ export class VirtualTerminal {
   }
 
   /**
+   * Seed the rows a server kept from before its last full clear
+   * (`terminal_replay.archivedLineCount`). Call after `reset()` and before
+   * feeding the screen that followed them.
+   */
+  seedArchive(lines: string[]): void {
+    this.archived = lines.map((line) => line.trimEnd()).slice(-MAX_ROWS)
+  }
+
+  /**
    * Unfiltered visible lines (empty rows and box-drawing border rows
-   * dropped). Used for raw fallback UI. Only whole border rows (e.g. the
+   * dropped): the rows kept from before the last full clear, then the screen
+   * since. Used for raw fallback UI. Only whole border rows (e.g. the
    * status-bar box drawn by Claude Code's TUI) are dropped — a content line
    * that merely contains a box-drawing glyph is kept as-is.
    */
   getRawLines(): string[] {
-    return this.grid
-      .map((chars) => chars.join('').trimEnd())
-      .filter((line) => line.length > 0 && !BOX_BORDER_RE.test(line))
+    return [...this.archived, ...this.gridRows()].filter(isVisibleRow)
   }
 
   /**
@@ -151,6 +173,33 @@ export class VirtualTerminal {
    */
   getLines(): string[] {
     return this.getRawLines().filter((line) => keepTranscriptLine(line, this.chromeFilter))
+  }
+
+  /** `getRawLines` without the kept history: only what was drawn since the last full clear. */
+  getFrameRawLines(): string[] {
+    return this.gridRows().filter(isVisibleRow)
+  }
+
+  /**
+   * `getLines` without the kept history. The transcript/live-frame join needs
+   * exactly this: the rows the agent is painting now, with nothing the
+   * transcript already holds (lib/splitTerminalView.ts).
+   */
+  getFrameLines(): string[] {
+    return this.getFrameRawLines().filter((line) => keepTranscriptLine(line, this.chromeFilter))
+  }
+
+  private gridRows(): string[] {
+    return this.grid.map((chars) => chars.join('').trimEnd())
+  }
+
+  /** Move the grid's rendered rows into `archived`, ahead of a full clear. */
+  private archiveGrid(): void {
+    const rows = this.gridRows()
+    while (rows.length > 0 && rows[rows.length - 1] === '') rows.pop()
+    if (rows.length === 0) return
+    this.archived.push(...rows)
+    if (this.archived.length > MAX_ROWS) this.archived = this.archived.slice(-MAX_ROWS)
   }
 
   getParseConfidence(): ParseConfidence {
@@ -175,6 +224,7 @@ export class VirtualTerminal {
 
   /** Reset terminal state. */
   reset(): void {
+    this.archived = []
     this.grid = [[]]
     this.row = 0
     this.col = 0
@@ -307,6 +357,9 @@ export class VirtualTerminal {
         break
       case 'J':
         if (n === 2 || n === 3) {
+          // Keep what is about to be erased. `2J 3J` back to back archive once:
+          // the second finds an empty grid.
+          this.archiveGrid()
           this.grid = [[]]
           this.row = 0
           this.col = 0

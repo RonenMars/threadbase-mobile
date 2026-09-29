@@ -42,6 +42,9 @@ export function useTerminalStream(
 ) {
   const maxLines = useSettingsStore((s) => s.terminalMaxLines)
   const [lines, setLines] = useState<TerminalLine[]>([])
+  // Only the rows drawn since the last full clear — what the transcript join
+  // splits on. `lines` also carries the history kept from before the clears.
+  const [frameLines, setFrameLines] = useState<TerminalLine[]>([])
   const [parseConfidence, setParseConfidence] = useState<ParseConfidence>('high')
   const [isStreaming, setIsStreaming] = useState(false)
   // Ground-truth set of texts the streamer wrote to the PTY, normalized (trim).
@@ -118,8 +121,9 @@ export function useTerminalStream(
     setParseConfidence(confidence)
     // Low parse confidence → raw lines so we never present chrome-filtered
     // output as if normalization were authoritative.
-    const visible = confidence === 'low' ? vt.getRawLines() : vt.getLines()
-    setLines(visible)
+    const raw = confidence === 'low'
+    setLines(raw ? vt.getRawLines() : vt.getLines())
+    setFrameLines(raw ? vt.getFrameRawLines() : vt.getFrameLines())
   }
 
   const historyQuery = useQuery({
@@ -140,13 +144,15 @@ export function useTerminalStream(
     meta: { persist: false },
   })
 
-  function feedHistory(raw: string, baselineSeq = 0) {
+  function feedHistory(raw: string, baselineSeq = 0, archived: string[] = []) {
     if (historyFedRef.current) return
     historyFedRef.current = true
     lastSeqRef.current = baselineSeq
     vtRef.current!.reset()
     vtRef.current!.setProvider(provider)
+    vtRef.current!.seedArchive(archived)
     setLines([])
+    setFrameLines([])
     vtRef.current!.feed(raw)
     publishLines()
   }
@@ -180,6 +186,7 @@ export function useTerminalStream(
     lastSeqRef.current = 0
     queueMicrotask(() => {
       setLines([])
+      setFrameLines([])
       setParseConfidence('high')
       setHttpFallbackEnabled(false)
       setUserMessageTexts(new Set())
@@ -248,7 +255,16 @@ export function useTerminalStream(
           fallbackTimer = null
         }
         if (msg.userMessages) addUserMessages(msg.userMessages)
-        feedHistory(msg.lines.join('\n'), msg.seq ?? 0)
+        // Rows the streamer kept from before its render terminal's last full
+        // clear come first. They are history, not screen: feeding them as
+        // screen would put them in the live frame, where the transcript join
+        // would show them a second time. Absent on older streamers → none.
+        const archivedCount = Math.min(Math.max(msg.archivedLineCount ?? 0, 0), msg.lines.length)
+        feedHistory(
+          msg.lines.slice(archivedCount).join('\n'),
+          msg.seq ?? 0,
+          msg.lines.slice(0, archivedCount),
+        )
       })
 
       // Start fallback timer — if no terminal_replay within 2s, fall back to HTTP
@@ -360,6 +376,7 @@ export function useTerminalStream(
   const clear = useCallback(() => {
     vtRef.current!.reset()
     setLines([])
+    setFrameLines([])
     setParseConfidence('high')
   }, [])
 
@@ -367,9 +384,14 @@ export function useTerminalStream(
     () => dropGhostPromptLine(lines, promptSuggestion),
     [lines, promptSuggestion],
   )
+  const visibleFrameLines = useMemo(
+    () => dropGhostPromptLine(frameLines, promptSuggestion),
+    [frameLines, promptSuggestion],
+  )
 
   return {
     lines: visibleLines,
+    frameLines: visibleFrameLines,
     isStreaming,
     userMessageTexts,
     prompts,
