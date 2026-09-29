@@ -17,9 +17,9 @@
 #
 # Requires:
 #   FIREBASE_APP_ID_IOS / FIREBASE_APP_ID_ANDROID   Firebase console → Project settings
-#   GOOGLE_APPLICATION_CREDENTIALS                 service account with the Firebase
-#                                                  App Distribution Admin role, or a
-#                                                  prior `npx firebase-tools login`
+#   FIREBASE_ACCESS_TOKEN                        short-lived Google OAuth access token with
+#                                                 Firebase App Distribution Admin permissions;
+#                                                 locally, gcloud ADC is used as a fallback
 #   EXPO_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN/ORG/PROJECT (shell, .env, or .env.signing*)
 #   iOS:     an installed Ad Hoc profile per target (app + widgets) granting App Groups
 #   Android: .env.signing.android (the Play upload key)
@@ -97,18 +97,35 @@ else
 fi
 [[ -n "$FIREBASE_APP_ID" ]] || { echo "$APP_ID_VAR is not set (Firebase console → Project settings → Your apps)" >&2; exit 1; }
 
+# App Distribution's Firebase CLI auth path is unreliable with GitHub WIF ADC,
+# so CI passes a short-lived OAuth access token from google-github-actions/auth.
+# Local runs may fall back to gcloud ADC.
+PROJECT_NUMBER="$(cut -d: -f2 <<<"$FIREBASE_APP_ID")"
+FIREBASE_TOKEN="${FIREBASE_ACCESS_TOKEN:-}"
+if [[ -z "$FIREBASE_TOKEN" ]] && command -v gcloud >/dev/null 2>&1; then
+  FIREBASE_TOKEN="$(gcloud auth application-default print-access-token 2>/dev/null || true)"
+fi
+[[ -n "$FIREBASE_TOKEN" ]] || {
+  echo "FIREBASE_ACCESS_TOKEN is not set and no gcloud ADC access token is available" >&2
+  exit 1
+}
+
+FIREBASE_API="https://firebaseappdistribution.googleapis.com"
+FIREBASE_CURL_HEADERS=(
+  -H "Authorization: Bearer $FIREBASE_TOKEN"
+  -H "X-Goog-User-Project: ${GOOGLE_CLOUD_QUOTA_PROJECT:-$PROJECT_NUMBER}"
+)
+
 # Firebase reports a distribution to an empty group as a success and emails no
 # one, so check before spending a build on it. A zero count may come back absent.
-PROJECT_NUMBER="$(cut -d: -f2 <<<"$FIREBASE_APP_ID")"
-# Under --json, firebase-tools reports its error on stdout, which this captures;
-# without the echo a failure (bad credentials, missing IAM role) leaves only an exit code.
-GROUPS_JSON="$(npx --yes firebase-tools@15.22.1 appdistribution:groups:list --project "$PROJECT_NUMBER" --json)" || {
-  echo "Firebase tester group lookup failed for project $PROJECT_NUMBER:" >&2
-  echo "$GROUPS_JSON" >&2
+GROUPS_JSON="$(curl --fail-with-body --silent --show-error \
+  "${FIREBASE_CURL_HEADERS[@]}" \
+  "$FIREBASE_API/v1/projects/$PROJECT_NUMBER/groups")" || {
+  echo "Firebase tester group lookup failed for project $PROJECT_NUMBER" >&2
   exit 1
 }
 for alias in ${TESTER_GROUPS//,/ }; do
-  count="$(jq -r --arg a "$alias" '.result.groups[] | select(.name | endswith("/groups/" + $a)) | .testerCount // 0' <<<"$GROUPS_JSON")"
+  count="$(jq -r --arg a "$alias" '.groups[]? | select(.name | endswith("/groups/" + $a)) | .testerCount // 0' <<<"$GROUPS_JSON")"
   [[ "${count:-0}" -gt 0 ]] || { echo "Firebase group '$alias' is missing or has no testers — add them in App Distribution → Testers & Groups" >&2; exit 1; }
 done
 
@@ -237,10 +254,61 @@ fi
 
 echo "▸ Uploading $ARTIFACT to Firebase App Distribution (groups: $TESTER_GROUPS)"
 NOTES="${RELEASE_NOTES:-QA build $(git rev-parse --short HEAD) — enforced diagnostics}"
-npx --yes firebase-tools@15.22.1 appdistribution:distribute "$ARTIFACT" \
-  --app "$FIREBASE_APP_ID" \
-  --groups "$TESTER_GROUPS" \
-  --release-notes "$NOTES"
+APP_RESOURCE="projects/$PROJECT_NUMBER/apps/$FIREBASE_APP_ID"
+
+UPLOAD_JSON="$(curl --fail-with-body --silent --show-error \
+  -X POST \
+  "${FIREBASE_CURL_HEADERS[@]}" \
+  -H "Content-Type: application/octet-stream" \
+  -H "X-Goog-Upload-Protocol: raw" \
+  -H "X-Goog-Upload-File-Name: $(basename "$ARTIFACT")" \
+  --data-binary "@$ARTIFACT" \
+  "$FIREBASE_API/upload/v1/$APP_RESOURCE/releases:upload")"
+OPERATION_NAME="$(jq -er '.name' <<<"$UPLOAD_JSON")"
+
+OPERATION_JSON="$UPLOAD_JSON"
+for _ in {1..60}; do
+  if [[ "$(jq -r '.done // false' <<<"$OPERATION_JSON")" == "true" ]]; then
+    break
+  fi
+  sleep 5
+  OPERATION_JSON="$(curl --fail-with-body --silent --show-error \
+    "${FIREBASE_CURL_HEADERS[@]}" \
+    "$FIREBASE_API/v1/$OPERATION_NAME")"
+done
+
+if [[ "$(jq -r '.done // false' <<<"$OPERATION_JSON")" != "true" ]]; then
+  echo "Firebase upload did not finish within 5 minutes" >&2
+  exit 1
+fi
+if jq -e '.error' >/dev/null <<<"$OPERATION_JSON"; then
+  echo "Firebase upload failed:" >&2
+  jq '.error' <<<"$OPERATION_JSON" >&2
+  exit 1
+fi
+
+RELEASE_NAME="$(jq -er '.response.release.name' <<<"$OPERATION_JSON")"
+
+if [[ -n "$NOTES" ]]; then
+  RELEASE_PATCH="$(jq -n --arg name "$RELEASE_NAME" --arg text "$NOTES" \
+    '{name: $name, releaseNotes: {text: $text}}')"
+  curl --fail-with-body --silent --show-error \
+    -X PATCH \
+    "${FIREBASE_CURL_HEADERS[@]}" \
+    -H "Content-Type: application/json" \
+    --data "$RELEASE_PATCH" \
+    "$FIREBASE_API/v1/$RELEASE_NAME?updateMask=release_notes.text" >/dev/null
+fi
+
+GROUP_ALIASES="$(jq -cn --arg groups "$TESTER_GROUPS" \
+  '$groups | gsub(","; " ") | split(" ") | map(select(length > 0))')"
+DISTRIBUTE_BODY="$(jq -cn --argjson groups "$GROUP_ALIASES" '{groupAliases: $groups}')"
+curl --fail-with-body --silent --show-error \
+  -X POST \
+  "${FIREBASE_CURL_HEADERS[@]}" \
+  -H "Content-Type: application/json" \
+  --data "$DISTRIBUTE_BODY" \
+  "$FIREBASE_API/v1/$RELEASE_NAME:distribute" >/dev/null
 
 echo
 echo "✅ QA build distributed. Testers see the enforced launch notice (\"I agree\" only); events land in Sentry as \`testing\`."
