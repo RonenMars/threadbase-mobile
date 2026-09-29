@@ -102,7 +102,7 @@ fi
 PROJECT_NUMBER="$(cut -d: -f2 <<<"$FIREBASE_APP_ID")"
 # Under --json, firebase-tools reports its error on stdout, which this captures;
 # without the echo a failure (bad credentials, missing IAM role) leaves only an exit code.
-GROUPS_JSON="$(npx --yes firebase-tools@15 appdistribution:groups:list --project "$PROJECT_NUMBER" --json)" || {
+GROUPS_JSON="$(npx --yes firebase-tools@15.22.1 appdistribution:groups:list --project "$PROJECT_NUMBER" --json)" || {
   echo "Firebase tester group lookup failed for project $PROJECT_NUMBER:" >&2
   echo "$GROUPS_JSON" >&2
   exit 1
@@ -237,7 +237,7 @@ fi
 
 echo "▸ Uploading $ARTIFACT to Firebase App Distribution (groups: $TESTER_GROUPS)"
 NOTES="${RELEASE_NOTES:-QA build $(git rev-parse --short HEAD) — enforced diagnostics}"
-npx --yes firebase-tools@15 appdistribution:distribute "$ARTIFACT" \
+npx --yes firebase-tools@15.22.1 appdistribution:distribute "$ARTIFACT" \
   --app "$FIREBASE_APP_ID" \
   --groups "$TESTER_GROUPS" \
   --release-notes "$NOTES"
