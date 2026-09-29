@@ -48,6 +48,9 @@ permissions:
   contents: read
   id-token: write
 
+env:
+  GOOGLE_CLOUD_QUOTA_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+
 jobs:
   qa-ios:
     name: QA iOS
