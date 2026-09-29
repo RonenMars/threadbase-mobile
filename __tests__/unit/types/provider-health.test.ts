@@ -70,7 +70,15 @@ describe('parseProvidersResponse', () => {
     )
   })
 
-  it('rejects unknown provider names', () => {
+  it('retains Copilot capability and health data', () => {
+    const parsed = parseProvidersResponse({providers: [{...valid.providers[0], name: 'copilot', capabilities: {
+      freshSessionId: 'explicit', resume: 'native', systemPrompt: 'unsupported',
+      structuredQuestions: false, permissionGates: false, liveControl: true,
+    }}]})
+    expect(findProviderHealth(parsed?.providers, 'copilot')?.capabilities.systemPrompt).toBe('unsupported')
+  })
+
+  it('rejects unknown provider names' , () => {
     const parsed = parseProvidersResponse({
       providers: [{ ...valid.providers[0], name: 'mystery-cli' }],
     })
