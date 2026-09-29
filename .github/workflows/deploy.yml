@@ -85,9 +85,6 @@ jobs:
           # persist-credentials lets us push the version-bump branch
           persist-credentials: true
 
-      - name: Record build commit
-        run: echo "EXPO_PUBLIC_GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -167,7 +164,6 @@ jobs:
       - name: Ship iOS
         env:
           IOS_TARGET: ${{ inputs.target }}
-          EXPO_PUBLIC_BUILD_CHANNEL: ${{ inputs.target == 'testflight' && 'Pre-Release' || '' }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
           IOS_WIDGET_PROVISION_PROFILE_UUID: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_UUID }}
@@ -344,9 +340,6 @@ jobs:
           ref: ${{ inputs.deploy_ref }}
           persist-credentials: true
 
-      - name: Record build commit
-        run: echo "EXPO_PUBLIC_GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -423,7 +416,6 @@ jobs:
       - name: Ship Android
         env:
           ANDROID_TRACK: ${{ inputs.android_track }}
-          EXPO_PUBLIC_BUILD_CHANNEL: ${{ (inputs.android_track == 'alpha' || inputs.android_track == 'beta') && 'Pre-Release' || '' }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
