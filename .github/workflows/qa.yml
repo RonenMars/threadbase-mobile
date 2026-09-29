@@ -119,6 +119,8 @@ jobs:
           TESTER_GROUPS: ${{ inputs.groups }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           FIREBASE_APP_ID_IOS: ${{ vars.FIREBASE_APP_ID_IOS }}
+          EXPO_PUBLIC_BUILD_CHANNEL: QA
+          EXPO_PUBLIC_GIT_SHA: ${{ github.sha }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
@@ -176,6 +178,8 @@ jobs:
           TESTER_GROUPS: ${{ inputs.groups }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           FIREBASE_APP_ID_ANDROID: ${{ vars.FIREBASE_APP_ID_ANDROID }}
+          EXPO_PUBLIC_BUILD_CHANNEL: QA
+          EXPO_PUBLIC_GIT_SHA: ${{ github.sha }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
