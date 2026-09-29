@@ -292,11 +292,12 @@ describe('Settings – about section', () => {
   it.each([
     ['QA', 'QA · 67b3502'],
     ['Pre-Release', 'Pre-Release · 67b3502'],
+    ['QA', 'QA · 67b3502-dirty'],
   ])('shows %s and the short commit SHA for non-production builds', async (channel, expected) => {
     const previousChannel = process.env.EXPO_PUBLIC_BUILD_CHANNEL
     const previousSha = process.env.EXPO_PUBLIC_GIT_SHA
     process.env.EXPO_PUBLIC_BUILD_CHANNEL = channel
-    process.env.EXPO_PUBLIC_GIT_SHA = '67b3502f7d558eb6052e9fc1b3d16cd26f20e5df'
+    process.env.EXPO_PUBLIC_GIT_SHA = expected.endsWith('-dirty') ? '67b3502-dirty' : '67b3502'
 
     try {
       const { getByText, queryByText } = await renderWithTheme(<SettingsScreen />)
