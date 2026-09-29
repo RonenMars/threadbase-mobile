@@ -73,6 +73,14 @@ export interface Session {
    */
   promptSuggestion?: string | null
   /**
+   * How the streamer derived `status`. `'turn-signal'` is the one value that
+   * means the agent itself said its turn ended; every other value (a prompt
+   * marker, a fallback timer, …) is the streamer's guess. Kept as a plain
+   * string: the vocabulary is the server's and can grow. Additive; older
+   * servers omit it.
+   */
+  statusSource?: string
+  /**
    * ISO timestamp of the last `status` change, stamped by every runner. While
    * `status` is `waiting_input` this is when the wait began. Additive; older
    * servers omit it.

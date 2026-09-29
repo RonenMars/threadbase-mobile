@@ -106,6 +106,7 @@ Runs a suite of tests against a local mock server on port 7071/7072. Tests inclu
 - `e2e/browse.yaml`
 - `e2e/bug6_bottom_bar_inset.yaml`
 - `e2e/pty_turn_divider.yaml`
+- `e2e/terminal_scrollback_clear.yaml` — earlier turns survive Claude Code's `ESC[2J ESC[3J` mid-turn; the mock replays, then clears over the socket
 - `e2e/feat1_tree_drill_new_session.yaml`
 - `e2e/feat2_export_in_info_shelf.yaml`
 - `e2e/voice_dictation.yaml`

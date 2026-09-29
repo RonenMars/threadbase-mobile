@@ -74,8 +74,10 @@ const { __wsTest } = jest.requireMock('@/services/ws-client') as {
 jest.mock('@/hooks/useTerminalStream', () => ({
   useTerminalStream: () => ({
     lines: [],
+    frameLines: [],
     isStreaming: false,
     userMessageTexts: new Set<string>(),
+    prompts: [],
     parseConfidence: 'high',
     isLoadingHistory: false,
     clear: jest.fn(),
@@ -93,6 +95,29 @@ const mockSendKeys = jest.fn()
 const mockRawKey = jest.fn()
 // sendRawKey is a real mutation around the stand-in, because the cancel path
 // reads its settled error during render to pick between notice and error.
+// The transcript hooks behind TerminalView's scrollback. Mocked the way the
+// other data hooks here are: this seam is about the card and the answer route,
+// and the real hooks would otherwise open queries against no server.
+jest.mock('@/hooks/useConversations', () => ({
+  useConversation: () => ({
+    data: undefined,
+    fetchNextPage: jest.fn(),
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    fetchNewerPage: jest.fn(),
+    hasNewerPage: false,
+    isFetchingNewerPage: false,
+    totalMessages: 0,
+  }),
+}))
+jest.mock('@/hooks/useConversationStream', () => ({
+  useConversationStream: () => ({ liveMessages: [] }),
+}))
+jest.mock('@/hooks/useSession', () => ({
+  ...jest.requireActual('@/hooks/useSession'),
+  useSessionDetail: () => ({ data: undefined, isLoading: false }),
+}))
+
 jest.mock('@/hooks/useSessionActions', () => {
   const { useMutation } = jest.requireActual<typeof import('@tanstack/react-query')>('@tanstack/react-query')
   return {
@@ -107,7 +132,6 @@ jest.mock('@/hooks/useSessionActions', () => {
   }
 })
 
-jest.mock('@/components/terminal/SessionHistoryFeed', () => ({ SessionHistoryFeed: () => null }))
 jest.mock('@/components/shared/SlashCommandBoard', () => ({ SlashCommandBoard: () => null }))
 jest.mock('@/components/shared/SlashCommandArgModal', () => ({ SlashCommandArgModal: () => null }))
 

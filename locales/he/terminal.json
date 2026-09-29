@@ -133,9 +133,13 @@
     "header_one": "היסטוריה · הודעה אחת",
     "header_two": "היסטוריה · שתי הודעות",
     "header_other": "היסטוריה · {{count}} הודעות",
-    "expandLabel": "הרחב היסטוריית שיחה",
-    "collapseLabel": "כווץ היסטוריית שיחה",
-    "maximizeLabel": "הגדל למסך מלא את היסטוריית השיחה",
-    "minimizeLabel": "צמצם ממסך מלא את היסטוריית השיחה"
+    "searchLabel": "חיפוש בהיסטוריית השיחה"
+  },
+  "transcript": {
+    "live": "חי",
+    "moreLines_one": "+שורה אחת",
+    "moreLines_two": "+שתי שורות",
+    "moreLines_other": "+{{count}} שורות",
+    "hideLines": "הסתר"
   }
 }

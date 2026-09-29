@@ -1,0 +1,57 @@
+# Maestro E2E — terminal scrollback survives Claude Code's screen clear
+#
+# Claude Code wipes its scrollback (ESC[2J ESC[3J ESC[H) mid-turn and repaints
+# only the current frame, so a terminal built from the PTY alone loses every
+# earlier turn. The terminal view builds its scrollback from the conversation
+# transcript instead; this flow proves the earlier turns stay on screen
+# through a clear. See docs/design/terminal-transcript-scrollback.md.
+#
+# The mock (e2e/mock-server.js, "terminal-scrollback scenario") answers the
+# subscribe with a replay that still holds the prompt row, then ~2.5 s later
+# sends the clear plus a repainted frame without it. Three assertions:
+#   1. before the clear: transcript rows + the replayed live rows
+#   2. the clear landed: the repainted frame's own line is visible
+#   3. after the clear: the transcript rows are still there
+#
+# Requires: mock server running on localhost:7071
+# Usage: node e2e/run-maestro.js test e2e/terminal_scrollback_clear.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# session-scrollback: running, ptyAttached, conversationId conv-scrollback.
+# sessionView defaults to 'terminal', so the deep link lands on TerminalView.
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-scrollback"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+# 1. Transcript above, live rows below (the replay).
+- extendedWaitUntil:
+    visible:
+      id: "terminal-transcript-row"
+    timeout: 8000
+- assertVisible: ".*Test added, 1 passing.*"
+- assertVisible: ".*Ran 1 shell command.*"
+- takeScreenshot: e2e/_artifacts/screenshots/terminal-scrollback-01-before-clear
+
+# 2. The clear and repaint landed.
+- extendedWaitUntil:
+    visible: ".*Ran 2 shell commands.*"
+    timeout: 10000
+
+# 3. Earlier turns did not go with the scrollback.
+- assertVisible: ".*add a health endpoint.*"
+- assertVisible: ".*Test added, 1 passing.*"
+- assertVisible:
+    id: "terminal-live-divider"
+- takeScreenshot: e2e/_artifacts/screenshots/terminal-scrollback-02-after-clear
