@@ -46,6 +46,15 @@ case "$PLATFORM" in ios|android) ;;
   *) echo "--platform must be ios or android" >&2; exit 2 ;;
 esac
 
+# Capture source identity before this script mutates version/lock files. This is
+# baked into the JS bundle so Settings identifies the exact source that shipped.
+_BUILD_GIT_SHA="$(git rev-parse --short=7 HEAD)"
+if [[ -n "$(git status --porcelain)" ]]; then
+  _BUILD_GIT_SHA="${_BUILD_GIT_SHA}-dirty"
+fi
+export EXPO_PUBLIC_GIT_SHA="$_BUILD_GIT_SHA"
+export EXPO_PUBLIC_BUILD_CHANNEL=QA
+
 # Under CI, `expo export:embed` skips the Metro cache reset the release build
 # phases ask for, and Metro's transform cache is not keyed on EXPO_PUBLIC_*
 # values — an enforced sentry.ts could then be reused by a later store build on
