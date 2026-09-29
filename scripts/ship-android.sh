@@ -80,7 +80,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
   _BUILD_GIT_SHA="${_BUILD_GIT_SHA}-dirty"
 fi
 export EXPO_PUBLIC_GIT_SHA="$_BUILD_GIT_SHA"
-if [[ "$TRACK" == alpha || "$TRACK" == beta ]]; then
+if [[ "$TRACK" != production ]]; then
   export EXPO_PUBLIC_BUILD_CHANNEL="Pre-Release"
 else
   unset EXPO_PUBLIC_BUILD_CHANNEL
