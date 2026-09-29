@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useEagerSessions } from '@/hooks/useSession'
 import { dedupeByServerAndId, useConversations, useConversationSearch } from '@/hooks/useConversations'
 import { useProjectSummaries } from '@/hooks/useProjectSummaries'
@@ -349,10 +349,20 @@ export default function ProjectsHub() {
     return `/browse?${params.toString()}` as `/browse?${string}`
   }
 
+  // A second tap lands before the modal's transition has taken focus away from
+  // this screen, so it would push a second Browse. Cleared when focus returns.
+  const browseOpening = useRef(false)
+  useFocusEffect(
+    useCallback(() => {
+      browseOpening.current = false
+    }, []),
+  )
+
   // Every route into Browse goes through here, not just the picker: a single
   // active server skips the picker entirely, and it can be just as dead. Browse
   // would open on an error banner and an empty listing; show the error instead.
   const openBrowse = (serverId: string, path?: string) => {
+    if (browseOpening.current) return
     const unreachable =
       fetchStatuses[serverId]?.status === 'error' || Boolean(servers[serverId]?.connectionError)
     if (unreachable) {
@@ -362,6 +372,7 @@ export default function ProjectsHub() {
       return
     }
     setPickerVisible(false)
+    browseOpening.current = true
     router.push(browseHref(serverId, path))
   }
 

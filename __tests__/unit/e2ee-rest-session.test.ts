@@ -41,6 +41,7 @@ function makeRestContext(expiresAt: number): TransportContext {
   return {
     ctxId: vectors.ctxIdBase64Url,
     kind: 'rest',
+    baseUrl: 'https://box.example.com',
     expiresAt,
     provisional: false,
     send,

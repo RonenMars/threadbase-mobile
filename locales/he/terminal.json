@@ -59,6 +59,11 @@
     "suggestionLabel": "שלח הצעה: {{text}}",
     "suggestionHint": "לחץ והחזק כדי לערוך לפני השליחה"
   },
+  "preview": {
+    "openLabel": "תצוגה מקדימה של {{name}}",
+    "close": "סגירת התצוגה המקדימה",
+    "counter": "{{current}} מתוך {{total}}"
+  },
   "session": {
     "infoTitle": "פרטי הסשן",
     "renameLabel": "שנה את שם הסשן",
@@ -68,6 +73,7 @@
     "ended": "ההפעלה הסתיימה",
     "endedBody": "ההפעלה הסתיימה מבלי שהופק פלט כלשהו.",
     "failedToStart": "הפעלת הסשן נכשלה",
+    "endedWithError": "ההפעלה הסתיימה בשגיאה",
     "noTerminal": "אין פלט טרמינל",
     "noTerminalBody": "לסשן זה אין טרמינל פעיל.\nחדש את הסשן כדי להתחיל טרמינל חדש.",
     "runningElsewhere": "רץ בטרמינל אחר",

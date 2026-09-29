@@ -11,11 +11,13 @@ import type {
   CacheAlertResolveAction,
   HostPressureLevel,
   HostPressureReason,
+  AgentPhase,
 } from '@/types/api'
 import { getDeviceClientId } from './device-id'
 import { isCleartextAllowed } from './cleartext-policy'
 import { clientLog } from '@/lib/clientLog'
-import { OpenError, openContextOnce, type TransportContext } from '@/services/e2ee/context'
+import { OpenError, openContextOnce, openOnFirstReachable, type TransportContext } from '@/services/e2ee/context'
+import { serverAddresses } from '@/services/server-addresses'
 import { openTicketedSocket, ticketedSocketProtocolOk } from '@/services/e2ee/ticketed-socket'
 
 export type WSMessage =
@@ -29,6 +31,10 @@ export type WSMessage =
   // Scoped to the session's subscribers. `text` is always present; null means
   // "no suggestion / cleared". Additive; old streamers never send it.
   | { type: 'prompt_suggestion'; sessionId: string; text: string | null; updatedAt: string }
+  // Live agent-phase change within a running turn. Scoped to the session's
+  // subscribers, never routed through session_update (it can fire every scrape
+  // tick). `phase: null` clears it. Additive; old streamers never send it.
+  | { type: 'session_phase'; sessionId: string; phase: AgentPhase | null; updatedAt: string }
   // Liveness only. Carries nothing to render; its job is to reset the silence
   // watchdog in useTerminalStream on an otherwise idle socket (#946).
   | { type: 'ping'; ts: number }
@@ -109,9 +115,11 @@ export type WSMessage =
 
 type MessageHandler = (msg: WSMessage) => void
 
-export interface WsEncryptionConfig {
+export interface WsConnectOptions {
   serverPublicKey?: string
   requireEncryption?: boolean
+  /** The address the server advertised; dialled when `url` cannot be reached, pinned servers only (#734). */
+  publicUrl?: string
 }
 
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000, 30000]
@@ -161,6 +169,13 @@ export type WsPermanentError = 'e2ee_protocol_mismatch'
 class WSClient {
   private socket: WebSocket | null = null
   private url = ''
+  // Every address this client may dial, `url` first (#734), as http base URLs
+  // and as the matching `/ws?key=` URLs. `url` above is always `wsUrls[0]`.
+  private addresses: string[] = []
+  private wsUrls: string[] = []
+  // The address the open socket is on. Belongs to that socket: cleared the
+  // moment it is retired, and every dial starts again at `wsUrls[0]`.
+  private _liveUrl: string | null = null
   private handlers: Map<string, Set<MessageHandler>> = new Map()
   private reconnectAttempt = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -168,7 +183,8 @@ class WSClient {
   private _status: 'connecting' | 'connected' | 'disconnected' = 'disconnected'
   private _lastError: WsPermanentError | null = null
   private statusListeners: Set<(s: WSClient['_status']) => void> = new Set()
-  private encryption: WsEncryptionConfig = {}
+  private encryption: WsConnectOptions = {}
+  private dialIndex = 0
   private context: TransportContext | null = null
   private generation = 0
   private ticketUpgradeRetryAvailable = true
@@ -181,8 +197,10 @@ class WSClient {
   // Label for the connection log only — the manager passes its serverId.
   constructor(private serverId = 'default') {}
 
-  connect(url: string, apiKey: string, encryption: WsEncryptionConfig = {}) {
-    const wsUrl = url.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws?key=' + encodeURIComponent(apiKey)
+  connect(url: string, apiKey: string, encryption: WsConnectOptions = {}) {
+    const addresses = serverAddresses({ url, ...encryption })
+    const wsUrls = addresses.map((a) => a.replace(/^http/, 'ws') + '/ws?key=' + encodeURIComponent(apiKey))
+    const wsUrl = wsUrls[0]
     // The socket carries the whole live session — terminal output, replay and
     // every prompt typed — so it is the traffic the cleartext policy exists for.
     // Refusing here rather than throwing keeps a server the user can still fix
@@ -211,12 +229,15 @@ class WSClient {
       wsUrl === this.url &&
       this._status !== 'disconnected' &&
       encryption.serverPublicKey === this.encryption.serverPublicKey &&
-      encryption.requireEncryption === this.encryption.requireEncryption
+      encryption.requireEncryption === this.encryption.requireEncryption &&
+      encryption.publicUrl === this.encryption.publicUrl
     ) {
       return
     }
     this.encryption = encryption
     this.url = wsUrl
+    this.addresses = addresses
+    this.wsUrls = wsUrls
     this.reconnectAttempt = 0
     this.ticketUpgradeRetryAvailable = true
     void this._doConnect()
@@ -227,6 +248,7 @@ class WSClient {
     this._retireCurrentConnection()
     this._clearConnectTimer()
     this._lastError = null
+    this.dialIndex = 0
 
     this._setStatus('connecting')
     logConnection(this.serverId, 'connect', this.reconnectAttempt)
@@ -242,13 +264,17 @@ class WSClient {
         // awaiting storage from onopen is too late.
         this.handshakeInFlight = true
         try {
+          // The handshake picks the address: the first that answers `/open`.
           ;[context, clientId] = await Promise.all([
-            openContextOnce({
-              serverId: this.serverId,
-              baseUrl: this.url.replace(/^ws/, 'http').replace(/\/ws\?key=.*$/, ''),
-              serverPublicKey: this.encryption.serverPublicKey,
-              kind: 'ws',
-            }),
+            openOnFirstReachable(
+              {
+                serverId: this.serverId,
+                serverPublicKey: this.encryption.serverPublicKey,
+                kind: 'ws',
+              },
+              this.addresses,
+              openContextOnce,
+            ),
             getDeviceClientId(),
           ])
         } finally {
@@ -263,7 +289,8 @@ class WSClient {
           throw new Error('E2EE: WebSocket context was issued without a ticket')
         }
         this.context = context
-        socket = openTicketedSocket(this.url.replace(/\?key=.*$/, ''), context.ticket)
+        this.dialIndex = Math.max(0, this.addresses.indexOf(context.baseUrl))
+        socket = openTicketedSocket(this.wsUrls[this.dialIndex].replace(/\?key=.*$/, ''), context.ticket)
       } else {
         socket = new WebSocket(this.url)
       }
@@ -314,6 +341,7 @@ class WSClient {
         return
       }
       logConnection(this.serverId, 'open')
+      this._liveUrl = this.addresses[this.dialIndex] ?? null
       // A sealed socket is not proven by opening: one that fails its first
       // frame would otherwise redial at the minimum backoff forever, and each
       // redial is a handshake against a five-per-minute device limit. It resets
@@ -409,6 +437,7 @@ class WSClient {
   }
 
   private _retireCurrentConnection() {
+    this._liveUrl = null
     if (this.socket) {
       this.socket.onclose = null
       this.socket.onerror = null
@@ -516,6 +545,11 @@ class WSClient {
     return this._lastError
   }
 
+  /** The address the open socket is on; `null` while not connected. */
+  liveUrl(): string | null {
+    return this._liveUrl
+  }
+
   onStatusChange(listener: (s: WSClient['_status']) => void): () => void {
     this.statusListeners.add(listener)
     return () => this.statusListeners.delete(listener)
@@ -534,7 +568,7 @@ class WSClientManager {
   // PTY stream. One socket stays subscribed until the last view releases.
   private sessionRefCounts = new Map<string, Map<string, number>>()
 
-  connect(serverId: string, url: string, apiKey: string, encryption: WsEncryptionConfig = {}) {
+  connect(serverId: string, url: string, apiKey: string, encryption: WsConnectOptions = {}) {
     // The client is REUSED, not rebuilt. Tearing it down and constructing a new
     // one made every call an unconditional redial, and on a pinned server a
     // redial is a full Noise handshake against the streamer's five-opens-per-
@@ -629,6 +663,10 @@ class WSClientManager {
 
   lastError(serverId: string): WsPermanentError | null {
     return this.clients.get(serverId)?.lastError() ?? null
+  }
+
+  liveUrl(serverId: string): string | null {
+    return this.clients.get(serverId)?.liveUrl() ?? null
   }
 
   send(serverId: string, msg: unknown) {

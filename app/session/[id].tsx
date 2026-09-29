@@ -18,7 +18,7 @@ import * as Clipboard from 'expo-clipboard'
 import { ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, Trash, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
-import { deriveSessionPresentation, sessionOpensAsHistory } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, failureTitleKind, sessionOpensAsHistory } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
@@ -448,6 +448,15 @@ function formatElapsed(ms: number): string {
 export default function SessionDetailScreen() {
   useLiveInstanceCount('SessionDetail')
   const { t } = useTranslation(['terminal', 'common', 'sessions', 'conversation'])
+  // Literal t() calls at the presentation boundary for `failureTitleKind`.
+  const sessionFailureTitle = (promptCount: number | undefined): string => {
+    switch (failureTitleKind(promptCount)) {
+      case 'failedToStart':
+        return t('session.failedToStart')
+      case 'endedWithError':
+        return t('session.endedWithError')
+    }
+  }
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { id, server, starting } = useLocalSearchParams<{
@@ -1300,7 +1309,7 @@ export default function SessionDetailScreen() {
         ) : session.failureReason ? (
           <View style={styles.placeholder}>
             <Text style={[styles.placeholderTitle, { color: theme.text.danger }]}>
-              {t('session.failedToStart')}
+              {sessionFailureTitle(session.promptCount)}
             </Text>
             <Text style={styles.placeholderText}>{session.failureReason}</Text>
           </View>

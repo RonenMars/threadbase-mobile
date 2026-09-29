@@ -99,7 +99,9 @@
     "headerWorking_few": "РАБОТАЕТ · {{count}}",
     "headerWorking_many": "РАБОТАЕТ · {{count}}",
     "headerWorking_other": "РАБОТАЕТ · {{count}}",
-    "headerEarlierToday": "РАНЕЕ СЕГОДНЯ",
+    "headerLast7Days": "ПОСЛЕДНИЕ 7 ДНЕЙ",
+    "headerLast14Days": "ПОСЛЕДНИЕ 14 ДНЕЙ",
+    "headerLastMonth": "ПОСЛЕДНИЙ МЕСЯЦ",
     "headerEarlier": "РАНЕЕ"
   },
   "preview": {

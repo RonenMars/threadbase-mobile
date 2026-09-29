@@ -84,6 +84,7 @@ function makeRestContext(): TransportContext {
   return {
     ctxId: vectors.ctxIdBase64Url,
     kind: 'rest',
+    baseUrl: 'https://box.example.com',
     // Past any clock this file uses, so nothing rolls over mid-test.
     expiresAt: Number.MAX_SAFE_INTEGER,
     provisional: false,

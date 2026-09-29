@@ -426,6 +426,7 @@ await refreshServerInfo(serverId)
       wsManager.connect(addResult, result.url, result.apiKey, {
         serverPublicKey: server?.serverPublicKey,
         requireEncryption: server?.requireEncryption,
+        publicUrl: server?.publicUrl,
       })
     } else {
       Alert.alert(

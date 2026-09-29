@@ -7,7 +7,8 @@
     "__tests__/unit/scripts/promote-android.test.js",
     "__tests__/unit/scripts/ship-ios.test.js",
     "__tests__/unit/scripts/ship-android.test.js",
-    "__tests__/unit/scripts/pre-commit-hook.test.js"
+    "__tests__/unit/scripts/pre-commit-hook.test.js",
+    "__tests__/unit/scripts/ship-qa.test.js"
   ],
   "3": [
     "__tests__/unit/scripts/check-story-coverage.test.js",
@@ -44,6 +45,7 @@
     "__tests__/unit/scripts/native-strings-check.test.js",
     "__tests__/unit/scripts/real-streamer-e2e-workflow.test.js",
     "__tests__/unit/scripts/reset-podfile-lock-path-noise.test.js",
+    "__tests__/unit/scripts/select-dev-profile.test.js",
     "__tests__/unit/scripts/run-leave-nav.test.js",
     "__tests__/unit/scripts/store-capture-fixtures.test.js",
     "__tests__/unit/scripts/withLiveActivityTarget.test.js",

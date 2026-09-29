@@ -3,7 +3,7 @@
 Threadbase never uses a user's personal information or diagnostics data without that user's permission.
 This document states that promise and explains how anyone can check it against the app they installed.
 
-Commit that introduced this document: [`619aa802`](https://github.com/RonenMars/threadbase-mobile/commit/619aa802eb1ed41e4e3a7f178354ea8d8272dd5f)
+Commit that introduced this document: [`6f82eb3b`](https://github.com/RonenMars/threadbase-mobile/commit/6f82eb3be0b465bc8d945008b2cd58e8b2020a8e), from pull request #1179.
 
 ## The promise
 
@@ -22,7 +22,7 @@ Commit that introduced this document: [`619aa802`](https://github.com/RonenMars/
 ## The one switch that removes the choice, and why it cannot ship
 
 `EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING` (`1` or `true`) turns on full Sentry telemetry (replay, tracing, profiling, logs, metrics, unmasked screenshots on error) and forces diagnostics on.
-It exists only for internal QA builds, such as TestFlight or a Play testing track.
+It exists only for internal QA builds, which `scripts/ship-qa.sh` distributes through Firebase App Distribution to registered QA devices — never through TestFlight or Google Play.
 Even there it does not collect silently: the launch notice spells out what the test build sends, and the only way past it is "I agree".
 A tester who does not agree is told to install the store version instead.
 

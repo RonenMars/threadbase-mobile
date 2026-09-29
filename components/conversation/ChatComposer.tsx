@@ -26,8 +26,9 @@ import {
   ArrowsIn,
   Sparkle,
 } from 'phosphor-react-native'
-import type { UploadedFile } from '@/services/uploads'
-import { useComposerFocus } from '@/hooks/useComposerFocus'
+import { isPreviewableImage, type ComposerAttachment } from '@/services/uploads'
+import { lendComposerFocus, returnComposerFocus, useComposerFocus } from '@/hooks/useComposerFocus'
+import { AttachmentPreview } from '@/components/conversation/AttachmentPreview'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { layoutDirectionStyle, ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
@@ -37,7 +38,7 @@ export interface ChatComposerProps {
   onChangeText: (text: string) => void
   onSend: () => void
   onAttach: () => void
-  attachments: UploadedFile[]
+  attachments: ComposerAttachment[]
   onRemoveAttachment: (id: string) => void
   isUploading: boolean
   attachError: string | null
@@ -187,15 +188,42 @@ export function ChatComposer({
       </TouchableOpacity>
     ) : null
 
+  const previewImages = attachments.filter(isPreviewableImage)
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null)
+  // Borrows focus like the attach sheet does, so closing the preview hands the
+  // keyboard back to the message being written.
+  const openPreview = (attachmentId: string) => {
+    const index = previewImages.findIndex((img) => img.id === attachmentId)
+    if (index < 0) return
+    lendComposerFocus('attach')
+    setPreviewIndex(index)
+  }
+  const closePreview = () => {
+    setPreviewIndex(null)
+    returnComposerFocus('attach')
+  }
+  // iOS presents one modal at a time from a given presenter, so while the
+  // expanded editor is up the preview has to be mounted inside it.
+  const preview = <AttachmentPreview images={previewImages} openIndex={previewIndex} onClose={closePreview} />
+
   const chips =
     attachments.length > 0 ? (
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
         {attachments.map((a) => (
           <View key={a.id} style={styles.chip}>
-            <PhosphorImage size={14} color={theme.text.primary} />
-            <Text style={[styles.chipText, ltrContentStyle]} numberOfLines={1}>
-              {a.originalName}
-            </Text>
+            <TouchableOpacity
+              testID={`attachment-chip-${a.id}`}
+              style={styles.chipBody}
+              onPress={() => openPreview(a.id)}
+              disabled={!isPreviewableImage(a)}
+              accessibilityRole="button"
+              accessibilityLabel={t('preview.openLabel', { name: a.originalName })}
+            >
+              <PhosphorImage size={14} color={theme.text.primary} />
+              <Text style={[styles.chipText, ltrContentStyle]} numberOfLines={1}>
+                {a.originalName}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => onRemoveAttachment(a.id)}
               accessibilityLabel={`Remove ${a.originalName}`}
@@ -456,7 +484,9 @@ export function ChatComposer({
             </Reanimated.View>
           </SafeAreaView>
         </Reanimated.View>
+        {expanded ? preview : null}
       </Modal>
+      {expanded ? null : preview}
     </Reanimated.View>
   )
 }
@@ -544,6 +574,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       maxWidth: 200,
     },
+    chipBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
     chipText: { color: theme.text.primary, fontSize: font.xs, flexShrink: 1 },
     suggestionChip: {
       flexDirection: 'row',

@@ -272,21 +272,40 @@ The richer reference is in `preview/` and `ui_kits/mobile/`. Inline summary:
 The [Threadbase Mobile Design System](https://www.figma.com/design/EhOoHrZG4C6A2lNz0i5ewK) file is built by `design/figma-plugin/`, a local Figma plugin, not by hand.
 Nothing in it is a screenshot — every component is a real Figma component with variants, auto-layout and variable-bound fills.
 
-| Page | Holds |
-|---|---|
-| Foundations | Colour, spacing, radius and type variables, plus the eight theme palettes |
-| Components | ~195 components across the ui, sessions, conversation, servers, terminal, alerts, tour and onboarding domains |
-| Screens | Assembled app screens, plus the `e2e/visual/theme-gallery/` reference screenshots |
+The live file was reorganized and verified on 2026-09-25.
+It uses the repository-owned page structure below, with reusable assets separated from route frames and visual-QA evidence.
 
 Values come from `constants/theme.ts` and `constants/providers.ts`; component geometry comes from the `.tsx` files themselves.
 **If the code changes, re-run the plugin or edit the variables — never edit the code to match Figma.**
 Every component set carries a `documentationLinks` entry pointing at its source file on GitHub, which stands in for Code Connect (an Organization-plan feature).
+
+The plugin's `CATALOG` is the repository-owned inventory for build order, source links, target page/group, asset kind and lifecycle status.
+The builder now creates or reuses the target pages, looks up public components across the whole file, batches jobs by destination page, and keeps route screens separate from visual-QA references.
+It also generates `00 Start Here` plus one guide frame per page with scope, included groups, lifecycle definitions, contribution steps, and repository links.
+Public component descriptions begin with their catalog lifecycle, and the five assets tracked by issue #1167 remain `beta` until their live validation is complete.
+
+| Page | Holds |
+|---|---|
+| 00 Start Here | Ownership, change workflow, naming, lifecycle and repository links |
+| 10 Foundations | Semantic variables, private theme palettes, type styles, spacing, radius and token examples |
+| 20 Core & Shared | General UI, shared chrome, feedback, icons and brand/provider marks |
+| 30 Sessions | Now, Projects, tree, history and session-state assets |
+| 40 Conversation & Terminal | Messages, thinking, tools, diffs, composer, terminal, review and search |
+| 50 Connectivity | Servers, pairing, browse, connection health, encryption and related alerts |
+| 60 Product Experience | Onboarding, tour, settings, diagnostics, notifications, quick access and shelf |
+| 70 Patterns | Stable reusable compositions built from components |
+| 80 Screens | Route and onboarding frames built from component instances |
+| 90 Visual QA | Theme references, audit matrices and comparison fixtures |
+| 99 Deprecated | Supported replacement evidence and migration notes |
 
 ### Running it
 
 1. Open the file in the Figma **desktop** app.
 2. Plugins → Development → **Import plugin from manifest…** → `design/figma-plugin/manifest.json`.
 3. Plugins → Development → Threadbase DS Builder → **Build remaining components + screens**. Each step skips itself if its output already exists.
+
+Start in `00 Start Here` when browsing the file for the first time.
+Use the guide above each page to find its groups, open a component's documentation link for source, and use `80 Screens` for route context.
 
 For agent-driven edits there is a live bridge: `node bridge.mjs` starts a localhost relay, the plugin's **Bridge (live)** command connects to it, and `node bridge.mjs run job.js` executes a script against the open file with no MCP call limit.
 `design/figma-plugin/README.md` has the details and the gotchas.

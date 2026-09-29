@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
-import type { MultiSession, Session } from '@/types/api'
+import { isAgentPhase } from '@/lib/sessionPresentation'
+import type { AgentPhase, MultiSession, Session } from '@/types/api'
 
 /**
  * Reconcile a `session_update` WS frame into the eager home-screen session list
@@ -33,6 +34,25 @@ export function applySessionUpdateToEagerCache(
   }
 
   void queryClient.invalidateQueries({ queryKey: ['sessions-eager'] })
+}
+
+/**
+ * Merge a `session_phase` frame into the cached session detail query
+ * (`['session', serverId, sessionId]`). Scoped to that session's subscribers
+ * only, so — unlike `session_update` — there is no eager list to patch: the
+ * open session screen is the only consumer. Does nothing if the session isn't
+ * cached, so a frame can never create a stub entry.
+ */
+export function applySessionPhaseToCache(
+  queryClient: QueryClient,
+  serverId: string,
+  sessionId: string,
+  phase: AgentPhase | null,
+): void {
+  const subStatus = isAgentPhase(phase) ? phase : null
+  queryClient.setQueryData<Session>(['session', serverId, sessionId], (prev) =>
+    prev ? { ...prev, subStatus } : prev,
+  )
 }
 
 /**

@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { View, FlatList, RefreshControl } from 'react-native'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
@@ -11,7 +12,7 @@ import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessAct
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
-import { isToday } from '@/components/sessions/hub/hubUtils'
+import { earlierBucketFor, type EarlierBucket } from '@/components/sessions/hub/hubUtils'
 import { basename } from '@/components/sessions/shared/pathTail'
 import {
   resolveConversationRowTitle,
@@ -77,12 +78,35 @@ interface Entry {
 }
 
 type FlatItem =
-  | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number }
+  | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number; bucketKey?: string }
   | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number; failed: boolean }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
   | { kind: 'skeleton'; key: string }
 
 const HISTORY_SKELETONS = 2
+
+const DAY_BUCKET_ORDER: EarlierBucket[] = ['last7Days', 'last14Days', 'lastMonth', 'earlier']
+
+function dayBucketLabel(bucket: EarlierBucket, t: TFunction<'sessions'>): string {
+  switch (bucket) {
+    case 'last7Days':
+      return t('live.headerLast7Days')
+    case 'last14Days':
+      return t('live.headerLast14Days')
+    case 'lastMonth':
+      return t('live.headerLastMonth')
+    case 'earlier':
+      return t('live.headerEarlier')
+  }
+}
+
+// Default param (not a direct Date.now() call in the component body) keeps this
+// clear of react-hooks/purity, matching the projectTiers.ts/formatListTime.ts idiom.
+function bucketEarlierEntries(earlier: Entry[], now: number = Date.now()): Record<EarlierBucket, Entry[]> {
+  const buckets: Record<EarlierBucket, Entry[]> = { last7Days: [], last14Days: [], lastMonth: [], earlier: [] }
+  for (const e of earlier) buckets[earlierBucketFor(e.item.ms, now)].push(e)
+  return buckets
+}
 
 function entryKey(e: Entry): string {
   return `${e.item.kind}:${e.item.item.serverId}::${e.item.item.id}`
@@ -164,7 +188,8 @@ function CantResumeConversationRow({
 
 /**
  * The default view: a flat list ordered by state, not by clock.
- * Needs you → Working → Earlier (today, then older). With more than one server
+ * Needs you → Working → Earlier (last 7 days, 14 days, month, earlier accordions).
+ * With more than one server
  * the history is grouped per server instead, since the rows carry their own
  * times; the two live sections stay global because "needs you" outranks the
  * machine it is on.
@@ -198,6 +223,8 @@ export const NowList = React.memo(function NowList({
   const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
+  const collapsedDayBuckets = useViewPrefsStore((s) => s.collapsedDayBuckets)
+  const toggleDayBucket = useViewPrefsStore((s) => s.toggleDayBucketCollapsed)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
@@ -277,19 +304,19 @@ export const NowList = React.memo(function NowList({
         if (warming.has(id)) appendSkeletons(out, id)
       }
     } else {
-      const today = earlier.filter((e) => isToday(new Date(e.item.ms).toISOString()))
-      const older = earlier.filter((e) => !isToday(new Date(e.item.ms).toISOString()))
+      const buckets = bucketEarlierEntries(earlier)
       const warmingHere = warming.size > 0
-      if (today.length > 0) {
-        out.push({ kind: 'eyebrow', key: 'eyebrow-today', tone: 'muted', label: t('live.headerEarlierToday'), count: today.length })
-        out.push(...today.map(toRow))
-      }
-      if (older.length > 0) {
-        out.push({ kind: 'eyebrow', key: 'eyebrow-older', tone: 'muted', label: t('live.headerEarlier'), count: older.length })
-        out.push(...older.map(toRow))
+      let anyBucketHasRows = false
+      for (const bucketKey of DAY_BUCKET_ORDER) {
+        const bucket = buckets[bucketKey]
+        if (bucket.length === 0) continue
+        anyBucketHasRows = true
+        out.push({ kind: 'eyebrow', key: `eyebrow-${bucketKey}`, tone: 'muted', label: dayBucketLabel(bucketKey, t), count: bucket.length, bucketKey })
+        if (collapsedDayBuckets.includes(bucketKey)) continue
+        out.push(...bucket.map(toRow))
       }
       if (warmingHere) {
-        if (today.length === 0 && older.length === 0) {
+        if (!anyBucketHasRows) {
           out.push({ kind: 'eyebrow', key: 'eyebrow-warming', tone: 'muted', label: t('live.headerEarlier') })
         }
         appendSkeletons(out, 'warming')
@@ -299,14 +326,24 @@ export const NowList = React.memo(function NowList({
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, warming, fetchStatuses, t])
+  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, collapsedDayBuckets, warming, fetchStatuses, t])
 
   const highlight = searchQuery.trim() || undefined
 
   const renderItem = useCallback(({ item }: { item: FlatItem }) => {
     switch (item.kind) {
       case 'eyebrow':
-        return <SectionEyebrow label={item.label} tone={item.tone} count={item.count} />
+        return (
+          <SectionEyebrow
+            label={item.label}
+            tone={item.tone}
+            count={item.count}
+            collapsible={item.bucketKey != null}
+            isExpanded={item.bucketKey ? !collapsedDayBuckets.includes(item.bucketKey) : undefined}
+            onToggle={item.bucketKey ? () => toggleDayBucket(item.bucketKey!) : undefined}
+            testID={item.bucketKey ? `day-bucket-${item.bucketKey}` : undefined}
+          />
+        )
       case 'serverHeader':
         return (
           <ServerHeaderRow
@@ -378,7 +415,7 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus])
+  }, [collapsedServers, toggleServer, collapsedDayBuckets, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">

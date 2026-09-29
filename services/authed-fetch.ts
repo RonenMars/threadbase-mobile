@@ -6,6 +6,7 @@ import { OpenError } from '@/services/e2ee/context'
 // Safe because neither module touches the other during module evaluation —
 // both references are resolved at call time.
 import { reportRequestTiming } from '@/services/slow-request-log'
+import { serverAddresses } from '@/services/server-addresses'
 import { RecordError, recordCounter, restTargetHash } from '@/services/e2ee/record'
 import {
   acquireRestContext,
@@ -77,10 +78,19 @@ export interface AuthedTarget {
   id?: string
   serverPublicKey?: string
   requireEncryption?: boolean
+  /** The address the server advertised; tried when `url` cannot be reached, pinned servers only (#734). */
+  publicUrl?: string
 }
 
 export interface AuthedFetchInit extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>
+  /**
+   * The caller's own cancel, when `signal` also carries a timeout. React
+   * Native's AbortController records no reason, so this is the only way to tell
+   * a cancel — which says nothing about the address — from a timeout, which
+   * may mean the address stopped answering. Never passed on to `fetch`.
+   */
+  cancelSignal?: AbortSignal
 }
 
 // eslint-disable-next-line i18next/no-literal-string -- protocol header name, never rendered
@@ -211,14 +221,18 @@ export async function authedFetch(
     })
   try {
     const response = sealed
-      ? await sealedFetch(target, path, url, init, false, trace)
-      : await plaintextFetch(target, path, url, init)
+      ? await sealedFetch(target, path, init, false, trace)
+      : await plaintextFetch(target, path, url, withoutCancelSignal(init))
     report(String(response.status))
     return response
   } catch (err) {
     report(outcomeOf(err))
     throw err
   }
+}
+
+function withoutCancelSignal({ cancelSignal: _cancelSignal, ...init }: AuthedFetchInit): AuthedFetchInit {
+  return init
 }
 
 function isPinned(target: AuthedTarget): boolean {
@@ -382,7 +396,6 @@ function responseFromPlaintext(status: number, plaintext: Uint8Array, source: Re
 async function sealedFetch(
   target: AuthedTarget,
   path: string,
-  url: string,
   init: AuthedFetchInit,
   retriedUnknown: boolean,
   trace: RequestTrace,
@@ -404,6 +417,7 @@ async function sealedFetch(
     context = await acquireRestContext({
       serverId,
       baseUrl: target.url,
+      publicUrl: target.publicUrl,
       serverPublicKey,
       kind: 'rest',
     })
@@ -438,18 +452,31 @@ async function sealedFetch(
     body = undefined
   }
 
-  const response = await fetch(url, {
-    ...init,
-    method,
-    headers,
-    body,
-  })
+  // The context's own address, not `target.url`: a context opened on
+  // `publicUrl` is a connection to it for as long as the context lives.
+  let response: Response
+  try {
+    response = await fetch(serverUrl({ url: context.baseUrl }, path), {
+      ...withoutCancelSignal(init),
+      method,
+      headers,
+      body,
+    })
+  } catch (err) {
+    // The address this context found may have stopped answering (walked out
+    // of the LAN, which often surfaces as the caller's timeout). Drop the
+    // context so the next request reopens from the user's address — one
+    // handshake per such event, and none for a single-address server, whose
+    // behaviour this leaves alone. A caller's cancel is not such an event.
+    if (serverAddresses(target).length > 1 && !init.cancelSignal?.aborted) invalidateRestContext(serverId)
+    throw err
+  }
 
   if (!isSealedResponse(response) && isPlaintextRefusal(response.status)) {
     const code = await readErrorCode(response)
     if (response.status === 409 && code === 'E2EE_CTX_UNKNOWN' && !retriedUnknown) {
       invalidateRestContext(serverId)
-      return sealedFetch(target, path, url, init, true, trace)
+      return sealedFetch(target, path, init, true, trace)
     }
     throw new EnvelopeError(
       code || 'E2EE_SEAL_FAILED',

@@ -1,10 +1,12 @@
 import { getConnectionLog, wsClient, wsManager } from '@/services/ws-client'
 import { authedFetch } from '@/services/authed-fetch'
 import { CleartextBlockedError } from '@/services/cleartext-policy'
-import { openContextOnce } from '@/services/e2ee/context'
+import { OpenError, openContextOnce } from '@/services/e2ee/context'
+import { FIRST_ADDRESS_TIMEOUT_MS } from '@/services/server-addresses'
 import { createRecordState } from '@/services/e2ee/record'
 
 jest.mock('@/services/e2ee/context', () => ({
+  ...jest.requireActual('@/services/e2ee/context'),
   openContextOnce: jest.fn(),
 }))
 
@@ -112,6 +114,7 @@ describe('WSClient – connect', () => {
     mockedOpenContextOnce.mockResolvedValue({
       ctxId: 'safe-context-id',
       kind: 'ws',
+      baseUrl: 'https://secure.host',
       expiresAt: Date.now() + 30_000,
       provisional: false,
       ticket: 'ticket-does-not-belong-in-url',
@@ -164,6 +167,7 @@ describe('WSClient – connect', () => {
     resolveContext?.({
       ctxId: 'safe-context-id',
       kind: 'ws',
+      baseUrl: 'https://secure.host',
       expiresAt: Date.now() + 30_000,
       provisional: false,
       ticket: 'ticket-does-not-belong-in-url',
@@ -367,6 +371,7 @@ describe('WSClient – send', () => {
     mockedOpenContextOnce.mockResolvedValue({
       ctxId: 'safe-context-id',
       kind: 'ws',
+      baseUrl: 'https://secure.host',
       expiresAt: Date.now() + 30_000,
       provisional: false,
       ticket: 'ticket-does-not-belong-in-url',
@@ -414,6 +419,7 @@ describe('WSClient – send', () => {
     mockedOpenContextOnce.mockResolvedValue({
       ctxId: 'safe-context-id',
       kind: 'ws',
+      baseUrl: 'https://secure.host',
       expiresAt: Date.now() + 30_000,
       provisional: false,
       ticket: 'ticket-does-not-belong-in-url',
@@ -452,6 +458,7 @@ describe('WSClient – send', () => {
     mockedOpenContextOnce.mockResolvedValue({
       ctxId: 'safe-context-id',
       kind: 'ws',
+      baseUrl: 'https://secure.host',
       expiresAt: Date.now() + 30_000,
       provisional: false,
       ticket: 'ticket-does-not-belong-in-url',
@@ -498,6 +505,7 @@ describe('WSClient – send', () => {
     mockedOpenContextOnce.mockResolvedValue({
       ctxId: 'safe-context-id',
       kind: 'ws',
+      baseUrl: 'https://secure.host',
       expiresAt: Date.now() + 30_000,
       provisional: false,
       ticket: 'ticket-does-not-belong-in-url',
@@ -588,6 +596,7 @@ describe('WSClient – forceReconnect', () => {
     const makeContext = (destroy: jest.Mock) => ({
       ctxId: 'safe-context-id',
       kind: 'ws' as const,
+      baseUrl: 'https://secure.host',
       expiresAt: Date.now() + 30_000,
       provisional: false,
       ticket: 'ticket-does-not-belong-in-url',
@@ -784,6 +793,7 @@ describe('WSClientManager – handshake budget', () => {
   const pinnedContext = () => ({
     ctxId: 'ctx',
     kind: 'ws' as const,
+    baseUrl: 'https://secure.host',
     expiresAt: Date.now() + 30_000,
     provisional: false,
     ticket: 'ticket',
@@ -881,6 +891,7 @@ describe('WSClientManager – sealed backoff waits for a verified first frame', 
   const contextFor = (ticket: string) => ({
     ctxId: `ctx-${ticket}`,
     kind: 'ws' as const,
+    baseUrl: 'https://secure.host',
     expiresAt: Date.now() + 30_000,
     provisional: false,
     ticket,
@@ -954,5 +965,58 @@ describe('WSClientManager – sealed backoff waits for a verified first frame', 
     mockSocket.onmessage!({ data: new Uint8Array([9, 9, 9, 9]) })
 
     await expectRedialAfter(1000, 3)
+  })
+})
+
+// #734: a server has two addresses. Reserved documentation addresses only.
+describe('WSClient – two addresses', () => {
+  const LAN = 'https://192.0.2.10:8766'
+  const PUBLIC = 'https://tb.example.com'
+
+  it('never dials the publicUrl of an unpinned server (TB-M-03)', () => {
+    wsClient.connect(LAN, 'key', { publicUrl: PUBLIC })
+    mockSockets[0].onerror!()
+    jest.advanceTimersByTime(60_000)
+
+    expect(mockSockets.length).toBeGreaterThan(1)
+    expect(new Set(mockSockets.map((s) => s.url))).toEqual(new Set(['wss://192.0.2.10:8766/ws?key=key']))
+  })
+
+  it('opens a pinned context on publicUrl only when the user address never answered /open', async () => {
+    const pinned = { serverPublicKey: 'pinned-server-key', requireEncryption: true, publicUrl: PUBLIC }
+    mockedOpenContextOnce
+      .mockRejectedValueOnce(new OpenError('E2EE_TRANSIENT', 'unreachable', true))
+      .mockResolvedValueOnce({
+        ctxId: 'ctx',
+        kind: 'ws',
+        baseUrl: PUBLIC,
+        expiresAt: Date.now() + 30_000,
+        provisional: false,
+        ticket: 'ticket',
+        send: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 1, channel: 1 }),
+        recv: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 2, channel: 1 }),
+        destroy: jest.fn(),
+      })
+
+    wsManager.connect('pinned-two', LAN, 'long-term-api-key', pinned)
+    await flushAsyncConnect()
+    await flushAsyncConnect()
+
+    expect(mockedOpenContextOnce.mock.calls.map(([args]) => [args.baseUrl, args.timeoutMs])).toEqual([
+      [LAN, FIRST_ADDRESS_TIMEOUT_MS],
+      [PUBLIC, undefined],
+    ])
+    expect(mockSocket.url).toBe('wss://tb.example.com/ws')
+  })
+
+  it('does not spend a second handshake on publicUrl after the user address answered 429', async () => {
+    const pinned = { serverPublicKey: 'pinned-server-key', requireEncryption: true, publicUrl: PUBLIC }
+    mockedOpenContextOnce.mockRejectedValueOnce(new OpenError('E2EE_TRANSIENT', 'busy'))
+
+    wsManager.connect('pinned-busy', LAN, 'long-term-api-key', pinned)
+    await flushAsyncConnect()
+
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+    expect(mockedOpenContextOnce.mock.calls[0][0].baseUrl).toBe(LAN)
   })
 })

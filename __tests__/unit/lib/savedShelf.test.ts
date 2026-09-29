@@ -58,6 +58,12 @@ describe('buildShelfEntries / countNeedsYou', () => {
     expect(countNeedsYou(other)).toBe(0)
   })
 
+  it('counts a running session gated on an open prompt as needing the user', () => {
+    const gated: MultiSession = { ...session('s-run', 'running'), hasOpenPrompt: true }
+    const withGate = buildShelfEntries(favorites, indexShelfCache([gated], conversations))
+    expect(countNeedsYou(withGate)).toBe(1)
+  })
+
   it('takes the provider from the cached row', () => {
     expect(entries.find((e) => e.favorite.label === 'Conv')?.provider).toBe('codex-cli')
     expect(entries.find((e) => e.favorite.label === 'Gone')?.provider).toBeUndefined()

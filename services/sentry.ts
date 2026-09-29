@@ -85,10 +85,12 @@ let sdkReady = false
  * explicit one-shot report (tagged with ONE_SHOT_TAG). */
 let diagnosticsEnabled = false
 
-/** Sentry environment: development (Metro), staging (TestFlight, Play testing
- * tracks) or production (App Store, Play production). One project, split by tag. */
+/** Sentry environment: development (Metro), testing (enforced-tracking QA builds,
+ * distributed outside the stores), staging (TestFlight, Play testing tracks) or
+ * production (App Store, Play production). One project, split by tag. */
 function resolveEnvironment(): string {
   if (__DEV__) return 'development'
+  if (ENFORCE_TRACKING) return 'testing'
   return getDistribution()
 }
 

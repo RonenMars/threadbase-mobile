@@ -59,6 +59,11 @@
     "suggestionLabel": "Send suggestion: {{text}}",
     "suggestionHint": "Hold to edit before sending"
   },
+  "preview": {
+    "openLabel": "Preview {{name}}",
+    "close": "Close preview",
+    "counter": "{{current}} of {{total}}"
+  },
   "session": {
     "infoTitle": "Session Info",
     "renameLabel": "Rename session",
@@ -68,6 +73,7 @@
     "ended": "Session ended",
     "endedBody": "This session ended without producing any output.",
     "failedToStart": "Session failed to start",
+    "endedWithError": "Session ended with an error",
     "noTerminal": "No terminal output",
     "noTerminalBody": "This session has no active terminal.\nResume the session to start a new terminal.",
     "runningElsewhere": "Running in another terminal",

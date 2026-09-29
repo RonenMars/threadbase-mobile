@@ -14,9 +14,12 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "237",
+      "buildNumber": "238",
       "bundleIdentifier": "com.ronenmars.threadbase",
       "appleTeamId": "GUW6BN8X57",
+      "entitlements": {
+        "com.apple.developer.usernotifications.time-sensitive": true
+      },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Threadbase uses Face ID to protect access to your conversations.",
         "ITSAppUsesNonExemptEncryption": false
@@ -24,7 +27,7 @@
     },
     "android": {
       "package": "com.ronenmars.threadbase",
-      "versionCode": 76,
+      "versionCode": 77,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0d1117"

@@ -77,7 +77,12 @@
   },
   "notification": {
     "testTitle": "إشعار تجريبي",
-    "testBody": "إشعارات Threadbase تعمل!"
+    "testBody": "إشعارات Threadbase تعمل!",
+    "actionAllow": "سماح",
+    "actionDeny": "رفض",
+    "needsAnswer": "بانتظار إجابتك",
+    "channelNeedsYou": "يحتاجك",
+    "channelUpdates": "تحديثات"
   },
   "addServer": {
     "selectedAction": "الإجراء المحدد عند الإنشاء",
