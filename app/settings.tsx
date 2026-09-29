@@ -874,8 +874,8 @@ await refreshServerInfo(serverId)
             })`}
           </Text>
           <Text style={s.aboutSubtext}>
-            {process.env.EXPO_PUBLIC_BUILD_CHANNEL === 'QA' && process.env.EXPO_PUBLIC_GIT_SHA
-              ? `QA · ${process.env.EXPO_PUBLIC_GIT_SHA.slice(0, 7)}`
+            {process.env.EXPO_PUBLIC_BUILD_CHANNEL && process.env.EXPO_PUBLIC_GIT_SHA
+              ? `${process.env.EXPO_PUBLIC_BUILD_CHANNEL} · ${process.env.EXPO_PUBLIC_GIT_SHA.slice(0, 7)}`
               : t('about.subtitle')}
           </Text>
         </View>
