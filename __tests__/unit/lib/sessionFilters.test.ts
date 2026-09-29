@@ -76,7 +76,14 @@ describe('applyListFilters', () => {
     // The wire is untrusted: a newer streamer can send a provider name that is not in ProviderName.
     const newer = session({ id: 'n', provider: 'gemini-cli' as ProviderName }, NOW - HOUR)
     expect(applyListFilters([newer], DEFAULT_FILTERS, NOW).map((i) => i.item.id)).toEqual(['n'])
-    expect(countByProvider([newer])).toEqual({ 'claude-code': 1, 'codex-cli': 0, 'cursor': 0 })
+    expect(countByProvider([newer])).toEqual({ 'claude-code': 1, 'codex-cli': 0, 'cursor': 0, copilot: 0 })
+  })
+
+  it('counts and filters Copilot independently of Claude', () => {
+    const copilot = session({id: 'cp', provider: 'copilot'}, NOW)
+    const all = [...items, copilot]
+    expect(countByProvider(all).copilot).toBe(1)
+    expect(applyListFilters(all, {...DEFAULT_FILTERS, providers: ['copilot']}, NOW).map(i => i.item.id)).toEqual(['cp'])
   })
 
   it('applies the recency window to every row', () => {
@@ -96,7 +103,7 @@ describe('counts and presets', () => {
   })
 
   it('counts rows per agent', () => {
-    expect(countByProvider(items)).toEqual({ 'claude-code': 2, 'codex-cli': 2, 'cursor': 1 })
+    expect(countByProvider(items)).toEqual({ 'claude-code': 2, 'codex-cli': 2, 'cursor': 1, copilot: 0 })
   })
 
   it('recognises the defaults regardless of tier order', () => {

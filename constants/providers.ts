@@ -1,5 +1,6 @@
 export const CLAUDE_CODE_PROVIDER = 'claude-code' as const
 export const CODEX_CLI_PROVIDER = 'codex-cli' as const
+export const COPILOT_PROVIDER = 'copilot' as const
 export const CURSOR_PROVIDER = 'cursor' as const
 /** Live PTY on main shipped this wire name; accept it and treat it as `cursor`. */
 export const LEGACY_CURSOR_PROVIDER = 'cursor-cli' as const
@@ -8,11 +9,12 @@ export const PROVIDER_NAMES = [
   CLAUDE_CODE_PROVIDER,
   CODEX_CLI_PROVIDER,
   CURSOR_PROVIDER,
+  COPILOT_PROVIDER,
 ] as const
 
 export type ProviderName = (typeof PROVIDER_NAMES)[number]
 
-export type ProviderLabelKey = 'claude' | 'codex' | 'cursor'
+export type ProviderLabelKey = 'claude' | 'codex' | 'cursor' | 'copilot'
 
 export function canonicalizeProviderName(value: string | undefined | null): ProviderName | undefined {
   if (value === LEGACY_CURSOR_PROVIDER) return CURSOR_PROVIDER
@@ -25,6 +27,7 @@ export const PROVIDER_COLOR = {
   claude: "#D97757",
   codex: "#7B5EA7",
   cursor: "#3D8BFF",
+  copilot: "#2DA44E",
 } as const satisfies Record<ProviderLabelKey, string>;
 
 export function isProviderName(value: string): value is ProviderName {
@@ -37,6 +40,7 @@ export function providerLabelKey(
 ): ProviderLabelKey {
   const name = canonicalizeProviderName(provider ?? undefined)
   if (name === CODEX_CLI_PROVIDER) return 'codex'
+  if (name === COPILOT_PROVIDER) return 'copilot'
   if (name === CURSOR_PROVIDER) return 'cursor'
   return 'claude'
 }

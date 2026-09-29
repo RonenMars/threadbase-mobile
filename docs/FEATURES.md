@@ -87,3 +87,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 The Electron, VS Code, and IntelliJ surfaces mentioned elsewhere are not part of the mobile or streamer repos.
 iOS Live Activities require the streamer operator to enable a feature flag and supply APNs credentials.
 Multi-question and multi-select approval forms cannot be answered from the phone yet.
+
+### GitHub Copilot CLI
+
+Select **Copilot** when starting a session on a streamer that advertises the installed `copilot` CLI. Live terminal input/output and native resume are supported; trust and permission prompts are handled in the terminal. Copilot stays unavailable on older streamers. Bulk Copilot history indexing, structured question cards, and model/effort controls are not included in this integration.

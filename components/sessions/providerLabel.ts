@@ -7,6 +7,8 @@ export function getProviderLabel(provider: string | null | undefined, t: TFuncti
       return t('provider.claude')
     case 'codex':
       return t('provider.codex')
+    case 'copilot':
+      return t('provider.copilot')
     case 'cursor':
       return t('provider.cursor')
   }

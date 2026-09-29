@@ -49,6 +49,8 @@ function providerLabel(provider: string | null | undefined): string {
       return t('sessions:provider.claude')
     case 'codex':
       return t('sessions:provider.codex')
+    case 'copilot':
+      return t('sessions:provider.copilot')
     case 'cursor':
       return t('sessions:provider.cursor')
   }

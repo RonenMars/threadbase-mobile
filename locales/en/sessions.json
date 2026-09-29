@@ -19,6 +19,7 @@
     "codex": "Codex",
     "claude": "Claude",
     "cursor": "Cursor",
+    "copilot": "Copilot",
     "unknown": "Unknown"
   },
   "filter": {
@@ -224,6 +225,7 @@
     "keepsClaude": "The conversation stays on {{server}}. claude --resume still finds it.",
     "keepsCodex": "The conversation stays on {{server}}. codex resume still finds it.",
     "keepsCursor": "It stays in Cursor Agent's chat history on {{server}}.",
+    "keepsCopilot": "It stays in GitHub Copilot's chat history on {{server}}.",
     "noUndo": "You can't undo this from the app.",
     "confirm": "Delete"
   },

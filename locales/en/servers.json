@@ -248,6 +248,7 @@
       "providerClaude": "Claude Code CLI",
       "providerCodex": "Codex CLI",
       "providerCursor": "Cursor CLI",
+      "providerCopilot": "GitHub Copilot CLI",
       "cache": "Conversation cache",
       "pty": "PTY subsystem",
       "filesystem": "Provider history folder"
