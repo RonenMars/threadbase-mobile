@@ -58,9 +58,20 @@ jobs:
       # Same pinned toolchain as deploy.yml; see the note there.
       DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout application source
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.deploy_ref }}
+
+      - name: Checkout shipping tooling
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+          path: .ship-workflow
+          persist-credentials: false
+
+      - name: Exclude shipping tooling from application git status
+        run: echo '/.ship-workflow/' >> .git/info/exclude
 
       - uses: actions/setup-node@v5
         with:
@@ -91,7 +102,7 @@ jobs:
           IOS_PROVISION_PROFILE_UUID="$(uuid_of "$IOS_PROVISION_PROFILE_B64")"
           IOS_WIDGET_PROVISION_PROFILE_UUID="$(uuid_of "$IOS_WIDGET_PROVISION_PROFILE_B64")"
           export IOS_PROVISION_PROFILE_UUID IOS_WIDGET_PROVISION_PROFILE_UUID
-          ./scripts/bootstrap-ios-signing.sh
+          ./.ship-workflow/scripts/bootstrap-ios-signing.sh
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -126,7 +137,7 @@ jobs:
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
         run: |
-          ./scripts/ship-qa.sh --platform ios \
+          ./.ship-workflow/scripts/ship-qa.sh --platform ios \
             --groups "$TESTER_GROUPS" \
             --release-notes "${RELEASE_NOTES:-QA ${DEPLOY_REF} ($(git rev-parse --short HEAD))}"
 
@@ -136,9 +147,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout application source
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.deploy_ref }}
+
+      - name: Checkout shipping tooling
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+          path: .ship-workflow
+          persist-credentials: false
+
+      - name: Exclude shipping tooling from application git status
+        run: echo '/.ship-workflow/' >> .git/info/exclude
 
       - uses: actions/setup-node@v5
         with:
@@ -158,7 +180,7 @@ jobs:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./scripts/bootstrap-android-signing.sh
+        run: ./.ship-workflow/scripts/bootstrap-android-signing.sh
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -183,6 +205,6 @@ jobs:
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
         run: |
-          ./scripts/ship-qa.sh --platform android \
+          ./.ship-workflow/scripts/ship-qa.sh --platform android \
             --groups "$TESTER_GROUPS" \
             --release-notes "${RELEASE_NOTES:-QA ${DEPLOY_REF} ($(git rev-parse --short HEAD))}"
