@@ -105,7 +105,11 @@ function TextContent({
 
 
 
-const CODE_THEME = themes.oneDark
+// oneDark's saturated magenta/cyan tokens are tuned for a full editor pane;
+// in a narrow chat bubble with tight padding they read as neon. vsDark (VS
+// Code Dark+) carries the same intent at lower saturation — the same
+// reference point GitHub/Slack/Discord code blocks use.
+const CODE_THEME = themes.vsDark
 
 function DiffLines({ code }: { code: string }) {
   const { styles } = useBubbleStyles()
@@ -315,15 +319,47 @@ function makeMarkdownStyles(theme: Theme) {
   }
 }
 
-function MarkdownProse({ text }: { text: string }) {
-  const { theme } = useBubbleStyles()
+// Splits a markdown text node's plain content around a search needle so a
+// highlighted span can render inline in a Text run — rendering markdown via
+// <Markdown> and highlighting via a separate plain-text pass are mutually
+// exclusive, so highlighting is done as a rule override on the same tree
+// instead, keeping links/emphasis/etc. intact while searching.
+function renderHighlightedRun(content: string, needle: string, style: object) {
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = content.split(new RegExp(`(${escaped})`, 'ig'))
+  return parts.map((part, i) =>
+    part.toLowerCase() === needle.toLowerCase() ? (
+      <Text key={i} style={style}>{part}</Text>
+    ) : (
+      part
+    ),
+  )
+}
+
+function MarkdownProse({ text, highlight, activeMatch }: { text: string; highlight?: string; activeMatch?: boolean }) {
+  const { styles, theme } = useBubbleStyles()
   const mdStyle = useMemo(() => makeMarkdownStyles(theme), [theme])
   const onLinkPress = useCallback((url: string) => {
     void Linking.openURL(url)
     return false
   }, [])
+  const needle = highlight?.trim()
+  const markStyle = activeMatch ? styles.match : styles.matchInactive
+  const rules = useMemo(
+    () =>
+      needle
+        ? {
+            text: (node: { key: string; content: string }, _children: unknown, _parent: unknown, mdStyles: { text?: object }, inherited: object = {}) => (
+              <Text key={node.key} style={[inherited, mdStyles.text]}>
+                {renderHighlightedRun(node.content, needle, markStyle)}
+              </Text>
+            ),
+          }
+        : undefined,
+    [needle, markStyle],
+  )
   return (
-    <Markdown style={mdStyle} onLinkPress={onLinkPress} mergeStyle>
+    <Markdown style={mdStyle} onLinkPress={onLinkPress} mergeStyle rules={rules}>
       {text}
     </Markdown>
   )
@@ -352,8 +388,8 @@ function TextBlockBody({
       {parts.map((part, i) =>
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
-        ) : !isUser && !highlight ? (
-          <MarkdownProse key={i} text={part.text} />
+        ) : !isUser ? (
+          <MarkdownProse key={i} text={part.text} highlight={highlight} activeMatch={activeMatch} />
         ) : (
           <TextContent
             key={i}
@@ -524,7 +560,6 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     codeToken: {
       fontFamily: 'monospace',
       fontSize: font.sm,
-      fontWeight: '600',
       color: theme.text.primary,
     },
     diffAdd: {
