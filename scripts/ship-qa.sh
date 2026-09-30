@@ -121,7 +121,8 @@ FIREBASE_CURL_HEADERS=(
 GROUPS_JSON="$(curl --fail-with-body --silent --show-error \
   "${FIREBASE_CURL_HEADERS[@]}" \
   "$FIREBASE_API/v1/projects/$PROJECT_NUMBER/groups")" || {
-  echo "Firebase tester group lookup failed for project $PROJECT_NUMBER" >&2
+  echo "Firebase tester group lookup failed for project $PROJECT_NUMBER:" >&2
+  [[ -n "$GROUPS_JSON" ]] && echo "$GROUPS_JSON" >&2
   exit 1
 }
 for alias in ${TESTER_GROUPS//,/ }; do
