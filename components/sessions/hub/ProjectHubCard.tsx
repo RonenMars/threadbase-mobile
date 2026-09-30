@@ -20,6 +20,7 @@ import type { ProjectHubCardProps } from './types'
 import type { MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
+import { sessionActivityMs } from '@/lib/sessionActivity'
 
 // Memoized: the hub re-renders on every fetch-progress tick, and a project
 // card is a native glass surface — re-running every mounted one per tick is
@@ -139,7 +140,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
               const merged = [
                 ...group.sessions.map((s) => ({
                   key: `s-${s.serverId}::${s.id}`,
-                  ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
+                  ms: sessionActivityMs(s),
                   node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
                 })),
                 ...conversations.map((c) => ({
