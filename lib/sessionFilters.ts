@@ -1,5 +1,5 @@
 import { PROVIDER_NAMES, canonicalizeProviderName, type ProviderName } from '@/constants/providers'
-import type { MergedItem } from '@/components/sessions/now/mergedItems'
+import { omitConversationsCoveredByLiveSessions, type MergedItem } from '@/components/sessions/now/mergedItems'
 import { deriveSessionPresentation, type SessionTier } from '@/lib/sessionPresentation'
 
 export type ActiveWithin = 'any' | 'today' | '7d' | '30d'
@@ -61,6 +61,15 @@ export function applyListFilters(items: MergedItem[], filters: ListFilters, now:
   return items.filter(
     (item) => tiers.has(itemTier(item)) && providers.has(itemProvider(item)) && item.ms >= floor,
   )
+}
+
+/**
+ * Rows the Now list renders for these filters. Filter badges and the result
+ * count use this same array, so they stay equal to the rows on screen.
+ * A live session and its transcript are one row here, matching the list.
+ */
+export function displayedListItems(items: MergedItem[], filters: ListFilters, now: number = Date.now()): MergedItem[] {
+  return omitConversationsCoveredByLiveSessions(applyListFilters(items, filters, now))
 }
 
 export function countByTier(items: MergedItem[]): Record<SessionTier, number> {
