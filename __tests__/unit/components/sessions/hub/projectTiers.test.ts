@@ -1,4 +1,4 @@
-import { matchesProjectFilter, projectRailToken, projectTier, RECENT_WINDOW_MS, splitProjectTiers } from '@/components/sessions/hub/projectTiers'
+import { projectRailToken, projectTier, RECENT_WINDOW_MS, splitProjectTiers } from '@/components/sessions/hub/projectTiers'
 import type { ProjectGroup } from '@/components/sessions/hub/useProjectGroups'
 import type { MultiSession } from '@/types/api'
 
@@ -65,15 +65,5 @@ describe('projectRailToken', () => {
     expect(projectRailToken(group('a', { sessions: [running, waiting] }))).toBe('waiting')
     expect(projectRailToken(group('a', { sessions: [running] }))).toBe('running')
     expect(projectRailToken(group('a', { sessions: [held] }))).toBeNull()
-  })
-})
-
-describe('matchesProjectFilter', () => {
-  it('matches name or path, case-insensitively, and everything on a blank query', () => {
-    const g = group('tb-mobile', { projectPath: '/Users/me/dev/ai-tools/tb-mobile' })
-    expect(matchesProjectFilter(g, '')).toBe(true)
-    expect(matchesProjectFilter(g, 'MOBILE')).toBe(true)
-    expect(matchesProjectFilter(g, 'ai-tools')).toBe(true)
-    expect(matchesProjectFilter(g, 'streamer')).toBe(false)
   })
 })
