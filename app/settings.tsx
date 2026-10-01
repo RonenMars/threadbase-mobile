@@ -873,7 +873,11 @@ await refreshServerInfo(serverId)
                 : (Constants.expoConfig?.android?.versionCode ?? '—')
             })`}
           </Text>
-          <Text style={s.aboutSubtext}>{t('about.subtitle')}</Text>
+          <Text style={s.aboutSubtext}>
+            {process.env.EXPO_PUBLIC_BUILD_CHANNEL && process.env.EXPO_PUBLIC_GIT_SHA
+              ? `${process.env.EXPO_PUBLIC_BUILD_CHANNEL} · ${process.env.EXPO_PUBLIC_GIT_SHA}`
+              : t('about.subtitle')}
+          </Text>
         </View>
 
         <SectionHeader title={t('section.help')} />

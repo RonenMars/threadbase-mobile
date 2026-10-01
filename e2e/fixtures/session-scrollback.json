@@ -1,0 +1,17 @@
+{
+  "id": "session-scrollback",
+  "provider": "claude-code",
+  "status": "running",
+  "statusSource": "user-input",
+  "ptyAttached": true,
+  "lifecycle": "attached",
+  "conversationId": "conv-scrollback",
+  "projectPath": "/workspace/northstar-commerce/apps/storefront",
+  "projectName": "storefront",
+  "branch": "feat/health-endpoint",
+  "lastOutput": "Running the suite.",
+  "elapsedMs": 61000,
+  "promptCount": 3,
+  "subStatus": null,
+  "startedAt": "2026-09-25T10:00:00.000Z"
+}

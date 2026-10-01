@@ -139,9 +139,16 @@
     "header_few": "السجل · {{count}} رسائل",
     "header_many": "السجل · {{count}} رسالة",
     "header_other": "السجل · {{count}} رسالة",
-    "expandLabel": "توسيع سجل المحادثة",
-    "collapseLabel": "طي سجل المحادثة",
-    "maximizeLabel": "تكبير سجل المحادثة لملء الشاشة",
-    "minimizeLabel": "تصغير سجل المحادثة من ملء الشاشة"
+    "searchLabel": "البحث في سجل المحادثة"
+  },
+  "transcript": {
+    "live": "مباشر",
+    "moreLines_zero": "+لا سطور",
+    "moreLines_one": "+سطر واحد",
+    "moreLines_two": "+سطران",
+    "moreLines_few": "+{{count}} أسطر",
+    "moreLines_many": "+{{count}} سطرًا",
+    "moreLines_other": "+{{count}} سطر",
+    "hideLines": "إخفاء"
   }
 }

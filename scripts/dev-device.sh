@@ -95,54 +95,31 @@ else
   # is how those reach a build that `expo run:ios` invokes on our behalf.
   #
   # The profiles are discovered from the ones already installed rather than
-  # configured, so this needs no per-machine setup: pick a development profile
-  # (one with ProvisionedDevices) whose app-id matches and which grants App Groups.
-  read -r DEV_APP_UUID DEV_WIDGET_UUID <<<"$(
-    python3 - "$HOME/Library/MobileDevice/Provisioning Profiles" <<'PY'
-import glob, os, plistlib, subprocess, sys
+  # configured, so this needs no per-machine setup. scripts/select-dev-profile.py
+  # holds the rules; it scans both directories because Xcode's "Download Manual
+  # Profiles" saves to UserData, not MobileDevice.
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  PROFILE_DIRS=("$HOME/Library/MobileDevice/Provisioning Profiles"
+                "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles")
+  select_profile() {
+    python3 "$SCRIPT_DIR/select-dev-profile.py" "$1" "$SCRIPT_DIR/../ios/$2" "${PROFILE_DIRS[@]}"
+  }
+  if ! DEV_APP_UUID="$(select_profile com.ronenmars.threadbase Threadbase/Threadbase.entitlements)" \
+     || ! DEV_WIDGET_UUID="$(select_profile com.ronenmars.threadbase.widgets ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements)"; then
+    echo "Error: no usable development provisioning profile — see docs/troubleshooting.md." >&2
+    exit 1
+  fi
 
-def profiles(directory):
-    for path in glob.glob(os.path.join(directory, "*.mobileprovision")):
-        try:
-            raw = subprocess.run(["security", "cms", "-D", "-i", path],
-                                 capture_output=True, check=True).stdout
-            yield plistlib.loads(raw)
-        except Exception:
-            continue
-
-def pick(plists, suffix):
-    for p in plists:
-        ent = p.get("Entitlements", {})
-        app_id = ent.get("application-identifier", "")
-        # ProvisionedDevices is what distinguishes a development/ad-hoc profile
-        # from an App Store one, which cannot install to a device.
-        if (app_id.endswith("." + suffix)
-                and p.get("ProvisionedDevices")
-                and ent.get("com.apple.security.application-groups")):
-            return p["UUID"]
-    return ""
-
-found = list(profiles(sys.argv[1]))
-print(pick(found, "com.ronenmars.threadbase"),
-      pick(found, "com.ronenmars.threadbase.widgets"))
-PY
-  )"
-
-  if [[ -n "$DEV_APP_UUID" && -n "$DEV_WIDGET_UUID" ]]; then
-    XCCONFIG="$(mktemp -t tb-dev-signing).xcconfig"
-    cat > "$XCCONFIG" <<EOF
+  XCCONFIG="$(mktemp -t tb-dev-signing).xcconfig"
+  cat > "$XCCONFIG" <<EOF
 CODE_SIGN_STYLE = Manual
 CODE_SIGN_IDENTITY = Apple Development
 IOS_PROVISION_PROFILE_UUID = $DEV_APP_UUID
 IOS_WIDGET_PROVISION_PROFILE_UUID = $DEV_WIDGET_UUID
 EOF
-    trap 'rm -f "$XCCONFIG"' EXIT
-    echo "  signing: manual (app $DEV_APP_UUID, widget $DEV_WIDGET_UUID)"
-    ENV_PREFIX="${ENV_PREFIX}XCODE_XCCONFIG_FILE=$XCCONFIG "
-  else
-    echo "  signing: automatic — no development profile with App Groups found."
-    echo "           The build will fail to sign; see docs/troubleshooting.md."
-  fi
+  trap 'rm -f "$XCCONFIG"' EXIT
+  echo "  signing: manual (app $DEV_APP_UUID, widget $DEV_WIDGET_UUID)"
+  ENV_PREFIX="${ENV_PREFIX}XCODE_XCCONFIG_FILE=$XCCONFIG "
 
   eval "${ENV_PREFIX}npx expo run:ios --device \"$UDID\""
 fi

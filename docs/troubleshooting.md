@@ -136,9 +136,9 @@ That in turn cannot be expressed on the `xcodebuild` command line, because comma
 
 **Every device path must go through `scripts/dev-device.sh`.** A bare `npx expo run:ios --device` uses automatic signing and fails this way by construction. `npm run dev:tunnel:native` used to call `expo run:ios` itself and so failed identically while looking like a tunnel problem; it now delegates to `dev-device.sh`, and `dev:tunnel:native:reset` inherits that. If a new entry point ever builds to a device, it delegates too — the discovery below is not worth a second copy.
 
-**Fix:** you need one development provisioning profile per target, each granting the App Group and including your device. `scripts/dev-device.sh` then discovers them automatically — it scans installed profiles for a development profile (one with `ProvisionedDevices`) whose app-id matches and which grants App Groups — and feeds them to the build through `XCODE_XCCONFIG_FILE`. No per-machine configuration.
+**Fix:** you need one development provisioning profile per target, each granting what that target's entitlements file declares and including your device. `scripts/dev-device.sh` then discovers them automatically through `scripts/select-dev-profile.py` and feeds them to the build through `XCODE_XCCONFIG_FILE`. No per-machine configuration. The selector scans both `~/Library/MobileDevice/Provisioning Profiles` and `~/Library/Developer/Xcode/UserData/Provisioning Profiles` (where Xcode's "Download Manual Profiles" saves), and takes the newest profile that is for exactly that bundle id, has `get-task-allow` (Ad Hoc profiles list devices too, so `ProvisionedDevices` proves nothing), is not Xcode-managed, has not expired, and grants every entitlement in `ios/<target>/<target>.entitlements`.
 
-If the script reports `signing: automatic — no development profile with App Groups found`, create them. Everything needed is usually already on the account; check first rather than assuming:
+If the script stops with `No usable development profile for <bundle id>`, it lists each installed candidate with why it was rejected. When none exist, create them. Everything needed is usually already on the account; check first rather than assuming:
 
 ```bash
 source .env.signing
@@ -156,6 +156,20 @@ security cms -D -i <profile>.mobileprovision | plutil -p - | grep -A2 applicatio
 ```
 
 **Note:** Debug stays on `CODE_SIGN_STYLE = Automatic` in the committed project, so a plain simulator build still needs no profiles at all. The specifier is inert until `dev-device.sh` supplies the UUIDs.
+
+---
+
+### `Provisioning Profile "Threadbase Development" does not support the Time Sensitive Notifications capability`
+
+**When:** an on-device build fails after the app's entitlements gained `com.apple.developer.usernotifications.time-sensitive`. Deploy fails the same way on `Threadbase AppStore Distribution`.
+
+**Cause:** a profile's entitlements are fixed when Apple issues it. Enabling the capability on the App ID and saving the profile in the portal issues a new profile with a **new UUID**; every copy of the old one — installed locally or stored in a GitHub secret — still lacks the entitlement.
+
+**Fix:** after saving the profile in the portal, install the new copy (Xcode → Settings → Accounts → Download Manual Profiles, or the ASC API's `profileContent`). `dev-device.sh` picks it up on its own, since the selector requires every entitlement the target declares and prefers the newest profile. For CI, replace the profile secrets (`IOS_PROVISION_PROFILE_B64` + `IOS_PROVISION_PROFILE_UUID` for Deploy, `IOS_ADHOC_PROFILE_B64` for QA) and the matching UUID in `.env.signing`. Confirm from the file, not the portal UI:
+
+```bash
+security cms -D -i <profile>.mobileprovision | plutil -p - | grep time-sensitive
+```
 
 ---
 

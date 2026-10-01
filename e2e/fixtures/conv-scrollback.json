@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "id": "conv-scrollback",
+    "project_name": "storefront",
+    "project_path": "/workspace/northstar-commerce/apps/storefront",
+    "git_branch": "feat/health-endpoint",
+    "message_count": 5,
+    "last_updated_at": "2026-09-25T10:04:00.000Z"
+  },
+  "messages": [
+    {
+      "uuid": "sb-1",
+      "role": "user",
+      "message_index": 0,
+      "timestamp": "2026-09-25T10:00:00.000Z",
+      "text": "add a health endpoint"
+    },
+    {
+      "uuid": "sb-2",
+      "role": "assistant",
+      "message_index": 1,
+      "timestamp": "2026-09-25T10:00:40.000Z",
+      "text": "Added GET /healthz returning the build version."
+    },
+    {
+      "uuid": "sb-3",
+      "role": "user",
+      "message_index": 2,
+      "timestamp": "2026-09-25T10:02:00.000Z",
+      "text": "write a test for it"
+    },
+    {
+      "uuid": "sb-4",
+      "role": "assistant",
+      "message_index": 3,
+      "timestamp": "2026-09-25T10:02:50.000Z",
+      "text": "Test added, 1 passing."
+    },
+    {
+      "uuid": "sb-5",
+      "role": "user",
+      "message_index": 4,
+      "timestamp": "2026-09-25T10:04:00.000Z",
+      "text": "now run the whole suite"
+    }
+  ],
+  "message_pagination": {
+    "from_index": 0,
+    "total": 5,
+    "has_more_older": false,
+    "next_before_index": null
+  }
+}

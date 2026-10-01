@@ -65,6 +65,66 @@ const liveSockets = new Set()
 // are otherwise unreachable against a mock that always succeeds.
 let nextAnswerReply = { status: 200, reason: null }
 
+// ── terminal-scrollback scenario ────────────────────────────────────────────
+// Claude Code wipes its whole scrollback (ESC[2J ESC[3J ESC[H) whenever a live
+// frame taller than the viewport changes above it, then repaints only the
+// current frame. The app must keep earlier turns visible through that, which
+// no fixture can show on its own: it takes a replay, then a clear over the
+// live socket. Subscribing to SCROLLBACK_SESSION_ID gets exactly that.
+//
+// The replay still carries the prompt row, so the client anchors its live
+// region on it; the repaint after the clear does not — the same shape a real
+// long turn produces — so the client has to fall back to the transcript for
+// everything before the frame. Both branches of the join get exercised.
+const SCROLLBACK_SESSION_ID = 'session-scrollback'
+const SCROLLBACK_CLEAR_DELAY_MS = 2500
+const SCROLLBACK_REPLAY = {
+  type: 'terminal_replay',
+  sessionId: SCROLLBACK_SESSION_ID,
+  lines: [
+    '❯ now run the whole suite',
+    '⏺ Running the suite.',
+    '  Ran 1 shell command',
+    '✳ Brewing… (1m 1s · ↓ 2.1k tokens)',
+  ],
+  userMessages: [
+    { text: 'add a health endpoint', ts: 1 },
+    { text: 'write a test for it', ts: 2 },
+    { text: 'now run the whole suite', ts: 3 },
+  ],
+  seq: 1,
+  cols: 120,
+  rows: 40,
+}
+// Claude Code's full reset, byte for byte (see FS1/fb1 in its renderer),
+// followed by the repainted frame. Only the frame — nothing above it is sent
+// again, and the prompt row is gone with the rest of the scrollback.
+const SCROLLBACK_CLEAR_FRAME =
+  '\x1b[2J\x1b[3J\x1b[H' +
+  '⏺ Running the suite.\r\n' +
+  '  Ran 2 shell commands\r\n' +
+  '✳ Brewing… (1m 12s · ↓ 2.4k tokens)\r\n'
+
+// One replay + one clear per socket. The app re-subscribes on every
+// reconnect and the hub subscribes too; a second clear would only repeat
+// what the first already proved, while a replay is idempotent client-side.
+const scrollbackCleared = new WeakSet()
+function handleSubscribeScrollback(ws) {
+  ws.send(JSON.stringify(SCROLLBACK_REPLAY))
+  if (scrollbackCleared.has(ws)) return
+  scrollbackCleared.add(ws)
+  setTimeout(() => {
+    try {
+      ws.send(JSON.stringify({
+        type: 'terminal_output',
+        sessionId: SCROLLBACK_SESSION_ID,
+        data: SCROLLBACK_CLEAR_FRAME,
+        seq: 2,
+      }))
+    } catch { /* socket closed mid-flight */ }
+  }, SCROLLBACK_CLEAR_DELAY_MS)
+}
+
 function broadcast(frame) {
   for (const ws of liveSockets) {
     try {
@@ -211,6 +271,9 @@ async function handleRequest(req, res) {
   // - Unknown ids get an empty body — the screen renders the empty-state copy.
   const conversationMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
   if (method === 'GET' && conversationMatch) {
+    if (conversationMatch[1] === 'conv-scrollback') {
+      return json(res, 200, readFixture('conv-scrollback.json'))
+    }
     if (conversationMatch[1] === 'conv-many-messages') {
       return json(res, 200, readFixture('conversation-detail-many.json'))
     }
@@ -333,6 +396,11 @@ async function handleRequest(req, res) {
     // for ExternalSessionBanner (used by the marketing take-over screenshot).
     if (sessionMatch[1] === 'session-external') {
       return json(res, 200, readFixture('session-external.json'))
+    }
+    // A live Claude session with a transcript behind it, mid-turn — the
+    // terminal-scrollback flow (see the subscribe_session handler below).
+    if (sessionMatch[1] === SCROLLBACK_SESSION_ID) {
+      return json(res, 200, readFixture('session-scrollback.json'))
     }
     return json(res, 200, readFixture('session-detail.json'))
   }
@@ -632,8 +700,19 @@ for (const port of PORTS) {
       ws.send(JSON.stringify({ type: 'cache_ready' }))
       liveSockets.add(ws)
       ws.on('close', () => liveSockets.delete(ws))
-      // Swallow client messages (auth/register); the flows don't need replies.
-      ws.on('message', () => {})
+      // Client messages (register, hold/subscribe) need no reply, except a
+      // subscribe to the scrollback scenario's session.
+      ws.on('message', (raw) => {
+        let msg
+        try {
+          msg = JSON.parse(String(raw))
+        } catch {
+          return
+        }
+        if (msg?.type === 'subscribe_session' && msg.sessionId === SCROLLBACK_SESSION_ID) {
+          handleSubscribeScrollback(ws)
+        }
+      })
     })
   })
 

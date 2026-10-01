@@ -131,9 +131,12 @@
   "history": {
     "header_one": "History · {{count}} message",
     "header_other": "History · {{count}} messages",
-    "expandLabel": "Expand conversation history",
-    "collapseLabel": "Collapse conversation history",
-    "maximizeLabel": "Maximize conversation history",
-    "minimizeLabel": "Minimize conversation history"
+    "searchLabel": "Search conversation history"
+  },
+  "transcript": {
+    "live": "live",
+    "moreLines_one": "+{{count}} line",
+    "moreLines_other": "+{{count}} lines",
+    "hideLines": "hide"
   }
 }

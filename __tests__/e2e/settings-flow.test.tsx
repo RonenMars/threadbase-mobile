@@ -289,6 +289,28 @@ describe('Settings – about section', () => {
     expect(getByText('AI Agent Control Center')).toBeTruthy()
   })
 
+  it.each([
+    ['QA', 'QA · 67b3502'],
+    ['Pre-Release', 'Pre-Release · 67b3502'],
+    ['QA', 'QA · 67b3502-dirty'],
+  ])('shows %s and the short commit SHA for non-production builds', async (channel, expected) => {
+    const previousChannel = process.env.EXPO_PUBLIC_BUILD_CHANNEL
+    const previousSha = process.env.EXPO_PUBLIC_GIT_SHA
+    process.env.EXPO_PUBLIC_BUILD_CHANNEL = channel
+    process.env.EXPO_PUBLIC_GIT_SHA = expected.endsWith('-dirty') ? '67b3502-dirty' : '67b3502'
+
+    try {
+      const { getByText, queryByText } = await renderWithTheme(<SettingsScreen />)
+      expect(getByText(expected)).toBeTruthy()
+      expect(queryByText('AI Agent Control Center')).toBeNull()
+    } finally {
+      if (previousChannel === undefined) delete process.env.EXPO_PUBLIC_BUILD_CHANNEL
+      else process.env.EXPO_PUBLIC_BUILD_CHANNEL = previousChannel
+      if (previousSha === undefined) delete process.env.EXPO_PUBLIC_GIT_SHA
+      else process.env.EXPO_PUBLIC_GIT_SHA = previousSha
+    }
+  })
+
   it('opens onboarding in explicit review mode', async () => {
     const { getByText } = await renderWithTheme(<SettingsScreen />)
 

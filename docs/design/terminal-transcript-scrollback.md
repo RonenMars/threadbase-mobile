@@ -1,7 +1,7 @@
 # Terminal scrollback from the transcript
 
-Status: proposed, not started.
-Date: 2026-09-25.
+Status: in progress on `feat/terminal-transcript-scrollback` — steps 1–5 of the work plan landed; the Maestro flow (step 6) is open.
+Date: 2026-09-25, updated 2026-09-27.
 
 ## Problem
 
@@ -142,10 +142,18 @@ splitTerminalView({
 
 ## Fallback
 
-If there is no `conversationId` (no transcript yet, or a provider whose history is not indexed, such as Cursor without `cursorRoots`), render the grid as today.
+If there is no `conversationId` (no transcript yet, or a provider whose history is not indexed, such as Cursor without `cursorRoots`), the grid is all there is.
 
-In that mode the clear still wipes history.
-If that matters, apply the small fix that stays out of scope here: `2J` clears only the viewport rows and `3J` is ignored, rewriting the two `virtual-terminal.test.ts` cases that assert the wipe.
+A clear no longer wipes it (landed 2026-09-27, `fix/terminal-keep-history-across-clears` here and `fix/replay-history-across-screen-clears` in tb-streamer):
+
+- `VirtualTerminal` moves the grid's rows into a kept-history list before a `2J`/`3J` erases them.
+  `getLines()` returns that history then the screen; `getFrameLines()` returns the screen alone.
+  The history sits outside `grid`, so row addressing, which derives its origin from `grid.length`, is unchanged.
+- The streamer's render terminal does the same (`ClearArchive` in `src/pty-shared.ts`), so a replay after a reconnect, or to a device that was not watching, carries the history too.
+  `terminal_replay.archivedLineCount` marks where it ends; the client seeds it as history rather than feeding it as screen.
+- The transcript join reads `frameLines`, never `lines`, so kept history can never reach the live region and repeat what the transcript shows.
+
+What a clear still costs: history older than the caps (4000 rows on the streamer, 10 000 on the client), and a provider that reprints its whole history after a clear would show it twice (Claude Code 2.1.42 does not).
 
 `setRawMode` stays as an escape hatch: it shows the grid with no join, for debugging a join that looks wrong.
 
@@ -172,15 +180,15 @@ Each one takes one capture.
 
 Mobile:
 
-1. `lib/splitTerminalView.ts` and its unit tests, with fixtures taken from real captures (see above).
-2. Feed `useConversationStream` + `mergeLiveMessages` into the terminal screen instead of the `SessionHistoryFeed` snapshot.
-3. A single list in `TerminalView`: transcript rows, then the live divider, then `TerminalOutput` rows. Remove `historyFull`.
-4. A compact terminal-styled transcript row, with a story (required for new components).
-5. Fold logic keyed on the turn signal, with the 2 s fallback.
-6. A Maestro flow using `e2e/mock-server.js`: a long turn with a scripted `2J 3J H` in the middle must keep the earlier turns visible.
+1. Done — `lib/splitTerminalView.ts` (`splitTerminalView`, `hasReplyInTranscript`, `resolveTurnFold`) and `__tests__/unit/lib/splitTerminalView.test.ts`. Fixtures are synthetic until the captures above exist.
+2. Done — `hooks/useTerminalTranscript.ts` merges `useConversation` + `useConversationStream` with `mergeLiveMessages`; `SessionHistoryFeed` is removed.
+3. Done — `TerminalOutput` renders one FlashList over transcript rows, a `live` divider and PTY rows; `TerminalView` keeps a one-line header (count + search, which opens the conversation screen's search).
+4. Done — `components/terminal/TranscriptRow.tsx` + story.
+5. Done — the fold lives in `useTerminalTranscript`; `Session.statusSource` is now read on the client.
+6. Open — a Maestro flow using `e2e/mock-server.js`: a long turn with a scripted `2J 3J H` in the middle must keep the earlier turns visible.
 
 Streamer: no change is required.
-Optional and additive: stamp `terminal_output` with a `clearEpoch` counter so the client can tell "since last clear" without parsing escapes.
+Additive, landed with the fallback fix: `terminal_replay.archivedLineCount` separates kept history from the current frame. A `clearEpoch` on `terminal_output` turned out unnecessary: the client parses the clear itself.
 Also record in `docs/plans/2026-08-12-viewport-relative-cursor-positioning.md` that the `2J`/`3J` frequency is now verified, which is the question that doc left open.
 
 ## Out of scope

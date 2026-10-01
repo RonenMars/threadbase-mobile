@@ -251,10 +251,12 @@ signing also ignores hand-made profiles, so the only way through is manual signi
 different provisioning profile *per target* — which cannot be expressed on the `xcodebuild`
 command line, because command-line build settings apply to every target at once.
 
-`dev-device.sh` resolves that: it scans the profiles already installed on the machine,
-picks a development profile (one with `ProvisionedDevices`) whose app-id matches and which
-grants App Groups, and feeds them per target via `XCODE_XCCONFIG_FILE`. It needs no
-per-machine configuration.
+`dev-device.sh` resolves that: `scripts/select-dev-profile.py` scans the profiles already
+installed on the machine and picks, per target, the newest development profile
+(`get-task-allow`, not Xcode-managed, unexpired) that grants every entitlement in that
+target's `.entitlements` file; `dev-device.sh` feeds them via `XCODE_XCCONFIG_FILE`. It
+needs no per-machine configuration, and it fails with each candidate's rejection reason
+when nothing fits.
 
 A path that skips it fails to sign with six errors and `xcodebuild` exits 65 — and the
 failure names App Groups, not signing, so it reads as a project misconfiguration rather
