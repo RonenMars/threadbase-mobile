@@ -617,7 +617,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = FD8066D9ED1C6EEA1C86D899 /* Pods-Threadbase.debug.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon$(TB_APPICON_SUFFIX)";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Threadbase/Threadbase.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
@@ -644,7 +644,7 @@
 					dynamic_lookup,
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ronenmars.threadbase;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX)";
 				PRODUCT_NAME = Threadbase;
 				PROVISIONING_PROFILE_SPECIFIER = "$(IOS_PROVISION_PROFILE_UUID)";
 				SUPPORTS_MACCATALYST = NO;
@@ -652,6 +652,7 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TB_DISPLAY_NAME = Threadbase;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Debug;
@@ -660,7 +661,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0703FA81CD60FD6C48D4B8FE /* Pods-Threadbase.release.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon$(TB_APPICON_SUFFIX)";
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Threadbase/Threadbase.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
@@ -679,13 +680,14 @@
 					"-framework SwiftUI",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ronenmars.threadbase;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX)";
 				PRODUCT_NAME = Threadbase;
 				PROVISIONING_PROFILE_SPECIFIER = "$(IOS_PROVISION_PROFILE_UUID)";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "Threadbase/Threadbase-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				TB_DISPLAY_NAME = Threadbase;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
@@ -705,7 +707,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ronenmars.threadbase.widgets;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX).widgets";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(IOS_WIDGET_PROVISION_PROFILE_UUID)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -865,7 +867,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				MARKETING_VERSION = 1.0;
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ronenmars.threadbase.widgets;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX).widgets";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(IOS_WIDGET_PROVISION_PROFILE_UUID)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";

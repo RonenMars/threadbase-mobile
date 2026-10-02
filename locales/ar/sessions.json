@@ -75,8 +75,7 @@
     "tierRecent": "حديثة",
     "tierOlder": "أقدم",
     "showOlder": "إظهار",
-    "hideOlder": "إخفاء",
-    "filterPlaceholder": "تصفية المشاريع أو المسارات…"
+    "hideOlder": "إخفاء"
   },
   "loading": {
     "title": "جارٍ تحميل السيشنات",

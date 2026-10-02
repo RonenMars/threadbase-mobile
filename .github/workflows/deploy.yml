@@ -79,11 +79,21 @@ jobs:
                "upload) — a branch's other changes land on main only when its own PR is" \
                "merged; a tag is a pinned snapshot with no separate PR."
 
-      - uses: actions/checkout@v5
+      - name: Checkout application source
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.deploy_ref }}
-          # persist-credentials lets us push the version-bump branch
           persist-credentials: true
+
+      - name: Checkout shipping tooling
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+          path: .ship-workflow
+          persist-credentials: false
+
+      - name: Exclude shipping tooling from application git status
+        run: echo '/.ship-workflow/' >> .git/info/exclude
 
       - uses: actions/setup-node@v5
         with:
@@ -111,7 +121,7 @@ jobs:
           IOS_PROVISION_PROFILE_UUID: ${{ secrets.IOS_PROVISION_PROFILE_UUID }}
           IOS_WIDGET_PROVISION_PROFILE_B64: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_B64 }}
           IOS_WIDGET_PROVISION_PROFILE_UUID: ${{ secrets.IOS_WIDGET_PROVISION_PROFILE_UUID }}
-        run: ./scripts/bootstrap-ios-signing.sh
+        run: ./.ship-workflow/scripts/bootstrap-ios-signing.sh
 
       - name: Install npm dependencies
         run: npm ci
@@ -140,7 +150,7 @@ jobs:
           # The runner's checkout path differs from every developer machine, so three
           # pods regenerate path-dependent checksums here. Drop that noise so the
           # version-bump PR below only lands real lockfile changes.
-          ./scripts/reset-podfile-lock-path-noise.sh
+          ./.ship-workflow/scripts/reset-podfile-lock-path-noise.sh
 
       - name: Validate and bump version + build number (working tree only)
         run: |
@@ -152,7 +162,7 @@ jobs:
           # The updated app.json stays in the working tree so the ship step builds
           # with the resolved values; the push to main happens only AFTER a
           # successful upload (see step below).
-          ./scripts/check-build-number.sh && true || {
+          ./.ship-workflow/scripts/check-build-number.sh && true || {
             code=$?
             [[ $code -eq 2 ]] || exit $code
           }
@@ -191,7 +201,7 @@ jobs:
             ARGS+=(--release-notes "$RELEASE_NOTES")
           fi
           set +e
-          ./scripts/ship-ios.sh "${ARGS[@]}"
+          ./.ship-workflow/scripts/ship-ios.sh "${ARGS[@]}"
           SHIP_EXIT=$?
           set -e
           # Exit 137 = poll-build timeout after 30 min (expected, build already uploaded)
@@ -285,29 +295,14 @@ jobs:
             git push --force origin "HEAD:refs/heads/${BRANCH}"
           )
           git worktree remove /tmp/bump-main-ios --force
-          # Shared admin-merge: create PR (GITHUB_TOKEN) then squash-merge with
-          # GH_PUSH_TOKEN / GH_PAT so the admin role bypasses required checks.
-          # Older deploy_ref trees may lack the helper; take it from main then.
-          if [[ ! -f scripts/admin-merge-pr.sh ]]; then
-            git checkout origin/main -- scripts/admin-merge-pr.sh
-          fi
-          ./scripts/admin-merge-pr.sh "$BRANCH" "$TITLE" \
+          # Admin-merge helper comes from the workflow-selected tooling ref.
+          ./.ship-workflow/scripts/admin-merge-pr.sh "$BRANCH" "$TITLE" \
             "Automated version bump after successful TestFlight upload (build ${BUMPED_BUILD_NUMBER})."
           echo "✓ version bump merged to main (build ${BUMPED_BUILD_NUMBER})"
 
-      - name: Ensure tag-release action present (from main)
-        # The composite action is resolved from the checked-out tree. A deploy_ref
-        # branch that predates this action wouldn't contain it, so materialize the
-        # actions dir from origin/main before the local `uses:` below. Runs only
-        # for non-main builds; building main already has it checked out.
-        if: ${{ success() && inputs.deploy_ref != 'main' }}
-        run: |
-          git fetch origin main
-          git checkout origin/main -- .github/actions
-
       - name: Tag + GitHub Release (iOS)
         if: success()
-        uses: ./.github/actions/tag-release
+        uses: ./.ship-workflow/.github/actions/tag-release
         with:
           platform: ios
           version: ${{ env.BUMPED_BUILD_NUMBER }}
@@ -335,10 +330,21 @@ jobs:
                "upload) — a branch's other changes land on main only when its own PR is" \
                "merged; a tag is a pinned snapshot with no separate PR."
 
-      - uses: actions/checkout@v5
+      - name: Checkout application source
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.deploy_ref }}
           persist-credentials: true
+
+      - name: Checkout shipping tooling
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+          path: .ship-workflow
+          persist-credentials: false
+
+      - name: Exclude shipping tooling from application git status
+        run: echo '/.ship-workflow/' >> .git/info/exclude
 
       - uses: actions/setup-node@v5
         with:
@@ -358,7 +364,7 @@ jobs:
         run: |
           # Materializes the SA JSON to the cache path ship-android.sh checks,
           # then exports its path so later steps (version check, upload) authenticate.
-          CREDS_PATH="$(./scripts/fetch-play-credentials.sh)"
+          CREDS_PATH="$(./.ship-workflow/scripts/fetch-play-credentials.sh)"
           echo "GOOGLE_APPLICATION_CREDENTIALS=${CREDS_PATH}" >> "$GITHUB_ENV"
 
       - name: Bootstrap Android signing
@@ -367,7 +373,7 @@ jobs:
           ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./scripts/bootstrap-android-signing.sh
+        run: ./.ship-workflow/scripts/bootstrap-android-signing.sh
 
       - name: Write Firebase config
         env:
@@ -380,7 +386,7 @@ jobs:
             exit 1
           fi
           echo "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
-          jq -e '.client[].client_info.android_client_info.package_name == "com.ronenmars.threadbase"' android/app/google-services.json > /dev/null
+          jq -e 'any(.client[]; .client_info.android_client_info.package_name == "com.ronenmars.threadbase")' android/app/google-services.json > /dev/null
 
       - name: Set git identity
         run: |
@@ -404,7 +410,7 @@ jobs:
           # against the latest Play build, picks max/max+1, updates app.json +
           # build.gradle in the working tree, and exits 2 (does not commit).
           # Exit 0 = already correct, exit 2 = bumped, anything else = real error.
-          ./scripts/check-version-code.sh && true || {
+          ./.ship-workflow/scripts/check-version-code.sh && true || {
             code=$?
             [[ $code -eq 2 ]] || exit $code
           }
@@ -427,7 +433,7 @@ jobs:
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
         run: |
-          ./scripts/ship-android.sh \
+          ./.ship-workflow/scripts/ship-android.sh \
             --track "$ANDROID_TRACK" \
             --skip-git-sync \
             --skip-version-check \
@@ -504,29 +510,14 @@ jobs:
             git push --force origin "HEAD:refs/heads/${BRANCH}"
           )
           git worktree remove /tmp/bump-main --force
-          # Shared admin-merge: create PR (GITHUB_TOKEN) then squash-merge with
-          # GH_PUSH_TOKEN / GH_PAT so the admin role bypasses required checks.
-          # Older deploy_ref trees may lack the helper; take it from main then.
-          if [[ ! -f scripts/admin-merge-pr.sh ]]; then
-            git checkout origin/main -- scripts/admin-merge-pr.sh
-          fi
-          ./scripts/admin-merge-pr.sh "$BRANCH" "$TITLE" \
+          # Admin-merge helper comes from the workflow-selected tooling ref.
+          ./.ship-workflow/scripts/admin-merge-pr.sh "$BRANCH" "$TITLE" \
             "Automated version bump after successful Play upload (versionCode ${BUMPED_VERSION_CODE})."
           echo "✓ version bump merged to main (versionCode ${BUMPED_VERSION_CODE})"
 
-      - name: Ensure tag-release action present (from main)
-        # The composite action is resolved from the checked-out tree. A deploy_ref
-        # branch that predates this action wouldn't contain it, so materialize the
-        # actions dir from origin/main before the local `uses:` below. Runs only
-        # for non-main builds; building main already has it checked out.
-        if: ${{ success() && inputs.deploy_ref != 'main' }}
-        run: |
-          git fetch origin main
-          git checkout origin/main -- .github/actions
-
       - name: Tag + GitHub Release (Android)
         if: success()
-        uses: ./.github/actions/tag-release
+        uses: ./.ship-workflow/.github/actions/tag-release
         with:
           platform: android
           version: ${{ env.BUMPED_VERSION_CODE }}

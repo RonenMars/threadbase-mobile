@@ -73,6 +73,19 @@ case "$TRACK" in internal|alpha|beta|production) ;;
   *) echo "--track must be one of: internal alpha beta production" >&2; exit 2 ;;
 esac
 
+# Capture source identity before this script mutates version/lock files. This is
+# baked into the JS bundle so Settings identifies the exact source that shipped.
+_BUILD_GIT_SHA="$(git rev-parse --short=7 HEAD)"
+if [[ -n "$(git status --porcelain)" ]]; then
+  _BUILD_GIT_SHA="${_BUILD_GIT_SHA}-dirty"
+fi
+export EXPO_PUBLIC_GIT_SHA="$_BUILD_GIT_SHA"
+if [[ "$TRACK" != production ]]; then
+  export EXPO_PUBLIC_BUILD_CHANNEL="Pre-Release"
+else
+  unset EXPO_PUBLIC_BUILD_CHANNEL
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOTAL_STEPS=8
 

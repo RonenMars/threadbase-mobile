@@ -36,9 +36,3 @@ export function projectRailToken(group: ProjectGroup): SessionColorToken | null 
   }
   return token
 }
-
-export function matchesProjectFilter(group: ProjectGroup, query: string): boolean {
-  const q = query.trim().toLowerCase()
-  if (!q) return true
-  return group.projectName.toLowerCase().includes(q) || group.projectPath.toLowerCase().includes(q)
-}

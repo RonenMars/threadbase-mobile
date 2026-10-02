@@ -67,8 +67,7 @@
     "tierRecent": "НЕДАВНИЕ",
     "tierOlder": "СТАРЫЕ",
     "showOlder": "Показать",
-    "hideOlder": "Скрыть",
-    "filterPlaceholder": "Фильтр проектов или путей…"
+    "hideOlder": "Скрыть"
   },
   "loading": {
     "title": "Загрузка сессий",

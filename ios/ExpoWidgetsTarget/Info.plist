@@ -7,7 +7,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ExpoWidgetsAppGroupIdentifier</key>
-	<string>group.com.ronenmars.threadbase</string>
+	<string>group.com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX)</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionPointIdentifier</key>

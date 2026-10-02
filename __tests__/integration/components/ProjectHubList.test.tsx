@@ -92,17 +92,6 @@ describe('ProjectHubList tiers', () => {
     expect(queryByText('Show')).toBeNull()
   })
 
-  it('narrows the cards with the path filter', async () => {
-    const { getByTestId, queryByText, getByText } = await renderHub(
-      [liveSession],
-      [summary('fresh', DAY), summary('old-one', 40 * DAY)],
-    )
-    fireEvent.changeText(getByTestId('hub-project-filter'), 'old')
-    await waitFor(() => expect(queryByText('ACTIVE · 1')).toBeNull())
-    expect(queryByText('RECENT')).toBeNull()
-    expect(getByText('OLDER · 1')).toBeTruthy()
-    expect(getByTestId('hub-project-old-one')).toBeTruthy()
-  })
 })
 
 describe('ProjectHubList server failure', () => {
