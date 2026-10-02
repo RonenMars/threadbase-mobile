@@ -84,12 +84,7 @@ Deploy checks that file for `com.ronenmars.threadbase`, QA for `com.ronenmars.th
 |---|---|---|
 | iOS | `com.ronenmars.threadbase` | APNs key `VP6ZKX6L6N` |
 | iOS | `com.ronenmars.threadbase.dev` | the same APNs key, added 2026-10-02 |
-| Android | `com.ronenmars.threadbase` | FCM V1 key of `firebase-adminsdk-fbsvc`, added 2026-10-02 |
-| Android | `com.ronenmars.threadbase.dev` | the same FCM V1 key, added 2026-10-02 |
-
-The Android entries also hold an upload keystore with the alias `placeholder`.
-It signs nothing: Expo's web wizard refuses to create an Android identifier without a keystore, and the local and GitHub Actions ship paths sign Android themselves, so the real Play upload key was kept out of Expo.
-The opt-in EAS cloud path (`/ship-expo-cloud`) is the exception: an Android build there would be signed with the placeholder and rejected by Play, so replace it with the real upload keystore before running one.
+| Android | both packages | FCM V1 key set |
 
 ## Open items
 
