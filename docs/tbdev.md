@@ -84,13 +84,17 @@ Deploy checks that file for `com.ronenmars.threadbase`, QA for `com.ronenmars.th
 |---|---|---|
 | iOS | `com.ronenmars.threadbase` | APNs key `VP6ZKX6L6N` |
 | iOS | `com.ronenmars.threadbase.dev` | the same APNs key, added 2026-10-02 |
-| Android | either package | **no FCM V1 service-account key uploaded** |
+| Android | `com.ronenmars.threadbase` | FCM V1 key of `firebase-adminsdk-fbsvc`, added 2026-10-02 |
+| Android | `com.ronenmars.threadbase.dev` | the same FCM V1 key, added 2026-10-02 |
+
+The Android entries also hold an upload keystore with the alias `placeholder`.
+It signs nothing: Expo's web wizard refuses to create an Android identifier without a keystore, and the local and GitHub Actions ship paths sign Android themselves, so the real Play upload key was kept out of Expo.
+The opt-in EAS cloud path (`/ship-expo-cloud`) is the exception: an Android build there would be signed with the placeholder and rejected by Play, so replace it with the real upload keystore before running one.
 
 ## Open items
 
-- **Android push cannot deliver for either app** until an FCM V1 service-account key is uploaded to Expo for each package.
-- **No push has been sent to TbDev yet**, so iOS delivery is configured but unproven.
-- **No QA Android run has exercised the "Write Firebase config" step** added in #1220, and no Deploy run has used the two-client secret.
+- **No push has been sent to TbDev yet**, so delivery is configured but unproven on both platforms.
+- **No Deploy run has used the two-client `GOOGLE_SERVICES_JSON_B64` yet.** The QA side is proven: the "Write Firebase config" step passed in [run 37058935537](https://github.com/RonenMars/threadbase-mobile/actions/runs/37058935537).
 - **TbDev Android has not been installed on a device.** The iOS build is confirmed side by side with Threadbase on an iPhone.
 - **Both apps register `threadbase://`**, so with both installed the system picks which one opens a deep link.
 
@@ -100,4 +104,5 @@ Deploy checks that file for `com.ronenmars.threadbase`, QA for `com.ronenmars.th
 - **`jq -e '.client[] | … == "x"'` answers for the last element only.** The filter emits one boolean per client and the exit status follows the last one, so a two-client file passes or fails by order. Use `any(.client[]; … == "x")`.
 - **`bundle exec pod install` fails in a fresh worktree** with `Could not find gem 'fastlane'`, because the gems are vendored in the main checkout. Set `BUNDLE_PATH=<main checkout>/vendor/bundle`.
 - **A local Gradle build leaves `android/app/src/main/assets/modules.json` untracked.** Delete it before staging.
+- **Expo's Android wizard files the Firebase key in the wrong slot.** Its service-account step stores the JSON as "Google service account key for EAS Submit" and leaves "FCM V1 service account key" empty, which is the one push uses. Open the identifier afterwards and assign it under FCM V1 → "Choose saved key".
 - **Remove a Firebase app with `{"immediate": false}`.** `POST …/iosApps/{id}:remove` then keeps it restorable for 30 days; `immediate: true` deletes it for good.
