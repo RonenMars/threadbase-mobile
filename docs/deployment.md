@@ -542,7 +542,7 @@ It reuses Deploy's signing and Sentry secrets and the `EXPO_PUBLIC_SENTRY_DSN` v
 | `FIREBASE_APP_ID_ANDROID` | variable | The TbDev Android app ID from the same page |
 
 No Google key is stored: `google-github-actions/auth` exchanges the job's GitHub OIDC token for a short-lived access token and hands it to the script as `FIREBASE_ACCESS_TOKEN`.
-The `FIREBASE_SA_JSON_B64` secret this replaced (#1211) is read by nothing; delete it and revoke its service-account key.
+The `FIREBASE_SA_JSON_B64` secret this replaced (#1211) was deleted on 2026-10-02; a branch whose `qa.yml` predates #1211 fails at Firebase auth if the workflow is dispatched from that branch, until it is rebased.
 
 The workflow reads each profile's UUID from the profile itself, so after registering a device and regenerating the profiles, re-uploading the two profile secrets is the whole update.
 
