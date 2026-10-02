@@ -11,6 +11,7 @@ import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
+import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
 import { LiveCard } from './LiveCard'
 
 /** Wait stamps are fixed, so the card ticks locally or the number freezes. */
@@ -42,7 +43,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
-  const { handlePress, handleLongPress, handleMenuPress, overlays, endStatus } = useSessionRowActions(session, title)
+  const { handlePress, handleLongPress, handleMenuPress, overlays, endStatus, swipe } = useSessionRowActions(session, title)
   const stamp = waitSinceIso(session)
   const now = useNow(stamp != null)
   const wait = formatWaitSince(stamp, now)
@@ -52,40 +53,42 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const projectLabel = shortPath(session.projectPath)
 
   return (
-    <LiveCard
-      title={title}
-      color={theme.status.waiting}
-      emphasis="solid"
-      serverLabel={serverLabel}
-      serverColor={serverColor}
-      provider={session.provider}
-      dominantProvider={dominantProvider}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      onMenuPress={handleMenuPress}
-      accessibilityLabel={accessibilityLabel}
-      testID={`session-row-${session.id}`}
-      isFirst={isFirst}
-    >
-      <StateBadge tier="needsYou" qualifier={qualifier} />
-      {session.lastOutput ? (
-        <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
-      ) : null}
-      <View style={styles.footer}>
-        {projectLabel ? (
-          <Text style={styles.footerMono} numberOfLines={1}>{projectLabel}</Text>
+    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing}>
+      <LiveCard
+        title={title}
+        color={theme.status.waiting}
+        emphasis="solid"
+        serverLabel={serverLabel}
+        serverColor={serverColor}
+        provider={session.provider}
+        dominantProvider={dominantProvider}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        onMenuPress={handleMenuPress}
+        accessibilityLabel={accessibilityLabel}
+        testID={`session-row-${session.id}`}
+        isFirst={isFirst}
+      >
+        <StateBadge tier="needsYou" qualifier={qualifier} />
+        {session.lastOutput ? (
+          <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
         ) : null}
-        {session.branch ? (
-          <>
-            {projectLabel ? <Text style={styles.footerSep}>·</Text> : null}
-            <Text style={styles.footerMono} numberOfLines={1}>{session.branch}</Text>
-          </>
-        ) : null}
-        <Text style={styles.open}>{t('row.open')} →</Text>
-      </View>
-      <EndSessionStatus {...endStatus} />
-      {overlays}
-    </LiveCard>
+        <View style={styles.footer}>
+          {projectLabel ? (
+            <Text style={styles.footerMono} numberOfLines={1}>{projectLabel}</Text>
+          ) : null}
+          {session.branch ? (
+            <>
+              {projectLabel ? <Text style={styles.footerSep}>·</Text> : null}
+              <Text style={styles.footerMono} numberOfLines={1}>{session.branch}</Text>
+            </>
+          ) : null}
+          <Text style={styles.open}>{t('row.open')} →</Text>
+        </View>
+        <EndSessionStatus {...endStatus} />
+        {overlays}
+      </LiveCard>
+    </SwipeableRow>
   )
 }
 
