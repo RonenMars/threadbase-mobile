@@ -65,6 +65,12 @@ describe('classifyPairCredential', () => {
     ).toBe('pair-uri')
   })
 
+  it('detects threadbase-dev:// pair URIs', () => {
+    expect(
+      classifyPairCredential('threadbase-dev://pair?url=https%3A%2F%2Fa.test&token=pt_abc'),
+    ).toBe('pair-uri')
+  })
+
   it('detects short-lived pt_ pair tokens', () => {
     expect(classifyPairCredential('pt_abcdef0123456789')).toBe('pair-token')
     expect(classifyPairCredential('  pt_x  ')).toBe('pair-token')
@@ -87,6 +93,12 @@ describe('parsePairUri', () => {
     expect(out.url).toBe('https://example.test')
     expect(out.token).toBe('pt_abc')
     expect(out.exp).toBe(futureExp)
+  })
+
+  it('parses a threadbase-dev pair URI the same way', () => {
+    const out = parsePairUri('threadbase-dev://pair?url=https%3A%2F%2Fa.test&token=pt_x')
+    expect(out.url).toBe('https://a.test')
+    expect(out.token).toBe('pt_x')
   })
 
   it('returns undefined exp when missing', () => {

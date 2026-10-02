@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>threadbase</string>
+          <string>threadbase$(TB_SCHEME_SUFFIX)</string>
           <string>com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX)</string>
         </array>
       </dict>

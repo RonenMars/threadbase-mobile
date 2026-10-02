@@ -1,6 +1,7 @@
 import type { LiveActivity } from 'expo-widgets'
 
 import SessionLiveActivity from '@/widgets/SessionLiveActivity'
+import { APP_SCHEME } from '@/lib/appScheme'
 import i18n from '@/lib/i18n'
 import { isLiveActivityEnabled } from '@/services/live-activity-enabled'
 import { sessionOpensAsHistory, sessionPhase } from '@/lib/sessionPresentation'
@@ -163,7 +164,7 @@ function tracked(): TrackedActivity[] {
 }
 
 function deepLink(state: LiveSessionState): string {
-  return `threadbase://session/${state.sessionId}?server=${state.serverId}`
+  return `${APP_SCHEME}://session/${state.sessionId}?server=${state.serverId}`
 }
 
 async function apply(action: LiveActivityAction): Promise<void> {
