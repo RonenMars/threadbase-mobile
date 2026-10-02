@@ -12,6 +12,7 @@ import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
+import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
 import { LiveCard } from './LiveCard'
 
 interface Props {
@@ -71,7 +72,7 @@ const sweepStyles = StyleSheet.create({
 export function WorkingCard({ session, title, serverLabel, serverColor, dominantProvider, isFirst }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
-  const { handlePress, handleLongPress, handleMenuPress, overlays, endStatus } = useSessionRowActions(session, title)
+  const { handlePress, handleLongPress, handleMenuPress, overlays, endStatus, swipe } = useSessionRowActions(session, title)
   const { subStatus } = deriveSessionPresentation(session)
   const phase = subStatus ? getAgentPhaseLabel(subStatus, t) : null
   const elapsed = formatCoarseElapsed(session.elapsedMs)
@@ -79,26 +80,28 @@ export function WorkingCard({ session, title, serverLabel, serverColor, dominant
   const tierLabel = getSessionTierLabel('working', t)
 
   return (
-    <LiveCard
-      title={title}
-      color={theme.status.running}
-      emphasis="faint"
-      serverLabel={serverLabel}
-      serverColor={serverColor}
-      provider={session.provider}
-      dominantProvider={dominantProvider}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      onMenuPress={handleMenuPress}
-      accessibilityLabel={`${title}, ${tierLabel}`}
-      testID={`session-row-${session.id}`}
-      isFirst={isFirst}
-    >
-      <StateBadge tier="working" qualifier={qualifier} />
-      <SweepBar color={theme.status.running} track={trackColor(theme)} />
-      <EndSessionStatus {...endStatus} />
-      {overlays}
-    </LiveCard>
+    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing}>
+      <LiveCard
+        title={title}
+        color={theme.status.running}
+        emphasis="faint"
+        serverLabel={serverLabel}
+        serverColor={serverColor}
+        provider={session.provider}
+        dominantProvider={dominantProvider}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        onMenuPress={handleMenuPress}
+        accessibilityLabel={`${title}, ${tierLabel}`}
+        testID={`session-row-${session.id}`}
+        isFirst={isFirst}
+      >
+        <StateBadge tier="working" qualifier={qualifier} />
+        <SweepBar color={theme.status.running} track={trackColor(theme)} />
+        <EndSessionStatus {...endStatus} />
+        {overlays}
+      </LiveCard>
+    </SwipeableRow>
   )
 }
 
