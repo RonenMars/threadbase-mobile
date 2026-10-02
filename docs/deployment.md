@@ -533,11 +533,16 @@ It reuses Deploy's signing and Sentry secrets and the `EXPO_PUBLIC_SENTRY_DSN` v
 
 | Name | Kind | Value |
 |---|---|---|
-| `FIREBASE_SA_JSON_B64` | secret | `base64 -i key.json` of a Google Cloud service account in the Firebase project with the **Firebase App Distribution Admin** role |
+| `GCP_PROJECT_ID` | variable | The Firebase project ID |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | variable | Full resource name of the Workload Identity provider restricted to this repository |
+| `GCP_FIREBASE_SERVICE_ACCOUNT` | variable | Email of the service account the workflow impersonates; it holds the **Firebase App Distribution Admin** role |
 | `IOS_ADHOC_PROFILE_B64` | secret | `base64 -i` of the app's Ad Hoc profile (`com.ronenmars.threadbase.dev`) |
 | `IOS_WIDGET_ADHOC_PROFILE_B64` | secret | `base64 -i` of the widget's Ad Hoc profile (`com.ronenmars.threadbase.dev.widgets`) |
 | `FIREBASE_APP_ID_IOS` | variable | The TbDev iOS app ID from Firebase → Project settings → Your apps |
 | `FIREBASE_APP_ID_ANDROID` | variable | The TbDev Android app ID from the same page |
+
+No Google key is stored: `google-github-actions/auth` exchanges the job's GitHub OIDC token for a short-lived access token and hands it to the script as `FIREBASE_ACCESS_TOKEN`.
+The `FIREBASE_SA_JSON_B64` secret this replaced (#1211) is read by nothing; delete it and revoke its service-account key.
 
 The workflow reads each profile's UUID from the profile itself, so after registering a device and regenerating the profiles, re-uploading the two profile secrets is the whole update.
 
@@ -547,7 +552,8 @@ The workflow reads each profile's UUID from the profile itself, so after registe
    Create a tester group named `qa` and add the testers to that group; a tester added only to the project gets no email.
    The script refuses to build for a group with no testers, because Firebase reports a distribution to an empty group as a success.
 2. **App IDs.** Copy both from Project settings → Your apps, and export them as `FIREBASE_APP_ID_IOS` and `FIREBASE_APP_ID_ANDROID`.
-3. **Firebase credentials.** Either run `npx firebase-tools login` once, or create a service account with the **Firebase App Distribution Admin** role and export `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json`.
+3. **Firebase credentials.** Run `gcloud auth application-default login` once with an account that has the **Firebase App Distribution Admin** role, or export `FIREBASE_ACCESS_TOKEN` with a short-lived OAuth access token.
+   The script uses the token when it is set and falls back to gcloud ADC otherwise.
 4. **iOS Ad Hoc signing.** In the Apple Developer portal:
    - Register each QA iPhone's UDID. Firebase can collect UDIDs when a tester opens the invite on the device.
    - Create **two** Ad Hoc distribution profiles, for `com.ronenmars.threadbase.dev` and `com.ronenmars.threadbase.dev.widgets`, both with the App Group `group.com.ronenmars.threadbase.dev`, and install both.
