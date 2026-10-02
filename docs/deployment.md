@@ -490,8 +490,8 @@ The binary is **TbDev**, not Threadbase: bundle ID and Android package `com.rone
 It installs beside the App Store, TestFlight or Play build instead of replacing it, and shares none of its data.
 The script passes `TB_BUNDLE_ID_SUFFIX`, `TB_APPICON_SUFFIX` and `TB_DISPLAY_NAME` to `xcodebuild` and `-PtbVariant=dev` to Gradle; a build that sets none of them is Threadbase, unchanged.
 Both apps register the `threadbase://` scheme, so with both installed the system decides which one opens such a link.
-TbDev gets no push notifications until the streamer can address its bundle ID.
-A local Android build with `android/app/google-services.json` present needs a `com.ronenmars.threadbase.dev` client in that file.
+Push reaches TbDev only once Expo holds credentials for its identifiers: an APNs key for `com.ronenmars.threadbase.dev` on iOS and the FCM V1 service-account key for the same package on Android.
+`GOOGLE_SERVICES_JSON_B64` is one file with both Android clients, `com.ronenmars.threadbase` and `com.ronenmars.threadbase.dev`; Deploy and QA each check for their own, and a local Android build with `android/app/google-services.json` present needs the same.
 
 Nothing is bumped or committed.
 A build carries the current `app.json` build number (iOS) or `android/app/build.gradle` versionCode (Android), and Sentry's release and dist match it.
