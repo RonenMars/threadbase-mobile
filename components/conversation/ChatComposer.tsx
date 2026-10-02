@@ -39,6 +39,8 @@ export interface ChatComposerProps {
   onChangeText: (text: string) => void
   onSend: () => void
   onAttach: () => void
+  /** Aborts an in-flight upload; when given, the spinner becomes a stop button. */
+  onCancelUpload?: () => void
   attachments: ComposerAttachment[]
   onRemoveAttachment: (id: string) => void
   isUploading: boolean
@@ -105,6 +107,7 @@ export function ChatComposer({
   onChangeText,
   onSend,
   onAttach,
+  onCancelUpload,
   attachments,
   onRemoveAttachment,
   isUploading,
@@ -123,6 +126,7 @@ export function ChatComposer({
   accessory = null,
 }: ChatComposerProps) {
   const { t } = useTranslation('terminal')
+  const { t: tCommon } = useTranslation('common')
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
@@ -291,17 +295,26 @@ export function ChatComposer({
     </>
   )
 
+  const canCancelUpload = isUploading && onCancelUpload != null
+  const attachLabel = canCancelUpload ? tCommon('button.cancel') : t('input.attachLabel')
   const attachButton = (
     <TouchableOpacity
       testID="chat-attach-button"
-      style={[styles.iconBtn, (isUploading || disabled) && styles.disabled]}
-      onPress={onAttach}
-      disabled={isUploading || disabled}
-      accessibilityLabel={t('input.attachLabel')}
+      style={[styles.iconBtn, ((isUploading && !canCancelUpload) || disabled) && styles.disabled]}
+      onPress={canCancelUpload ? onCancelUpload : onAttach}
+      disabled={(isUploading && !canCancelUpload) || disabled}
+      accessibilityLabel={attachLabel}
       hitSlop={8}
     >
       {isUploading ? (
-        <ActivityIndicator size="small" color={theme.text.primary} />
+        <View style={styles.uploadSpinner}>
+          <ActivityIndicator size="small" color={theme.text.primary} />
+          {canCancelUpload ? (
+            <View style={styles.uploadCancelBadge} testID="chat-attach-cancel">
+              <X size={10} weight="bold" color={theme.text.primary} />
+            </View>
+          ) : null}
+        </View>
       ) : (
         <Paperclip size={24} color={theme.text.primary} />
       )}
@@ -567,6 +580,25 @@ function makeStyles(theme: Theme) {
       gap: spacing.xs,
       paddingTop: spacing.xs,
       ...iosComposerChrome,
+    },
+    uploadSpinner: {
+      width: 28,
+      height: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    uploadCancelBadge: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: theme.bg.primary,
+      borderWidth: 1,
+      borderColor: theme.border,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     iconBtn: {
       width: 52,
