@@ -138,7 +138,14 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
             crunchPngs enablePngCrunchInRelease.toBoolean()
+            // ship-qa.sh builds TbDev, which installs beside the store app.
+            if (findProperty('tbVariant') == 'dev') {
+                applicationIdSuffix '.dev'
+            }
         }
+    }
+    if (findProperty('tbVariant') == 'dev') {
+        sourceSets.release.res.srcDirs += 'src/tbdev/res'
     }
     packagingOptions {
         jniLibs {

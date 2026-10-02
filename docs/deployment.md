@@ -486,6 +486,13 @@ Firebase App Distribution has no path to either store, so an enforced build cann
 ./scripts/ship-qa.sh --platform ios --groups qa,core --release-notes "Composer rewrite"
 ```
 
+The binary is **TbDev**, not Threadbase: bundle ID and Android package `com.ronenmars.threadbase.dev`, widget `com.ronenmars.threadbase.dev.widgets`, App Group `group.com.ronenmars.threadbase.dev`, and the app icon with a DEV band.
+It installs beside the App Store, TestFlight or Play build instead of replacing it, and shares none of its data.
+The script passes `TB_BUNDLE_ID_SUFFIX`, `TB_APPICON_SUFFIX` and `TB_DISPLAY_NAME` to `xcodebuild` and `-PtbVariant=dev` to Gradle; a build that sets none of them is Threadbase, unchanged.
+Both apps register the `threadbase://` scheme, so with both installed the system decides which one opens such a link.
+TbDev gets no push notifications until the streamer can address its bundle ID.
+A local Android build with `android/app/google-services.json` present needs a `com.ronenmars.threadbase.dev` client in that file.
+
 Nothing is bumped or committed.
 A build carries the current `app.json` build number (iOS) or `android/app/build.gradle` versionCode (Android), and Sentry's release and dist match it.
 
@@ -509,7 +516,7 @@ cp ../../tb-mobile/.env ../../tb-mobile/.env.signing ../../tb-mobile/.env.signin
 - Give the worktree its own `node_modules`. A symlink to the main checkout's makes Metro bundle the main checkout instead, and the build ships the wrong code ([`troubleshooting.md`](./troubleshooting.md) → "Metro bundles the main repo instead of your worktree").
 - The env files are gitignored, so a new worktree has none of them.
 - Name the PR in `--release-notes`. The build number is not bumped, so in Firebase the notes are what tells two PR builds apart.
-- Each install replaces the previous QA build on the device, since every build shares the bundle ID.
+- Each install replaces the previous QA build on the device, since every QA build shares the TbDev bundle ID.
 
 ### From GitHub Actions
 
@@ -526,23 +533,23 @@ It reuses Deploy's signing and Sentry secrets and the `EXPO_PUBLIC_SENTRY_DSN` v
 | Name | Kind | Value |
 |---|---|---|
 | `FIREBASE_SA_JSON_B64` | secret | `base64 -i key.json` of a Google Cloud service account in the Firebase project with the **Firebase App Distribution Admin** role |
-| `IOS_ADHOC_PROFILE_B64` | secret | `base64 -i` of the app's Ad Hoc profile (`com.ronenmars.threadbase`) |
-| `IOS_WIDGET_ADHOC_PROFILE_B64` | secret | `base64 -i` of the widget's Ad Hoc profile (`com.ronenmars.threadbase.widgets`) |
-| `FIREBASE_APP_ID_IOS` | variable | The iOS app ID from Firebase → Project settings → Your apps |
-| `FIREBASE_APP_ID_ANDROID` | variable | The Android app ID from the same page |
+| `IOS_ADHOC_PROFILE_B64` | secret | `base64 -i` of the app's Ad Hoc profile (`com.ronenmars.threadbase.dev`) |
+| `IOS_WIDGET_ADHOC_PROFILE_B64` | secret | `base64 -i` of the widget's Ad Hoc profile (`com.ronenmars.threadbase.dev.widgets`) |
+| `FIREBASE_APP_ID_IOS` | variable | The TbDev iOS app ID from Firebase → Project settings → Your apps |
+| `FIREBASE_APP_ID_ANDROID` | variable | The TbDev Android app ID from the same page |
 
 The workflow reads each profile's UUID from the profile itself, so after registering a device and regenerating the profiles, re-uploading the two profile secrets is the whole update.
 
 ### One-time setup
 
-1. **Firebase project.** In the Firebase console, register the iOS app (`com.ronenmars.threadbase`) and the Android app (`com.ronenmars.threadbase`).
+1. **Firebase project.** In the Firebase console, register the iOS app (`com.ronenmars.threadbase.dev`) and the Android app (`com.ronenmars.threadbase.dev`).
    Create a tester group named `qa` and add the testers to that group; a tester added only to the project gets no email.
    The script refuses to build for a group with no testers, because Firebase reports a distribution to an empty group as a success.
 2. **App IDs.** Copy both from Project settings → Your apps, and export them as `FIREBASE_APP_ID_IOS` and `FIREBASE_APP_ID_ANDROID`.
 3. **Firebase credentials.** Either run `npx firebase-tools login` once, or create a service account with the **Firebase App Distribution Admin** role and export `GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json`.
 4. **iOS Ad Hoc signing.** In the Apple Developer portal:
    - Register each QA iPhone's UDID. Firebase can collect UDIDs when a tester opens the invite on the device.
-   - Create **two** Ad Hoc distribution profiles, for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.widgets`, both with the App Group `group.com.ronenmars.threadbase`, and install both.
+   - Create **two** Ad Hoc distribution profiles, for `com.ronenmars.threadbase.dev` and `com.ronenmars.threadbase.dev.widgets`, both with the App Group `group.com.ronenmars.threadbase.dev`, and install both.
    - The script picks the newest installed, unexpired pair, and needs `ASC_TEAM_ID` (from `.env.signing` or the shell).
 5. **Android signing.** `.env.signing.android`, the same upload-key file Path E uses (`./scripts/bootstrap-local-signing-op.sh --platform android`).
 6. **Sentry.** `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` in the shell, `.env` or `.env.signing`.
