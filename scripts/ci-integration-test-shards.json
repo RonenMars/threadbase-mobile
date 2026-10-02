@@ -10,6 +10,7 @@
       "__tests__/integration/conversation-detail-gating.test.tsx",
       "__tests__/integration/conversation-search-anchor.test.tsx",
       "__tests__/integration/components/ConnectStepManual.test.tsx",
+      "__tests__/integration/components/AttachmentPreview.test.tsx",
       "__tests__/integration/components/BackupRestoreAuthRemedy.test.tsx",
       "__tests__/integration/components/PairDeepLinkScreen.test.tsx",
       "__tests__/integration/components/BrowseDisabledOnError.test.tsx",
