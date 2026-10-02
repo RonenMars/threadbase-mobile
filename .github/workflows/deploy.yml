@@ -386,7 +386,7 @@ jobs:
             exit 1
           fi
           echo "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
-          jq -e '.client[].client_info.android_client_info.package_name == "com.ronenmars.threadbase"' android/app/google-services.json > /dev/null
+          jq -e 'any(.client[]; .client_info.android_client_info.package_name == "com.ronenmars.threadbase")' android/app/google-services.json > /dev/null
 
       - name: Set git identity
         run: |

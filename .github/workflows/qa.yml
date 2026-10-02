@@ -197,6 +197,19 @@ jobs:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_FIREBASE_SERVICE_ACCOUNT }}
 
+      - name: Write Firebase config
+        env:
+          GOOGLE_SERVICES_JSON_B64: ${{ secrets.GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          # The file Deploy uses. It must also carry the TbDev client, or the
+          # google-services plugin has no match for the .dev package.
+          if [[ -z "$GOOGLE_SERVICES_JSON_B64" ]]; then
+            echo "::error::GOOGLE_SERVICES_JSON_B64 is not set; the build would ship without Android push."
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICES_JSON_B64" | base64 -d > android/app/google-services.json
+          jq -e 'any(.client[]; .client_info.android_client_info.package_name == "com.ronenmars.threadbase.dev")' android/app/google-services.json > /dev/null
+
       - name: Install npm dependencies
         run: npm ci
 
