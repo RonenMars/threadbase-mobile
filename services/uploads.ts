@@ -118,12 +118,15 @@ export async function uploadAttachment(
   serverId: string,
   sessionId: string,
   image: PickedImage,
+  signal?: AbortSignal,
 ): Promise<UploadedFile> {
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
   const response = await authedFetch(server, `/api/sessions/${encodeURIComponent(sessionId)}/files`, {
     method: 'POST',
+    signal,
+    cancelSignal: signal,
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
