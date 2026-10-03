@@ -138,7 +138,7 @@ jobs:
           FIREBASE_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
@@ -251,7 +251,7 @@ jobs:
           FIREBASE_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
