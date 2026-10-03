@@ -127,3 +127,4 @@ appId: com.ronenmars.threadbase
     id: "status-pill"
 
 - takeScreenshot: e2e/_artifacts/screenshots/card-approve
+- stopRecording

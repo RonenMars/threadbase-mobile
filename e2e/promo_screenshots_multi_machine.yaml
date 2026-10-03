@@ -42,7 +42,7 @@ appId: com.ronenmars.threadbase
 
 - runFlow:
     when:
-      notVisible: "http://localhost:7072"
+      notVisible: "http://${E2E_SECOND_SERVER_HOST}"
     commands:
       - tapOn: ".*Add Server"
 
@@ -54,7 +54,7 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "server-edit-url-input"
 
-      - inputText: "localhost:7072"
+      - inputText: "${E2E_SECOND_SERVER_HOST}"
 
       # Modal title — full-string "Add Server", not ".*Add Server". Tapping it
       # dismisses the URL keyboard so later taps hit the form, not the keys
@@ -126,7 +126,7 @@ appId: com.ronenmars.threadbase
           timeout: 3000
 
 - extendedWaitUntil:
-    visible: "http://localhost:7072"
+    visible: "http://${E2E_SECOND_SERVER_HOST}"
     timeout: 15000
 
 # --- Back to the hub, then the Projects layout ------------------------------
@@ -160,3 +160,4 @@ appId: com.ronenmars.threadbase
         id: "status-pill"
 
 - takeScreenshot: e2e/_artifacts/screenshots/card-multi-machine
+- stopRecording

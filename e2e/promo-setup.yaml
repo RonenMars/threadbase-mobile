@@ -10,4 +10,17 @@ appId: com.ronenmars.threadbase
     clearState: true
     clearKeychain: true
 
+# Maestro 2.8.0 on iOS throws SimctlError RECORDING_FAILED as an uncaught
+# JVM exception (optional: true does not catch it) and fights simctl
+# recordVideo. Android uses screenrecord, so startRecording is safe here.
+# A failed assert still skips stopRecording — the Android runner also keeps
+# an adb screenrecord of the whole suite.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - startRecording:
+          path: promo
+          optional: true
+
 - runFlow: setup.yaml
