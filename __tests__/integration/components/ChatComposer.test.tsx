@@ -389,6 +389,18 @@ describe('ChatComposer', () => {
     })
   })
 
+  it('keeps the attachment chip row at its natural height in the expanded editor', async () => {
+    const photo = { id: 'a1', path: '/u/a.jpg', originalName: 'a.jpg', mimeType: 'image/jpeg', sizeBytes: 1, localUri: 'file:///a.jpg' }
+    await renderComposer({ attachments: [photo] })
+    await fireEvent.press(screen.getByTestId('expand-input-button'))
+
+    const rows = screen.getAllByTestId('attachment-chips')
+    expect(rows).toHaveLength(2)
+    for (const row of rows) {
+      expect(StyleSheet.flatten(row.props.style)).toEqual(expect.objectContaining({ flexGrow: 0, flexShrink: 0 }))
+    }
+  })
+
   it('mirrors the send plane, follows locale writing direction, and pins iOS chrome LTR', async () => {
     function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
       const style = StyleSheet.flatten(element.props.style)
