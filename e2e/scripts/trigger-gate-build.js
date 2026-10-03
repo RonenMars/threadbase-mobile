@@ -4,13 +4,18 @@
 // on its own — a real one is drawn by Claude and scraped from the PTY by the
 // streamer — so this is the only way to reach it from Maestro.
 //
-// Maestro's runScript JS sandbox provides http.request — not Node's fetch.
-// E2E_MOCK_SERVER_URL is injected by Maestro from `-e`, not a Node global.
+// Maestro's runScript JS sandbox provides http.request — not Node's fetch —
+// and it runs on the host, not in the app. E2E_MOCK_SERVER_URL is the *device*
+// address (10.0.2.2 on the Android emulator). Rewrite that to loopback so the
+// trigger hits the mock on this machine.
 /* global E2E_MOCK_SERVER_URL */
-const mockUrl =
+const mockUrl = String(
   typeof E2E_MOCK_SERVER_URL === 'string' && E2E_MOCK_SERVER_URL.length > 0
-    ? E2E_MOCK_SERVER_URL.replace(/\/$/, '')
-    : 'http://localhost:7071'
+    ? E2E_MOCK_SERVER_URL
+    : 'http://localhost:7071',
+)
+  .replace(/\/$/, '')
+  .replace('10.0.2.2', '127.0.0.1')
 const response = http.request(`${mockUrl}/__test__/gate`, {
   method: 'POST',
   // Every mock-server route requires this — see e2e/mock-server.js's blanket

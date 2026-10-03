@@ -134,4 +134,9 @@ describe('run-android-ci.sh device wait', () => {
     expect(gradleAt).toBeGreaterThan(skipAt);
     expect(src).toMatch(/if \[ -f "\$RELEASE_APK" \]/);
   });
+
+  it('does not require GITHUB_STEP_SUMMARY outside Actions', () => {
+    const src = fs.readFileSync(SCRIPT, 'utf8');
+    expect(src).toContain('GITHUB_STEP_SUMMARY:-}');
+  });
 });

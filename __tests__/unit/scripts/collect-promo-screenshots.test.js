@@ -51,12 +51,20 @@ describe('collect-promo-screenshots.sh', () => {
     const stems = yamlScreenshotStems()
     const setup = fs.readFileSync(path.join(ROOT, 'e2e/promo-setup.yaml'), 'utf8')
     expect(setup).toContain('clearKeychain: true')
+    expect(setup).toContain('platform: Android')
+    expect(setup).toContain('startRecording:')
+    expect(fs.readFileSync(path.join(ROOT, 'e2e/run-promo-screenshots-ios.sh'), 'utf8')).toContain(
+      'recordVideo',
+    )
+    expect(fs.readFileSync(path.join(ROOT, 'e2e/run-promo-screenshots-android.sh'), 'utf8')).toContain(
+      'screenrecord',
+    )
     const e2eDir = path.join(ROOT, 'e2e')
     for (const name of fs.readdirSync(e2eDir)) {
       if (!name.startsWith('promo_screenshots_') || !name.endsWith('.yaml')) continue
-      expect(fs.readFileSync(path.join(e2eDir, name), 'utf8')).toContain(
-        'runFlow: promo-setup.yaml',
-      )
+      const yaml = fs.readFileSync(path.join(e2eDir, name), 'utf8')
+      expect(yaml).toContain('runFlow: promo-setup.yaml')
+      expect(yaml).toContain('stopRecording')
     }
     expect(stems).toHaveLength(SHOTS.length)
     for (const [stem, dest] of SHOTS) {
@@ -77,6 +85,13 @@ describe('collect-promo-screenshots.sh', () => {
       fs.writeFileSync(path.join(older, `${stem}.png`), `old-${stem}`)
       fs.writeFileSync(path.join(newer, `${stem}.png`), `new-${stem}`)
     }
+    fs.mkdirSync(path.join(dir, 'search', 'promo_screenshots_start', 'startRecording'), {
+      recursive: true,
+    })
+    fs.writeFileSync(
+      path.join(dir, 'search', 'promo_screenshots_start', 'startRecording', 'promo.mp4'),
+      'video',
+    )
     const oldTime = new Date('2026-01-01T00:00:00Z')
     const newTime = new Date('2026-09-16T00:00:00Z')
     for (const [stem] of SHOTS) {
@@ -94,6 +109,9 @@ describe('collect-promo-screenshots.sh', () => {
     for (const [stem, destName] of SHOTS) {
       expect(fs.readFileSync(path.join(dest, destName), 'utf8')).toBe(`new-${stem}`)
     }
+    expect(fs.readFileSync(path.join(dest, 'promo_screenshots_start-promo.mp4'), 'utf8')).toBe(
+      'video',
+    )
 
     fs.rmSync(dir, { recursive: true, force: true })
   })
@@ -112,5 +130,42 @@ describe('collect-promo-screenshots.sh', () => {
     expect(result.status).toBe(1)
     expect(result.stderr).toMatch(/no card-start-or-take-over\.png/)
     fs.rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('skips missing stems when PROMO_SCREENSHOT_PARTIAL=1', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'promo-shots-partial-'))
+    const dest = path.join(dir, 'out')
+    fs.mkdirSync(path.join(dir, 'search'), { recursive: true })
+    fs.writeFileSync(path.join(dir, 'search', 'card-multi-machine.png'), 'only-multi')
+
+    const result = spawnSync('bash', [COLLECT, 'ios', dest], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PROMO_SCREENSHOT_SEARCH_ROOT: path.join(dir, 'search'),
+        PROMO_SCREENSHOT_PARTIAL: '1',
+      },
+    })
+
+    expect(result.status).toBe(0)
+    expect(fs.readFileSync(path.join(dest, '06-multi-machine-projects.png'), 'utf8')).toBe(
+      'only-multi',
+    )
+    expect(fs.existsSync(path.join(dest, '01-start-session.png'))).toBe(false)
+    fs.rmSync(dir, { recursive: true, force: true })
+  })
+})
+
+describe('promo screenshot GitHub Action', () => {
+  it('is a manual workflow that uploads screenshots and video', () => {
+    const yaml = fs.readFileSync(
+      path.join(ROOT, '.github/workflows/promo-screenshots.yml'),
+      'utf8',
+    )
+    expect(yaml).toContain('workflow_dispatch:')
+    expect(yaml).toContain('upload-artifact')
+    expect(yaml).toContain('test:e2e:promo:screenshots:ios')
+    expect(yaml).toContain('run-promo-screenshots-android.sh')
+    expect(yaml).toContain('e2e/_artifacts/promo-screenshots/')
   })
 })

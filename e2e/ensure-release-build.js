@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict'
 const { execFileSync } = require('child_process')
-const { existsSync, readdirSync, readFileSync, writeFileSync } = require('fs')
+const { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync } = require('fs')
 const os = require('os')
 const path = require('path')
 
@@ -194,12 +194,35 @@ function resolveSentryEnv() {
   }
 }
 
-function ensureCocoaPods() {
+function cocoaPodsReady() {
   const pods = path.join(REPO_ROOT, 'ios/Pods')
-  if (existsSync(pods)) return
+  const lock = path.join(REPO_ROOT, 'ios/Podfile.lock')
+  const manifest = path.join(REPO_ROOT, 'ios/Pods/Manifest.lock')
+  if (!existsSync(pods) || !existsSync(lock) || !existsSync(manifest)) return false
+  return readFileSync(lock).equals(readFileSync(manifest))
+}
+
+function ensureCocoaPods() {
+  if (cocoaPodsReady()) return
+  const pods = path.join(REPO_ROOT, 'ios/Pods')
+  const lock = path.join(REPO_ROOT, 'ios/Podfile.lock')
+  const manifest = path.join(REPO_ROOT, 'ios/Pods/Manifest.lock')
+  // Xcode's "[CP] Check Pods Manifest.lock" diffs these two files. Restoring
+  // Podfile.lock without Manifest.lock (gitignored) fails the build with
+  // "The sandbox is not in sync" even though the installed pods are fine.
+  // Same recovery as scripts/reset-podfile-lock-path-noise.sh.
+  if (existsSync(pods) && existsSync(lock)) {
+    console.log('ios/Pods/Manifest.lock is out of sync with Podfile.lock; copying lock to Manifest.lock')
+    copyFileSync(lock, manifest)
+    return
+  }
   console.log('ios/Pods is missing; running pod install...')
   execFileSync('bundle', ['exec', 'pod', 'install'], {
     cwd: path.join(REPO_ROOT, 'ios'),
+    stdio: 'inherit',
+  })
+  execFileSync('/bin/bash', [path.join(REPO_ROOT, 'scripts/reset-podfile-lock-path-noise.sh')], {
+    cwd: REPO_ROOT,
     stdio: 'inherit',
   })
 }

@@ -247,6 +247,12 @@ test('no existing build at all still builds fresh, same as before the staleness 
   expect(second.stdout).toMatch(/current/i);
 });
 
+function writeSyncedPods(repo) {
+  fs.mkdirSync(path.join(repo, 'ios/Pods'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'ios/Podfile.lock'), 'LOCK\n');
+  fs.writeFileSync(path.join(repo, 'ios/Pods/Manifest.lock'), 'LOCK\n');
+}
+
 test('E2E_REBUILD_STALE=1 rebuilds a dirty tree with xcodebuild, not expo run:ios', () => {
   const made = makeRepo();
   repo = made.repo;
@@ -254,12 +260,13 @@ test('E2E_REBUILD_STALE=1 rebuilds a dirty tree with xcodebuild, not expo run:io
   fs.writeFileSync(stampPathFor(repo), JSON.stringify({ sha: made.sha }));
   fs.writeFileSync(path.join(repo, 'package.json'), '{"name":"fixture","dirty":true}\n');
   fs.mkdirSync(path.join(repo, 'ios/Threadbase.xcworkspace'), { recursive: true });
-  fs.mkdirSync(path.join(repo, 'ios/Pods'), { recursive: true });
+  writeSyncedPods(repo);
 
   const result = runScript(repo, { rebuildStale: true });
 
   expect(result.status).toBe(0);
   expect(result.npxLog).toBe('');
+  expect(result.xcodebuildLog).not.toContain('exec pod install');
   expect(result.xcodebuildLog).toContain('-workspace ios/Threadbase.xcworkspace');
   expect(result.xcodebuildLog).toContain('-configuration Release');
   expect(result.xcodebuildLog).toContain('SENTRY_DISABLE_AUTO_UPLOAD=true');
@@ -270,6 +277,25 @@ test('E2E_REBUILD_STALE=1 rebuilds a dirty tree with xcodebuild, not expo run:io
   expect(second.status).toBe(0);
   expect(second.xcodebuildLog).toBe('');
   expect(second.stdout).toMatch(/current dirty tree/i);
+});
+
+test('E2E_REBUILD_STALE=1 copies Podfile.lock onto Manifest.lock when they differ', () => {
+  const made = makeRepo();
+  repo = made.repo;
+  fs.mkdirSync(appDirFor(repo), { recursive: true });
+  fs.writeFileSync(stampPathFor(repo), JSON.stringify({ sha: made.sha }));
+  fs.writeFileSync(path.join(repo, 'package.json'), '{"name":"fixture","dirty":true}\n');
+  fs.mkdirSync(path.join(repo, 'ios/Threadbase.xcworkspace'), { recursive: true });
+  fs.mkdirSync(path.join(repo, 'ios/Pods'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'ios/Podfile.lock'), 'LOCK\n');
+  fs.writeFileSync(path.join(repo, 'ios/Pods/Manifest.lock'), 'STALE\n');
+
+  const result = runScript(repo, { rebuildStale: true });
+
+  expect(result.status).toBe(0);
+  expect(result.xcodebuildLog).not.toContain('exec pod install');
+  expect(result.stdout).toMatch(/out of sync with Podfile.lock/);
+  expect(fs.readFileSync(path.join(repo, 'ios/Pods/Manifest.lock'), 'utf8')).toBe('LOCK\n');
 });
 
 test('Android CI leaves build and installation to the workflow', () => {

@@ -1,0 +1,256 @@
+name: Promo screenshots
+
+# Manual capture of the six landing-page promo screenshots plus Maestro/simctl
+# video. Not on pull_request — the Release build is the same cost as E2E.
+#
+#   gh workflow run "Promo screenshots"
+#   gh workflow run "Promo screenshots" -f platform=android
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to capture'
+        required: false
+        default: 'ios'
+        type: choice
+        options:
+          - ios
+          - android
+
+concurrency:
+  group: promo-screenshots-${{ github.ref }}-${{ inputs.platform }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    name: Promo screenshots (iOS)
+    if: ${{ inputs.platform == 'ios' }}
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
+
+      - name: Record Xcode identity
+        id: toolchain
+        run: |
+          set -euo pipefail
+          BUILD=$(xcodebuild -version | awk '/Build version/ { print $3; exit }')
+          if [ -z "$BUILD" ]; then
+            echo '::error::Could not read Xcode build version.'
+            xcodebuild -version >&2
+            exit 1
+          fi
+          echo "xcode-build=$BUILD" >> "$GITHUB_OUTPUT"
+
+      - name: Cache iOS Release app
+        id: ios-app-cache
+        uses: actions/cache@v5
+        with:
+          path: e2e-ios-app.tgz
+          key: promo-ios-app-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.toolchain.outputs.xcode-build }}-Release-development-${{ github.sha }}-${{ github.workflow_sha }}
+
+      - uses: actions/setup-node@v5
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        run: npm ci
+
+      - uses: ruby/setup-ruby@v1
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        run: |
+          npx expo prebuild --platform ios --no-clean
+          (cd ios && bundle exec pod install)
+          ./scripts/reset-podfile-lock-path-noise.sh
+
+      - name: Resolve app env (skips the Sentry source-map upload)
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        env:
+          APP_ENV: development
+        run: ./scripts/check-sentry-env.sh >> "$GITHUB_ENV"
+
+      - name: Build iOS app (Release)
+        if: ${{ steps.ios-app-cache.outputs.cache-hit != 'true' }}
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: true
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -workspace ios/Threadbase.xcworkspace \
+            -scheme Threadbase \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/ios-ci \
+            ARCHS=arm64 \
+            build
+          APP_PATH=$(find build/ios-ci/Build/Products/Release-iphonesimulator -name "Threadbase.app" -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo '::error::xcodebuild succeeded but Threadbase.app was not under build/ios-ci.'
+            exit 1
+          fi
+          tar -C "$(dirname "$APP_PATH")" -czf e2e-ios-app.tgz Threadbase.app
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies for Maestro
+        run: npm ci
+
+      - name: Install Maestro CLI
+        run: |
+          MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
+          curl -fsSL "https://get.maestro.mobile.dev" | env MAESTRO_VERSION="$MAESTRO_VERSION" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Boot iOS simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available --json | jq -r '.devices | to_entries | map(select(.key | contains("iOS"))) | sort_by(.key) | reverse | .[0].value | map(select(.name | test("iPhone 1[5-9]"))) | .[0].udid')
+          echo "Booting simulator: $DEVICE"
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+          echo "IOS_UDID=$DEVICE" >> "$GITHUB_ENV"
+          echo "MAESTRO_UDID=$DEVICE" >> "$GITHUB_ENV"
+
+      - name: Install iOS app
+        run: |
+          set -euo pipefail
+          mkdir -p build/ios-ci/Build/Products/Release-iphonesimulator
+          tar -xzf e2e-ios-app.tgz -C build/ios-ci/Build/Products/Release-iphonesimulator
+          xcrun simctl install booted build/ios-ci/Build/Products/Release-iphonesimulator/Threadbase.app
+
+      - name: Capture promo screenshots and video
+        env:
+          E2E_PLATFORM: ios
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: '300000'
+          E2E_SKIP_SIM_REBOOT: '1'
+        run: npm run test:e2e:promo:screenshots:ios
+
+      - name: Upload promo screenshots and video
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: promo-screenshots-ios
+          path: e2e/_artifacts/promo-screenshots/ios/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Maestro output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: promo-maestro-output-ios
+          path: e2e/_artifacts/maestro-output/
+          retention-days: 7
+          if-no-files-found: warn
+
+  android:
+    name: Promo screenshots (Android)
+    if: ${{ inputs.platform == 'android' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.15.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: false
+
+      - name: Cache Android Release APK
+        id: apk-cache
+        uses: actions/cache@v5
+        with:
+          path: android/app/build/outputs/apk/release/app-release.apk
+          key: promo-android-apk-v1-${{ runner.os }}-x86_64-${{ github.sha }}-${{ github.workflow_sha }}
+
+      - name: Assemble Android Release APK
+        if: ${{ steps.apk-cache.outputs.cache-hit != 'true' }}
+        env:
+          REACT_NATIVE_ARCHITECTURES: x86_64
+          TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
+          TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD: android
+          TB_MOBILE_UPLOAD_KEY_ALIAS: androiddebugkey
+          TB_MOBILE_UPLOAD_KEY_PASSWORD: android
+          SENTRY_DISABLE_AUTO_UPLOAD: true
+        run: (cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=x86_64)
+
+      - name: Install Maestro CLI
+        run: |
+          MAESTRO_VERSION=$(node -p "require('./e2e/maestro-version.json').version")
+          curl -fsSL "https://get.maestro.mobile.dev" | env MAESTRO_VERSION="$MAESTRO_VERSION" bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Capture promo screenshots and video
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          E2E_PLATFORM: android
+          E2E_ANDROID_API_LEVEL: '35'
+          E2E_MOCK_SERVER_URL: http://10.0.2.2:7071
+          TB_MOBILE_UPLOAD_KEYSTORE: ${{ github.workspace }}/android/app/debug.keystore
+          TB_MOBILE_UPLOAD_KEYSTORE_PASSWORD: android
+          TB_MOBILE_UPLOAD_KEY_ALIAS: androiddebugkey
+          TB_MOBILE_UPLOAD_KEY_PASSWORD: android
+          SENTRY_DISABLE_AUTO_UPLOAD: true
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -noaudio -no-boot-anim -gpu swiftshader_indirect
+          disable-animations: true
+          script: bash e2e/run-promo-screenshots-android.sh
+
+      - name: Upload promo screenshots and video
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: promo-screenshots-android
+          path: e2e/_artifacts/promo-screenshots/android/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Maestro output
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: promo-maestro-output-android
+          path: e2e/_artifacts/maestro-output/
+          retention-days: 7
+          if-no-files-found: warn

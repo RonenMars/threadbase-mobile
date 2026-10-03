@@ -116,10 +116,15 @@ describe('ensure-promo-device.sh', () => {
     expect(pkg.scripts['test:e2e:promo:ensure-emulator']).toBe('./e2e/ensure-promo-device.sh android')
     expect(pkg.scripts['test:e2e:promo:ensure-simulator']).toBe('./e2e/ensure-promo-device.sh ios')
     expect(fs.readFileSync(ANDROID_RUNNER, 'utf8')).toContain('ensure_promo_emulator')
+    expect(fs.readFileSync(ANDROID_RUNNER, 'utf8')).toContain('screenrecord')
+    expect(fs.readFileSync(ANDROID_RUNNER, 'utf8')).toContain('REACT_NATIVE_ARCHITECTURES')
+    expect(fs.readFileSync(ANDROID_RUNNER, 'utf8')).toContain('MAESTRO_UDID="${ANDROID_SERIAL}"')
     expect(fs.readFileSync(IOS_RUNNER, 'utf8')).toContain('ensure_promo_simulator')
     expect(fs.readFileSync(IOS_RUNNER, 'utf8')).toContain('reset_promo_ios_app')
     expect(fs.readFileSync(IOS_RUNNER, 'utf8')).toContain('E2E_REBUILD_STALE=1')
     expect(fs.readFileSync(IOS_RUNNER, 'utf8')).toContain('ensure_promo_mock_ports')
+    expect(fs.readFileSync(IOS_RUNNER, 'utf8')).toContain('recordVideo')
+    expect(fs.readFileSync(IOS_RUNNER, 'utf8')).toContain('E2E_PLATFORM:-}')
   })
 
   it('reuses a booted Android emulator instead of starting another', () => {
