@@ -47,10 +47,15 @@ target 'Threadbase' do
   # QA builds only: scripts/ship-qa.sh sets this for its pod install. Store
   # builds never link Firebase, and AppDelegate gates its use on canImport.
   if ENV['TB_QA_APP_DISTRIBUTION'] == '1'
-    pod 'FirebaseAppDistribution', '~> 12.0-beta', :modular_headers => true
+    # Exact versions, transitive pods included: these never reach the committed
+    # Podfile.lock, so nothing else stops a QA build from resolving a new release.
+    pod 'FirebaseAppDistribution', '12.19.0-beta', :modular_headers => true
     # Swift imports these as modules: AppDelegate the first, FirebaseCoreInternal the rest.
-    pod 'GoogleUtilities', :modular_headers => true
-    pod 'FirebaseCore', :modular_headers => true
+    pod 'GoogleUtilities', '8.1.4', :modular_headers => true
+    pod 'FirebaseCore', '12.19.0', :modular_headers => true
+    pod 'FirebaseCoreInternal', '12.19.0'
+    pod 'FirebaseInstallations', '12.19.0'
+    pod 'PromisesObjC', '2.4.1'
   end
 
   use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
