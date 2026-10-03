@@ -202,7 +202,15 @@ PY
   export SENTRY_DIST="${BUILD_NUMBER}"
   ARCHIVE_PATH=build/Threadbase-qa.xcarchive
 
-  echo "▸ Archive (build $BUILD_NUMBER)"
+  # Firebase keys an iOS release on the executable's Mach-O UUID, not on the
+  # .ipa: a JS-only change links the same executable, so the upload replaces an
+  # older release in place and keeps its date, and nothing new shows as Latest.
+  # The target's apple-generic versioning compiles this number into the
+  # executable, so a per-build suffix yields a new UUID and a new release.
+  # Sentry keeps the app.json number, which is what the SDK tags events with.
+  QA_BUILD_VERSION="${BUILD_NUMBER}.$(date -u +%y%m%d%H%M)"
+
+  echo "▸ Archive (build $QA_BUILD_VERSION)"
   xcodebuild \
     -workspace ios/Threadbase.xcworkspace \
     -scheme Threadbase \
@@ -214,7 +222,7 @@ PY
     CODE_SIGN_IDENTITY="Apple Distribution" \
     IOS_PROVISION_PROFILE_UUID="$ADHOC_APP_UUID" \
     IOS_WIDGET_PROVISION_PROFILE_UUID="$ADHOC_WIDGET_UUID" \
-    CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+    CURRENT_PROJECT_VERSION="$QA_BUILD_VERSION" \
     TB_BUNDLE_ID_SUFFIX=.dev \
     TB_APPICON_SUFFIX=Dev \
     TB_DISPLAY_NAME=TbDev \
@@ -296,6 +304,7 @@ if jq -e '.error' >/dev/null <<<"$OPERATION_JSON"; then
 fi
 
 RELEASE_NAME="$(jq -er '.response.release.name' <<<"$OPERATION_JSON")"
+echo "  Firebase: $(jq -r '.response.result // "unknown"' <<<"$OPERATION_JSON") ${RELEASE_NAME##*/}"
 
 if [[ -n "$NOTES" ]]; then
   RELEASE_PATCH="$(jq -n --arg name "$RELEASE_NAME" --arg text "$NOTES" \

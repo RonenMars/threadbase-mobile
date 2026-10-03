@@ -516,7 +516,8 @@ cp ../../tb-mobile/.env ../../tb-mobile/.env.signing ../../tb-mobile/.env.signin
 
 - Give the worktree its own `node_modules`. A symlink to the main checkout's makes Metro bundle the main checkout instead, and the build ships the wrong code ([`troubleshooting.md`](./troubleshooting.md) → "Metro bundles the main repo instead of your worktree").
 - The env files are gitignored, so a new worktree has none of them.
-- Name the PR in `--release-notes`. The build number is not bumped, so in Firebase the notes are what tells two PR builds apart.
+- Name the PR in `--release-notes`. The `app.json` build number is not bumped, so the notes are what tells two PR builds apart.
+- An iOS build is archived as `<buildNumber>.<yymmddHHMM>` (UTC), which is what Firebase lists it under. Firebase identifies an iOS release by its executable, and a JS-only change does not alter the executable, so without the suffix the upload silently replaced an older release and kept that release's date ([run 37103386597](https://github.com/RonenMars/threadbase-mobile/actions/runs/37103386597)). The script prints Firebase's verdict after the upload: `RELEASE_CREATED` is the expected one.
 - Each install replaces the previous QA build on the device, since every QA build shares the TbDev bundle ID.
 
 ### From GitHub Actions
