@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Capture the six store-ready promo screenshots on a booted Android emulator.
+# Capture the five store-ready promo screenshots on a booted Android emulator.
 #
 # Requires: Maestro, adb, an API 35 AVD (started automatically if none is running).
 # Usage: npm run test:e2e:promo:screenshots:android
 #
-# Reverse-forwards 7071/7072 so the hardcoded localhost:7072 second-server
-# pair in promo_screenshots_multi_machine.yaml reaches the host mock.
+# Reverse-forwards 7071/7072 so the localhost:7072 second server the promo flows
+# pair with reaches the host mock.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,7 +18,7 @@ export E2E_PLATFORM=android
 export E2E_MOCK_SERVER_URL="${E2E_MOCK_SERVER_URL:-http://10.0.2.2:7071}"
 
 DEST="${PROMO_SCREENSHOT_DIR:-e2e/_artifacts/promo-screenshots/android}"
-FLOWS="e2e/promo_screenshots_start.yaml e2e/promo_screenshots_take_over.yaml e2e/promo_screenshots_search.yaml e2e/promo_screenshots_multi_machine.yaml e2e/promo_screenshots_approval.yaml"
+FLOWS="e2e/promo_screenshots_start.yaml e2e/promo_screenshots_take_over.yaml e2e/promo_screenshots_search.yaml e2e/promo_screenshots_approval.yaml"
 
 ensure_promo_emulator
 

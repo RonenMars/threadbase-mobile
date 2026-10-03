@@ -4,8 +4,8 @@
 # Usage: e2e/collect-promo-screenshots.sh <ios|android> [dest-dir]
 #
 # Searches e2e/_artifacts (Maestro --test-output-dir plus cwd-relative shots)
-# for the six stems the promo_screenshots_*.yaml flows write, then copies the
-# newest of each into dest-dir as 01-*.png … 06-*.png.
+# for the five stems the promo_screenshots_*.yaml flows write, then copies the
+# newest of each into dest-dir as 01-*.png … 05-*.png.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -66,5 +66,4 @@ copy_shot "_raw-take-over-banner" "02-take-over-session.png"
 copy_shot "card-search" "03-search-results.png"
 copy_shot "hero-approval-card" "04-approval-request.png"
 copy_shot "card-approve" "05-approval-response.png"
-copy_shot "card-multi-machine" "06-multi-machine-projects.png"
 echo "Deliverables: ${DEST}"
