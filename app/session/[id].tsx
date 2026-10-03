@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
-import { ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, Trash, Warning } from 'phosphor-react-native'
+import { ArrowsClockwise, ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, Trash, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
 import { deriveSessionPresentation, failureTitleKind, sessionOpensAsHistory } from '@/lib/sessionPresentation'
@@ -66,6 +66,7 @@ import { clientLog } from '@/lib/clientLog'
 import { buildSharedInfoFields, sessionInfoSubject } from '@/lib/infoFields'
 import { useSessionLeaveGuard } from '@/hooks/useSessionLeaveGuard'
 import {
+  hardReloadSession,
   evictStaleSessionFavorite,
   rehydrateSessionAfterReconnect,
   removeSessionFromEagerCache,
@@ -671,6 +672,16 @@ export default function SessionDetailScreen() {
     if (!text.trim()) return
     await Clipboard.setStringAsync(text)
   }
+  const hardReloadTranscript = () => {
+    if (!serverId || !id) return
+    void hardReloadSession(
+      qc,
+      serverId,
+      id,
+      session?.boundConversationId ?? session?.conversationId,
+      () => wsManager.forceReconnect(serverId),
+    )
+  }
   const isLive =
     session?.ptyAttached === true &&
     (session.status === 'waiting_input' || session.status === 'running')
@@ -1106,6 +1117,13 @@ export default function SessionDetailScreen() {
             onPress: () => setModelEffortVisible(true),
             disabled: !modelEffortSupported,
             testID: 'session-model-effort-button',
+          },
+          {
+            key: 'hard-reload',
+            label: t('common:button.hardReload'),
+            icon: ArrowsClockwise,
+            onPress: hardReloadTranscript,
+            testID: 'session-hard-reload',
           },
           {
             key: 'copy',
