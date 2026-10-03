@@ -44,7 +44,10 @@ appId: com.ronenmars.threadbase
 - assertNotVisible: ".*Can't resume"
 
 # Open the info modal to verify the Provider field.
-- tapOn: "Conversation info"
+- tapOn:
+    id: "conversation-overflow-menu"
+- tapOn:
+    id: "conversation-info-button"
 
 # The info modal should show provider = codex-cli.
 - assertVisible: "codex-cli"
