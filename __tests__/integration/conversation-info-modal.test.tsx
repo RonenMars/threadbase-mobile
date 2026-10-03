@@ -90,7 +90,10 @@ async function openInfo() {
   await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
   await screen.findByText('hi')
   await act(async () => {
-    fireEvent.press(screen.getByLabelText('Conversation info'))
+    fireEvent.press(screen.getByTestId('conversation-overflow-menu'))
+  })
+  await act(async () => {
+    fireEvent.press(screen.getByTestId('conversation-info-button'))
   })
 }
 
