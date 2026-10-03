@@ -112,6 +112,9 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           token_format: access_token
+          # The script needs only the access token. The credentials file lands
+          # untracked in the checkout, so the build identified itself as -dirty.
+          create_credentials_file: false
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_FIREBASE_SERVICE_ACCOUNT }}
@@ -138,7 +141,7 @@ jobs:
           FIREBASE_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
@@ -222,6 +225,9 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           token_format: access_token
+          # The script needs only the access token. The credentials file lands
+          # untracked in the checkout, so the build identified itself as -dirty.
+          create_credentials_file: false
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_FIREBASE_SERVICE_ACCOUNT }}
@@ -251,7 +257,7 @@ jobs:
           FIREBASE_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
           EXPO_PUBLIC_SENTRY_DSN: ${{ vars.EXPO_PUBLIC_SENTRY_DSN }}
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}

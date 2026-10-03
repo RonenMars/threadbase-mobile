@@ -541,6 +541,7 @@ It reuses Deploy's signing and Sentry secrets and the `EXPO_PUBLIC_SENTRY_DSN` v
 | `IOS_WIDGET_ADHOC_PROFILE_B64` | secret | `base64 -i` of the widget's Ad Hoc profile (`com.ronenmars.threadbase.dev.widgets`) |
 | `FIREBASE_APP_ID_IOS` | variable | The TbDev iOS app ID from Firebase → Project settings → Your apps |
 | `FIREBASE_APP_ID_ANDROID` | variable | The TbDev Android app ID from the same page |
+| `SENTRY_PROJECT` | variable | The Sentry project slug. A variable rather than Deploy's secret of the same name: the slug is a substring of the repository name, and GitHub masks a secret's value everywhere, which turned the commit links in the run summary into `RonenMars/***-mobile` |
 
 No Google key is stored: `google-github-actions/auth` exchanges the job's GitHub OIDC token for a short-lived access token and hands it to the script as `FIREBASE_ACCESS_TOKEN`.
 The `FIREBASE_SA_JSON_B64` secret this replaced (#1211) was deleted on 2026-10-02; a branch whose `qa.yml` predates #1211 fails at Firebase auth if the workflow is dispatched from that branch, until it is rebased.
