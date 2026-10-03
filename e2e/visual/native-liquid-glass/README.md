@@ -16,11 +16,15 @@ launcher instead of the app.
 
 ```bash
 # First-run path (four frames, Nord + Add Server)
-node e2e/run-maestro.js test e2e/native-liquid-glass-visual.yaml
+npm run test:e2e:visual:glass
 
 # Settings viewport for every retained palette
-node e2e/run-maestro.js test e2e/native-liquid-glass-settings-themes.yaml
+npm run test:e2e:visual:glass-themes
 ```
+
+Each script runs `e2e/check-sim.js` (a booted iOS simulator) and `e2e/ensure-release-build.js` (a Release build for this `HEAD`) first, then the flow.
+They pass `--rebuild-stale` (same as `E2E_REBUILD_STALE=1`), so a missing or stale build is rebuilt with `xcodebuild`, which returns; without it the fallback is `expo run:ios`, which holds Metro open and never reaches Maestro.
+The raw form is `node e2e/run-maestro.js test e2e/<flow>.yaml`.
 
 `e2e/ensure-release-build.js` refuses a build stamped for a different HEAD. A
 YAML-only change does not invalidate the JS bundle; set
