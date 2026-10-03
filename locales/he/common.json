@@ -9,7 +9,8 @@
     "apply": "החל",
     "openSettings": "פתח הגדרות",
     "settings": "הגדרות",
-    "moreOptions": "אפשרויות נוספות"
+    "moreOptions": "אפשרויות נוספות",
+    "hardReload": "טעינה מחדש מלאה של התמלול"
   },
   "alert": {
     "level": {
