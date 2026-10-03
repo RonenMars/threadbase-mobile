@@ -138,6 +138,7 @@ jobs:
           TESTER_GROUPS: ${{ inputs.groups }}
           RELEASE_NOTES: ${{ inputs.release_notes }}
           FIREBASE_APP_ID_IOS: ${{ vars.FIREBASE_APP_ID_IOS }}
+          FIREBASE_API_KEY_IOS: ${{ secrets.FIREBASE_API_KEY_IOS }}
           FIREBASE_ACCESS_TOKEN: ${{ steps.google-auth.outputs.access_token }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}

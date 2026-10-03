@@ -192,6 +192,23 @@ PY
   fi
   echo "  signing: ad hoc (app $ADHOC_APP_UUID, widget $ADHOC_WIDGET_UUID)"
 
+  # The in-app update check needs the Firebase SDK, which only this build links:
+  # the Podfile adds the pod when asked, and AppDelegate compiles the check only
+  # when the pod is there. Without the key the build ships as before.
+  QA_UPDATE_SETTINGS=()
+  FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-${GOOGLE_CLOUD_QUOTA_PROJECT:-}}"
+  if [[ -n "${FIREBASE_API_KEY_IOS:-}" && -n "$FIREBASE_PROJECT_ID" ]]; then
+    export TB_QA_APP_DISTRIBUTION=1
+    QA_UPDATE_SETTINGS=(
+      "TB_FIREBASE_APP_ID=$FIREBASE_APP_ID"
+      "TB_FIREBASE_API_KEY=$FIREBASE_API_KEY_IOS"
+      "TB_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID"
+    )
+    echo "  in-app update check: on"
+  else
+    echo "  in-app update check: off (FIREBASE_API_KEY_IOS or the project ID is not set)"
+  fi
+
   echo "▸ Pod install"
   (cd ios && bundle exec pod install --silent)
   ./scripts/reset-podfile-lock-path-noise.sh
@@ -227,6 +244,7 @@ PY
     TB_APPICON_SUFFIX=Dev \
     TB_DISPLAY_NAME=TbDev \
     TB_SCHEME_SUFFIX=-dev \
+    ${QA_UPDATE_SETTINGS[@]+"${QA_UPDATE_SETTINGS[@]}"} \
     archive | tee build/archive-qa.log
 
   cat > build/ExportOptions-qa.plist <<EOF
