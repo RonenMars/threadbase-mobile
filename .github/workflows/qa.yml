@@ -112,6 +112,9 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           token_format: access_token
+          # The script needs only the access token. The credentials file lands
+          # untracked in the checkout, so the build identified itself as -dirty.
+          create_credentials_file: false
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_FIREBASE_SERVICE_ACCOUNT }}
@@ -222,6 +225,9 @@ jobs:
         uses: google-github-actions/auth@v3
         with:
           token_format: access_token
+          # The script needs only the access token. The credentials file lands
+          # untracked in the checkout, so the build identified itself as -dirty.
+          create_credentials_file: false
           project_id: ${{ vars.GCP_PROJECT_ID }}
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_FIREBASE_SERVICE_ACCOUNT }}
