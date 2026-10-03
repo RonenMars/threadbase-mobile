@@ -9,7 +9,8 @@
     "apply": "Применить",
     "openSettings": "Открыть настройки",
     "settings": "Настройки",
-    "moreOptions": "Ещё"
+    "moreOptions": "Ещё",
+    "hardReload": "Полная перезагрузка транскрипта"
   },
   "alert": {
     "level": {
