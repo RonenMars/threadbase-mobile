@@ -283,6 +283,42 @@ describe('useConversation — Claude Code prompt markup', () => {
 
     expect(result.current.data!.messages[0].content).toEqual([{ type: 'text', text: 'Hello, this is typing test' }])
   })
+
+  // Claude Code injects a finished background Task tool's report back into the
+  // transcript as role:user text wrapped in <task-notification> — never typed
+  // by the human. Rendering it as a normal user bubble reads as if the user
+  // had sent it; drop it instead, same treatment as an injected Codex context
+  // message (isCodexInjectedContext).
+  it('drops a role:user <task-notification> row instead of showing it as a sent message', async () => {
+    setActiveServers(['srv_tn'])
+    const page = {
+      meta: { id: 'c8', project_name: 'proj-c8', message_count: 2 },
+      messages: [
+        {
+          message_index: 0,
+          role: 'user',
+          text: '<task-notification>\n<task-id>abc123</task-id>\n<status>completed</status>\n</task-notification>\n',
+          content: [],
+          timestamp: '2026-09-21T17:30:00.000Z',
+        },
+        {
+          message_index: 1,
+          role: 'user',
+          text: 'what do you think?',
+          content: [],
+          timestamp: '2026-09-21T17:31:00.000Z',
+        },
+      ],
+      message_pagination: { total: 2, before_index: 2, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_tn = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = await renderHook(() => useConversation('srv_tn', 'c8'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data!.messages).toHaveLength(1)
+    expect(result.current.data!.messages[0].content).toEqual([{ type: 'text', text: 'what do you think?' }])
+  })
 })
 
 describe('useConversation — unrenderable rows from a degraded page', () => {
