@@ -12,6 +12,13 @@ describe('sessionRouteFromUrl', () => {
     })
   })
 
+  it('parses the TbDev scheme', () => {
+    expect(sessionRouteFromUrl('threadbase-dev://session/abc?server=srv-1')).toEqual({
+      sessionId: 'abc',
+      path: '/session/abc?server=srv-1',
+    })
+  })
+
   it('keeps a session without a server rather than dropping the link', () => {
     expect(sessionRouteFromUrl('threadbase://session/abc')).toEqual({
       sessionId: 'abc',

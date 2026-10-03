@@ -11,6 +11,9 @@
 #
 # Builds report to Sentry as `testing` (services/sentry.ts).
 #
+# The binary is TbDev (com.ronenmars.threadbase.dev, its own App Group and icon),
+# so it installs beside the store app instead of replacing it.
+#
 # Usage:
 #   ./scripts/ship-qa.sh --platform ios     [--groups qa] [--release-notes "..."]
 #   ./scripts/ship-qa.sh --platform android [--groups qa] [--release-notes "..."]
@@ -37,7 +40,7 @@ while [[ $# -gt 0 ]]; do
     --platform)      PLATFORM="$2"; shift 2 ;;
     --groups)        TESTER_GROUPS="$2"; shift 2 ;;
     --release-notes) RELEASE_NOTES="$2"; shift 2 ;;
-    -h|--help) sed -n '1,27p' "$0"; exit 0 ;;
+    -h|--help) sed -n '1,30p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -178,8 +181,8 @@ def pick(plists, suffix):
     return matches[0]["UUID"] if matches else "-"
 
 found = list(profiles(sys.argv[1:]))
-print(pick(found, "com.ronenmars.threadbase"),
-      pick(found, "com.ronenmars.threadbase.widgets"))
+print(pick(found, "com.ronenmars.threadbase.dev"),
+      pick(found, "com.ronenmars.threadbase.dev.widgets"))
 PY
   )"
   if [[ "$ADHOC_APP_UUID" == - || "$ADHOC_WIDGET_UUID" == - ]]; then
@@ -212,6 +215,10 @@ PY
     IOS_PROVISION_PROFILE_UUID="$ADHOC_APP_UUID" \
     IOS_WIDGET_PROVISION_PROFILE_UUID="$ADHOC_WIDGET_UUID" \
     CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+    TB_BUNDLE_ID_SUFFIX=.dev \
+    TB_APPICON_SUFFIX=Dev \
+    TB_DISPLAY_NAME=TbDev \
+    TB_SCHEME_SUFFIX=-dev \
     archive | tee build/archive-qa.log
 
   cat > build/ExportOptions-qa.plist <<EOF
@@ -224,8 +231,8 @@ PY
   <key>signingStyle</key><string>manual</string>
   <key>provisioningProfiles</key>
   <dict>
-    <key>com.ronenmars.threadbase</key><string>$ADHOC_APP_UUID</string>
-    <key>com.ronenmars.threadbase.widgets</key><string>$ADHOC_WIDGET_UUID</string>
+    <key>com.ronenmars.threadbase.dev</key><string>$ADHOC_APP_UUID</string>
+    <key>com.ronenmars.threadbase.dev.widgets</key><string>$ADHOC_WIDGET_UUID</string>
   </dict>
 </dict>
 </plist>
@@ -247,7 +254,7 @@ else
   # An APK, not an AAB: Firebase installs APKs directly, while an AAB would
   # need the Firebase project linked to the Play app.
   echo "▸ Assemble release APK (versionCode $VERSION_CODE)"
-  (cd android && ./gradlew :app:assembleRelease --no-daemon 2>&1 | tee ../build/gradle-qa.log)
+  (cd android && ./gradlew :app:assembleRelease -PtbVariant=dev --no-daemon 2>&1 | tee ../build/gradle-qa.log)
   ARTIFACT=android/app/build/outputs/apk/release/app-release.apk
 fi
 

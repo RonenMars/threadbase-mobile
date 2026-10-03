@@ -25,10 +25,10 @@ function route(sessionId: string, serverId: string | null | undefined): SessionR
   }
 }
 
-/** `threadbase://session/<id>?server=<serverId>` → a route, or null. */
+/** `threadbase[-dev]://session/<id>?server=<serverId>` → a route, or null. */
 export function sessionRouteFromUrl(url: string | null | undefined): SessionRoute | null {
   if (!url) return null
-  const match = /^threadbase:\/\/session\/([^/?#]+)(?:\?(.*))?$/.exec(url)
+  const match = /^threadbase(?:-dev)?:\/\/session\/([^/?#]+)(?:\?(.*))?$/.exec(url)
   if (!match) return null
   const sessionId = decodeURIComponent(match[1])
   if (!sessionId) return null

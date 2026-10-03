@@ -103,7 +103,7 @@ export class PairUriError extends Error {
 /** Classify a pasted token / URI for the manual onboarding pair path. */
 export function classifyPairCredential(raw: string): PairCredentialKind {
   const trimmed = raw.trim()
-  if (trimmed.startsWith('threadbase:')) return 'pair-uri'
+  if (/^threadbase(?:-dev)?:/.test(trimmed)) return 'pair-uri'
   // Short-lived tokens from `tb-streamer pair` / `/api/pair/start` (`pt_<hex>`).
   if (trimmed.startsWith('pt_')) return 'pair-token'
   return 'api-key'
@@ -196,7 +196,7 @@ export function parsePairUri(raw: string): PairUri {
   } catch {
     throw new PairUriError('invalid', 'Not a URL')
   }
-  if (parsed.protocol !== 'threadbase:') {
+  if (parsed.protocol !== 'threadbase:' && parsed.protocol !== 'threadbase-dev:') {
     throw new PairUriError('invalid', `Unexpected scheme: ${parsed.protocol}`)
   }
   if (parsed.host !== 'pair' && parsed.pathname.replace(/^\/+/, '') !== 'pair') {

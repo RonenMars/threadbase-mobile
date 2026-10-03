@@ -96,6 +96,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 77
         versionName "1.0.0"
+        manifestPlaceholders = [tbScheme: 'threadbase']
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -138,7 +139,15 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             def enablePngCrunchInRelease = findProperty('android.enablePngCrunchInReleaseBuilds') ?: 'true'
             crunchPngs enablePngCrunchInRelease.toBoolean()
+            // ship-qa.sh builds TbDev, which installs beside the store app.
+            if (findProperty('tbVariant') == 'dev') {
+                applicationIdSuffix '.dev'
+                manifestPlaceholders = [tbScheme: 'threadbase-dev']
+            }
         }
+    }
+    if (findProperty('tbVariant') == 'dev') {
+        sourceSets.release.res.srcDirs += 'src/tbdev/res'
     }
     packagingOptions {
         jniLibs {

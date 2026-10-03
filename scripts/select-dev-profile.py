@@ -20,6 +20,7 @@ import datetime
 import glob
 import os
 import plistlib
+import re
 import subprocess
 import sys
 
@@ -84,7 +85,9 @@ def select(profiles, bundle_id, required, now):
 def main(argv):
     bundle_id, entitlements_path, *dirs = argv
     with open(entitlements_path, "rb") as f:
-        required = plistlib.load(f)
+        # Unset build settings expand to nothing, which is what a dev build gets
+        # for the TbDev suffix ship-qa.sh passes.
+        required = plistlib.loads(re.sub(rb"\$\([A-Z_]+\)", b"", f.read()))
     by_uuid = {}
     for path in (p for d in dirs for p in sorted(glob.glob(os.path.join(d, "*.mobileprovision")))):
         try:

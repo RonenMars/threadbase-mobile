@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Threadbase</string>
+    <string>$(TB_DISPLAY_NAME)</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,8 +27,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>threadbase</string>
-          <string>com.ronenmars.threadbase</string>
+          <string>threadbase$(TB_SCHEME_SUFFIX)</string>
+          <string>com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX)</string>
         </array>
       </dict>
       <dict>
@@ -41,7 +41,7 @@
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>ExpoWidgetsAppGroupIdentifier</key>
-    <string>group.com.ronenmars.threadbase</string>
+    <string>group.com.ronenmars.threadbase$(TB_BUNDLE_ID_SUFFIX)</string>
     <key>ExpoWidgets_EnablePushNotifications</key>
     <false/>
     <key>ITSAppUsesNonExemptEncryption</key>
