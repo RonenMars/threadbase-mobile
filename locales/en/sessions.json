@@ -7,7 +7,8 @@
     "createTitle": "Name this session?",
     "exitTitle": "Name this session before you go?",
     "start": "Start",
-    "placeholder": "e.g. Fix auth bug"
+    "placeholder": "e.g. Fix auth bug",
+    "renameTitle": "Rename session"
   },
   "slowLoading": {
     "sessionsTitle": "Sessions are taking longer than expected.",
@@ -215,6 +216,13 @@
     "terminating": "Terminating…",
     "stillRunning": "Still running after Terminate.",
     "failed": "Couldn't end the session. Check your connection and try again."
+  },
+  "swipe": {
+    "favorite": "Favorite",
+    "unfavorite": "Unfavorite",
+    "rename": "Rename",
+    "terminate": "Terminate",
+    "delete": "Delete"
   },
   "deleteDialog": {
     "title": "Delete this session?",

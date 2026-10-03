@@ -7,7 +7,8 @@
     "createTitle": "לתת שם לסשן?",
     "exitTitle": "לתת שם לסשן לפני היציאה?",
     "start": "התחל",
-    "placeholder": "למשל, תיקון באג באימות"
+    "placeholder": "למשל, תיקון באג באימות",
+    "renameTitle": "שינוי שם הסשן"
   },
   "slowLoading": {
     "sessionsTitle": "אחזור הסשנים אורך יותר מהצפוי.",
@@ -225,6 +226,13 @@
     "terminating": "מסיים…",
     "stillRunning": "עדיין רץ אחרי הסיום.",
     "failed": "לא ניתן לסיים את הסשן. בדוק את החיבור ונסה שוב."
+  },
+  "swipe": {
+    "favorite": "מועדף",
+    "unfavorite": "הסר ממועדפים",
+    "rename": "שינוי שם",
+    "terminate": "סיום",
+    "delete": "מחיקה"
   },
   "deleteDialog": {
     "title": "למחוק את הסשן?",
