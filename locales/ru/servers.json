@@ -260,6 +260,7 @@
       "providerClaude": "Claude Code CLI",
       "providerCodex": "Codex CLI",
       "providerCursor": "Cursor CLI",
+      "providerCopilot": "CLI GitHub Copilot",
       "cache": "Кэш бесед",
       "pty": "Подсистема PTY",
       "filesystem": "Папка истории провайдера"

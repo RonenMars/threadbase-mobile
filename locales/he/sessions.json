@@ -19,6 +19,7 @@
     "codex": "Codex",
     "claude": "Claude",
     "cursor": "Cursor",
+    "copilot": "Copilot",
     "unknown": "לא ידוע"
   },
   "filter": {
@@ -233,6 +234,7 @@
     "keepsClaude": "השיחה נשארת ב-{{server}}. הפקודה claude --resume עדיין מוצאת אותה.",
     "keepsCodex": "השיחה נשארת ב-{{server}}. הפקודה codex resume עדיין מוצאת אותה.",
     "keepsCursor": "היא נשארת בהיסטוריית הצ׳אט של Cursor Agent ב-{{server}}.",
+    "keepsCopilot": "השיחה נשארת בהיסטוריית הצ׳אט של GitHub Copilot ב־{{server}}.",
     "noUndo": "אי אפשר לבטל את זה מהאפליקציה.",
     "confirm": "מחק"
   },
