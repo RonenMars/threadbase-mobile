@@ -65,3 +65,37 @@ export function rehydrateSessionAfterReconnect(
     void queryClient.invalidateQueries({ queryKey: ['conversation', serverId, conversationId] })
   }
 }
+
+/**
+ * Drop every cached page of a conversation transcript (tail and anchored
+ * windows share the `['conversation', serverId, id]` prefix) and refetch the
+ * mounted ones from scratch, so nothing survives from a stale or partial cache.
+ */
+export function hardReloadConversation(
+  queryClient: QueryClient,
+  serverId: string,
+  conversationId: string,
+): Promise<void> {
+  return queryClient.resetQueries({ queryKey: ['conversation', serverId, conversationId] })
+}
+
+/**
+ * Hard reload for a live session: re-pull the session record, rebuild the
+ * bound conversation history, and discard the buffered terminal output.
+ * Reconnecting the socket afterwards makes the streamer unicast a fresh
+ * terminal_replay for the subscribed session.
+ */
+export async function hardReloadSession(
+  queryClient: QueryClient,
+  serverId: string,
+  sessionId: string,
+  conversationId: string | null | undefined,
+  reconnect: () => void,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['session', serverId, sessionId] }),
+    queryClient.resetQueries({ queryKey: ['terminal-output', serverId, sessionId] }),
+    conversationId ? hardReloadConversation(queryClient, serverId, conversationId) : undefined,
+  ])
+  reconnect()
+}
