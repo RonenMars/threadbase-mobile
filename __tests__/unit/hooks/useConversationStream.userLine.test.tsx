@@ -82,6 +82,34 @@ describe('useConversationStream – user line parsing', () => {
       [{ type: 'text', text: '<command-name>/doctor</command-name>' }],
     ])
   })
+
+  // Claude Code injects a finished background Task tool's report back into the
+  // transcript as role:user text wrapped in <task-notification> — never typed
+  // by the human. Rendering it as a normal user bubble reads as if the user
+  // had sent it; drop it instead, same as an injected Codex context message.
+  it('drops a role:user <task-notification> line instead of rendering it as a sent message', async () => {
+    const { result } = await setup()
+
+    const real = JSON.stringify({
+      type: 'user',
+      uuid: 'u-real',
+      message: { role: 'user', content: 'what do you think?' },
+    })
+    const notification = JSON.stringify({
+      type: 'user',
+      uuid: 'u-notif',
+      message: {
+        role: 'user',
+        content: '<task-notification>\n<task-id>abc123</task-id>\n<status>completed</status>\n</task-notification>\n',
+      },
+    })
+    for (const line of [real, notification]) {
+      await act(() => __wsTest.emit('conversation_event', { type: 'conversation_event', sessionId: 'sess-1', line }))
+    }
+
+    expect(result.current.liveMessages).toHaveLength(1)
+    expect(result.current.liveMessages[0].content).toEqual([{ type: 'text', text: 'what do you think?' }])
+  })
 })
 
 // Lines as streamer 1.98.0's toClaudeShapedLine emits them for a Codex
