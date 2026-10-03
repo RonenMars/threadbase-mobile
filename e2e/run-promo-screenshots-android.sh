@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Capture the six store-ready promo screenshots on a booted Android emulator.
+# Capture the five store-ready promo screenshots on a booted Android emulator.
 #
 # Requires: Maestro, adb, an API 35 AVD (started automatically if none is running).
 # Usage: npm run test:e2e:promo:screenshots:android
 #
-# Reverse-forwards 7071/7072 so the hardcoded localhost:7072 second-server
-# pair in promo_screenshots_multi_machine.yaml reaches the host mock.
+# Reverse-forwards 7071/7072 so the localhost:7072 second server
+# the promo flows pair with reaches the host mock.
 # Set MAESTRO_RECORD=0 to skip the whole-suite adb screenrecord.
 set -euo pipefail
 
@@ -27,7 +27,7 @@ export TB_MOBILE_UPLOAD_KEY_PASSWORD="${TB_MOBILE_UPLOAD_KEY_PASSWORD:-android}"
 export SENTRY_DISABLE_AUTO_UPLOAD="${SENTRY_DISABLE_AUTO_UPLOAD:-true}"
 
 DEST="${PROMO_SCREENSHOT_DIR:-e2e/_artifacts/promo-screenshots/android}"
-FLOWS="e2e/promo_screenshots_start.yaml e2e/promo_screenshots_take_over.yaml e2e/promo_screenshots_search.yaml e2e/promo_screenshots_multi_machine.yaml e2e/promo_screenshots_approval.yaml"
+FLOWS="e2e/promo_screenshots_start.yaml e2e/promo_screenshots_take_over.yaml e2e/promo_screenshots_search.yaml e2e/promo_screenshots_approval.yaml"
 if [[ -n "${PROMO_SCREENSHOT_FLOWS:-}" ]]; then
   FLOWS="${PROMO_SCREENSHOT_FLOWS}"
   export PROMO_SCREENSHOT_PARTIAL=1

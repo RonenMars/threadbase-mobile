@@ -4,8 +4,8 @@
 # Usage: e2e/collect-promo-screenshots.sh <ios|android> [dest-dir]
 #
 # Searches the newest e2e/_artifacts/maestro-output/<run> (override with
-# PROMO_SCREENSHOT_SEARCH_ROOT) for the six stems the promo_screenshots_*.yaml
-# flows write, then copies the newest of each into dest-dir as 01-*.png … 06-*.png.
+# PROMO_SCREENSHOT_SEARCH_ROOT) for the five stems the promo_screenshots_*.yaml
+# flows write, then copies the newest of each into dest-dir as 01-*.png … 05-*.png.
 # Also copies any Maestro startRecording MP4s from that same run.
 set -euo pipefail
 
@@ -98,5 +98,4 @@ copy_shot "_raw-take-over-banner" "02-take-over-session.png"
 copy_shot "card-search" "03-search-results.png"
 copy_shot "hero-approval-card" "04-approval-request.png"
 copy_shot "card-approve" "05-approval-response.png"
-copy_shot "card-multi-machine" "06-multi-machine-projects.png"
 echo "Deliverables: ${DEST}"
