@@ -93,6 +93,11 @@ fi
 # a fresh emulator; a local rerun is not.
 adb uninstall com.ronenmars.threadbase > /dev/null 2>&1 || true
 adb install -r "$RELEASE_APK"
+# Seed after install: uninstall drops the clipboard, and promo_screenshots_multi_machine
+# pastes the mock key into Add Server. `cmd clipboard` is a no-op on iOS.
+adb shell cmd clipboard set-text mock-key-123 >/dev/null 2>&1 || \
+  adb shell cmd clipboard set mock-key-123 >/dev/null 2>&1 || \
+  true
 # `adb install` can bounce the emulator's adb transport. The first Maestro flow
 # (launch.yaml) then died in ~2s with "device offline" on runs 31937461153,
 # 31941055453, and 32004798693, while every later flow paired fine. Re-wait
@@ -125,7 +130,9 @@ for f in $FLOWS; do
     exit 1
   fi
 done
-echo "Running flows: $FLOWS" >> "$GITHUB_STEP_SUMMARY"
+if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+  echo "Running flows: $FLOWS" >> "$GITHUB_STEP_SUMMARY"
+fi
 node e2e/check-sim.js
 node e2e/ensure-release-build.js
 MOCK_PORTS=7071,7072 node e2e/mock-server.js &
