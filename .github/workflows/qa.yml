@@ -147,6 +147,35 @@ jobs:
             --groups "$TESTER_GROUPS" \
             --release-notes "${RELEASE_NOTES:-QA ${DEPLOY_REF} ($(git rev-parse --short HEAD))}"
 
+      - name: Summarize deployed source and changelog
+        shell: bash
+        env:
+          DEPLOY_REF: ${{ inputs.deploy_ref || github.ref_name }}
+        run: |
+          deployed_sha="$(git rev-parse HEAD)"
+          git fetch --no-tags --depth=1 origin main
+          main_sha="$(git rev-parse FETCH_HEAD)"
+          changelog_diff="$RUNNER_TEMP/qa-changelog.diff"
+          git diff --no-ext-diff "$main_sha" "$deployed_sha" -- 'CHANGELOG*' 'changelog*' > "$changelog_diff"
+          # Backticks format Markdown and must remain literal.
+          # shellcheck disable=SC2016
+          {
+            printf '## Deployed QA source\n\n'
+            printf -- '- Branch / tag / requested SHA: `%s`\n' "$DEPLOY_REF"
+            printf -- '- Deployed commit: [`%s`](%s/%s/commit/%s)\n' "$deployed_sha" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$deployed_sha"
+            printf -- '- Compared with main: [`%s`](%s/%s/commit/%s)\n\n' "$main_sha" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$main_sha"
+            printf '### CHANGELOG diff from main\n\n'
+            if [[ -s "$changelog_diff" ]]; then
+              printf '````diff\n'
+              cat "$changelog_diff"
+              printf '\n````\n'
+            elif { git ls-tree --name-only "$main_sha"; git ls-tree --name-only "$deployed_sha"; } | grep -E '^(CHANGELOG|changelog)' > /dev/null; then
+              printf 'No CHANGELOG differences from main.\n'
+            else
+              printf 'No CHANGELOG file exists in main or the deployed commit.\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   qa-android:
     name: QA Android
     if: ${{ inputs.platform == 'android' || inputs.platform == 'all' }}
@@ -230,3 +259,32 @@ jobs:
           ./.ship-workflow/scripts/ship-qa.sh --platform android \
             --groups "$TESTER_GROUPS" \
             --release-notes "${RELEASE_NOTES:-QA ${DEPLOY_REF} ($(git rev-parse --short HEAD))}"
+
+      - name: Summarize deployed source and changelog
+        shell: bash
+        env:
+          DEPLOY_REF: ${{ inputs.deploy_ref || github.ref_name }}
+        run: |
+          deployed_sha="$(git rev-parse HEAD)"
+          git fetch --no-tags --depth=1 origin main
+          main_sha="$(git rev-parse FETCH_HEAD)"
+          changelog_diff="$RUNNER_TEMP/qa-changelog.diff"
+          git diff --no-ext-diff "$main_sha" "$deployed_sha" -- 'CHANGELOG*' 'changelog*' > "$changelog_diff"
+          # Backticks format Markdown and must remain literal.
+          # shellcheck disable=SC2016
+          {
+            printf '## Deployed QA source\n\n'
+            printf -- '- Branch / tag / requested SHA: `%s`\n' "$DEPLOY_REF"
+            printf -- '- Deployed commit: [`%s`](%s/%s/commit/%s)\n' "$deployed_sha" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$deployed_sha"
+            printf -- '- Compared with main: [`%s`](%s/%s/commit/%s)\n\n' "$main_sha" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$main_sha"
+            printf '### CHANGELOG diff from main\n\n'
+            if [[ -s "$changelog_diff" ]]; then
+              printf '````diff\n'
+              cat "$changelog_diff"
+              printf '\n````\n'
+            elif { git ls-tree --name-only "$main_sha"; git ls-tree --name-only "$deployed_sha"; } | grep -E '^(CHANGELOG|changelog)' > /dev/null; then
+              printf 'No CHANGELOG differences from main.\n'
+            else
+              printf 'No CHANGELOG file exists in main or the deployed commit.\n'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
