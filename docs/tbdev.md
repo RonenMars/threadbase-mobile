@@ -12,6 +12,7 @@ How to ship one is in [`deployment.md`](./deployment.md) → "Firebase QA"; this
 | iOS widget extension | `com.ronenmars.threadbase.widgets` | `com.ronenmars.threadbase.dev.widgets` |
 | App Group | `group.com.ronenmars.threadbase` | `group.com.ronenmars.threadbase.dev` |
 | Display name | Threadbase | TbDev |
+| URL scheme | `threadbase://` | `threadbase-dev://` |
 | Icon | `AppIcon` | `AppIconDev` (the same icon with an orange DEV band) |
 | Distributed by | App Store, TestFlight, Play | Firebase App Distribution |
 
@@ -23,13 +24,14 @@ A server paired in one is not paired in the other.
 `ios/` and `android/` are committed and no ship path runs `expo prebuild`, so an `app.config.js` variant would never reach a build.
 The variant is instead a set of build-time inputs that default to Threadbase, which leaves every other build path byte-for-byte unchanged.
 
-**iOS** — three Xcode build settings, passed on the `xcodebuild` command line by `scripts/ship-qa.sh`:
+**iOS** — four Xcode build settings, passed on the `xcodebuild` command line by `scripts/ship-qa.sh`:
 
 | Setting | TbDev value | Read by |
 |---|---|---|
 | `TB_BUNDLE_ID_SUFFIX` | `.dev` | `PRODUCT_BUNDLE_IDENTIFIER` of both targets, the URL scheme and `ExpoWidgetsAppGroupIdentifier` in `Info.plist`, the App Group in both `.entitlements` files |
 | `TB_APPICON_SUFFIX` | `Dev` | `ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon$(TB_APPICON_SUFFIX)"` |
 | `TB_DISPLAY_NAME` | `TbDev` | `CFBundleDisplayName`; defaults to `Threadbase` in the project file |
+| `TB_SCHEME_SUFFIX` | `-dev` | the `threadbase$(TB_SCHEME_SUFFIX)` entry of `CFBundleURLSchemes` in `Info.plist` |
 
 Xcode expands `$(…)` in `Info.plist` and in entitlements files, and an unset setting expands to nothing, which is why the suffixes need no default.
 Command-line settings apply to every target at once, which is fine here because both targets want the same suffix; it is the per-target provisioning profile that cannot go on the command line, and `ship-qa.sh` handles that through `ExportOptions` and its profile lookup.
@@ -40,9 +42,16 @@ It strips `$(…)` before parsing, so device builds through `dev-device.sh` stil
 **Android** — one Gradle property, `-PtbVariant=dev`, read in `android/app/build.gradle`:
 
 - `applicationIdSuffix '.dev'`
+- `manifestPlaceholders = [tbScheme: 'threadbase-dev']`, which fills the `${tbScheme}` data scheme of the VIEW intent filter in `AndroidManifest.xml` (the default is `threadbase`)
 - `sourceSets.release.res.srcDirs += 'src/tbdev/res'`, which overrides `app_name` and the adaptive-icon foreground.
 
 Launchers older than Android 8 do not use the adaptive icon and show the normal one.
+
+**URL scheme** — with both apps on one device, two apps claiming `threadbase://` leave the choice to the system: iOS defines no rule for which app wins, so a pair QR scanned with the Camera could open either.
+TbDev therefore owns `threadbase-dev://`.
+expo-router routes on host and path and ignores the scheme, so `threadbase-dev://pair?…` and `threadbase-dev://session/…` reach the same screens.
+The two places that read a scheme accept both (`parsePairUri`, `sessionRouteFromUrl`), and the one that writes it — the Live Activity tap link — uses `APP_SCHEME` from `lib/appScheme.ts`, which reads `expo-application`'s `applicationId` so TbDev's Live Activity opens TbDev.
+The streamer prints a TbDev pair QR with `tb-streamer pair --dev`.
 
 **Icons** — generated from the 1024 px Threadbase icon with a band drawn `sourceAtop`, so the band follows the icon's shape.
 To regenerate after an icon change, redraw the band on the new source, then `sips` for the iOS PNG and `cwebp` for the five Android densities.
@@ -91,7 +100,7 @@ Deploy checks that file for `com.ronenmars.threadbase`, QA for `com.ronenmars.th
 - **No push has been sent to TbDev yet**, so delivery is configured but unproven on both platforms.
 - **No Deploy run has used the two-client `GOOGLE_SERVICES_JSON_B64` yet.** The QA side is proven: the "Write Firebase config" step passed in [run 37058935537](https://github.com/RonenMars/threadbase-mobile/actions/runs/37058935537).
 - **TbDev Android has not been installed on a device.** The iOS build is confirmed side by side with Threadbase on an iPhone.
-- **Both apps register `threadbase://`**, so with both installed the system picks which one opens a deep link.
+- **The scheme split is unproven on hardware.** Unit tests and a merged Android manifest per variant show each build registering its own scheme; an iPhone and an Android device scanning `tb-streamer pair --dev` and `tb-streamer pair` have not yet been checked.
 
 ## Traps found on the way
 

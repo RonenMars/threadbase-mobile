@@ -218,6 +218,7 @@ PY
     TB_BUNDLE_ID_SUFFIX=.dev \
     TB_APPICON_SUFFIX=Dev \
     TB_DISPLAY_NAME=TbDev \
+    TB_SCHEME_SUFFIX=-dev \
     archive | tee build/archive-qa.log
 
   cat > build/ExportOptions-qa.plist <<EOF

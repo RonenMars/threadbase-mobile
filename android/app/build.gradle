@@ -96,6 +96,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 77
         versionName "1.0.0"
+        manifestPlaceholders = [tbScheme: 'threadbase']
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -141,6 +142,7 @@ android {
             // ship-qa.sh builds TbDev, which installs beside the store app.
             if (findProperty('tbVariant') == 'dev') {
                 applicationIdSuffix '.dev'
+                manifestPlaceholders = [tbScheme: 'threadbase-dev']
             }
         }
     }

@@ -489,8 +489,8 @@ Firebase App Distribution has no path to either store, so an enforced build cann
 The binary is **TbDev**, not Threadbase: bundle ID and Android package `com.ronenmars.threadbase.dev`, widget `com.ronenmars.threadbase.dev.widgets`, App Group `group.com.ronenmars.threadbase.dev`, and the app icon with a DEV band.
 It installs beside the App Store, TestFlight or Play build instead of replacing it, and shares none of its data.
 How the variant is wired, and the Apple, Firebase and Expo state behind it, is in [`tbdev.md`](./tbdev.md).
-The script passes `TB_BUNDLE_ID_SUFFIX`, `TB_APPICON_SUFFIX` and `TB_DISPLAY_NAME` to `xcodebuild` and `-PtbVariant=dev` to Gradle; a build that sets none of them is Threadbase, unchanged.
-Both apps register the `threadbase://` scheme, so with both installed the system decides which one opens such a link.
+The script passes `TB_BUNDLE_ID_SUFFIX`, `TB_APPICON_SUFFIX`, `TB_DISPLAY_NAME` and `TB_SCHEME_SUFFIX` to `xcodebuild` and `-PtbVariant=dev` to Gradle; a build that sets none of them is Threadbase, unchanged.
+TbDev registers `threadbase-dev://` instead of `threadbase://`, so a link opens the app it was made for; `tb-streamer pair --dev` prints a pair QR for TbDev.
 Push reaches TbDev only once Expo holds credentials for its identifiers: an APNs key for `com.ronenmars.threadbase.dev` on iOS and the FCM V1 service-account key for the same package on Android.
 `GOOGLE_SERVICES_JSON_B64` is one file with both Android clients, `com.ronenmars.threadbase` and `com.ronenmars.threadbase.dev`; Deploy and QA each check for their own, and a local Android build with `android/app/google-services.json` present needs the same.
 
