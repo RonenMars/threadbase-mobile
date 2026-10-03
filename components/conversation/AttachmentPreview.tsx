@@ -12,7 +12,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { X } from 'phosphor-react-native'
 import type { ComposerAttachment } from '@/services/uploads'
 import { font, spacing } from '@/constants/theme'
@@ -65,6 +65,9 @@ function PreviewPager({
 }) {
   const { t } = useTranslation('terminal')
   const { width } = useWindowDimensions()
+  // Read from the app-level provider: a native SafeAreaView mounted inside a Modal reports a zero top
+  // inset on iOS, which left the close button under the status bar with no way out.
+  const insets = useSafeAreaInsets()
   const [index, setIndex] = useState(initialIndex)
   const current = images[Math.min(index, images.length - 1)]
 
@@ -98,7 +101,14 @@ function PreviewPager({
           </View>
         )}
       />
-      <SafeAreaView style={styles.header} edges={['top', 'left', 'right']} pointerEvents="box-none">
+      <View
+        testID="attachment-preview-header"
+        style={[
+          styles.header,
+          { paddingTop: insets.top, paddingStart: Math.max(insets.left, spacing.md), paddingEnd: Math.max(insets.right, spacing.md) },
+        ]}
+        pointerEvents="box-none"
+      >
         <View style={styles.headerText}>
           <Text style={[styles.title, ltrContentStyle]} numberOfLines={1}>
             {current?.originalName}
@@ -115,7 +125,7 @@ function PreviewPager({
         >
           <X size={22} color={FOREGROUND} />
         </TouchableOpacity>
-      </SafeAreaView>
+      </View>
     </View>
   )
 }
@@ -131,7 +141,6 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
     backgroundColor: 'rgba(0,0,0,0.45)',
