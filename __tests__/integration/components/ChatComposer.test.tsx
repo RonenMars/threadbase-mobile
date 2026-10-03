@@ -338,6 +338,24 @@ describe('ChatComposer', () => {
     expect(screen.queryByText('That question isn\'t open anymore.')).toBeNull()
   })
 
+  describe('upload cancel', () => {
+    it('turns the upload spinner into a cancel button', async () => {
+      const onCancelUpload = jest.fn()
+      const { props } = await renderComposer({ isUploading: true, onCancelUpload })
+      screen.getByTestId('chat-attach-cancel')
+      fireEvent.press(screen.getByTestId('chat-attach-button'))
+      expect(onCancelUpload).toHaveBeenCalledTimes(1)
+      expect(props.onAttach).not.toHaveBeenCalled()
+    })
+
+    it('keeps the spinner inert when no cancel is offered', async () => {
+      const { props } = await renderComposer({ isUploading: true })
+      expect(screen.queryByTestId('chat-attach-cancel')).toBeNull()
+      fireEvent.press(screen.getByTestId('chat-attach-button'))
+      expect(props.onAttach).not.toHaveBeenCalled()
+    })
+  })
+
   describe('attachment preview', () => {
     const photo = {
       id: 'att-1',
@@ -429,3 +447,4 @@ describe('ChatComposer', () => {
     )
   })
 })
+
