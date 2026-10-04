@@ -631,6 +631,7 @@ export default function SessionDetailScreen() {
     enabled: Boolean(serverId && reviewConversationId),
   })
   const reviewMessages = useMemo(() => reviewConversation?.messages ?? [], [reviewConversation])
+  const messageCount = reviewConversation ? (reviewConversation.messageCount ?? reviewMessages.length) : undefined
   const hasDiffs = useMemo(
     () => buildReviewFromMessages(reviewMessages).files.length > 0,
     [reviewMessages],
@@ -1249,7 +1250,11 @@ export default function SessionDetailScreen() {
               </TouchableOpacity>
             ) : null}
             <Text style={styles.elapsed}>{formatElapsed(session.elapsedMs)}</Text>
-            <Text style={styles.prompts}>{t('session.prompts', { count: session.promptCount })}</Text>
+            {messageCount != null ? (
+              <Text style={styles.messages} testID="session-message-count">
+                {t('session.messages', { count: messageCount })}
+              </Text>
+            ) : null}
           </View>
         ) : null}
         {isLive && (endSession.armed || endSession.terminatingAt != null) ? (
@@ -1444,6 +1449,7 @@ function makeStyles(theme: Theme) {
     statusBar: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       gap: spacing.md,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
@@ -1459,7 +1465,7 @@ function makeStyles(theme: Theme) {
       borderBottomColor: theme.border,
     },
     elapsed: { color: theme.text.secondary, fontSize: font.sm },
-    prompts: { color: theme.text.secondary, fontSize: font.sm },
+    messages: { color: theme.text.secondary, fontSize: font.sm },
     metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     body: { flex: 1 },
     // Content is frozen while the WS is down — make it read as stale, not live.
