@@ -497,6 +497,12 @@ export interface ServerInfo {
    */
   devicesDurable?: boolean
   /**
+   * Additive: the server serves /api/saved-items, a favorites list shared by
+   * every device paired with it. Absent on older servers, where favorites stay
+   * on this device only — see `hooks/useSavedItemsSync.ts`.
+   */
+  savedItems?: boolean
+  /**
    * Additive: the server publishes the provider-neutral prompt contract
    * (`prompt_snapshot` / `prompt_event` frames, POST /prompt/answer). Absent on
    * older servers. Informational: the client negotiates by frame presence, not
