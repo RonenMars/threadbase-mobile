@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO } from '@/constants/a11y'
 import { layoutDirectionStyle, ltrContentStyle } from '@/lib/rtl'
 import { cliPromptText } from '@/lib/cliPromptText'
+import { parseMarkdownFor } from '@/lib/markdown'
+import { TerminalMarkdown } from '@/components/terminal/TerminalMarkdown'
 import type { Message, MessageContent } from '@/types/api'
 
 /**
@@ -12,6 +14,12 @@ import type { Message, MessageContent } from '@/types/api'
  * folded under it. Sits above the live PTY rows in the terminal view, so it
  * must read as terminal output, not as a chat bubble — monospace, LTR, the
  * same palette as `TerminalOutput`'s rows.
+ *
+ * Assistant prose is markdown, and `renderMarkdown` decides whether it is drawn
+ * as such or left as its source. Source is the debugging view and stays one
+ * `Text`; rendered prose needs the `⏺` gutter as its own column, because the
+ * glyph can no longer live inside a string that list indentation also has to
+ * reach. See docs/design/markdown-rendering.md.
  */
 
 // Rows of a result shown before it is folded; the rest is one tap away.
@@ -76,7 +84,15 @@ function Result({ block }: { block: Extract<MessageContent, { type: 'tool_result
   )
 }
 
-function Block({ block, role }: { block: MessageContent; role: Message['role'] }) {
+function Block({
+  block,
+  role,
+  renderMarkdown,
+}: {
+  block: MessageContent
+  role: Message['role']
+  renderMarkdown: boolean
+}) {
   switch (block.type) {
     case 'text': {
       if (role === 'user') {
@@ -90,6 +106,21 @@ function Block({ block, role }: { block: MessageContent; role: Message['role'] }
       }
       const text = block.text.trim()
       if (!text) return null
+      if (renderMarkdown) {
+        return (
+          <View style={styles.gutterRow}>
+            <Text
+              style={[styles.text, styles.gutterGlyph]}
+              maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
+            >
+              ⏺
+            </Text>
+            <View style={styles.gutterBody}>
+              <TerminalMarkdown blocks={parseMarkdownFor(block, text)} />
+            </View>
+          </View>
+        )
+      }
       return (
         <Text style={styles.text} selectable maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}>
           {`⏺ ${indentContinuation(text)}`}
@@ -124,11 +155,18 @@ function Block({ block, role }: { block: MessageContent; role: Message['role'] }
   }
 }
 
-export const TranscriptRow = memo(function TranscriptRow({ message }: { message: Message }) {
+export const TranscriptRow = memo(function TranscriptRow({
+  message,
+  renderMarkdown = false,
+}: {
+  message: Message
+  /** Draw assistant prose as rendered markdown instead of its source. */
+  renderMarkdown?: boolean
+}) {
   return (
     <View style={styles.row} testID="terminal-transcript-row">
       {message.content.map((block, i) => (
-        <Block key={i} block={block} role={message.role} />
+        <Block key={i} block={block} role={message.role} renderMarkdown={renderMarkdown} />
       ))}
     </View>
   )
@@ -150,6 +188,17 @@ const styles = StyleSheet.create({
   user: {
     color: '#58a6ff',
     fontWeight: '600',
+  },
+  // The `⏺` as its own column, so markdown list indentation starts from the
+  // body edge rather than from inside a prefixed string.
+  gutterRow: {
+    flexDirection: 'row',
+  },
+  gutterGlyph: {
+    width: 14,
+  },
+  gutterBody: {
+    flex: 1,
   },
   tool: {
     color: '#d2a8ff',

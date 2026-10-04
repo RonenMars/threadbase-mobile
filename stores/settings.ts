@@ -67,6 +67,12 @@ interface SettingsStore {
   /** Renders Projects as the flat multi-server tree instead of the project
    *  card list. Toggled from the Filter & Sort drawer. */
   sessionsTreeView: boolean
+  /**
+   * Renders agent markdown in the terminal transcript instead of its source.
+   * On by default; off is the debugging view, where seeing exactly what the
+   * agent emitted matters more than reading it comfortably.
+   */
+  terminalRenderMarkdown: boolean
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
   locale: SupportedLocale
@@ -105,6 +111,7 @@ interface SettingsStore {
   setSkipLeaveNotice: (v: boolean) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setSessionsTreeView: (v: boolean) => void
+  setTerminalRenderMarkdown: (v: boolean) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
@@ -146,6 +153,7 @@ interface PersistedSettings {
   skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
   sessionsTreeView: boolean
+  terminalRenderMarkdown: boolean
   showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
@@ -180,6 +188,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   skipLeaveNotice: false,
   sessionsLayout: 'now',
   sessionsTreeView: false,
+  terminalRenderMarkdown: true,
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
@@ -212,6 +221,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSkipLeaveNotice: (skipLeaveNotice) => set({ skipLeaveNotice }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setSessionsTreeView: (sessionsTreeView) => set({ sessionsTreeView }),
+  setTerminalRenderMarkdown: (terminalRenderMarkdown) => set({ terminalRenderMarkdown }),
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
   setLocale: (locale) => set({ locale }),
@@ -253,6 +263,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         skipLeaveNotice: parsed.skipLeaveNotice ?? state.skipLeaveNotice,
         sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
         sessionsTreeView: parsed.sessionsTreeView ?? state.sessionsTreeView,
+        terminalRenderMarkdown: parsed.terminalRenderMarkdown ?? state.terminalRenderMarkdown,
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
         locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
@@ -309,6 +320,7 @@ export function persistSettingsNow(): Promise<void> {
     skipLeaveNotice: state.skipLeaveNotice,
     sessionsLayout: state.sessionsLayout,
     sessionsTreeView: state.sessionsTreeView,
+    terminalRenderMarkdown: state.terminalRenderMarkdown,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
     biometricLock: state.biometricLock,

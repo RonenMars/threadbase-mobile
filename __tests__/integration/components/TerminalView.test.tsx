@@ -249,7 +249,9 @@ describe('TerminalView', () => {
       const rows = screen.getAllByTestId('terminal-transcript-row')
       expect(rows.length).toBe(2)
       expect(screen.getByText('❯ older message one')).toBeTruthy()
-      expect(screen.getByText('⏺ older message two')).toBeTruthy()
+      // Assistant prose renders as markdown by default, which puts the `⏺`
+      // gutter in its own element rather than concatenated into the text.
+      expect(screen.getByText('older message two')).toBeTruthy()
       expect(screen.getByTestId('terminal-live-divider')).toBeTruthy()
       expect(screen.getAllByTestId('terminal-line-row').length).toBe(2)
     })

@@ -258,6 +258,8 @@ export default function SettingsScreen() {
     setSkipLeaveNotice,
     showProviderVersionWarning,
     setShowProviderVersionWarning,
+    terminalRenderMarkdown,
+    setTerminalRenderMarkdown,
     colorScheme,
     setColorScheme,
     autoNameFromMessage,
@@ -636,6 +638,13 @@ await refreshServerInfo(serverId)
           badge={t('session.betaBadge')}
         />
         <Text style={s.rowNote}>{t('session.chatViewNote')}</Text>
+        <SettingsRow
+          label={t('session.terminalMarkdown')}
+          value={terminalRenderMarkdown}
+          onValueChange={setTerminalRenderMarkdown}
+          testID="settings-terminal-markdown-toggle"
+        />
+        <Text style={s.rowNote}>{t('session.terminalMarkdownNote')}</Text>
         {__DEV__ ? (
           <>
             <SettingsRow

@@ -28,13 +28,9 @@ import { TranscriptRow } from '@/components/terminal/TranscriptRow'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { messageItemType } from '@/utils/messageItemType'
+import { stripAnsi } from '@/utils/stripAnsi'
+import { useSettingsStore } from '@/stores/settings'
 import type { Message } from '@/types/api'
-
-// Strip any remaining ANSI escape codes that slipped through the VT
-function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1b(\[[0-9;?]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[A-Z\\])/g, '')
-}
 
 const USER_PREFIX_RE = /^[❯›>]\s(.*)$/
 
@@ -170,6 +166,9 @@ export function TerminalOutput({
   const { t } = useTranslation('common')
   const { t: tTerminal } = useTranslation('terminal')
   const { styles: chrome } = useThemedStyles(makeChromeStyles)
+  // Read once for the list rather than per row: a selector in TranscriptRow
+  // would mean one store subscription per visible transcript message.
+  const renderMarkdown = useSettingsStore((s) => s.terminalRenderMarkdown)
   const collapsedLines = useMemo(
     () => collapseWrappedUserLines(lines, userMessageTexts),
     [lines, userMessageTexts],
@@ -292,7 +291,7 @@ export function TerminalOutput({
       case 'message':
         return (
           <RenderErrorBoundary tag="transcript_row" rawFallback={item.message.role}>
-            <TranscriptRow message={item.message} />
+            <TranscriptRow message={item.message} renderMarkdown={renderMarkdown} />
           </RenderErrorBoundary>
         )
       case 'divider':
@@ -306,7 +305,7 @@ export function TerminalOutput({
       case 'line':
         return <LineRow line={item.line} userMessageTexts={userMessageTexts} />
     }
-  }, [liveDividerLabel, userMessageTexts])
+  }, [liveDividerLabel, renderMarkdown, userMessageTexts])
 
   // Stable keys: a message by id; a PTY row by content + per-content occurrence.
   // Positional keys broke memoisation: every WS frame's `.slice(-maxLines)`
