@@ -21,3 +21,5 @@ components/SlowQueryBanner.tsx
 components/shelf/ChatShelf.tsx
 # Screen-sized list composition over stores, router and the quick-access sheet — the pieces (rows, TreeRow, ServerRootRow, LiveSessionsHeader) have stories.
 components/sessions/tree/TreeSessionsList.tsx
+# Screen-sized list composition over the settings store, FlashList recycling and scroll anchoring — the pieces (TranscriptRow, TerminalMarkdown, QuestionCard) have stories.
+components/terminal/TerminalOutput.tsx
