@@ -66,7 +66,7 @@ describe('omitConversationsCoveredByLiveSessions', () => {
     expect(out).toEqual([live])
   })
 
-  it('keeps a conversation when the matching session is held, not live', () => {
+  it('drops the conversation when the matching session is held, not live', () => {
     const held = session({
       id: 'held',
       conversationId: 'held',
@@ -77,6 +77,6 @@ describe('omitConversationsCoveredByLiveSessions', () => {
     const transcript = conversation({ id: 'held' })
 
     const out = omitConversationsCoveredByLiveSessions([held, transcript])
-    expect(out).toEqual([held, transcript])
+    expect(out).toEqual([held])
   })
 })
