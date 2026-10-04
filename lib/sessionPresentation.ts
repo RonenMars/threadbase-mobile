@@ -1,4 +1,4 @@
-import type { AgentPhase, SessionLifecycle, SessionStatus, UnavailableReason } from '@/types/api'
+import type { AgentPhase, Session, SessionLifecycle, SessionStatus, UnavailableReason } from '@/types/api'
 
 /**
  * Wire statuses this build knows how to render. Wider than `SessionStatus`:
@@ -169,6 +169,15 @@ function activityAtFor(session: SessionPresentationInput): string | null {
 }
 
 const AGENT_PHASES: AgentPhase[] = ['thinking', 'streaming', 'hooks', 'acting', 'working']
+
+/**
+ * `promptCount` only counts prompts sent through the app, so it is 0 for a
+ * session started elsewhere. Servers that keep `messageCount` current send the
+ * real total; older ones fall back to the prompt count.
+ */
+export function sessionMessageCount(session: Pick<Session, 'messageCount' | 'promptCount'>): number {
+  return session.messageCount ?? session.promptCount
+}
 
 export function isAgentPhase(value: string | null | undefined): value is AgentPhase {
   return value != null && (AGENT_PHASES as string[]).includes(value)
