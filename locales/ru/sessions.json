@@ -41,10 +41,10 @@
   },
   "card": {
     "copyId": "Копировать ID сессии",
-    "prompts_one": "{{count}} промпт",
-    "prompts_few": "{{count}} промпта",
-    "prompts_many": "{{count}} промптов",
-    "prompts_other": "{{count}} промптов"
+    "messages_one": "{{count}} сообщение",
+    "messages_few": "{{count}} сообщения",
+    "messages_many": "{{count}} сообщений",
+    "messages_other": "{{count}} сообщений"
   },
   "hub": {
     "seeAll_one": "Показать {{count}} беседу",

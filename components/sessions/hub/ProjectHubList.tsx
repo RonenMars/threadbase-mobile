@@ -29,7 +29,7 @@ import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession } from '@/lib/externalSession'
-import { deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, sessionMessageCount } from '@/lib/sessionPresentation'
 import {
   collidingProjectPaths,
   shouldForceServerChip,
@@ -187,7 +187,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             path={item.projectPath}
             timestamp={item.completedAt ?? item.startedAt}
             branch={item.branch}
-            messageCount={item.promptCount}
+            messageCount={sessionMessageCount(item)}
             tier={tier}
             lastOutput={item.lastOutput || null}
             serverLabel={item.serverLabel}

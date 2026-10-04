@@ -11,7 +11,7 @@ import { ServerRootRow } from './ServerRootRow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveSessionsHeader } from './LiveSessionsHeader'
-import { deriveSessionPresentation, isPresentationLive } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, isPresentationLive, sessionMessageCount } from '@/lib/sessionPresentation'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
 import { useConversationSearch } from '@/hooks/useConversations'
@@ -112,7 +112,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
             path={s.projectPath}
             timestamp={s.completedAt ?? s.startedAt}
             branch={s.branch}
-            messageCount={s.promptCount}
+            messageCount={sessionMessageCount(s)}
             tier={tier}
             lastOutput={s.lastOutput || null}
             serverLabel={s.serverLabel}
@@ -314,7 +314,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
               path={s.projectPath}
               timestamp={s.completedAt ?? s.startedAt}
               branch={s.branch}
-              messageCount={s.promptCount}
+              messageCount={sessionMessageCount(s)}
               tier={tier}
               lastOutput={s.lastOutput || null}
               serverLabel={s.serverLabel}
