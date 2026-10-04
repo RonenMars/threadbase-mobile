@@ -32,7 +32,9 @@ function messageKey(message: Message): string {
 }
 
 /**
- * FlashList props every message list shares. Spread onto the list.
+ * FlashList props every virtualized transcript shares, whatever its row type:
+ * the chat lists (rows are `Message`) and the terminal (rows mix transcript
+ * messages with PTY lines). Spread onto the list.
  *
  * drawDistance is PIXELS of pre-rendered runway, not rows, and the iOS default
  * is 250 — split 70/30 toward the scroll direction, so scrolling up pre-renders
@@ -46,10 +48,15 @@ function messageKey(message: Message): string {
  * The reach thresholds are fractions of the visible length: a page is requested
  * once the reader is within 30% of a viewport of the end that has more.
  */
-export const MESSAGE_LIST_PROPS = {
+export const VIRTUALIZED_LIST_PROPS = {
   drawDistance: 2000,
   onStartReachedThreshold: 0.3,
   onEndReachedThreshold: 0.3,
+} as const
+
+/** The chat lists' props: the shared runway plus `Message`-keyed rows. */
+export const MESSAGE_LIST_PROPS = {
+  ...VIRTUALIZED_LIST_PROPS,
   scrollEventThrottle: 16,
   keyExtractor: messageKey,
   getItemType: messageItemType,

@@ -9,6 +9,12 @@ The contract lives in one module, `hooks/useVirtualizedMessageList.ts`. Every li
 `MESSAGE_LIST_PROPS` onto `FlashList` and takes its `onStartReached` / `onEndReached` from
 `useVirtualizedMessageList`, so the tuning cannot drift between the lists.
 
+The terminal (`components/terminal/TerminalOutput.tsx`) is on the same contract. Its rows mix
+transcript messages with PTY lines, so it keeps its own `keyExtractor` / `getItemType` and spreads
+only the row-type-agnostic `VIRTUALIZED_LIST_PROPS` (runway and reach thresholds), while the
+guarded older-page loader and the `CHAT_ANCHOR` preset are shared as is.
+`hooks/useTerminalTranscript.ts` exposes `fetchOlder` already narrowed to the loader's shape.
+
 ## The model
 
 The shape is the one autokitteh's web platform uses for session log viewers
