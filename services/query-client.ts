@@ -111,11 +111,14 @@ export function clearServerConversationAndSessionState(serverId: string) {
 // React Native has no browser online/offline events, so onlineManager never
 // learns about radio state on its own — refetchOnReconnect would never fire and
 // mutations (networkMode 'online') could not detect offline. Drive it from
-// NetInfo. isInternetReachable is null (unknown) on cold start; treat null as
-// online so we don't falsely pause every query for the first second.
+// NetInfo, and only its `isConnected` (is there a network at all).
+// `isInternetReachable` comes from a probe of a public URL, which says nothing
+// about whether *our* server is reachable: a LAN, VPN or tunnel-only network
+// can fail the probe while the streamer answers fine, and a false there pauses
+// every mutation (a send never started, never failed) until the next flip.
 onlineManager.setEventListener((setOnline) => {
   return NetInfo.addEventListener((state) => {
-    const online = state?.isConnected !== false && state?.isInternetReachable !== false
+    const online = state?.isConnected !== false
     const wasOnline = onlineManager.isOnline()
     setOnline(online)
     // Replay mutations that auto-paused while offline once we reconnect.

@@ -81,6 +81,11 @@ describe('onlineManager <- NetInfo wiring', () => {
     expect(onlineManager.isOnline()).toBe(true)
   })
 
+  it('stays online when connected but the public reachability probe fails', () => {
+    emit({ isConnected: true, isInternetReachable: false })
+    expect(onlineManager.isOnline()).toBe(true)
+  })
+
   it('treats unknown reachability (null) as online so cold start does not pause', () => {
     emit({ isConnected: true, isInternetReachable: null })
     expect(onlineManager.isOnline()).toBe(true)
