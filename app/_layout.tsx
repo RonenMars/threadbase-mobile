@@ -37,6 +37,7 @@ import { isHostPressureLevel, parseHostPressureOs, parseHostPressureReasons, typ
 import { authToken } from '@/services/authed-fetch'
 import { answerFromNotification, registerPushTokenForAll } from '@/services/push'
 import { useNotificationPrefsSync } from '@/hooks/useNotificationPrefsSync'
+import { useSavedItemsSync } from '@/hooks/useSavedItemsSync'
 import {
   adoptRunningActivities,
   reconcile as reconcileLiveActivity,
@@ -128,6 +129,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const setHostPressure = useServersStore((s) => s.setHostPressure)
   const clearHostPressure = useServersStore((s) => s.clearHostPressure)
   useNotificationPrefsSync()
+  useSavedItemsSync()
 
   useEffect(() => {
     hydrateSettings().then(() => {
