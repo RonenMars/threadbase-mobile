@@ -89,9 +89,14 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           <X size={16} color="#8b949e" />
         </TouchableOpacity>
       ) : null}
-      {q.header ? <Text style={styles.header}>{q.header}</Text> : null}
-      {q.detail ? <Text style={styles.detail}>{q.detail}</Text> : null}
-      <Text style={styles.question}>{q.question}</Text>
+      {/* An unsupported form has no tappable rows, so showing all its questions costs nothing and says what the terminal is asking. */}
+      {(block.unsupportedShape ? block.questions : [q]).map((item, index) => (
+        <React.Fragment key={index}>
+          {item.header ? <Text style={styles.header}>{item.header}</Text> : null}
+          {item.detail ? <Text style={styles.detail}>{item.detail}</Text> : null}
+          <Text style={styles.question}>{item.question}</Text>
+        </React.Fragment>
+      ))}
       {q.options.map((option, index) => (
         <TouchableOpacity
           key={index}

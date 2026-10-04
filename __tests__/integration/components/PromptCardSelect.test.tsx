@@ -73,4 +73,23 @@ describe.each([
     // QuestionCard renders dismiss twice (icon and text button); both must survive.
     expect(getAllByLabelText('Cancel').length).toBeGreaterThan(0)
   })
+
+  it('shows every question of a multi-question form, still with no rows', async () => {
+    const form: Prompt = {
+      ...PROMPT,
+      questions: [
+        PROMPT.questions[0],
+        { ...PROMPT.questions[0], questionId: 'q-2', text: 'May I run the real CLIs?', header: 'Live capture' },
+      ],
+    }
+    const { getByTestId, queryByLabelText, getByText } = await renderWithI18n(
+      renderWith(mapPromptToBlock(form), jest.fn(), jest.fn()),
+    )
+
+    expect(getByTestId('question-card-unsupported')).toBeTruthy()
+    expect(getByText('Do you want to proceed?')).toBeTruthy()
+    expect(getByText('May I run the real CLIs?')).toBeTruthy()
+    expect(getByText('Live capture')).toBeTruthy()
+    expect(queryByLabelText('Yes')).toBeNull()
+  })
 })
