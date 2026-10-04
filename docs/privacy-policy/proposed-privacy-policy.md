@@ -199,7 +199,9 @@ include. Please review anything you attach before submitting.
   Live Activity carries, described in section 2.
 - Your streamer URLs, API keys, and pairing credentials (in the iOS Keychain /
   Android Keystore).
-- Your session names, favorites, and app settings.
+- Your session names, favorites, and app settings. On a streamer that supports
+  it, saved sessions and conversations are also kept on that streamer — your
+  own machine, never ours — so your other paired devices see the same list.
 
 Uninstalling the app deletes everything Threadbase stored locally. Crash reports
 or feedback you submitted before uninstalling are not stored on your device and
