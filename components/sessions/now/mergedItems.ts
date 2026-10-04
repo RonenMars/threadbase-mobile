@@ -1,4 +1,3 @@
-import { isPresentationLive } from '@/lib/sessionPresentation'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
 export type MergedItem =
@@ -7,13 +6,14 @@ export type MergedItem =
 
 /**
  * /api/sessions and /api/conversations are two views of the same work while a
- * process is live. Drop the conversation row when that live session is already
- * in the list, matching Claude `conversationId` and Codex `boundConversationId`.
+ * process is live, and a held (resumable) session is still the same work as its
+ * transcript. Drop the conversation row when a session for it is already in the
+ * list, matching Claude `conversationId` and Codex `boundConversationId`.
  */
 export function omitConversationsCoveredByLiveSessions(items: MergedItem[]): MergedItem[] {
   const covered = new Set<string>()
   for (const item of items) {
-    if (item.kind !== 'session' || !isPresentationLive(item.item)) continue
+    if (item.kind !== 'session') continue
     covered.add(item.item.id)
     if (item.item.conversationId) covered.add(item.item.conversationId)
     if (item.item.boundConversationId) covered.add(item.item.boundConversationId)
