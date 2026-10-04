@@ -32,7 +32,6 @@ import { InheritedHistoryDivider } from '@/components/conversation/InheritedHist
 import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
-import { messageItemType } from '@/utils/messageItemType'
 import { dropSeenLive, mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
@@ -48,6 +47,7 @@ import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
+import { CHAT_ANCHOR, MESSAGE_LIST_PROPS, useVirtualizedMessageList } from '@/hooks/useVirtualizedMessageList'
 import { CaretDown, Question } from 'phosphor-react-native'
 
 interface Props {
@@ -71,16 +71,6 @@ function userMessageText(m: Message): string {
     .join('')
     .trim()
 }
-
-// FlashList v2 owns the chat bottom-anchoring. This object is a module
-// constant and the list is NEVER switched to `{ disabled: true }`: with the
-// threshold gone, flash-list's checkBounds stops clearing its sticky
-// `pendingAutoscrollToBottom` flag (useBoundDetection.ts), which stays latched
-// `true` from when the user was last at the tail — and the next `data` change
-// fires a scrollToEnd, snapping the user back to the bottom mid-drag. The
-// threshold alone already is the follow rule: near the tail → follow, scrolled
-// up → don't.
-const CHAT_ANCHOR = { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true } as const
 
 // Distance from the end, in px, within which the reader counts as following the
 // conversation rather than reading back through it.
@@ -140,6 +130,9 @@ export function LiveConversationView({
   // Matched against the rendered rows, so the seam appears as soon as the page
   // carrying the boundary message loads.
   const forkSeam = inheritedHistory?.kind === 'divider' ? inheritedHistory : undefined
+  const { onStartReached } = useVirtualizedMessageList({
+    older: { hasMore: Boolean(hasNextPage), isFetching: isFetchingNextPage, fetch: fetchNextPage },
+  })
 
   // Live appended messages (WS)
   const { liveMessages } = useConversationStream(serverId, sessionId, conversationId)
@@ -462,6 +455,29 @@ export function LiveConversationView({
     },
   }, [snapshotFollowing, followIfWasAtTail])
 
+  // Memoized: FlashList's ViewHolder memo compares renderItem by identity, so
+  // an inline closure re-rendered every mounted row on every parent render —
+  // and this view re-renders on each PTY chunk while the agent is working.
+  // Keyed on the tail id rather than the index so a new message moves `isLast`
+  // without the closure depending on the array itself.
+  const lastMessageId = lastMessage?.id
+  const renderItem = useCallback(
+    ({ item }: { item: Message }) => (
+      <>
+        {forkSeam && item.messageIndex === forkSeam.beforeMessageIndex ? (
+          <InheritedHistoryDivider seam={forkSeam} />
+        ) : null}
+        <RenderErrorBoundary
+          tag="message_item"
+          rawFallback={userMessageText(item) || item.role}
+        >
+          <MessageItem message={item} isLast={item.id === lastMessageId} />
+        </RenderErrorBoundary>
+      </>
+    ),
+    [forkSeam, lastMessageId],
+  )
+
   return (
     <Reanimated.View style={[styles.container, keyboardInset]}>
       {/* The FAB is absolute: this wrapper ends where the composer starts, so it
@@ -470,38 +486,19 @@ export function LiveConversationView({
       <FlashList
         ref={listRef}
         testID="live-conversation-list"
+        {...MESSAGE_LIST_PROPS}
         data={allMessages}
-        keyExtractor={(m) => m.id}
-        renderItem={({ item, index }) => (
-          <>
-            {forkSeam && item.messageIndex === forkSeam.beforeMessageIndex ? (
-              <InheritedHistoryDivider seam={forkSeam} />
-            ) : null}
-            <RenderErrorBoundary
-              tag="message_item"
-              rawFallback={userMessageText(item) || item.role}
-            >
-              <MessageItem message={item} isLast={index === allMessages.length - 1} />
-            </RenderErrorBoundary>
-          </>
-        )}
-        getItemType={messageItemType}
-        // Same runway as ConversationHistoryList: a last message taller than
-        // 2×drawDistance hits flash-list's bad mVCP-correction regime
-        // (Shopify/flash-list#2136) and bounces the reader back to the tail.
-        drawDistance={2000}
+        renderItem={renderItem}
         maintainVisibleContentPosition={CHAT_ANCHOR}
         // The question card is the list footer. With RN's default ('never') the
         // first tap on it while the keyboard is up only dismisses the keyboard.
         // 'handled' lets controls act at once; a tap on empty space still dismisses.
         keyboardShouldPersistTaps="handled"
         onScroll={handleScroll}
-        scrollEventThrottle={16}
         onLoad={stickToEnd}
         onContentSizeChange={stickToEnd}
         onScrollBeginDrag={releasePin}
-        onStartReached={hasNextPage ? fetchNextPage : undefined}
-        onStartReachedThreshold={0.3}
+        onStartReached={onStartReached}
         ListHeaderComponent={
           <>
             {inheritedHistory?.kind === 'unavailable' ? (
