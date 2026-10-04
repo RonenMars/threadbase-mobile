@@ -1,5 +1,6 @@
 import { renderHook, act } from '@testing-library/react-native'
 import { Alert, Keyboard, Linking } from 'react-native'
+import { onlineManager } from '@tanstack/react-query'
 import { useComposerState } from '@/hooks/useComposerState'
 import { pickFromCamera, uploadAttachment } from '@/services/uploads'
 import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
@@ -203,6 +204,24 @@ describe('useComposerState', () => {
         localUri: 'file:///tmp/photo.jpg',
       },
     ])
+  })
+
+  it('handleSend refuses while react-query reads offline, keeping the draft and leaving sends unblocked', async () => {
+    const onSend = jest.fn().mockResolvedValue(undefined)
+    const { result } = await renderComposer(onSend)
+    await act(() => { result.current.handleInputChange('hello') })
+    onlineManager.setOnline(false)
+    try {
+      await act(async () => { await result.current.handleSend() })
+      expect(onSend).not.toHaveBeenCalled()
+      expect(Alert.alert).toHaveBeenCalledTimes(1)
+      expect(result.current.inputText).toBe('hello')
+    } finally {
+      onlineManager.setOnline(true)
+    }
+    await act(async () => { await result.current.handleSend() })
+    expect(onSend).toHaveBeenCalledWith('hello', 'hello')
+    expect(result.current.inputText).toBe('')
   })
 
   it('handleSend does nothing when input is empty and no attachments', async () => {
