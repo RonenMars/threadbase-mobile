@@ -151,3 +151,7 @@ Full policy: <https://threadbase.sh/privacy-policy> · Proposed update: [`docs/p
 ## 📄 License
 
 [MIT](LICENSE) © 2026 Ronen Mars.
+
+### GitHub Copilot CLI
+
+Select **Copilot** when starting a session on a streamer that advertises the installed `copilot` CLI. Live terminal input/output and native resume are supported; trust and permission prompts are handled in the terminal. Copilot stays unavailable on older streamers. Bulk Copilot history indexing, structured question cards, and model/effort controls are not included in this integration.

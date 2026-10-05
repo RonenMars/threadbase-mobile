@@ -138,6 +138,24 @@ describe('BrowseScreen e2e provider flow', () => {
     expect(target).toContain('provider=cursor')
   })
 
+  it('sends copilot when the server advertises an installed Copilot', async () => {
+    mockHealth = { data: {providers: [health('copilot', true)]}, isLoading: false }
+    const {getByTestId, getByText} = await renderScreen()
+    await fireEvent.press(getByTestId('start-provider-copilot'))
+    await fireEvent.press(getByText('Start Session Here'))
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1))
+    expect(mockPush.mock.calls[0][0]).toContain('provider=copilot')
+  })
+
+  it.each([undefined, false])('disables Copilot when availability is %s', async (available) => {
+    mockHealth = { data: {providers: available === undefined ? [] : [health('copilot', available)]}, isLoading: false }
+    const {getByTestId, getByText} = await renderScreen()
+    expect(getByTestId('start-provider-copilot').props.accessibilityState.disabled).toBe(true)
+    await fireEvent.press(getByTestId('start-provider-copilot'))
+    await fireEvent.press(getByText('Start Session Here'))
+    expect(mockPush.mock.calls.every(([route]) => !route.includes('provider=copilot'))).toBe(true)
+  })
+
   // `available === false` cannot express "we do not know yet": an undefined
   // health reads as not-unavailable, so the buttons painted enabled and then
   // greyed out once the answer arrived. They sit outside the directory list's

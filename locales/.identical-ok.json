@@ -6,6 +6,7 @@
   "shared.json:app.title": "brand name \"Threadbase\"",
   "sessions.json:provider.claude": "product name \"Claude\"",
   "sessions.json:provider.codex": "product name \"Codex\"",
+  "sessions.json:provider.copilot": "product name Copilot",
   "sessions.json:provider.cursor": "product name \"Cursor\"",
   "servers.json:health.checks.providerCursor": "product name \"Cursor CLI\"",
   "sessions.json:noServer.repoLink": "repository URL",

@@ -70,7 +70,7 @@ export function countByTier(items: MergedItem[]): Record<SessionTier, number> {
 }
 
 export function countByProvider(items: MergedItem[]): Record<ProviderName, number> {
-  const counts: Record<ProviderName, number> = { 'claude-code': 0, 'codex-cli': 0, cursor: 0 }
+  const counts: Record<ProviderName, number> = { 'claude-code': 0, 'codex-cli': 0, cursor: 0, copilot: 0 }
   for (const item of items) counts[itemProvider(item)] += 1
   return counts
 }

@@ -27,3 +27,11 @@ describe('provider helpers', () => {
     expect(providerColor(undefined)).toBe(PROVIDER_COLOR.claude)
   })
 })
+
+describe('Copilot identity', () => {
+  it('preserves Copilot rather than labelling it Claude', () => {
+    expect(isProviderName('copilot')).toBe(true)
+    expect(providerLabelKey('copilot')).toBe('copilot')
+    expect(providerColor('copilot')).not.toBe(providerColor('claude-code'))
+  })
+})

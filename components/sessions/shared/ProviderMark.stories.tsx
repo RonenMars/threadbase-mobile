@@ -40,3 +40,6 @@ export const CodexColor: Story = {
 export const CursorColor: Story = {
   args: { provider: 'cursor', variant: 'color' },
 }
+
+export const Copilot: Story = { args: { provider: 'copilot' } }
+export const CopilotColor: Story = { args: { provider: 'copilot', variant: 'color' } }
