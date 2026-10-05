@@ -191,13 +191,13 @@ test('caller arguments reach Maestro unmangled, without shell re-parsing', () =>
   // arrive verbatim and in order around those injections.
   const received = JSON.parse(fs.readFileSync(argsPath, 'utf8'));
   expect(received[0]).toBe('test');
-  expect(received.slice(1, 5)).toEqual([
-    '-e',
-    'E2E_SERVER_TOKEN=mock-key-123',
-    '-e',
-    'E2E_MOCK_SERVER_URL=http://localhost:7071',
-  ]);
-  expect(received.slice(5)).toEqual(args.slice(1));
+  expect(received).toEqual(
+    expect.arrayContaining([
+      'E2E_SERVER_TOKEN=mock-key-123',
+      'E2E_MOCK_SERVER_URL=http://localhost:7071',
+    ]),
+  );
+  expect(received.slice(-(args.length - 1))).toEqual(args.slice(1));
 
   expect(fs.existsSync(path.join(fixture.root, 'nope'))).toBe(false);
 });

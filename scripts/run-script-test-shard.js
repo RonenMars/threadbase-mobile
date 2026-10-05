@@ -11,9 +11,15 @@
 const { execFileSync } = require('child_process');
 const path = require('path');
 
+const { listTests, resolveShards } = require('./ci-test-shards');
 const shards = require('./ci-script-test-shards.json');
+
+const repoRoot = process.cwd();
 const shardId = process.argv[2];
-const files = shards[shardId];
+const files = resolveShards(
+  shards,
+  listTests(repoRoot, '__tests__/unit/scripts', /\.test\.(js|ts)$/),
+)[shardId];
 
 if (!files || files.length === 0) {
   console.error(`Unknown or empty script-test shard: ${shardId}`);
@@ -21,7 +27,6 @@ if (!files || files.length === 0) {
   process.exit(1);
 }
 
-const repoRoot = process.cwd();
 const jestBin = path.join(repoRoot, 'node_modules', '.bin', 'jest');
 
 execFileSync(
