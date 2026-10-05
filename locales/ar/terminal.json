@@ -59,6 +59,15 @@
     "suggestionLabel": "إرسال الاقتراح: {{text}}",
     "suggestionHint": "اضغط مطولًا للتعديل قبل الإرسال"
   },
+  "mentions": {
+    "close": "إغلاق اقتراحات الملفات",
+    "unsupported": "اقتراحات الملفات غير متاحة لمجلد هذه الجلسة.",
+    "error": "تعذّر تحميل الملفات. تحقق من الاتصال.",
+    "empty": "لا توجد ملفات تطابق «{{query}}»",
+    "emptyFolder": "هذا المجلد فارغ.",
+    "folderLabel": "مجلد {{name}}",
+    "fileLabel": "ملف {{name}}"
+  },
   "preview": {
     "openLabel": "معاينة {{name}}",
     "close": "إغلاق المعاينة",
