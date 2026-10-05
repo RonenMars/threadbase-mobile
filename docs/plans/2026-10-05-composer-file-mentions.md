@@ -65,7 +65,7 @@ useMentionEntries(serverId, projectPath, token) → { entries, isLoading, error,
 
 - Resolves the listing path as `join(projectPath, token.dir)` and calls the existing `/api/browse` through the **same query key shape** as `useBrowse`, so the browse screen and the picker share cache.
 - Filters client-side: case-insensitive prefix match first, then substring, directories before files, capped at ~50 rows. Hidden entries (`.` prefix) are shown only when `query` starts with `.`.
-- `staleTime` ~30 s and `keepPreviousData` so typing within one directory never refetches, and drilling shows the previous list until the next arrives.
+- `staleTime` ~30 s so typing within one directory never refetches. Drilling shows a spinner rather than the previous directory's rows, because tapping a stale row would insert a path that does not exist.
 - Debounce only the *directory* change (~150 ms); the filter is synchronous.
 
 **Path translation (the one real gap).**
