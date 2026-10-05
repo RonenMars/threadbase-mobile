@@ -1,19 +1,7 @@
 {
   "1": {
     "runInBand": true,
-    "files": [
-      "__tests__/integration/components/SessionScreen.bubbleOnly.test.tsx",
-      "__tests__/integration/components/SessionScreen.copyTranscript.test.tsx",
-      "__tests__/integration/components/SessionScreen.endedRedirect.test.tsx",
-      "__tests__/integration/components/SessionScreen.externalGate.test.tsx",
-      "__tests__/integration/components/SessionScreen.holdOnBackground.test.tsx",
-      "__tests__/integration/components/SessionScreen.infoModal.test.tsx",
-      "__tests__/integration/components/SessionScreen.leavePolicy.test.tsx",
-      "__tests__/integration/components/SessionScreen.pending.test.tsx",
-      "__tests__/integration/components/SessionScreen.stopButton.test.tsx",
-      "__tests__/integration/components/SessionScreen.terminalWarnings.test.tsx",
-      "__tests__/integration/components/SessionScreen.waking.test.tsx"
-    ]
+    "pattern": "/SessionScreen\\."
   },
   "2": {
     "files": [
@@ -50,48 +38,6 @@
     ]
   },
   "4": {
-    "files": [
-      "__tests__/integration/anonymous-diagnostics-transmission-proof.test.ts",
-      "__tests__/integration/components/Badge.test.tsx",
-      "__tests__/integration/components/BrowseFiles.test.tsx",
-      "__tests__/integration/components/BrowseOutsideRootFallback.test.tsx",
-      "__tests__/integration/components/Card.test.tsx",
-      "__tests__/integration/components/ChatComposer.suggestion.test.tsx",
-      "__tests__/integration/components/ChatComposer.test.tsx",
-      "__tests__/integration/components/ChatShelf.test.tsx",
-      "__tests__/integration/components/ConversationHistoryList.test.tsx",
-      "__tests__/integration/components/EmptyState.test.tsx",
-      "__tests__/integration/components/FirstShowBanner.test.tsx",
-      "__tests__/integration/components/IdentityFingerprintBlock.test.tsx",
-      "__tests__/integration/components/InheritedHistoryDivider.test.tsx",
-      "__tests__/integration/components/LiveActivity.reconcile.test.tsx",
-      "__tests__/integration/components/MessageBubble.test.tsx",
-      "__tests__/integration/components/ModelEffortSheet.test.tsx",
-      "__tests__/integration/components/NameSessionModal.rtl.test.tsx",
-      "__tests__/integration/components/NewSessionServerPicker.test.tsx",
-      "__tests__/integration/components/NoServersWelcome.test.tsx",
-      "__tests__/integration/components/NowList.test.tsx",
-      "__tests__/integration/components/PairCameraIdentityCard.test.tsx",
-      "__tests__/integration/components/PairConfirmGate.test.tsx",
-      "__tests__/integration/components/PairScannerPermissionRefresh.test.tsx",
-      "__tests__/integration/components/QuickAccessStrip.test.tsx",
-      "__tests__/integration/components/ScreenHeader.test.tsx",
-      "__tests__/integration/components/ServerBanners.test.tsx",
-      "__tests__/integration/components/ServerClaudeFlagsSection.test.tsx",
-      "__tests__/integration/components/ServerEditModalAddFlow.test.tsx",
-      "__tests__/integration/components/ServerEditModalConfirmGate.test.tsx",
-      "__tests__/integration/components/ServerEditModalEditFlow.test.tsx",
-      "__tests__/integration/components/ServerFormFields.test.tsx",
-      "__tests__/integration/components/DrillView.test.tsx",
-      "__tests__/integration/components/SessionRow.external.test.tsx",
-      "__tests__/integration/components/SessionStatusBadge.test.tsx",
-      "__tests__/integration/components/SlashCommandBoard.test.tsx",
-      "__tests__/integration/components/TokenTooltip.test.tsx",
-      "__tests__/integration/components/ToolCard.test.tsx",
-      "__tests__/integration/components/TourOverlay.test.tsx",
-      "__tests__/integration/home-inline-failures.test.tsx",
-      "__tests__/integration/hooks/useClaudeFlags.test.tsx",
-      "__tests__/integration/services/cacheAlertResolveFlow.test.tsx"
-    ]
+    "rest": true
   }
 }
