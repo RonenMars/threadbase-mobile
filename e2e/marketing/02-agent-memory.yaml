@@ -1,0 +1,121 @@
+# Marketing capture 2 — "Your coding agents have memory."
+#
+# Search across every paired machine's history by the problem remembered, open
+# the old answer, then turn an old conversation back into a live session.
+#
+# Not a regression test. Run through e2e/marketing/run.sh.
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# --- 01: history from three machines ----------------------------------------
+- scrollUntilVisible:
+    element:
+      id: "conversation-row-conv-ld-onboarding"
+    direction: DOWN
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible:
+    id: "status-pill"
+- takeScreenshot: 02-agent-memory/01-history-across-sessions
+
+# --- 02: search by the remembered problem -----------------------------------
+- runFlow:
+    file: search.yaml
+    env:
+      QUERY: "Auth0 localhost callback multiple environments"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-wm-auth0"
+    timeout: 10000
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 02-agent-memory/02-search-engineering-memory
+
+# --- 03: the old answer ------------------------------------------------------
+- tapOn:
+    id: "conversation-row-conv-wm-auth0"
+- extendedWaitUntil:
+    visible:
+      id: "search-match-count"
+    timeout: 10000
+- assertVisible: ".*Allowed Callback URLs.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 02-agent-memory/03-recovered-old-solution
+
+- tapOn:
+    id: "screen-header-back-button"
+- extendedWaitUntil:
+    visible:
+      id: "hub-search-input"
+    timeout: 10000
+
+# --- 04: a different project, a different machine ---------------------------
+- runFlow:
+    file: search.yaml
+    env:
+      QUERY: "session persistence SQLite resume"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-hm-sqlite"
+    timeout: 10000
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 02-agent-memory/04-cross-project-search
+
+# --- 05: Claude Code and Codex in one result list ---------------------------
+- runFlow:
+    file: search.yaml
+    env:
+      QUERY: "authentication retry"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-wm-auth-retry"
+    timeout: 10000
+- assertVisible:
+    id: "conversation-row-conv-hm-auth-retry"
+# Marks only appear on rows that differ from the result set's majority provider.
+- assertVisible:
+    id: "provider-mark"
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 02-agent-memory/05-cross-provider-memory
+
+# --- 07: hero — one word, every machine --------------------------------------
+# Captured before 06 because 06 leaves the search behind.
+- runFlow:
+    file: search.yaml
+    env:
+      QUERY: "session"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-ld-search"
+    timeout: 10000
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 02-agent-memory/07-hero
+
+# --- 06: old work becomes live work -----------------------------------------
+- tapOn:
+    id: "conversation-row-conv-hm-sqlite"
+- extendedWaitUntil:
+    visible:
+      id: "resume-button"
+    timeout: 10000
+- tapOn:
+    id: "resume-button"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Needs you"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 02-agent-memory/06-history-to-active-session
