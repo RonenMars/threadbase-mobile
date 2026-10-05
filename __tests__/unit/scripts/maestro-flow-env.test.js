@@ -88,6 +88,13 @@ describe('run-maestro.js flow variables', () => {
     expect(argv).toContain('-e E2E_MOCK_SERVER_URL=http://localhost:7071');
   });
 
+  it('passes E2E_SECOND_SERVER_HOST to maestro with -e', () => {
+    const { argv } = runWithStub(['test', 'e2e/launch.yaml'], {
+      E2E_SECOND_SERVER_HOST: '10.0.2.2:7072',
+    });
+    expect(argv).toContain('-e E2E_SECOND_SERVER_HOST=10.0.2.2:7072');
+  });
+
   it("does not override a caller's own -e for the same variable", () => {
     const { argv } = runWithStub(
       ['test', '-e', 'E2E_MOCK_SERVER_URL=http://explicit:1234', 'e2e/launch.yaml'],

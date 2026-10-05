@@ -272,9 +272,13 @@ function withDefaultEnv(args, name, fallback) {
 // (e2e/run-leave-nav.js) has to supply one.
 function withFlowEnv(args) {
   return withDefaultEnv(
-    withDefaultEnv(args, 'E2E_MOCK_SERVER_URL', 'http://localhost:7071'),
-    'E2E_SERVER_TOKEN',
-    'mock-key-123',
+    withDefaultEnv(
+      withDefaultEnv(args, 'E2E_MOCK_SERVER_URL', 'http://localhost:7071'),
+      'E2E_SERVER_TOKEN',
+      'mock-key-123',
+    ),
+    'E2E_SECOND_SERVER_HOST',
+    'localhost:7072',
   )
 }
 

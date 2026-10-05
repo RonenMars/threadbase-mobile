@@ -83,3 +83,4 @@ appId: com.ronenmars.threadbase
     timeout: 2000
 
 - takeScreenshot: e2e/_artifacts/screenshots/_raw-take-over-banner
+- stopRecording

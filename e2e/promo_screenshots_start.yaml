@@ -41,3 +41,4 @@ appId: com.ronenmars.threadbase
         id: "status-pill"
 
 - takeScreenshot: e2e/_artifacts/screenshots/card-start-or-take-over
+- stopRecording
