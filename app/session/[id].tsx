@@ -75,7 +75,7 @@ import { preferRawTerminal } from '@/lib/renderConfidence'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { ReviewSheet } from '@/components/review/ReviewSheet'
-import { buildReviewFromMessages } from '@/lib/reviewFromConversation'
+import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { useConversation } from '@/hooks/useConversations'
 import { RemoteKeyboardControls } from '@/components/sessions/RemoteKeyboardControls'
 import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
@@ -627,23 +627,29 @@ export default function SessionDetailScreen() {
     [confirmLeave, setSkipLeaveNotice],
   )
   const reviewConversationId = session?.boundConversationId ?? session?.conversationId ?? ''
-  const { data: reviewConversation } = useConversation(serverId, reviewConversationId, {
+  // Same key as the chat and terminal views, so this adds no request. It is
+  // only read for meta, not messages: it doesn't see live WS appends.
+  const { data: historyConversation } = useConversation(serverId, reviewConversationId, {
+    maxBytes: SESSION_HISTORY_MAX_BYTES,
     enabled: Boolean(serverId && reviewConversationId),
   })
-  const reviewMessages = useMemo(() => reviewConversation?.messages ?? [], [reviewConversation])
-  const hasDiffs = useMemo(
-    () => buildReviewFromMessages(reviewMessages).files.length > 0,
-    [reviewMessages],
+  // The uncapped tail is fetched only while the review sheet is open. Keeping it
+  // mounted for the menu's enabled state meant a second ~0.5 MB copy of the
+  // conversation on every open and every invalidation of this screen.
+  const { data: reviewConversation, isLoading: isReviewLoading } = useConversation(
+    serverId,
+    reviewConversationId,
+    { enabled: reviewVisible && Boolean(serverId && reviewConversationId) },
   )
+  const reviewMessages = useMemo(() => reviewConversation?.messages ?? [], [reviewConversation])
   // A `codex fork` session continues an earlier conversation, and the server
-  // names that parent in meta.inherited_history. Read off the query above rather
-  // than adding one: the field rides on the same conversation's meta. A non-fork
-  // or an older server simply omits it, which reads as "no parent to open", and
-  // the `unavailable` seam (source file gone) carries no id — so the entry stays
-  // disabled rather than offering a dead link.
+  // names that parent in meta.inherited_history. A non-fork or an older server
+  // simply omits it, which reads as "no parent to open", and the `unavailable`
+  // seam (source file gone) carries no id — so the entry stays disabled rather
+  // than offering a dead link.
   const forkParentId =
-    reviewConversation?.inheritedHistory?.kind === 'divider'
-      ? reviewConversation.inheritedHistory.sourceId
+    historyConversation?.inheritedHistory?.kind === 'divider'
+      ? historyConversation.inheritedHistory.sourceId
       : undefined
 
   // The dialog covers the composer; the keyboard steps aside while it is up.
@@ -1096,7 +1102,6 @@ export default function SessionDetailScreen() {
             label: t('conversation:review.open'),
             icon: GitDiff,
             onPress: () => setReviewVisible(true),
-            disabled: !hasDiffs,
             testID: 'session-review-button',
           },
           {
@@ -1423,6 +1428,7 @@ export default function SessionDetailScreen() {
       <ReviewSheet
         visible={reviewVisible}
         messages={reviewMessages}
+        loading={isReviewLoading}
         projectPath={session.projectPath}
         machineName={session.machineName}
         canSendNote={isLive && !isWakingUp}
