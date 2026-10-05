@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +32,8 @@ type FilterKind = 'all' | ReviewFileKind
 interface Props {
   visible: boolean
   messages: Message[]
+  /** Messages are still being fetched; shows a spinner instead of the empty state. */
+  loading?: boolean
   projectPath?: string
   machineName?: string
   canSendNote?: boolean
@@ -41,6 +44,7 @@ interface Props {
 export function ReviewSheet({
   visible,
   messages,
+  loading = false,
   projectPath,
   machineName,
   canSendNote = false,
@@ -151,7 +155,11 @@ export function ReviewSheet({
               data={filtered}
               keyExtractor={(item) => item.path}
               ListEmptyComponent={
-                <Text style={[styles.empty]}>{t('review.empty')}</Text>
+                loading ? (
+                  <ActivityIndicator style={styles.loading} color={theme.text.secondary} testID="review-loading" />
+                ) : (
+                  <Text style={[styles.empty]}>{t('review.empty')}</Text>
+                )
               }
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -296,6 +304,9 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       fontSize: font.sm,
       padding: spacing.lg,
       ...rtl.copy,
+    },
+    loading: {
+      padding: spacing.lg,
     },
     actions: {
       flexDirection: 'row',
