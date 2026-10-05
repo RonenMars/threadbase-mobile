@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Capture the six store-ready promo screenshots on a booted iOS simulator.
+# Capture the five store-ready promo screenshots on a booted iOS simulator.
 #
 # Requires: Maestro. Boots a simulator if needed, rebuilds a stale Release
 # .app with xcodebuild, and frees mock ports 7071/7072 before capture.
@@ -16,7 +16,6 @@ FLOWS=(
   e2e/promo_screenshots_start.yaml
   e2e/promo_screenshots_take_over.yaml
   e2e/promo_screenshots_search.yaml
-  e2e/promo_screenshots_multi_machine.yaml
   e2e/promo_screenshots_approval.yaml
 )
 if [[ -n "${PROMO_SCREENSHOT_FLOWS:-}" ]]; then

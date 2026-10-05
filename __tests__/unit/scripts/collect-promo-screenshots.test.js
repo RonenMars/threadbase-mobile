@@ -23,7 +23,6 @@ const SHOTS = [
   ['card-search', '03-search-results.png'],
   ['hero-approval-card', '04-approval-request.png'],
   ['card-approve', '05-approval-response.png'],
-  ['card-multi-machine', '06-multi-machine-projects.png'],
 ]
 
 function yamlScreenshotStems() {
