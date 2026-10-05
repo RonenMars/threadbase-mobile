@@ -291,6 +291,25 @@ jest.mock('react-native-draggable-flatlist', () => {
   }
 })
 
+// ─── ReanimatedSwipeable ─────────────────────────────────────────────────────
+// The real one reads shared values the reanimated mock does not provide. Rows
+// render closed; tests that need the action panels opt in with
+// `global.__renderSwipeActions = true`.
+jest.mock('react-native-gesture-handler/ReanimatedSwipeable', () => {
+  const React = require('react')
+  const { View } = require('react-native')
+  const methods = { close: jest.fn(), openLeft: jest.fn(), openRight: jest.fn(), reset: jest.fn() }
+  const Swipeable = ({ children, renderLeftActions, renderRightActions, testID }) =>
+    React.createElement(
+      View,
+      { testID },
+      global.__renderSwipeActions && renderLeftActions ? renderLeftActions(null, null, methods) : null,
+      children,
+      global.__renderSwipeActions && renderRightActions ? renderRightActions(null, null, methods) : null,
+    )
+  return { __esModule: true, default: Swipeable }
+})
+
 // ─── react-native-safe-area-context ──────────────────────────────────────────
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react')
