@@ -1,6 +1,6 @@
 # Markdown rendering in the terminal and chat views
 
-Status: in progress on `feat/markdown-rendering` — steps 1 (shared parser) and 2 (terminal adoption) landed; steps 3–4 open.
+Status: in progress on `feat/markdown-rendering` — steps 1–3 landed; step 4 open.
 Date: 2026-10-04.
 
 ## Problem
@@ -224,11 +224,74 @@ above) or more palette, and neither earns its place yet.
 The second is a version mismatch in shared build config, not a typo, so neither is fixed
 here: it changes how every story in the catalog renders and wants its own change.
 
+## Step 3 — chat adoption
+
+### How search and markdown coexist
+
+This was the hard part, and the constraint that decided it is that **the search
+target is resolved server-side against the raw JSONL** (`app/conversation/[id].tsx:176-182`).
+The client therefore has to be able to show any match the server anchored to, and
+the anchored row additionally has to report where that match sits so the screen
+can scroll to it.
+
+Nesting `HighlightText` inside a styled span breaks both halves: on iOS a nested
+`<Text>` is not its own native view, so `measureLayout` against the row has
+nothing dependable to measure.
+
+The rule that replaced it:
+
+> **A line containing the needle renders as a root `HighlightText`; every other
+> line renders as markdown.**
+
+One rule, no branching on whether this row is the anchor, and the measurement
+path is byte-identical to the one it replaces. The cost is that a matched line
+loses its bold for as long as a search is running — a fair trade for never
+hiding a match, and visible in the `SearchActiveMatch` story.
+
+A needle is looked for in the line's rendered text first and its inline source
+second, so `blocks.ts` is found inside `**blocks.ts**` (markers gone from the
+rendered text) and the literal `**blocks.ts**` is found too (the source keeps
+them). The fallback deliberately uses the block's *inline* source rather than
+`blockSource`: a list bullet and a heading's hashes are drawn by the renderer,
+so including them in the fallback draws each one twice — which the render pass
+caught and no test had.
+
+### `LONG_TEXT_CHARS` is unchanged, on purpose
+
+The plan said to expect a re-tune. It has not happened, and guessing a new
+number would be worse than leaving it.
+
+`LONG_TEXT_CHARS = 1200` is a proxy for row height calibrated against plain
+text. Rendered markdown removes marker characters (shorter text) but adds
+vertical space (heading sizes, paragraph leads, list rows), so it is taller for
+structured content and about the same for flat prose. That widens the height
+*spread inside* each bucket, which is a different problem from the threshold
+sitting in the wrong place — the principled fix is a structure-aware item type,
+not a different constant, and neither can be chosen without measuring on a
+device. First thing to check on a simulator.
+
+### What landed in step 3
+
+- `lib/markdown/` is now rendered by both views. `ChatMarkdown` draws the same
+  blocks themed, proportional and RTL-aware; headings may grow here where the
+  terminal's may not, since chat keeps no fixed row rhythm.
+- `CodeBlock` lifted out of `MessageBubble` into its own module so `ChatMarkdown`
+  can render a `code` block through it rather than a second implementation —
+  importing it back from `MessageBubble` would have been a cycle. `MatchAnchor`
+  moved to `components/conversation/matchAnchor.ts` for the same reason.
+- `MessageBubble` drops from 492 to ~186 lines; `TextContent`, `DiffLines`,
+  `HighlightedCode` and the code styles all moved out.
+- Plain text spans render as bare strings rather than nested `<Text>`. The
+  wrapper carried no style of its own and moved the styled node out from under
+  anything querying the rendered text — which an existing RTL assertion caught.
+  Fixed in the terminal renderer too.
+- `ChatMarkdown.test.tsx`, 9 integration tests, six of them on the search rule.
+- Full suites green: 334 suites, 3,189 tests.
+
 ### Still open before this is finished
 
-- Step 3 (chat adoption) is where the `HighlightText` per-span work and the `LONG_TEXT_CHARS`
-  re-tune live. Until it lands the two views disagree: the terminal renders headings and lists,
-  chat still shows their source. That is the known cost of landing terminal-first.
+- `LONG_TEXT_CHARS`, per the section above — it needs a device, not a guess.
+- Links are styled rather than pressable, in both views.
 - No Maestro coverage yet. A flow asserting the toggle flips a known transcript row between source
   and rendered belongs in the mock suite.
 - Tables, and whether a `code` block in the terminal should eventually get Prism after all.

@@ -20,8 +20,12 @@ function Spans({ spans }: { spans: InlineSpan[] }) {
     <>
       {spans.map((span, i) => {
         switch (span.kind) {
+          // A bare string, not a nested `<Text>`: plain prose is the common
+          // case and the wrapper added a node that carried no style of its own,
+          // which also moved the styled node out from under anything querying
+          // the rendered text.
           case 'text':
-            return <Text key={i}>{span.text}</Text>
+            return span.text
           case 'strong':
             return <Text key={i} style={styles.strong}>{span.text}</Text>
           case 'em':

@@ -1,22 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native'
-import * as Clipboard from 'expo-clipboard'
-import * as Haptics from 'expo-haptics'
+import React from 'react'
+import { StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { Highlight, themes, type Language } from 'prism-react-renderer'
-import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { Message, MessageContent } from '@/types/api'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
-import { splitFences } from '@/lib/markdown'
-import { layoutDirectionStyle, type RtlStyleKit } from '@/lib/rtl'
+import { parseMarkdownFor } from '@/lib/markdown'
+import { ChatMarkdown } from '@/components/conversation/ChatMarkdown'
+import type { RtlStyleKit } from '@/lib/rtl'
+import type { MatchAnchor } from '@/components/conversation/matchAnchor'
+
+export type { MatchAnchor } from '@/components/conversation/matchAnchor'
 
 function useBubbleStyles() {
   return useThemedStyles(makeStyles)
@@ -37,191 +32,34 @@ interface Props {
   noOuterMargin?: boolean
 }
 
-export interface MatchAnchor {
-  /** The row's outer View — the match's y is measured relative to it. */
-  rowRef: React.RefObject<View | null>
-  /** Receives the matched line's y offset within the row once text lays out. */
-  onLayout: (y: number) => void
-}
-
-function TextContent({
-  text,
-  isUser,
-  highlight,
-  matchAnchor,
-  activeMatch,
-}: {
-  text: string
-  isUser?: boolean
-  highlight?: string
-  matchAnchor?: MatchAnchor
-  activeMatch?: boolean
-}) {
-  const { styles, theme } = useBubbleStyles()
-  const textRef = useRef<Text>(null)
-  const textStyle = [styles.messageText, isUser && { color: theme.text.onAccent }]
-  const needle = highlight?.trim()
-  if (needle) {
-    // The library reports the first match's line-y within the root Text; add
-    // the Text's own offset within the row to get the match's y inside the
-    // row, which the conversation screen uses to aim the anchor scroll at the
-    // keyword itself.
-    const reportMatchLayout = matchAnchor
-      ? (matches: readonly MatchLayout[]) => {
-          const first = matches[0]
-          const row = matchAnchor.rowRef.current
-          if (!first || !row || !textRef.current) return
-          textRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + first.y))
-        }
-      : undefined
-    return (
-      <HighlightText
-        ref={textRef}
-        text={text}
-        searchWords={[needle]}
-        highlightStyle={activeMatch ? styles.match : styles.matchInactive}
-        style={textStyle}
-        textProps={{ selectable: true }}
-        onMatchesLayout={reportMatchLayout}
-      />
-    )
-  }
-  return (
-    <Text style={textStyle} selectable>
-      {text}
-    </Text>
-  )
-}
-
-
-
-const CODE_THEME = themes.oneDark
-
-function DiffLines({ code }: { code: string }) {
-  const { styles } = useBubbleStyles()
-  const lines = code.split('\n')
-  return (
-    <>
-      {lines.map((line, i) => {
-        const isAdd = line.startsWith('+')
-        const isDel = line.startsWith('-')
-        const lineStyle = isAdd ? styles.diffAdd : isDel ? styles.diffDel : undefined
-        return (
-          <View key={i} style={[styles.codeLine, lineStyle]}>
-            <Text style={styles.codeToken} selectable>{line.length === 0 ? ' ' : line}</Text>
-          </View>
-        )
-      })}
-    </>
-  )
-}
-
-// Prism tokenization runs synchronously on the JS thread and a large block
-// costs tens of ms — memoized so CodeBlock-local state changes (the copied
-// flag) and parent re-renders don't re-tokenize the same code.
-const HighlightedCode = React.memo(function HighlightedCode({ code, language }: { code: string; language: Language }) {
-  const { styles } = useBubbleStyles()
-  return (
-    <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
-      {language === 'diff' ? (
-        <DiffLines code={code} />
-      ) : (
-        <Highlight code={code} language={language} theme={CODE_THEME}>
-          {({ tokens, getLineProps, getTokenProps }) => (
-            <>
-              {tokens.map((line, lineIdx) => {
-                const { style: lineStyle } = getLineProps({ line })
-                return (
-                  <View key={lineIdx} style={[styles.codeLine, lineStyle as object]}>
-                    {line.map((token, tokenIdx) => {
-                      const { style: tokenStyle, children } = getTokenProps({ token })
-                      return (
-                        <Text
-                          key={tokenIdx}
-                          style={[styles.codeToken, tokenStyle as object]}
-                          selectable
-                        >
-                          {children}
-                        </Text>
-                      )
-                    })}
-                  </View>
-                )
-              })}
-            </>
-          )}
-        </Highlight>
-      )}
-    </View>
-  )
-})
-
-function CodeBlock({ code, language }: { code: string; language: Language }) {
-  const { t } = useTranslation('conversation')
-  const { styles } = useBubbleStyles()
-  const [copied, setCopied] = useState(false)
-  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => {
-    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
-  }, [])
-  const copy = async () => {
-    await Clipboard.setStringAsync(code)
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    setCopied(true)
-    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
-    copiedTimerRef.current = setTimeout(() => setCopied(false), 1500)
-  }
-
-  return (
-    <View style={styles.codeBlock} testID="message-code-block">
-      <View style={styles.codeHeader}>
-        <Text style={styles.codeHeaderText}>{t('message.code')}</Text>
-        <TouchableOpacity onPress={copy} style={styles.codeCopyBtn}>
-          <Text style={styles.codeCopyText}>
-            {copied ? t('action.copiedCode') : t('action.copyCode')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <HighlightedCode code={code} language={language} />
-    </View>
-  )
-}
-
 function TextBlockBody({
+  block,
   text,
   isUser,
   highlight,
   matchAnchor,
   activeMatch,
 }: {
+  /** The content block this text came from — the parse cache's key. */
+  block: object
   text: string
   isUser?: boolean
   highlight?: string
   matchAnchor?: MatchAnchor
   activeMatch?: boolean
 }) {
-  const { styles } = useBubbleStyles()
-  // The fence split + per-block parse runs on every render otherwise —
-  // memoized so re-renders of the bubble don't redo string work.
-  const parts = useMemo(() => splitFences(text), [text])
-
+  // Memoised on the content block rather than in a `useMemo`, so a recycled
+  // FlashList cell re-bound to another row does not re-parse text it has
+  // already seen. See `parseMarkdownFor`.
+  const blocks = parseMarkdownFor(block, text)
   return (
-    <View style={styles.gap}>
-      {parts.map((part, i) =>
-        part.kind === 'code' ? (
-          <CodeBlock key={i} code={part.code} language={part.language} />
-        ) : (
-          <TextContent
-            key={i}
-            text={part.text}
-            isUser={isUser}
-            highlight={highlight}
-            matchAnchor={matchAnchor}
-            activeMatch={activeMatch}
-          />
-        ),
-      )}
-    </View>
+    <ChatMarkdown
+      blocks={blocks}
+      isUser={isUser}
+      highlight={highlight?.trim() || undefined}
+      matchAnchor={matchAnchor}
+      activeMatch={activeMatch}
+    />
   )
 }
 
@@ -242,6 +80,7 @@ function ContentBlock({
   if (block.type === 'text') {
     return (
       <TextBlockBody
+        block={block}
         text={block.text}
         isUser={isUser}
         highlight={highlight}
@@ -322,73 +161,6 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     bubbleAssistantGlass: {
       backgroundColor: 'transparent',
     },
-    messageText: {
-      color: theme.text.primary,
-      fontSize: font.base,
-      lineHeight: 22,
-      ...rtl.copy,
-    },
-    // Solid high-contrast highlighter fill, identical in every bubble type —
-    // a dedicated per-theme token so it pops on both the assistant card bg and
-    // the accent-colored user bubble.
-    match: {
-      backgroundColor: theme.text.highlight,
-      color: theme.text.onHighlight,
-      borderRadius: 3,
-    },
-    // Every other match in view gets a wash rather than the solid fill, so the
-    // active one stays findable — the browser find-bar convention.
-    matchInactive: {
-      backgroundColor: `${theme.text.highlight}59`,
-      borderRadius: 3,
-    },
-    codeBlock: {
-      ...layoutDirectionStyle('ltr'),
-      backgroundColor: theme.bg.primary,
-      borderRadius: radius.sm,
-      overflow: 'hidden',
-      marginVertical: spacing.xs,
-    },
-    codeHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
-      backgroundColor: '#1c2128',
-    },
-    codeHeaderText: {
-      color: theme.text.secondary,
-      fontSize: font.xs,
-    },
-    codeCopyBtn: {
-      minHeight: 44,
-      justifyContent: 'center',
-      paddingHorizontal: spacing.sm,
-    },
-    codeCopyText: {
-      color: theme.text.accent,
-      fontSize: font.xs,
-    },
-    codeBody: {
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 6,
-    },
-    codeLine: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-    codeToken: {
-      fontFamily: 'monospace',
-      fontSize: font.sm,
-      fontWeight: '600',
-      color: theme.text.primary,
-    },
-    diffAdd: {
-      backgroundColor: 'rgba(46, 160, 67, 0.18)',
-    },
-    diffDel: {
-      backgroundColor: 'rgba(248, 81, 73, 0.18)',
-    },
     toolTag: {
       backgroundColor: `${theme.text.accent}20`,
       borderRadius: radius.sm,
@@ -405,6 +177,5 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       marginTop: spacing.xs,
       alignSelf: 'flex-end',
     },
-    gap: { gap: spacing.xs },
   })
 }
