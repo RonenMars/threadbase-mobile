@@ -1,0 +1,32 @@
+# Shared start for the marketing capture flows: a clean install with three
+# paired machines — Work Mac (:7071), Home Mac (:7072), Linux Devbox (:7073).
+#
+# All three pair through a link rather than onboarding's typed URL and key: a
+# typed server is never exchanged, so it is stored under a generated id
+# (SRV_…) instead of the machine name the hub is supposed to show.
+#
+# Requires: node e2e/marketing/demo-streamer.js
+appId: com.ronenmars.threadbase
+---
+- runScript: scripts/reset-demo.js
+
+# expo-secure-store survives clearState, and a leftover pairing would add a
+# fourth machine to every shot.
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+- runFlow:
+    file: pair-machine.yaml
+    env:
+      PAIR_PORT: "7071"
+
+- runFlow:
+    file: pair-machine.yaml
+    env:
+      PAIR_PORT: "7072"
+
+- runFlow:
+    file: pair-machine.yaml
+    env:
+      PAIR_PORT: "7073"

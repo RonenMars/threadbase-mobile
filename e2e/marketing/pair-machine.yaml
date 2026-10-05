@@ -1,0 +1,38 @@
+# Pair one more demo streamer through a threadbase://pair link — the path a
+# scanned QR takes. No keyboard involved, which is the point: typing a second
+# server into Settings → Add Server put the key into the URL field on iOS 26.5.
+#
+# Requires env PAIR_PORT.
+appId: com.ronenmars.threadbase
+---
+# Stop first so the link arrives as launch options; a foreground openLink can
+# dismiss iOS's "Open in Threadbase?" sheet without delivering the URL.
+- stopApp
+
+- openLink: "threadbase:///pair?url=http%3A%2F%2Flocalhost%3A${PAIR_PORT}&token=pt_demo"
+
+- extendedWaitUntil:
+    visible: "Open"
+    timeout: 8000
+    optional: true
+
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+          retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "pair-confirm-add-btn"
+    timeout: 30000
+
+- tapOn:
+    id: "pair-confirm-add-btn"
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 15000

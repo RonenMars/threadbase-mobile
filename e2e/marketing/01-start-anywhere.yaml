@@ -1,0 +1,97 @@
+# Marketing capture 1 — "Start anywhere. Continue anywhere."
+#
+# A Claude Code session started with a bare `claude` in a terminal shows up in
+# the hub, is taken over from the phone, reaches waiting-for-input and is
+# continued with a prompt typed on the phone.
+#
+# Not a regression test. Run through e2e/marketing/run.sh, which starts the
+# demo streamer and collects the screenshots.
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# --- 01: the terminal-started session, discovered ---------------------------
+- extendedWaitUntil:
+    visible:
+      id: "session-row-wm-claude-persistence"
+    timeout: 15000
+- assertVisible: ".*Observed.*"
+- assertNotVisible:
+    id: "status-pill"
+- takeScreenshot: 01-start-anywhere-continue-anywhere/01-session-discovered
+
+# --- 02: its existing transcript --------------------------------------------
+- tapOn:
+    id: "session-row-wm-claude-persistence"
+- extendedWaitUntil:
+    visible: "Session persistence has three parts.*"
+    timeout: 10000
+- assertVisible:
+    id: "resume-button"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 01-start-anywhere-continue-anywhere/02-existing-session-opened
+
+# --- take over: the terminal still owns the transcript ----------------------
+- tapOn:
+    id: "resume-button"
+- extendedWaitUntil:
+    visible:
+      id: "resume-collision-take-over"
+    timeout: 10000
+- tapOn:
+    id: "resume-collision-take-over"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 15000
+
+# --- 03: the agent finishes its turn ----------------------------------------
+- runScript:
+    file: scripts/set-status.js
+    env:
+      PORT: "7071"
+      SESSION_ID: "wm-claude-persistence"
+      STATUS: "waiting_input"
+      LAST_OUTPUT: "Summary ready — waiting for your next prompt"
+- extendedWaitUntil:
+    visible: "Needs you"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 01-start-anywhere-continue-anywhere/03-waiting-for-input
+
+# --- 04: continue from the phone --------------------------------------------
+- tapOn:
+    id: "chat-message-input"
+- inputText: "Now list the two most important files involved in that behavior."
+- tapOn:
+    id: "chat-send-button"
+- extendedWaitUntil:
+    visible: ".*Now list the two most important files.*"
+    timeout: 10000
+- takeScreenshot: 01-start-anywhere-continue-anywhere/04-prompt-sent-from-mobile
+
+# --- 05: the agent is working again -----------------------------------------
+- extendedWaitUntil:
+    visible: ".*Read src/sessions/rehydrate.ts.*"
+    timeout: 10000
+- assertVisible: "Working"
+# Blur the composer by tapping the transcript; hideKeyboard is unusable on
+# iOS 26.x (see CLAUDE.md).
+- tapOn:
+    point: "50%, 35%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 01-start-anywhere-continue-anywhere/05-agent-resumed-remotely
+
+# --- 06: hero — the same session, now live in the hub ------------------------
+- runFlow: back-to-hub.yaml
+- extendedWaitUntil:
+    visible: ".*Summarize session persistence.*"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible:
+    id: "status-pill"
+- takeScreenshot: 01-start-anywhere-continue-anywhere/06-hero

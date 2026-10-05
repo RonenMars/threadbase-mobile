@@ -1,0 +1,123 @@
+# Marketing capture 3 — "Every agent. Every machine. One control plane."
+#
+# Claude Code and Codex sessions on three machines, in one hub: answer the one
+# that is waiting, look in on the one that is working, read the one that
+# finished, and search all three.
+#
+# Not a regression test. Run through e2e/marketing/run.sh.
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# The Work Mac's Claude session is streamer-owned here, as it is once Flow 1
+# has taken it over.
+- runScript: scripts/adopt.js
+
+# --- 01: the fleet -----------------------------------------------------------
+- extendedWaitUntil:
+    visible: ".*Summarize session persistence.*"
+    timeout: 15000
+- assertVisible: ".*Fix authentication callback.*"
+- assertVisible: ".*Improve session search.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible:
+    id: "status-pill"
+- takeScreenshot: 03-control-plane/01-all-machines-all-agents
+
+# --- 02: the Codex session on Work Mac is waiting ---------------------------
+- tapOn: ".*Fix authentication callback.*"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Needs you"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 03-control-plane/02-waiting-agent-work-mac
+
+# --- 03: unblock it ----------------------------------------------------------
+- tapOn:
+    id: "chat-message-input"
+- inputText: "Continue with the recommended approach. Do not modify files."
+- tapOn:
+    id: "chat-send-button"
+- extendedWaitUntil:
+    visible: ".*Continue with the recommended approach.*"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Working"
+    timeout: 10000
+- tapOn:
+    point: "50%, 35%"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 03-control-plane/03-unblocked-remotely
+
+# --- 04: a session on another machine ---------------------------------------
+- runFlow: back-to-hub.yaml
+- tapOn: ".*Improve session search.*"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: ".*phrase-match.*"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 03-control-plane/04-switch-machine-session
+
+# --- 05: finished work on a third machine -----------------------------------
+- runFlow: back-to-hub.yaml
+- scrollUntilVisible:
+    element:
+      id: "conversation-row-conv-hm-onboarding"
+    direction: DOWN
+    centerElement: true
+- tapOn:
+    id: "conversation-row-conv-hm-onboarding"
+- extendedWaitUntil:
+    visible: ".*Three suggestions.*"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 03-control-plane/05-completed-session-other-machine
+
+# --- 06: one search, every machine ------------------------------------------
+- tapOn:
+    id: "screen-header-back-button"
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000
+- runFlow:
+    file: search.yaml
+    env:
+      QUERY: "onboarding"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-ld-onboarding"
+    timeout: 10000
+- assertVisible:
+    id: "conversation-row-conv-hm-onboarding"
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 03-control-plane/06-search-across-machines
+
+# --- 07: hero — machines, projects and states at a glance --------------------
+- tapOn:
+    id: "header-search-btn"
+- tapOn:
+    id: "layout-projects"
+- extendedWaitUntil:
+    visible: ".*LINUX DEVBOX.*"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible:
+    id: "status-pill"
+- takeScreenshot: 03-control-plane/07-hero

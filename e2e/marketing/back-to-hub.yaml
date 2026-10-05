@@ -1,0 +1,18 @@
+# Leave a session or conversation screen for the hub.
+appId: com.ronenmars.threadbase
+---
+- tapOn:
+    id: "screen-header-back-button"
+    retryTapIfNoChange: true
+
+# Leaving a live session shows a countdown notice that animates in after the
+# tap, so a `when: visible` check races it. Closing it leaves at once; where no
+# notice appears this step only warns.
+- tapOn:
+    id: "leave-notice-close"
+    optional: true
+
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 15000
