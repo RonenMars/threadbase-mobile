@@ -59,6 +59,7 @@ import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
 import { InlineError } from '@/components/alerts/InlineError'
 import { useClaimInline } from '@/hooks/useClaimInline'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
+import { useErrorSheetStore } from '@/stores/errorSheet'
 import { serverCause } from '@/types/alerts'
 import { PROVIDER_COLOR } from '@/constants/providers'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -152,7 +153,12 @@ export default function ProjectsHub() {
   const [fabNoServerToast, setFabNoServerToast] = useState(false)
   const [cacheAlertModalServerId, setCacheAlertModalServerId] = useState<string | null>(null)
   const [cacheAlertToast, setCacheAlertToast] = useState<string | null>(null)
-  const openStatusSurface = useOpenStatusSurface()
+  // A per-server banner claims its own cause, which takes it out of `global` —
+  // so globalSurface() returns null and the sheet has nothing to open. The
+  // servers modal is the surface that still answers "which one is down".
+  const setServersStatusOpen = useErrorSheetStore((s) => s.setServersStatusOpen)
+  const openServersStatus = useCallback(() => setServersStatusOpen(true), [setServersStatusOpen])
+  const openStatusSurface = useOpenStatusSurface(openServersStatus)
   if (cacheAlertModalServerId && !cacheAlert[cacheAlertModalServerId]) {
     setCacheAlertModalServerId(null)
   }
