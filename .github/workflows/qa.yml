@@ -125,12 +125,14 @@ jobs:
       - name: Install Ruby dependencies
         run: bundle install
 
-      # Pods hold no JS bundle, so sharing deploy.yml's cache entry is safe.
+      # Its own entry, not deploy.yml's, so a store build never restores a cache
+      # a QA install wrote. The Podfile is hashed because its QA-only branch
+      # changes what an install produces without touching Podfile.lock.
       - name: Cache CocoaPods
         uses: actions/cache@v5
         with:
           path: ios/Pods
-          key: pods-${{ hashFiles('ios/Podfile.lock', 'package-lock.json') }}
+          key: pods-qa-${{ hashFiles('ios/Podfile', 'ios/Podfile.lock', 'package-lock.json') }}
 
       - name: Build and distribute
         env:

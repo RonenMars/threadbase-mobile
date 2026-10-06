@@ -193,8 +193,8 @@ PY
   echo "  signing: ad hoc (app $ADHOC_APP_UUID, widget $ADHOC_WIDGET_UUID)"
 
   # The in-app update check needs the Firebase SDK, which only this build links:
-  # the Podfile adds the pod when asked, and AppDelegate compiles the check only
-  # when the pod is there. Without the key the build ships as before.
+  # the Podfile adds the package when asked, and AppDelegate compiles the check
+  # only when it is there. Without the key the build ships as before.
   QA_UPDATE_SETTINGS=()
   FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-${GOOGLE_CLOUD_QUOTA_PROJECT:-}}"
   if [[ -n "${FIREBASE_API_KEY_IOS:-}" && -n "$FIREBASE_PROJECT_ID" ]]; then
@@ -205,6 +205,28 @@ PY
       "TB_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID"
     )
     echo "  in-app update check: on"
+
+    # The Podfile adds Firebase to the app as a Swift package. Its own
+    # dependencies are pinned by ios/qa/Package.resolved, and the archive is
+    # told to use exactly those versions rather than resolve new ones.
+    QA_PACKAGE_RESOLVED=ios/Threadbase.xcworkspace/xcshareddata/swiftpm/Package.resolved
+    mkdir -p "$(dirname "$QA_PACKAGE_RESOLVED")"
+    cp ios/qa/Package.resolved "$QA_PACKAGE_RESOLVED"
+    QA_UPDATE_SETTINGS=(-onlyUsePackageVersionsFromResolvedFile "${QA_UPDATE_SETTINGS[@]}")
+
+    # The package lands in project.pbxproj, a tracked file, and a plain pod
+    # install takes it out again. A CI runner is discarded, so this is for
+    # local checkouts only.
+    if [[ -z "${CI:-}" ]]; then
+      remove_qa_package() {
+        echo "▸ Removing the QA-only Swift package from this checkout"
+        unset TB_QA_APP_DISTRIBUTION
+        (cd ios && bundle exec pod install --silent) || echo "  pod install failed — run it by hand before the next build" >&2
+        rm -f "$QA_PACKAGE_RESOLVED"
+        ./scripts/reset-podfile-lock-path-noise.sh || true
+      }
+      trap remove_qa_package EXIT
+    fi
   else
     echo "  in-app update check: off (FIREBASE_API_KEY_IOS or the project ID is not set)"
   fi
@@ -246,6 +268,14 @@ PY
     TB_SCHEME_SUFFIX=-dev \
     ${QA_UPDATE_SETTINGS[@]+"${QA_UPDATE_SETTINGS[@]}"} \
     archive | tee build/archive-qa.log
+  # -onlyUsePackageVersionsFromResolvedFile refuses a pinned package at another
+  # commit but silently resolves one that has no pin. Xcode writes such a pin
+  # back into the file, so any difference from the committed one is that case.
+  if [[ -n "${QA_PACKAGE_RESOLVED:-}" ]] &&
+     ! diff <(jq -S .pins ios/qa/Package.resolved) <(jq -S .pins "$QA_PACKAGE_RESOLVED") >/dev/null; then
+    echo "The archive resolved Swift packages ios/qa/Package.resolved does not pin; refresh that file deliberately" >&2
+    exit 1
+  fi
 
   cat > build/ExportOptions-qa.plist <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
