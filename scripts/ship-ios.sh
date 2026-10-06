@@ -71,11 +71,14 @@ if [[ -n "$(git status --porcelain)" ]]; then
   _BUILD_GIT_SHA="${_BUILD_GIT_SHA}-dirty"
 fi
 export EXPO_PUBLIC_GIT_SHA="$_BUILD_GIT_SHA"
-if [[ "$TARGET" == testflight ]]; then
-  export EXPO_PUBLIC_BUILD_CHANNEL="Pre-Release"
-else
-  unset EXPO_PUBLIC_BUILD_CHANNEL
-fi
+# Every target names itself. Leaving production blank made the About row fall
+# back to the tagline and lose the SHA with it, which is the one build where
+# "which commit is this?" is hardest to answer from anywhere else.
+case "$TARGET" in
+  testflight) export EXPO_PUBLIC_BUILD_CHANNEL="Pre-Release" ;;
+  production) export EXPO_PUBLIC_BUILD_CHANNEL="Production" ;;
+  *)          export EXPO_PUBLIC_BUILD_CHANNEL="$TARGET" ;;
+esac
 
 case "$RELEASE_TYPE" in MANUAL|AFTER_APPROVAL|SCHEDULED) ;;
   *) echo "--release-type must be MANUAL, AFTER_APPROVAL, or SCHEDULED" >&2; exit 2 ;;

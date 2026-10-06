@@ -80,11 +80,16 @@ if [[ -n "$(git status --porcelain)" ]]; then
   _BUILD_GIT_SHA="${_BUILD_GIT_SHA}-dirty"
 fi
 export EXPO_PUBLIC_GIT_SHA="$_BUILD_GIT_SHA"
-if [[ "$TRACK" != production ]]; then
-  export EXPO_PUBLIC_BUILD_CHANNEL="Pre-Release"
-else
-  unset EXPO_PUBLIC_BUILD_CHANNEL
-fi
+# The Play track is the channel: "Pre-Release" for all three non-production
+# tracks hid which one a tester actually had. Production names itself too, so
+# the About row never loses the SHA.
+case "$TRACK" in
+  internal)   export EXPO_PUBLIC_BUILD_CHANNEL="Internal" ;;
+  alpha)      export EXPO_PUBLIC_BUILD_CHANNEL="Alpha" ;;
+  beta)       export EXPO_PUBLIC_BUILD_CHANNEL="Beta" ;;
+  production) export EXPO_PUBLIC_BUILD_CHANNEL="Production" ;;
+  *)          export EXPO_PUBLIC_BUILD_CHANNEL="$TRACK" ;;
+esac
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOTAL_STEPS=8
