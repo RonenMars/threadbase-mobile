@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View, Text, TouchableOpacity, Alert, StyleSheet, type AlertButton } from 'react-native'
 import { useRouter, useLocalSearchParams, type Href } from 'expo-router'
@@ -18,6 +18,7 @@ import { CLAUDE_CODE_PROVIDER, isProviderName } from '@/constants/providers'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { clientLog } from '@/lib/clientLog'
+import { parseAdditionalPathsParam } from '@/lib/additionalPaths'
 import type { RemediationCode } from '@/types/server-diagnostics'
 
 const TICK_MS = 100
@@ -25,6 +26,12 @@ const PHRASE_ROTATE_MS = 2_500
 // A missing provider CLI can't be fixed by an immediate retry — the binary
 // won't have appeared in the intervening second (issue #748).
 const PROVIDER_NOT_INSTALLED_CODE: RemediationCode = 'PROVIDER_NOT_INSTALLED'
+// The streamer's verdict on `additionalPaths`. Retrying sends the same list, so
+// neither is offered a Retry.
+const ADDITIONAL_PATHS_ERROR_CODES: ReadonlySet<string> = new Set([
+  'INVALID_ADDITIONAL_PATHS',
+  'MULTI_DIRECTORY_UNSUPPORTED',
+])
 
 // The bouncing-robot loader, moved here from the session screen's
 // WakingUpOverlay — the start wait lives on this screen now.
@@ -162,11 +169,13 @@ export default function NewSessionScreen() {
     projectName?: string
     provider?: string
     projectPath?: string
+    extra?: string
   }>()
   const serverId = params.server ?? ''
   const path = params.path ?? ''
   const projectName = params.projectName ?? '~'
   const provider = params.provider
+  const additionalPaths = useMemo(() => parseAdditionalPathsParam(params.extra), [params.extra])
   const startSession = useStartSession(serverId)
   const { mutate } = startSession
 
@@ -211,6 +220,8 @@ export default function NewSessionScreen() {
       haltedRef.current = true
       const isTimeout = err instanceof NetworkError && err.code === 'TIMEOUT'
       const isProviderNotInstalled = err instanceof NetworkError && err.code === PROVIDER_NOT_INSTALLED_CODE
+      const isAdditionalPathsError =
+        err instanceof NetworkError && ADDITIONAL_PATHS_ERROR_CODES.has(err.code ?? '')
       const message = isTimeout ? t('error.startTimeout') : err.message
       const cancelButton: AlertButton = {
         text: t('common:button.cancel'),
@@ -221,7 +232,7 @@ export default function NewSessionScreen() {
         },
       }
       // The CLI won't appear in the time it takes to tap Retry, so don't offer it.
-      const buttons: AlertButton[] = isProviderNotInstalled
+      const buttons: AlertButton[] = isProviderNotInstalled || isAdditionalPathsError
         ? [cancelButton]
         : [
             cancelButton,
@@ -251,6 +262,7 @@ export default function NewSessionScreen() {
       provider !== CLAUDE_CODE_PROVIDER
         ? { provider }
         : {}),
+      ...(additionalPaths.length > 0 ? { additionalPaths } : {}),
     }
     clientLog.info('startSession', 'start attempt — POST', {
       attempt,
@@ -258,7 +270,7 @@ export default function NewSessionScreen() {
       payload,
     })
     mutate(payload, { onSuccess: handleResult, onError: handleError })
-  }, [attempt, mutate, handleResult, handleError, path, projectName, provider, serverId])
+  }, [attempt, mutate, handleResult, handleError, path, projectName, provider, additionalPaths, serverId])
 
   // The reset to the full budget happens in the Retry handler (state can't be
   // set synchronously inside the effect body); this effect only ticks.
@@ -290,6 +302,11 @@ export default function NewSessionScreen() {
         <Text style={styles.project} numberOfLines={1}>
           {projectName}
         </Text>
+        {additionalPaths.length > 0 ? (
+          <Text style={styles.moreDirs} numberOfLines={1} testID="start-more-directories">
+            {t('starting.moreDirectories', { count: additionalPaths.length })}
+          </Text>
+        ) : null}
         <View style={styles.track} testID="start-countdown-track">
           <View
             style={[styles.fill, { width: `${(remainingMs / START_SESSION_TIMEOUT_MS) * 100}%` }]}
@@ -325,6 +342,7 @@ function makeStyles(theme: Theme) {
       maxWidth: 280,
     },
     project: { color: theme.text.primary, fontSize: font.base, fontWeight: '600', textAlign: 'center' },
+    moreDirs: { color: theme.text.secondary, fontSize: font.sm, textAlign: 'center', marginTop: -spacing.sm },
     track: {
       width: '100%',
       maxWidth: 240,
