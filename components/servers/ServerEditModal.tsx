@@ -148,6 +148,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
           serverPublicKey: updated.serverPublicKey,
           requireEncryption: updated.requireEncryption,
           publicUrl: updated.publicUrl,
+          relayUrl: updated.relayUrl,
+          relayDisabled: updated.relayDisabled,
         })
       }
     } else {
@@ -185,6 +187,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         serverPublicKey: added?.serverPublicKey,
         requireEncryption: added?.requireEncryption,
         publicUrl: added?.publicUrl,
+        relayUrl: added?.relayUrl,
+        relayDisabled: added?.relayDisabled,
       })
     }
 
@@ -211,6 +215,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
       deviceToken: result.deviceToken ?? undefined,
       capabilities: result.capabilities ?? undefined,
       publicUrl: result.publicUrl ?? undefined,
+      relayUrl: result.relayUrl ?? undefined,
       serverPublicKey: result.serverPublicKey ?? undefined,
       requireEncryption: result.e2eeRequired,
     }
