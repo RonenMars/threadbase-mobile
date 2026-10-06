@@ -1197,5 +1197,8 @@
   "terminal.json:history.expandLabel": "45978a4c1efb",
   "terminal.json:history.collapseLabel": "f14c73e9d8d1",
   "terminal.json:history.maximizeLabel": "fc36f254d107",
-  "terminal.json:history.minimizeLabel": "2bbe8c1158e8"
+  "terminal.json:history.minimizeLabel": "2bbe8c1158e8",
+  "servers.json:health.checks.providerCopilot": "58672473ee6b",
+  "sessions.json:provider.copilot": "09888c65f0a8",
+  "sessions.json:deleteDialog.keepsCopilot": "bf7fb5c38bc9"
 }

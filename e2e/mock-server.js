@@ -480,6 +480,21 @@ async function handleRequest(req, res) {
           },
           warnings: [],
         },
+        {
+          name: 'copilot',
+          available: true,
+          version: null,
+          verifiedAgainst: { captured: [] },
+          capabilities: {
+            freshSessionId: 'explicit',
+            resume: 'native',
+            systemPrompt: 'unsupported',
+            structuredQuestions: false,
+            permissionGates: false,
+            liveControl: true,
+          },
+          warnings: [],
+        },
       ],
     })
   }

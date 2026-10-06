@@ -297,6 +297,8 @@ The `[skip-ci]` suffix keeps CI from re-triggering on the bump-only commit. Neve
 
 **`expo prebuild` defaults to `--clean` since SDK 57:** A bare `npx expo prebuild` now wipes and regenerates the committed `ios/` and `android/` directories, discarding the hand-maintained native config (the `ios/Podfile` SwiftUICore/Xcode-26 hook, the bouncycastle pins and `-Xmx` heap tuning in `android/`, etc.). When running prebuild manually on this repo, **always pass `--no-clean`** to patch the existing folders in place. The `ship-*` scripts are unaffected — they only prebuild when the native dir is missing (`[[ ! -d ios ]]`), where there is nothing to clean.
 
+**Deploying to QA, Beta, or Production — Always Ask Which Platform(s):** Before triggering the QA (Firebase), Beta, or Deploy workflows, always ask the user which platform(s) to build and deploy: iOS, Android, or both. Do not assume `all`. This applies to every deployment request unless the user explicitly specifies the platform(s) in their message.
+
 ## npm Scripts — Cross-Platform (Windows) Compatibility
 
 `package.json` scripts must work on Windows (`cmd.exe`) as well as macOS/Linux. Never use Unix shell syntax in scripts — `2>/dev/null`, `||  true`, `&&`, `$VAR`, subshells, etc. all break on Windows.

@@ -27,6 +27,8 @@ function getKeepsLine(provider: string | null | undefined, server: string, t: TF
       return t('deleteDialog.keepsClaude', { server })
     case 'codex':
       return t('deleteDialog.keepsCodex', { server })
+    case 'copilot':
+      return t('deleteDialog.keepsCopilot', { server })
     case 'cursor':
       return t('deleteDialog.keepsCursor', { server })
   }

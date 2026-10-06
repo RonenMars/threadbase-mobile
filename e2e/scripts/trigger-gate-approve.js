@@ -1,12 +1,15 @@
 // Maestro runScript — second permission gate, same mechanism as
 // trigger-gate-build.js, different prompt so card-approve.png doesn't
 // duplicate hero-approval-card.png.
-// E2E_MOCK_SERVER_URL is injected by Maestro from `-e`, not a Node global.
+// runScript http.request is host-side; rewrite the emulator alias.
 /* global E2E_MOCK_SERVER_URL */
-const mockUrl =
+const mockUrl = String(
   typeof E2E_MOCK_SERVER_URL === 'string' && E2E_MOCK_SERVER_URL.length > 0
-    ? E2E_MOCK_SERVER_URL.replace(/\/$/, '')
-    : 'http://localhost:7071'
+    ? E2E_MOCK_SERVER_URL
+    : 'http://localhost:7071',
+)
+  .replace(/\/$/, '')
+  .replace('10.0.2.2', '127.0.0.1')
 const response = http.request(`${mockUrl}/__test__/gate`, {
   method: 'POST',
   // Every mock-server route requires this — see e2e/mock-server.js's blanket

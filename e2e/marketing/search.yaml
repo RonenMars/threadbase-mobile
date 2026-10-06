@@ -1,0 +1,23 @@
+# Search the hub for ${QUERY}, replacing any previous query.
+appId: com.ronenmars.threadbase
+---
+# The field has no clear control with a stable id, and tapping it puts the
+# caret mid-text so eraseText leaves a tail. Closing the search drops the query.
+- runFlow:
+    when:
+      visible:
+        id: "hub-search-input"
+    commands:
+      - tapOn:
+          id: "header-search-btn"
+- tapOn:
+    id: "header-search-btn"
+- tapOn:
+    id: "hub-search-input"
+# A simulator that has never shown its keyboard covers it with a slide-to-type tip.
+- runFlow:
+    when:
+      visible: "Speed up your typing.*"
+    commands:
+      - tapOn: "Continue"
+- inputText: ${QUERY}

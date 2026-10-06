@@ -33,6 +33,7 @@ import {
   CLAUDE_CODE_PROVIDER,
   CODEX_CLI_PROVIDER,
   CURSOR_PROVIDER,
+  COPILOT_PROVIDER,
   PROVIDER_COLOR,
   PROVIDER_NAMES,
   type ProviderName,
@@ -79,7 +80,8 @@ export default function BrowseScreen() {
   // should hide the selector.
   const { data: providerHealth, isLoading: providerHealthLoading } = useProviderHealth(serverId)
   const selectedHealth = findProviderHealth(providerHealth?.providers, selectedProvider)
-  const selectedUnavailable = selectedHealth?.available === false
+  const selectedUnavailable = selectedHealth?.available === false ||
+    (selectedProvider === COPILOT_PROVIDER && selectedHealth?.available !== true)
   const showProviderVersionWarning = useSettingsStore((s) => s.showProviderVersionWarning)
   const selectedWarnings = (selectedHealth?.warnings ?? []).filter(
     (w) => (__DEV__ && showProviderVersionWarning) || w.code !== 'version_unverified',
@@ -530,10 +532,12 @@ export default function BrowseScreen() {
             { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: PROVIDER_COLOR.claude },
             { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: PROVIDER_COLOR.codex },
             { value: CURSOR_PROVIDER, label: t('sessions:provider.cursor'), color: PROVIDER_COLOR.cursor },
+            { value: COPILOT_PROVIDER, label: t('sessions:provider.copilot'), color: PROVIDER_COLOR.copilot },
           ]).map((option) => {
             const selected = selectedProvider === option.value
             const health = findProviderHealth(providerHealth?.providers, option.value)
-            const unavailable = health?.available === false
+            const unavailable = health?.available === false ||
+              (option.value === COPILOT_PROVIDER && health?.available !== true)
             return (
               <TouchableOpacity
                 key={option.value}
@@ -722,6 +726,7 @@ function makeStyles(theme: Theme) {
   },
   providerSelector: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
@@ -729,10 +734,12 @@ function makeStyles(theme: Theme) {
     gap: spacing.sm,
   },
   providerOptionSkeleton: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '40%',
   },
   providerOption: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '40%',
     minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',

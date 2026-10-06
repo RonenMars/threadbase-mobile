@@ -272,6 +272,7 @@
       "providerClaude": "Claude Code CLI",
       "providerCodex": "Codex CLI",
       "providerCursor": "Cursor CLI",
+      "providerCopilot": "واجهة سطر أوامر GitHub Copilot",
       "cache": "ذاكرة المحادثات",
       "pty": "نظام PTY",
       "filesystem": "مجلد سجل المزوّد"
