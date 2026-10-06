@@ -13,6 +13,7 @@ import {
 // swaps this one for a localStorage shim on web, so it is the boundary the app
 // actually uses. The mock below stands in for whatever it re-exports.
 import * as authedFetchModule from '@/services/authed-fetch'
+import * as restSession from '@/services/e2ee/rest-session'
 import * as SecureStore from '@/services/secure-store'
 
 // Mock SecureStore so tests don't hit the keychain
@@ -150,11 +151,47 @@ describe('refreshServerInfo', () => {
       expect(useServersStore.getState().servers[server.id].relayUrl).toBeUndefined()
     })
 
-    it('ignores a route that is not a string', async () => {
+    it.each([
+      42,
+      'https://user:pw@relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345',
+      'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345?x=1',
+      'https://relay.example.com/somewhere/else',
+      'ftp://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345',
+    ])('ignores a route that is not a bare relay route: %s', async (relayUrl) => {
       const server = seedServer(pinned)
-      answer({ ...info, relayUrl: 42 })
+      answer({ ...info, relayUrl })
       await useServersStore.getState().refreshServerInfo(server.id)
       expect(useServersStore.getState().servers[server.id].relayUrl).toBeUndefined()
+    })
+
+    // The reply was requested while the server was unpinned, so it travelled
+    // in the clear; a pairing that completes before it lands must not launder it.
+    it('ignores a route whose reply was requested before the server was pinned', async () => {
+      const server = seedServer()
+      jest.spyOn(authedFetchModule, 'authedFetch').mockImplementation(async () => {
+        useServersStore.setState((state) => ({
+          servers: { ...state.servers, [server.id]: { ...state.servers[server.id], ...pinned } },
+        }))
+        return new Response(JSON.stringify(info))
+      })
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(useServersStore.getState().servers[server.id].relayUrl).toBeUndefined()
+    })
+
+    it('drops the REST context when the relay is turned off, or the route goes away', async () => {
+      const drop = jest.spyOn(restSession, 'invalidateRestContext')
+      const server = seedServer({ ...pinned, relayUrl: RELAY })
+
+      useServersStore.getState().setRelayDisabled(server.id, true)
+      expect(drop).toHaveBeenCalledTimes(1)
+
+      answer(info)
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(drop).toHaveBeenCalledTimes(1)
+
+      answer({ ...info, relayUrl: undefined })
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(drop).toHaveBeenCalledTimes(2)
     })
   })
 

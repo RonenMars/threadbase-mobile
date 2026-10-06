@@ -12,6 +12,7 @@ import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import { clearDeviceStaticKey } from '@/services/e2ee/pair-handshake'
 import { clearOpenRefusal } from '@/services/e2ee/context'
+import { invalidateRestContext } from '@/services/e2ee/rest-session'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
@@ -54,6 +55,13 @@ export interface AddServerMeta {
   /** Set only by a pairing that completed a Noise handshake; never cleared here. */
   requireEncryption?: boolean
 }
+
+/**
+ * A relay route and nothing else: a bare host and `/r/<32-character route id>`.
+ * No credentials, query or fragment, so the value cannot smuggle anything into
+ * the requests built by appending a path to it.
+ */
+const RELAY_ROUTE_SHAPE = /^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?\/r\/[A-Za-z0-9_-]{32}$/
 
 /** Minimal shape persisted to AsyncStorage (no secrets). */
 export interface PersistedServer {
@@ -354,6 +362,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
       return { servers }
     })
+    // A REST context keeps the address it opened on. Without this, one opened
+    // on the relay would go on using it after the user turned the relay off.
+    invalidateRestContext(serverId)
   },
 
   updateServerLabel: (serverId: string, label: string) => {
@@ -452,8 +463,21 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         // Adopted only from a pinned server, whose `/api/info` arrived sealed:
         // an address this app will dial must not come from a reply anyone on
         // the path could have written. Absent means the server's relay is off.
-        const pinned = s.requireEncryption === true && !!s.serverPublicKey
-        const relayUrl = pinned && typeof info.relayUrl === 'string' ? info.relayUrl : undefined
+        //
+        // Pinned is judged on `server`, the record the request was sent with,
+        // and must still be the same pin now: a reply fetched in the clear and
+        // landing after a re-pair would otherwise be adopted as if it were sealed.
+        const pinned =
+          server.requireEncryption === true &&
+          !!server.serverPublicKey &&
+          s.requireEncryption === true &&
+          s.serverPublicKey === server.serverPublicKey
+        const relayUrl =
+          pinned && typeof info.relayUrl === 'string' && RELAY_ROUTE_SHAPE.test(info.relayUrl)
+            ? info.relayUrl
+            : undefined
+        // A context opened on a route the server no longer reports must not outlive it.
+        if (pinned && s.relayUrl && s.relayUrl !== relayUrl) invalidateRestContext(serverId)
         const updated = { ...s, serverInfo: info, connectionError: null, ...(pinned ? { relayUrl } : {}) }
         const servers = { ...state.servers, [serverId]: updated }
         persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
