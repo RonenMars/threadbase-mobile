@@ -21,6 +21,7 @@ FLOWS=(
   e2e/marketing/01-start-anywhere.yaml
   e2e/marketing/02-agent-memory.yaml
   e2e/marketing/03-control-plane.yaml
+  e2e/marketing/04-onboarding.yaml
 )
 if [[ -n "${MARKETING_FLOWS:-}" ]]; then
   # shellcheck disable=SC2206
@@ -41,6 +42,8 @@ if [[ "${E2E_PLATFORM:-}" == "android" ]]; then
   # Emulator localhost is the emulator itself. 10.0.2.2 rather than
   # `adb reverse`: a reverse dies with the adb transport, which bounces.
   PAIR_HOST=10.0.2.2
+  # Dark system theme, so the keyboard matches the app.
+  adb shell cmd uimode night yes >/dev/null
   # Same clock in every shot, as `simctl status_bar` gives the iOS set.
   adb shell settings put global sysui_demo_allowed 1 >/dev/null
   demo() { adb shell am broadcast -a com.android.systemui.demo "$@" >/dev/null; }
@@ -70,6 +73,9 @@ if [[ "${E2E_PLATFORM:-}" == "android" ]]; then
   wait_for_emulator >/dev/null
 else
   ensure_promo_simulator
+  # Dark system theme, so the keyboard matches the app.
+  xcrun simctl ui "$MAESTRO_UDID" appearance dark
+  xcrun simctl status_bar "$MAESTRO_UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4
 fi
 node e2e/check-sim.js
 node e2e/ensure-release-build.js
