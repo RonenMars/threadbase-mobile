@@ -320,6 +320,9 @@
     "viaYours": "Your address",
     "viaPublic": "Public address",
     "notConnected": "Not connected",
-    "hint": "Each connection tries your address first and uses the public one only when yours cannot be reached."
+    "hint": "Each connection tries your address first and uses the public one only when yours cannot be reached.",
+    "relayLabel": "Threadbase relay",
+    "viaRelay": "Threadbase relay",
+    "relayHint": "Used only when your own addresses cannot be reached. Everything stays end-to-end encrypted: the relay passes it on and cannot read it."
   }
 }

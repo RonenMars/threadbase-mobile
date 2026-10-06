@@ -12,29 +12,40 @@ const trimSlash = (url: string) => url.replace(/\/$/, '')
 
 /**
  * The addresses a connection attempt tries, in order: the one the user gave,
- * then the one the server advertised (threadbase-mobile#734). Tried in turn,
+ * the one the server advertised (threadbase-mobile#734), then the server's
+ * route on the Threadbase relay. Tried in turn,
  * never raced, and every attempt starts again at the first — nothing records
  * which one answered last time.
  *
- * Only a pinned server gets `publicUrl`. Its value came from the authenticated
- * handshake and every request to it is sealed. An unpinned server's `publicUrl`
- * came from an unauthenticated pairing reply (pair-exchange.ts), and dialling
- * it would hand the API key to whoever wrote that reply (TB-M-03).
+ * Only a pinned server gets more than `url`. Those values came from the
+ * authenticated handshake or a sealed response, and every request to them is
+ * sealed. An unpinned server's `publicUrl` came from an unauthenticated pairing
+ * reply (pair-exchange.ts), and dialling it would hand the API key to whoever
+ * wrote that reply (TB-M-03).
  *
- * `publicUrl` is also left out when it is not http(s), is the same address, or
+ * The relay is last because it is the only address that is somebody else's
+ * machine: it carries sealed traffic it cannot read, but it does see that a
+ * connection exists, so it is used only when the user's own addresses fail.
+ *
+ * An extra address is also left out when it is not http(s), is a duplicate, or
  * the cleartext policy would refuse it. `url` itself is never filtered here: a
  * refused `url` keeps producing the refusal its callers already surface.
  */
 export function serverAddresses(target: {
   url: string
   publicUrl?: string
+  relayUrl?: string
+  relayDisabled?: boolean
   serverPublicKey?: string
   requireEncryption?: boolean
 }): string[] {
-  const url = trimSlash(target.url)
-  const pinned = target.requireEncryption === true && !!target.serverPublicKey
-  const publicUrl = pinned && target.publicUrl ? trimSlash(target.publicUrl) : ''
-  return /^https?:\/\//i.test(publicUrl) && publicUrl !== url && isCleartextAllowed(publicUrl)
-    ? [url, publicUrl]
-    : [url]
+  const addresses = [trimSlash(target.url)]
+  if (target.requireEncryption !== true || !target.serverPublicKey) return addresses
+  for (const extra of [target.publicUrl, target.relayDisabled ? undefined : target.relayUrl]) {
+    const address = extra ? trimSlash(extra) : ''
+    if (/^https?:\/\//i.test(address) && !addresses.includes(address) && isCleartextAllowed(address)) {
+      addresses.push(address)
+    }
+  }
+  return addresses
 }

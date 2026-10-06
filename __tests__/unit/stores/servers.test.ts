@@ -12,6 +12,8 @@ import {
 // Read through the app's own module, never `expo-secure-store` directly: Metro
 // swaps this one for a localStorage shim on web, so it is the boundary the app
 // actually uses. The mock below stands in for whatever it re-exports.
+import * as authedFetchModule from '@/services/authed-fetch'
+import * as restSession from '@/services/e2ee/rest-session'
 import * as SecureStore from '@/services/secure-store'
 
 // Mock SecureStore so tests don't hit the keychain
@@ -118,6 +120,79 @@ describe('refreshServerInfo', () => {
     const updated = useServersStore.getState().servers[server.id]
     expect(updated.serverInfo).toEqual(info)
     expect(updated.connectionError).toBeNull()
+  })
+
+  describe('relay route', () => {
+    const RELAY = 'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345'
+    const info = { version: '1.4.2', machineName: 'mac-pro', platform: 'macOS', relayUrl: RELAY }
+    const pinned = { serverPublicKey: 'A'.repeat(43), requireEncryption: true }
+    const answer = (body: object) =>
+      jest.spyOn(authedFetchModule, 'authedFetch').mockResolvedValue(new Response(JSON.stringify(body)))
+
+    afterEach(() => jest.restoreAllMocks())
+
+    it('adopts the route a pinned server reports, and forgets it when the server stops reporting one', async () => {
+      const server = seedServer(pinned)
+      answer(info)
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(useServersStore.getState().servers[server.id].relayUrl).toBe(RELAY)
+
+      answer({ ...info, relayUrl: undefined })
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(useServersStore.getState().servers[server.id].relayUrl).toBeUndefined()
+    })
+
+    // An unpinned server's `/api/info` is not sealed, so anyone on the path
+    // could have written this address.
+    it('ignores the route from a server that is not pinned', async () => {
+      const server = seedServer()
+      answer(info)
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(useServersStore.getState().servers[server.id].relayUrl).toBeUndefined()
+    })
+
+    it.each([
+      42,
+      'https://user:pw@relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345',
+      'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345?x=1',
+      'https://relay.example.com/somewhere/else',
+      'ftp://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345',
+    ])('ignores a route that is not a bare relay route: %s', async (relayUrl) => {
+      const server = seedServer(pinned)
+      answer({ ...info, relayUrl })
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(useServersStore.getState().servers[server.id].relayUrl).toBeUndefined()
+    })
+
+    // The reply was requested while the server was unpinned, so it travelled
+    // in the clear; a pairing that completes before it lands must not launder it.
+    it('ignores a route whose reply was requested before the server was pinned', async () => {
+      const server = seedServer()
+      jest.spyOn(authedFetchModule, 'authedFetch').mockImplementation(async () => {
+        useServersStore.setState((state) => ({
+          servers: { ...state.servers, [server.id]: { ...state.servers[server.id], ...pinned } },
+        }))
+        return new Response(JSON.stringify(info))
+      })
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(useServersStore.getState().servers[server.id].relayUrl).toBeUndefined()
+    })
+
+    it('drops the REST context when the relay is turned off, or the route goes away', async () => {
+      const drop = jest.spyOn(restSession, 'invalidateRestContext')
+      const server = seedServer({ ...pinned, relayUrl: RELAY })
+
+      useServersStore.getState().setRelayDisabled(server.id, true)
+      expect(drop).toHaveBeenCalledTimes(1)
+
+      answer(info)
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(drop).toHaveBeenCalledTimes(1)
+
+      answer({ ...info, relayUrl: undefined })
+      await useServersStore.getState().refreshServerInfo(server.id)
+      expect(drop).toHaveBeenCalledTimes(2)
+    })
   })
 
   it('sets connectionError and clears serverInfo on fetch failure', async () => {
@@ -687,6 +762,11 @@ describe('reading a persisted server back', () => {
       serverPublicKey: SPK,
       requireEncryption: true,
     })
+    const added = Object.values(useServersStore.getState().servers).find((s) => s.url === URL)
+    useServersStore.setState((state) => ({
+      servers: { ...state.servers, [String(added?.id)]: { ...state.servers[String(added?.id)], relayUrl: 'https://relay.example.test/r/abc' } },
+    }))
+    useServersStore.getState().setRelayDisabled(String(added?.id), true)
 
     const written = setItemAsync.mock.calls
       .filter(([key]) => key === 'threadbase_servers')
@@ -705,6 +785,8 @@ describe('reading a persisted server back', () => {
     expect(restored.serverPublicKey).toBe(SPK)
     expect(restored.requireEncryption).toBe(true)
     expect(restored.publicUrl).toBe('https://tunnel.example.test')
+    expect(restored.relayUrl).toBe('https://relay.example.test/r/abc')
+    expect(restored.relayDisabled).toBe(true)
     expect(restored.deviceId).toBe('device-9')
     expect(restored.deviceToken).toBe('dt_9')
     expect(restored.deviceCapabilities).toEqual(['history:read'])

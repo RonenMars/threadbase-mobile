@@ -4,7 +4,7 @@ import { useServersStore } from '@/stores/servers'
 import { ServerAddressesSection } from './ServerAddressesSection'
 
 // Storybook mounts no WebSocket, so the live address always reads "Not connected".
-function Seeded({ publicUrl }: { publicUrl?: string }) {
+function Seeded({ publicUrl, relayUrl, relayDisabled }: { publicUrl?: string; relayUrl?: string; relayDisabled?: boolean }) {
   useServersStore.setState({
     servers: {
       demo: {
@@ -13,6 +13,8 @@ function Seeded({ publicUrl }: { publicUrl?: string }) {
         apiKey: 'demo-key',
         label: 'Studio',
         publicUrl,
+        relayUrl,
+        relayDisabled,
         // Only a pinned server dials publicUrl, so only one shows it.
         serverPublicKey: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         requireEncryption: true,
@@ -42,6 +44,14 @@ type Story = StoryObj<typeof Seeded>
 
 export const TwoAddresses: Story = {
   args: { publicUrl: 'https://tb.example.com' },
+}
+
+export const WithRelay: Story = {
+  args: { publicUrl: 'https://tb.example.com', relayUrl: 'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345' },
+}
+
+export const RelayOnlyTurnedOff: Story = {
+  args: { relayUrl: 'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345', relayDisabled: true },
 }
 
 export const OneAddressRendersNothing: Story = {

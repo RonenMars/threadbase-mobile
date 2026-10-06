@@ -513,6 +513,21 @@ describe('authedFetch REST envelope – two addresses', () => {
     expect(hasHeader(init?.headers as Record<string, string>, 'Authorization')).toBe(false)
   })
 
+  it('reads a relay-written error as retryable and reopens from the user address', async () => {
+    const RELAY = 'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345'
+    const opened = opener([LAN])
+    const target = { ...pinnedTarget(), url: LAN, relayUrl: RELAY }
+    fetchSpy().mockResolvedValue(
+      new Response('{"code":"RELAY_STREAMER_OFFLINE"}', { status: 503, headers: { 'X-TB-Relay-Error': '1' } }),
+    )
+
+    const first = await authedFetch(target, '/api/info').catch((error: Error) => error)
+    expect(first).toMatchObject({ code: 'E2EE_TRANSIENT', retryable: true })
+
+    await authedFetch(target, '/api/info').catch(() => undefined)
+    expect(opened).toEqual([LAN, RELAY, LAN, RELAY])
+  })
+
   it('drops a context whose address stopped answering, so the next request reopens from the user address', async () => {
     const opened = opener([])
     const spy = fetchSpy().mockRejectedValue(new TypeError('Network request failed'))

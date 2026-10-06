@@ -65,6 +65,17 @@ Both transport consumers honour it: `ws-client.ts` returns without scheduling a 
 
 **Never fall back.** A sealed socket that receives a non-binary frame throws; a pinned request never retries in the clear; a failed pairing is a failed pairing, not a plaintext success. That last one held on hardware against a real Cloudflare Access gate — the app refused rather than continuing unsealed.
 
+## The relay route
+
+A pinned server can carry a third address, `relayUrl`: its route on the Threadbase relay (`https://relay.example.com/r/<routeId>`), tried last, after `url` and `publicUrl` (`services/server-addresses.ts`).
+The relay forwards sealed traffic it cannot read, so the rules above are unchanged on it; what is specific to it:
+
+- **The address is adopted only from a sealed `/api/info`** (`refreshServerInfo`), and only for a pinned server. It is never written into `url`, because the server id derives from `url`.
+- **A response carrying `X-TB-Relay-Error` was written by the relay, not the streamer.** On `/open` it reads as an address that did not answer (`E2EE_TRANSIENT`, `unreachable`) and is never remembered as a refusal; on a sealed request it is a retryable `E2EE_TRANSIENT` that drops the REST context, so the next request starts again at the user's own address. Without that, a relay `400` would brand the server permanently refused and a relay `503` would be a non-retryable seal failure.
+- **Learning the address does not redial.** `WSClient.connect` adopts an address that was only appended; removing or changing one redials, because the live socket may be on it.
+- **The user can turn it off per server** (`relayDisabled`, the switch in the server's address section). Off removes the address from every dial list.
+- **The web build is not supported through the relay yet**: the relay refuses unsealed CORS preflights.
+
 ## Traps found on hardware (2026-09-02)
 
 ### React Native delivers binary frames as `ArrayBuffer`
