@@ -176,6 +176,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
       serverPublicKey: result.serverPublicKey ?? undefined,
       requireEncryption: result.e2eeRequired,
       publicUrl: result.publicUrl ?? undefined,
+      relayUrl: result.relayUrl ?? undefined,
     })
     onAdvance()
   }

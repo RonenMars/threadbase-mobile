@@ -13,6 +13,7 @@ import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import { clearDeviceStaticKey } from '@/services/e2ee/pair-handshake'
 import { clearOpenRefusal } from '@/services/e2ee/context'
 import { invalidateRestContext } from '@/services/e2ee/rest-session'
+import { isRelayRoute } from '@/services/server-addresses'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
@@ -50,18 +51,12 @@ export interface AddServerMeta {
   capabilities?: DeviceCapability[]
   /** What the server advertises as its public address. Recorded, never applied — see ServerConfig. */
   publicUrl?: string
+  relayUrl?: string
   /** The server identity key the pairing handshake authenticated. Absent on a plaintext pairing. */
   serverPublicKey?: string
   /** Set only by a pairing that completed a Noise handshake; never cleared here. */
   requireEncryption?: boolean
 }
-
-/**
- * A relay route and nothing else: a bare host and `/r/<32-character route id>`.
- * No credentials, query or fragment, so the value cannot smuggle anything into
- * the requests built by appending a path to it.
- */
-const RELAY_ROUTE_SHAPE = /^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?\/r\/[A-Za-z0-9_-]{32}$/
 
 /** Minimal shape persisted to AsyncStorage (no secrets). */
 export interface PersistedServer {
@@ -287,6 +282,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       deviceToken: device?.deviceToken,
       deviceCapabilities: device?.capabilities,
       publicUrl: device?.publicUrl,
+      relayUrl: device?.relayUrl,
       serverPublicKey: device?.serverPublicKey,
     }
 
@@ -473,7 +469,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
           s.requireEncryption === true &&
           s.serverPublicKey === server.serverPublicKey
         const relayUrl =
-          pinned && typeof info.relayUrl === 'string' && RELAY_ROUTE_SHAPE.test(info.relayUrl)
+          pinned && typeof info.relayUrl === 'string' && isRelayRoute(info.relayUrl)
             ? info.relayUrl
             : undefined
         // A context opened on a route the server no longer reports must not outlive it.

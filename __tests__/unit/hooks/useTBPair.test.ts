@@ -47,6 +47,7 @@ describe('useTBPair (prod path)', () => {
       // Deliberately different from `url`: the hook must forward both without
       // confusing one for the other.
       publicUrl: 'https://tunnel.example.test',
+      relayUrl: null,
       machineName: null,
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
@@ -101,6 +102,7 @@ describe('useTBPair (prod path)', () => {
       url: 'https://from-uri.test',
       apiKey: 'tb_from_uri',
       publicUrl: 'https://tunnel.from-uri.test',
+      relayUrl: null,
       machineName: null,
       deviceId: null,
       deviceToken: null,
@@ -253,6 +255,7 @@ describe('useTBPair — the pasted URI server key', () => {
       url: 'https://from-uri.test',
       apiKey: 'dt_pasted',
       publicUrl: null,
+      relayUrl: null,
       machineName: 'Studio Mac',
       deviceId: 'device-2',
       deviceToken: 'dt_pasted',

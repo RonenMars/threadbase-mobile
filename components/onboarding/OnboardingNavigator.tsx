@@ -164,6 +164,7 @@ export function OnboardingNavigator({ onDone, mode }: Props) {
           deviceToken: pairResult.deviceToken,
           capabilities: pairResult.capabilities,
           publicUrl: pairResult.publicUrl,
+          relayUrl: pairResult.relayUrl,
           serverPublicKey: pairResult.serverPublicKey,
           requireEncryption: pairResult.requireEncryption,
         })

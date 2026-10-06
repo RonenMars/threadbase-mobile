@@ -33,6 +33,7 @@ export interface PairResult {
   capabilities?: DeviceCapability[]
   /** Advertised public address of the server. Recorded, never used as `url`. */
   publicUrl?: string
+  relayUrl?: string
   /** Server identity key proved by the pairing handshake. Absent on a plaintext pairing. */
   serverPublicKey?: string
   /** True when the pairing completed a Noise handshake — the client half of the downgrade lock. */
@@ -78,6 +79,7 @@ async function resolveCredentials(
       deviceName,
       readOnly,
       serverPublicKey: parsed.spk,
+      relayUrl: parsed.relay,
     })
     return {
       url: exchanged.url,
@@ -87,6 +89,7 @@ async function resolveCredentials(
       deviceToken: exchanged.deviceToken ?? undefined,
       capabilities: exchanged.capabilities ?? undefined,
       publicUrl: exchanged.publicUrl ?? undefined,
+      relayUrl: exchanged.relayUrl ?? undefined,
       serverPublicKey: exchanged.serverPublicKey ?? undefined,
       requireEncryption: exchanged.e2eeRequired,
     }
@@ -109,6 +112,7 @@ async function resolveCredentials(
       deviceToken: exchanged.deviceToken ?? undefined,
       capabilities: exchanged.capabilities ?? undefined,
       publicUrl: exchanged.publicUrl ?? undefined,
+      relayUrl: exchanged.relayUrl ?? undefined,
       serverPublicKey: exchanged.serverPublicKey ?? undefined,
       requireEncryption: exchanged.e2eeRequired,
     }

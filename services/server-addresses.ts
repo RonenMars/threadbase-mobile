@@ -8,6 +8,15 @@ import { isCleartextAllowed } from '@/services/cleartext-policy'
  */
 export const FIRST_ADDRESS_TIMEOUT_MS = 4_000
 
+/**
+ * A relay route and nothing else: a bare host and `/r/<32-character route id>`.
+ * No credentials, query or fragment, so the value cannot smuggle anything into
+ * the requests built by appending a path to it.
+ */
+const RELAY_ROUTE_SHAPE = /^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?\/r\/[A-Za-z0-9_-]{32}$/
+
+export const isRelayRoute = (value: string) => RELAY_ROUTE_SHAPE.test(value)
+
 const trimSlash = (url: string) => url.replace(/\/$/, '')
 
 /**

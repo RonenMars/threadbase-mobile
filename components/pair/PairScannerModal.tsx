@@ -83,6 +83,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
           token: parsed.token,
           deviceName: defaultPairDeviceName(),
           serverPublicKey: parsed.spk,
+          relayUrl: parsed.relay,
         })
         reset()
         onSuccess(result)
