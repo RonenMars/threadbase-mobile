@@ -34,6 +34,12 @@ export interface Session {
   /** Stable backend identity. Optional during migration; will be required. */
   projectId?: string
   projectPath: string
+  /**
+   * Directories the session was started with beyond `projectPath`. Additive;
+   * older servers omit it, and so does a server for a session with none.
+   * Read it through `sessionAdditionalPaths`, which drops malformed entries.
+   */
+  additionalPaths?: string[]
   projectName: string
   branch?: string
   /** Git remote origin URL for the project, when discoverable. Additive; older servers omit it. */

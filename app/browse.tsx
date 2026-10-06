@@ -24,6 +24,13 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { RecentDirsModal, type RecentDir } from '@/components/browse/RecentDirsModal'
+import { SelectedDirsTray } from '@/components/browse/SelectedDirsTray'
+import {
+  addAdditionalPath,
+  additionalPathsForStart,
+  canAddAdditionalPath,
+  encodeAdditionalPathsParam,
+} from '@/lib/additionalPaths'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
@@ -82,6 +89,11 @@ export default function BrowseScreen() {
   const selectedHealth = findProviderHealth(providerHealth?.providers, selectedProvider)
   const selectedUnavailable = selectedHealth?.available === false ||
     (selectedProvider === COPILOT_PROVIDER && selectedHealth?.available !== true)
+  // Absent on servers that predate it, which must read as unsupported.
+  const multiDirSupported = selectedHealth?.capabilities.multiDirectory === true
+  // Kept across a switch to a provider without the capability, so switching
+  // back restores the selection; it is only sent while supported.
+  const [extraPaths, setExtraPaths] = useState<string[]>([])
   const showProviderVersionWarning = useSettingsStore((s) => s.showProviderVersionWarning)
   const selectedWarnings = (selectedHealth?.warnings ?? []).filter(
     (w) => (__DEV__ && showProviderVersionWarning) || w.code !== 'version_unverified',
@@ -267,6 +279,10 @@ export default function BrowseScreen() {
     (path: string, projectName: string) => {
       const params = new URLSearchParams({ server: serverId ?? '', path, projectName })
       if (selectedProvider !== CLAUDE_CODE_PROVIDER) params.set('provider', selectedProvider)
+      const extra = multiDirSupported
+        ? encodeAdditionalPathsParam(additionalPathsForStart(path, extraPaths))
+        : undefined
+      if (extra) params.set('extra', extra)
       const target: Href = `/session/new?${params.toString()}`
       clientLog.info('browse', 'dismiss modal + push /session/new', { target })
       router.back()
@@ -278,7 +294,7 @@ export default function BrowseScreen() {
         router.push(target)
       })
     },
-    [router, serverId, selectedProvider],
+    [router, serverId, selectedProvider, multiDirSupported, extraPaths],
   )
 
   const handleStartSession = useCallback(() => {
@@ -596,6 +612,15 @@ export default function BrowseScreen() {
               <Text style={styles.providerWarningText}>{t('provider.observeOnly')}</Text>
             ) : null}
           </View>
+        ) : null}
+        {multiDirSupported ? (
+          <SelectedDirsTray
+            paths={extraPaths}
+            canAdd={canAddAdditionalPath(extraPaths, currentPath)}
+            disabled={actionsDisabled || isStarting}
+            onAdd={() => setExtraPaths((list) => addAdditionalPath(list, currentPath))}
+            onRemove={(path) => setExtraPaths((list) => list.filter((p) => p !== path))}
+          />
         ) : null}
         <View style={styles.footer}>
           <TouchableOpacity
