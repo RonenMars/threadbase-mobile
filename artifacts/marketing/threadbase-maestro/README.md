@@ -10,6 +10,21 @@ Twenty screenshots from three demo flows, captured by `npm run test:e2e:marketin
 - **"Started outside Threadbase"** is the streamer's `ownership: external` session, which the app shows as *Observed*. Taking it over is the app's own Resume → Take over path.
 - All names, paths (`/code/...`) and URLs are demo data. No real hostnames, keys or personal paths appear.
 
+## Devices
+
+The same three flows run on four devices. The tables below describe the iPhone set; the other folders hold the same 20 file names.
+
+| Folder | Device | Size | Command |
+|---|---|---|---|
+| `.` (this folder) | iPhone simulator, iOS 26 | 1206×2622 | `npm run test:e2e:marketing` |
+| `ipad/` | iPad Pro 13-inch (M5) simulator, iOS 26.5, portrait | 2064×2752 | `MAESTRO_UDID=<udid> MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/ipad npm run test:e2e:marketing` |
+| `android-phone/` | Pixel 9 emulator, API 35 | 1080×2424 | `E2E_PLATFORM=android E2E_ANDROID_AVD=<avd> MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/android-phone npm run test:e2e:marketing` |
+| `android-tablet/` | Pixel Tablet emulator, API 35, landscape | 2560×1600 | as above with the tablet AVD and `android-tablet` |
+
+- The app has no tablet layout: both tablets show the phone layout at full width, and the iPad's portrait session screens are mostly empty above a short transcript.
+- Android pairs through `10.0.2.2` instead of `localhost`, and its status bar is pinned with SystemUI demo mode; the iPad's was pinned by hand with `simctl status_bar` (9:41).
+- The iPad and Android sets were captured on 2026-10-06 from a Release build of `main` at `a82fbb2f`; the iPhone set predates them.
+
 Topology: **Work Mac** (Claude Code running, Codex waiting), **Home Mac** (finished Claude Code work), **Linux Devbox** (Codex running).
 The spec's Flow 3 step 4 asks for a Claude Code session on Linux Devbox while its topology puts Codex there; the topology was followed.
 
