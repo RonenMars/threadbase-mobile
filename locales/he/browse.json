@@ -12,7 +12,11 @@
     "create": "צור",
     "startSession": "התחל סשן כאן",
     "hideRecentDirs": "הסתר תיקיות אחרונות",
-    "showRecentDirs": "הצג תיקיות אחרונות"
+    "showRecentDirs": "הצג תיקיות אחרונות",
+    "addDirectory": "הוסף תיקייה זו",
+    "extraDirsTitle": "כלול גם ({{selected}}/{{max}})",
+    "extraDirsHint": "הסשן מתחיל בתיקייה הנוכחית ויכול לעבוד גם בתיקיות אלה.",
+    "removeDirectory": "הסר את {{name}}"
   },
   "starting": {
     "secondsLeft": "{{seconds}} שנ׳",
@@ -23,7 +27,10 @@
       "חולט קנקן טוקנים טרי, החזיקו חזק…",
       "מזכיר לעצמי איך נראה קוד…",
       "סופר עד טריליון ממש מהר, כמעט סיימתי…"
-    ]
+    ],
+    "moreDirectories_one": "ועוד תיקייה אחת",
+    "moreDirectories_two": "ועוד שתי תיקיות",
+    "moreDirectories_other": "ועוד {{count}} תיקיות"
   },
   "error": {
     "loadFailed": "נכשל לטעון שיחות",

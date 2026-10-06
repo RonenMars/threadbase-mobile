@@ -207,6 +207,7 @@
     "sessionName": "Название сессии",
     "projectName": "Название проекта",
     "projectPath": "Путь проекта",
+    "additionalPaths": "Дополнительные папки",
     "filePath": "Путь к файлу",
     "account": "Аккаунт",
     "messageCount": "Число сообщений",

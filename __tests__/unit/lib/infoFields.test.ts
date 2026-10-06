@@ -130,3 +130,27 @@ describe('subjects', () => {
     expect(c.sessionId).toBeUndefined()
   })
 })
+
+describe('buildSharedInfoFields — additional directories', () => {
+  it('lists them one per line when the session has some', () => {
+    const r = rows({ conversationId: 'c', additionalPaths: ['/w/lib', '/w/docs'] })
+    expect(r['Additional Directories']).toBe('/w/lib\n/w/docs')
+  })
+
+  it('omits the row when there are none or the field is absent', () => {
+    expect(rows({ conversationId: 'c', additionalPaths: [] })['Additional Directories']).toBeUndefined()
+    expect(rows({ conversationId: 'c' })['Additional Directories']).toBeUndefined()
+  })
+
+  it('carries the field from a session', () => {
+    const subject = sessionInfoSubject({
+      id: 's',
+      status: 'idle',
+      ptyAttached: false,
+      projectPath: '/w/app',
+      projectName: 'app',
+      additionalPaths: ['/w/lib'],
+    } as Session)
+    expect(subject.additionalPaths).toEqual(['/w/lib'])
+  })
+})
