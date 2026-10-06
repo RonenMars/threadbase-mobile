@@ -66,6 +66,8 @@ export interface PersistedServer {
   deviceId?: string
   deviceCapabilities?: DeviceCapability[]
   publicUrl?: string
+  relayUrl?: string
+  relayDisabled?: boolean
   serverPublicKey?: string
   requireEncryption?: boolean
 }
@@ -96,6 +98,7 @@ interface ServersStore {
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setRequireEncryption: (serverId: string, requireEncryption: boolean) => void
+  setRelayDisabled: (serverId: string, relayDisabled: boolean) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
   setScanProgress: (serverId: string, scanned: number, total: number) => void
   setCacheAlert: (serverId: string, alert: CacheAlert | null) => void
@@ -138,6 +141,8 @@ async function persistServerList(
       deviceId: servers[id].deviceId,
       deviceCapabilities: servers[id].deviceCapabilities,
       publicUrl: servers[id].publicUrl,
+      relayUrl: servers[id].relayUrl,
+      relayDisabled: servers[id].relayDisabled,
       serverPublicKey: servers[id].serverPublicKey,
       requireEncryption: servers[id].requireEncryption,
     }))
@@ -196,6 +201,8 @@ export function serverConfigFromPersisted(
     deviceToken: secrets.deviceToken,
     deviceCapabilities: entry.deviceCapabilities,
     publicUrl: entry.publicUrl,
+    relayUrl: entry.relayUrl,
+    relayDisabled: entry.relayDisabled,
     serverPublicKey: entry.serverPublicKey,
     requireEncryption: entry.requireEncryption,
   }
@@ -339,6 +346,16 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     })
   },
 
+  setRelayDisabled: (serverId: string, relayDisabled: boolean) => {
+    set((state) => {
+      const server = state.servers[serverId]
+      if (!server) return state
+      const servers = { ...state.servers, [serverId]: { ...server, relayDisabled } }
+      persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
+      return { servers }
+    })
+  },
+
   updateServerLabel: (serverId: string, label: string) => {
     set((state) => {
       const server = state.servers[serverId]
@@ -432,7 +449,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       set((state) => {
         const s = state.servers[serverId]
         if (!s) return state
-        const updated = { ...s, serverInfo: info, connectionError: null }
+        // Adopted only from a pinned server, whose `/api/info` arrived sealed:
+        // an address this app will dial must not come from a reply anyone on
+        // the path could have written. Absent means the server's relay is off.
+        const pinned = s.requireEncryption === true && !!s.serverPublicKey
+        const relayUrl = pinned && typeof info.relayUrl === 'string' ? info.relayUrl : undefined
+        const updated = { ...s, serverInfo: info, connectionError: null, ...(pinned ? { relayUrl } : {}) }
         const servers = { ...state.servers, [serverId]: updated }
         persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
         return { servers }

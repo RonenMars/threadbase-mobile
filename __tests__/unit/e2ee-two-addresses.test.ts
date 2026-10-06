@@ -33,6 +33,7 @@ const b64 = (s: string): Uint8Array => Uint8Array.from(Buffer.from(s, 'base64'))
 const LAN = 'https://192.0.2.10:8766'
 const PUBLIC = 'https://tb.example.com'
 const PIN = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const RELAY = 'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345'
 
 beforeEach(() => {
   _resetOpenRefusalsForTests()
@@ -105,6 +106,17 @@ describe('serverAddresses', () => {
     expect(serverAddresses({ url: LAN, publicUrl: PUBLIC })).toEqual([LAN])
     expect(serverAddresses({ url: LAN, publicUrl: PUBLIC, serverPublicKey: PIN })).toEqual([LAN])
     expect(serverAddresses({ url: LAN, publicUrl: PUBLIC, requireEncryption: true })).toEqual([LAN])
+  })
+
+  it('puts the relay route last, with or without a publicUrl', () => {
+    expect(serverAddresses({ url: LAN, publicUrl: PUBLIC, relayUrl: `${RELAY}/`, ...pinned })).toEqual([LAN, PUBLIC, RELAY])
+    expect(serverAddresses({ url: LAN, relayUrl: RELAY, ...pinned })).toEqual([LAN, RELAY])
+  })
+
+  it('drops the relay route when the user turned it off, or the server is not pinned', () => {
+    expect(serverAddresses({ url: LAN, publicUrl: PUBLIC, relayUrl: RELAY, relayDisabled: true, ...pinned })).toEqual([LAN, PUBLIC])
+    expect(serverAddresses({ url: LAN, relayUrl: RELAY })).toEqual([LAN])
+    expect(serverAddresses({ url: LAN, relayUrl: 'http://relay.example.com/r/x', ...pinned })).toEqual([LAN])
   })
 })
 
@@ -193,6 +205,42 @@ describe('openContext across two addresses', () => {
     expect(revoked.calls).toEqual([`${LAN}/api/e2ee/open`, `${PUBLIC}/api/e2ee/open`])
     expect(_openRefusalCount()).toBe(2)
     clearOpenRefusal('studio')
+    expect(_openRefusalCount()).toBe(0)
+  })
+})
+
+// The relay answers for itself when the streamer's tunnel is down. That is not
+// the streamer's verdict on this device, so it must read as "did not answer".
+describe('openContext through the relay', () => {
+  const relayRefusal = async () =>
+    new Response('{"code":"RELAY_STREAMER_OFFLINE"}', { status: 503, headers: { 'X-TB-Relay-Error': '1' } })
+
+  it('treats a relay-written error as unreachable and never remembers it', async () => {
+    const offline = byAddress({ [RELAY]: relayRefusal })
+    const error = await errorOf(open(RELAY, offline.fetchImpl))
+
+    expect(error.code).toBe('E2EE_TRANSIENT')
+    expect(error.unreachable).toBe(true)
+    expect(_openRefusalCount()).toBe(0)
+  })
+
+  // The positive control: the same status without the relay's header is the
+  // streamer speaking, and a 400 from it is still a permanent refusal.
+  it('still remembers a refusal the streamer sent through the relay', async () => {
+    const refused = byAddress({ [RELAY]: async () => new Response('{}', { status: 400 }) })
+    const error = await errorOf(open(RELAY, refused.fetchImpl))
+
+    expect(error.code).toBe('E2EE_HANDSHAKE_FAILED')
+    expect(error.unreachable).toBe(false)
+    expect(_openRefusalCount()).toBe(1)
+  })
+
+  it('a relay 400 on /open is not a permanent refusal either', async () => {
+    const unsupported = byAddress({
+      [RELAY]: async () =>
+        new Response('{"code":"RELAY_UNSUPPORTED_REQUEST"}', { status: 400, headers: { 'X-TB-Relay-Error': '1' } }),
+    })
+    expect((await errorOf(open(RELAY, unsupported.fetchImpl))).retryable).toBe(true)
     expect(_openRefusalCount()).toBe(0)
   })
 })

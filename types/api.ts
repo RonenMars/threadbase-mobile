@@ -529,6 +529,8 @@ export interface ServerInfo {
    * server, which must be read as unsupported, never as "turned off".
    */
   push?: { preferences?: boolean }
+  /** Additive: this server's route on the Threadbase relay. Absent when its relay is off. */
+  relayUrl?: string
 }
 
 /**
@@ -797,6 +799,14 @@ export interface ServerConfig {
    * reached (`services/server-addresses.ts`, threadbase-mobile#734).
    */
   publicUrl?: string
+  /**
+   * This server's route on the Threadbase relay, learned from a sealed
+   * `/api/info`. Like `publicUrl` it is never written into `url`: the server id
+   * derives from `url`, and changing that wipes the pairing.
+   */
+  relayUrl?: string
+  /** The user turned the relay off for this server. Absent means allowed. */
+  relayDisabled?: boolean
   /**
    * The server's long-term X25519 public key, unpadded base64url, as carried by
    * the QR and then proved by the pairing handshake. Absent on a plaintext

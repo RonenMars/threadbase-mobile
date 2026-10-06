@@ -124,6 +124,9 @@ export interface WsConnectOptions {
   requireEncryption?: boolean
   /** The address the server advertised; dialled when `url` cannot be reached, pinned servers only (#734). */
   publicUrl?: string
+  /** The server's route on the Threadbase relay; dialled last, pinned servers only. */
+  relayUrl?: string
+  relayDisabled?: boolean
 }
 
 const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000, 30000]
@@ -229,13 +232,22 @@ class WSClient {
     // straight through to here; before this guard each of those runs cost a
     // full Noise handshake against a budget of five per minute. A dead-looking
     // socket is `forceReconnect`'s job, not this one's.
+    //
+    // An address that was only appended (the relay route, learned from the
+    // first `/api/info` after connecting) is adopted in place for the same
+    // reason: every address already in use keeps its position, so the live
+    // socket and any handshake in flight stay valid. Anything else — an
+    // address changed or taken away — redials.
     if (
       wsUrl === this.url &&
       this._status !== 'disconnected' &&
       encryption.serverPublicKey === this.encryption.serverPublicKey &&
       encryption.requireEncryption === this.encryption.requireEncryption &&
-      encryption.publicUrl === this.encryption.publicUrl
+      this.addresses.every((address, i) => addresses[i] === address)
     ) {
+      this.encryption = encryption
+      this.addresses = addresses
+      this.wsUrls = wsUrls
       return
     }
     this.encryption = encryption

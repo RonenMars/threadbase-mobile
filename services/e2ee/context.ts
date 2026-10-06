@@ -69,6 +69,10 @@ export type OpenErrorCode =
   /** This device holds no static key for this server. */
   | 'E2EE_NOT_PAIRED'
 
+/** Set by the Threadbase relay on a response it wrote itself, never by a streamer. */
+// eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
+export const HEADER_RELAY_ERROR = 'X-TB-Relay-Error'
+
 export class OpenError extends Error {
   readonly code: OpenErrorCode
   /** `true` for exactly the codes a client may retry. */
@@ -336,6 +340,14 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
     throw new OpenError('E2EE_TRANSIENT', 'Could not reach the server to open an encrypted context', true)
   } finally {
     clearTimeout(timer)
+  }
+
+  // The relay answering for itself (tunnel down, busy, timed out). Not the
+  // streamer's verdict, so it must never be remembered as a refusal: the same
+  // as an address that did not answer. (`?.`: several suites answer `/open`
+  // with a bare `{ ok, status, json }`.)
+  if (response.headers?.get(HEADER_RELAY_ERROR)) {
+    throw new OpenError('E2EE_TRANSIENT', 'The relay could not reach the server', true)
   }
 
   if (!response.ok) {

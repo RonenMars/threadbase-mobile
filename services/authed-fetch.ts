@@ -1,7 +1,7 @@
 import type { ServerConfig, ServerInfo } from '@/types/api'
 import { CleartextBlockedError, isCleartextAllowed } from '@/services/cleartext-policy'
 import naclUtil from 'tweetnacl-util'
-import { OpenError } from '@/services/e2ee/context'
+import { HEADER_RELAY_ERROR, OpenError } from '@/services/e2ee/context'
 // Known cycle: the reporter imports `authedFetch` to upload what it collects.
 // Safe because neither module touches the other during module evaluation —
 // both references are resolved at call time.
@@ -80,6 +80,9 @@ export interface AuthedTarget {
   requireEncryption?: boolean
   /** The address the server advertised; tried when `url` cannot be reached, pinned servers only (#734). */
   publicUrl?: string
+  /** The server's route on the Threadbase relay; tried last, pinned servers only. */
+  relayUrl?: string
+  relayDisabled?: boolean
 }
 
 export interface AuthedFetchInit extends Omit<RequestInit, 'headers'> {
@@ -418,6 +421,8 @@ async function sealedFetch(
       serverId,
       baseUrl: target.url,
       publicUrl: target.publicUrl,
+      relayUrl: target.relayUrl,
+      relayDisabled: target.relayDisabled,
       serverPublicKey,
       kind: 'rest',
     })
@@ -470,6 +475,14 @@ async function sealedFetch(
     // behaviour this leaves alone. A caller's cancel is not such an event.
     if (serverAddresses(target).length > 1 && !init.cancelSignal?.aborted) invalidateRestContext(serverId)
     throw err
+  }
+
+  // The relay answering for itself: the streamer's tunnel is down or busy, so
+  // this says nothing about the request and nothing about the pairing. Drop the
+  // context so the next attempt starts again at the user's own address.
+  if (response.headers.get(HEADER_RELAY_ERROR)) {
+    invalidateRestContext(serverId)
+    throw new EnvelopeError('E2EE_TRANSIENT', 'E2EE: the relay could not reach the server', path, true)
   }
 
   if (!isSealedResponse(response) && isPlaintextRefusal(response.status)) {

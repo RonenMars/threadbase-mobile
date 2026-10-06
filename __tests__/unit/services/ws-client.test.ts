@@ -1009,6 +1009,39 @@ describe('WSClient – two addresses', () => {
     expect(mockSocket.url).toBe('wss://tb.example.com/ws')
   })
 
+  // The relay route arrives from `/api/info` after the socket is up. Learning
+  // it must not cost a handshake; taking an address away must, because the
+  // live socket may be on it.
+  it('adopts an appended address without redialling, and redials when one is removed', async () => {
+    const RELAY = 'https://relay.example.com/r/abcdefghijklmnopqrstuvwxyz012345'
+    const pinned = { serverPublicKey: 'pinned-server-key', requireEncryption: true }
+    const context = (baseUrl: string) => ({
+      ctxId: 'ctx',
+      kind: 'ws' as const,
+      baseUrl,
+      expiresAt: Date.now() + 30_000,
+      provisional: false,
+      ticket: 'ticket',
+      send: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 1, channel: 1 }),
+      recv: createRecordState({ key: recordKey, ctxId: recordContextId, direction: 2, channel: 1 }),
+      destroy: jest.fn(),
+    })
+    mockedOpenContextOnce.mockResolvedValue(context(LAN))
+
+    wsManager.connect('pinned-relay', LAN, 'long-term-api-key', pinned)
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+
+    wsManager.connect('pinned-relay', LAN, 'long-term-api-key', { ...pinned, relayUrl: RELAY })
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+
+    wsManager.connect('pinned-relay', LAN, 'long-term-api-key', { ...pinned, relayUrl: RELAY, relayDisabled: true })
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(2)
+    expect(mockedOpenContextOnce.mock.calls[1][0].baseUrl).toBe(LAN)
+  })
+
   it('does not spend a second handshake on publicUrl after the user address answered 429', async () => {
     const pinned = { serverPublicKey: 'pinned-server-key', requireEncryption: true, publicUrl: PUBLIC }
     mockedOpenContextOnce.mockRejectedValueOnce(new OpenError('E2EE_TRANSIENT', 'busy'))
