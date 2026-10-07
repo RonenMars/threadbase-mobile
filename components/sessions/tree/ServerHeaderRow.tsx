@@ -58,7 +58,7 @@ export function ServerHeaderRow({
     : t('sessions:list.serverOffline')
   const failureMessage = totalCount > 0 && ago
     ? t('common:alert.inline.sessionsStale', { count: totalCount, ago })
-    : t('common:errorBanner.messageConnection')
+    : t('common:errorBanner.messageConnection', { label: serverLabel })
 
   const scanner = isRefreshing ? (
     <KnightRiderScanner testID={`server-header-refreshing-${serverId}`} />
