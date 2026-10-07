@@ -396,6 +396,12 @@ export async function exchangeToken({
   const exchangeUrls =
     relayExchangeUrl && isCleartextAllowed(relayExchangeUrl) ? [exchangeUrl, relayExchangeUrl] : [exchangeUrl]
 
+  // The relay reads this body, and the pair token is the handshake's secret and
+  // the only thing that proves this phone scanned the code: a relay holding it
+  // could pair a device of its own. So the relay's copy carries no token. The
+  // streamer has one live token and the handshake keyed with it is the proof.
+  const { token: _token, ...relayPayload } = bodyPayload
+
   let res: Response | undefined
   // The first address's own refusal, kept in case the relay has nothing better:
   // a streamer on the LAN saying "token expired" beats "the relay is unreachable".
@@ -411,7 +417,7 @@ export async function exchangeToken({
         const answer = await fetch(exchangeUrls[i], {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bodyPayload),
+          body: JSON.stringify(exchangeUrls[i] === relayExchangeUrl ? relayPayload : bodyPayload),
           signal: early ? early.signal : timeoutController.signal,
         })
         if (answer.headers?.get(HEADER_RELAY_ERROR)) {

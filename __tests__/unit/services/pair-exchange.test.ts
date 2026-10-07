@@ -820,7 +820,7 @@ describe('exchangeToken — the pairing handshake', () => {
   }
 
   it('pairs through the relay when the QR address cannot be reached', async () => {
-    const { urls } = offLan(async () => {
+    const { urls, streamer } = offLan(async () => {
       throw new TypeError('Network request failed')
     })
 
@@ -832,6 +832,10 @@ describe('exchangeToken — the pairing handshake', () => {
     })
 
     expect(urls).toEqual([`${SERVER_URL}/api/pair/exchange`, RELAY_EXCHANGE])
+    // The relay can read this body, so the handshake's secret is not in it.
+    expect(streamer.seen.body).not.toHaveProperty('token')
+    expect(JSON.stringify(streamer.seen.body)).not.toContain(PAIR_TOKEN)
+    expect(streamer.seen.body?.e2ee?.v).toBe(1)
     expect(result.deviceToken).toBe(MSG2.deviceToken)
     // The server is still recorded under the address in the QR.
     expect(result.url).toBe(SERVER_URL)
