@@ -30,6 +30,8 @@ interface Props {
   children: ReactNode
 }
 
+const MENU_ICON_SIZE = 18
+
 /** Opaque card with a 3 px state rail: the shell shared by Needs-you and Working. */
 export function LiveCard({
   title,
@@ -65,7 +67,7 @@ export function LiveCard({
       >
         <View style={[styles.rail, { backgroundColor: color }]} />
         <View style={styles.body}>
-          <View style={styles.titleRow}>
+          <View style={[styles.titleRow, onMenuPress ? styles.titleRowWithMenu : null]}>
             <Text style={styles.title} numberOfLines={2}>{title}</Text>
             {showsProviderMark(provider, dominantProvider) && provider ? (
               <ProviderMark provider={provider} />
@@ -73,22 +75,23 @@ export function LiveCard({
             {serverLabel ? (
               <ServerChip label={serverLabel} color={serverColor ?? SERVER_COLOR_DEFAULT} variant="label" />
             ) : null}
-            {onMenuPress ? (
-              <Pressable
-                onPress={onMenuPress}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel={t('endSession.menu')}
-                testID={testID ? `${testID}-menu` : undefined}
-                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-              >
-                <DotsThreeVertical size={18} color={theme.text.secondary} weight="bold" />
-              </Pressable>
-            ) : null}
           </View>
           {children}
         </View>
       </TouchableOpacity>
+      {onMenuPress ? (
+        // Sibling of the card button, not a child: a button inside a button is invalid DOM on web.
+        <Pressable
+          onPress={onMenuPress}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={t('endSession.menu')}
+          testID={testID ? `${testID}-menu` : undefined}
+          style={({ pressed }) => [styles.menu, { opacity: pressed ? 0.5 : 1 }]}
+        >
+          <DotsThreeVertical size={MENU_ICON_SIZE} color={theme.text.secondary} weight="bold" />
+        </Pressable>
+      ) : null}
     </View>
   )
 }
@@ -114,6 +117,8 @@ function makeStyles(theme: Theme) {
       alignItems: 'flex-start',
       gap: spacing.sm,
     },
+    titleRowWithMenu: { paddingEnd: MENU_ICON_SIZE + spacing.sm },
+    menu: { position: 'absolute', top: spacing.md, end: spacing.md },
     title: {
       flex: 1,
       color: theme.text.primary,
