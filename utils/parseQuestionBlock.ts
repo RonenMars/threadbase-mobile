@@ -312,7 +312,9 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
     }
   }
 
-  if (options.length === 0) return null
+  // A picker always offers a choice. One row is the user's own numbered reply
+  // echoed as `❯ 1. …` while the agent works (observed 2026-10-07), not a menu.
+  if (options.length < 2) return null
   // A permission gate ("Do you want to proceed? / ❯ 1. Yes / 2. No …") reaches
   // here via its ❯ cursor. It's handled by the structured `permission` WS event,
   // not as a radio card — reject so it doesn't become a fake picker.
