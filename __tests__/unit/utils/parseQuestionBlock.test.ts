@@ -192,6 +192,20 @@ describe('parseQuestionBlock', () => {
     expect(parseQuestionBlock(lines)).toBeNull()
   })
 
+  it('does not treat a numbered user reply echoed as ❯ 1. … as a one-option menu', () => {
+    // Observed 2026-10-07: replying "1. … 2. …" echoed `❯ 1. …` while the agent
+    // worked, and the line above (the agent's question) became a card.
+    const lines = [
+      'Should I file this as a P2 issue in both',
+      'repos, or start on the streamer side in a worktree?',
+      '',
+      '❯ 1. Write a prompt for a new Claude code session to fix it. 2. Start the streamer fix.',
+      '',
+      '✻ Thinking…',
+    ]
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
   it('does not build a card from transcript + status bar lines', () => {
     const lines = [
       '✳ Cogitated for 9s',
