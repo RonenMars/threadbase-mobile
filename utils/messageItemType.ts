@@ -19,13 +19,16 @@ export function messageItemType(item: Message): string {
   let hasThinking = false
   let hasTool = false
   let hasDiff = false
+  let hasQuestionAnswer = false
   for (const b of item.content) {
     if (b.type === 'thinking') hasThinking = true
     else if (b.type === 'tool_use' || b.type === 'tool_result') hasTool = true
     else if (b.type === 'diff') hasDiff = true
+    else if (b.type === 'question_answer') hasQuestionAnswer = true
   }
   if (hasDiff) return 'diff'
   if (hasTool) return 'tool'
+  if (hasQuestionAnswer) return 'questionAnswer'
   if (hasThinking) return 'thinking'
   const textLength = item.content.reduce((n, b) => (b.type === 'text' ? n + b.text.length : n), 0)
   const isLong = textLength > LONG_TEXT_CHARS
