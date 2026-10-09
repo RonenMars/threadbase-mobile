@@ -6,6 +6,7 @@ import { MessageBubble, type MatchAnchor } from '@/components/conversation/Messa
 import { ThinkingCard } from '@/components/conversation/ThinkingCard'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
+import { QuestionAnswerCard } from '@/components/conversation/QuestionAnswerCard'
 import type { Message, MessageContent } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -36,6 +37,9 @@ export function renderContent(
   }
   if (block.type === 'diff') {
     return <DiffViewer key={index} filename={block.filename} hunks={block.hunks} recycleKey={recycleKey} />
+  }
+  if (block.type === 'question_answer') {
+    return <QuestionAnswerCard key={index} items={block.items} />
   }
   return null
 }
@@ -80,7 +84,12 @@ export const MessageItem = React.memo(function MessageItem({
       ? { rowRef, onLayout: (y: number) => onMatchLayout(messageIndex, y) }
       : undefined
   const hasToolOrDiff = message.content.some(
-    (b) => b.type === 'thinking' || b.type === 'tool_use' || b.type === 'tool_result' || b.type === 'diff'
+    (b) =>
+      b.type === 'thinking' ||
+      b.type === 'tool_use' ||
+      b.type === 'tool_result' ||
+      b.type === 'diff' ||
+      b.type === 'question_answer'
   )
   // Bug 6 e2e: tag the final row so the Maestro flow can assert the last
   // message lands above (not behind) the Export + Resume action bar.

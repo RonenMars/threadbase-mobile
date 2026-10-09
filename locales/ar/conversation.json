@@ -136,5 +136,8 @@
   "share": {
     "roleUser": "المستخدم",
     "roleAssistant": "المساعد"
+  },
+  "question": {
+    "label": "سؤال"
   }
 }

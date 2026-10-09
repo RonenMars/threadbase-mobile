@@ -18,3 +18,37 @@ describe('ThinkingBubble structured question', () => {
     expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'B' })
   })
 })
+
+describe('ThinkingBubble full-screen question', () => {
+  it('opens full screen, minimizes into the transcript, and re-opens', async () => {
+    const { getByTestId, queryByTestId } = await render(
+      <ThinkingBubble lines={[]} activeQuestion={aq} onAnswer={jest.fn()} />,
+    )
+    expect(getByTestId('question-fullscreen')).toBeTruthy()
+
+    await fireEvent.press(getByTestId('question-fullscreen-minimize'))
+    expect(queryByTestId('question-fullscreen')).toBeNull()
+    expect(getByTestId('question-card')).toBeTruthy()
+
+    await fireEvent.press(getByTestId('question-open-fullscreen'))
+    expect(getByTestId('question-fullscreen')).toBeTruthy()
+  })
+
+  it('re-opens full screen for the next prompt after one was minimized', async () => {
+    const { getByTestId, rerender } = await render(
+      <ThinkingBubble lines={[]} activeQuestion={aq} onAnswer={jest.fn()} />,
+    )
+    await fireEvent.press(getByTestId('question-fullscreen-minimize'))
+    const next: QuestionBlock = { ...aq, toolUseId: 't2', questions: [{ ...aq.questions[0], question: 'Next?' }] }
+    await rerender(<ThinkingBubble lines={[]} activeQuestion={next} onAnswer={jest.fn()} />)
+    expect(getByTestId('question-fullscreen')).toBeTruthy()
+  })
+
+  it('keeps a pending (ghost) answer inline', async () => {
+    const { queryByTestId, getByTestId } = await render(
+      <ThinkingBubble lines={[]} activeQuestion={aq} answerPhase="pending" onAnswer={jest.fn()} />,
+    )
+    expect(queryByTestId('question-fullscreen')).toBeNull()
+    expect(getByTestId('question-card-ghost')).toBeTruthy()
+  })
+})

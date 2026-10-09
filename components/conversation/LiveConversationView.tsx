@@ -33,6 +33,7 @@ import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { messageItemType } from '@/utils/messageItemType'
+import { foldAnsweredQuestions } from '@/utils/foldAnsweredQuestions'
 import { dropSeenLive, mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
 import { ChatComposer } from '@/components/conversation/ChatComposer'
 import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
@@ -181,7 +182,7 @@ export function LiveConversationView({
     // Order: historical → optimistic user bubble → live WS messages. Dedup by
     // uuid, messageIndex, then id (shared with the read-only conversation view).
     // newLive above is recomputed inside the helper — kept local here only for the echo matching.
-    return resolveToolNames(mergeLiveMessages(orderedHistorical, liveMessages, stillPending))
+    return foldAnsweredQuestions(resolveToolNames(mergeLiveMessages(orderedHistorical, liveMessages, stillPending)))
   }, [data?.messages, liveMessages, pendingSends])
 
   // Session status for thinking indicator
