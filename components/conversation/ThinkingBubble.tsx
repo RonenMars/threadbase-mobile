@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
-import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { ArrowsOut, CaretDown, Question } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { getAgentPhaseLabel } from '@/components/sessions/agentPhaseLabel'
 import type { AgentPhase } from '@/types/api'
@@ -37,6 +39,7 @@ interface Props {
 export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus, onSessionQuit }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
+  const { t: tc } = useTranslation('common')
   const styles = makeStyles(theme)
   // useMemo so the Animated.Value is stable and not re-created on re-render
   const opacity = useMemo(() => new Animated.Value(1), [])
@@ -53,6 +56,15 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
   // ~350ms after it appeared, leaving nothing to tap. A card outlives the phase
   // it happened to arrive in.
   const hasCard = Boolean(activeQuestion ?? questionBlock)
+
+  // The card opens full screen; minimizing drops it back into the transcript
+  // until the next prompt arrives. Keyed on content, not identity: a PTY repaint
+  // is a new block carrying the same prompt and must not re-open it.
+  const shownBlock = activeQuestion ?? questionBlock
+  const promptKey = shownBlock
+    ? shownBlock.questions.map(q => `${q.question} ${q.options.map(o => o.label).join(' ')}`).join(' ')
+    : ''
+  const [minimizedKey, setMinimizedKey] = useState<string | null>(null)
 
   const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
@@ -113,14 +125,19 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
 
   // Which card (if any) will render — structured WS question / permission gate
   // takes precedence over the PTY-scraped block.
-  const card = activeQuestion
+  const ghost = Boolean(activeQuestion) && answerPhase === 'pending'
+  // A ghost blocks nothing, so it never takes over the screen.
+  const fullScreen = hasCard && !ghost && minimizedKey !== promptKey
+
+  const renderCard = (large: boolean) => activeQuestion
     ? (
       <QuestionCard
         block={activeQuestion}
         onSelect={handleStructuredSelect}
         busy={answerBusy}
-        ghost={answerPhase === 'pending'}
+        ghost={ghost}
         onCancel={onCancelQuestion}
+        large={large}
       />
     )
     : questionBlock
@@ -129,16 +146,59 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
           block={questionBlock}
           onSelect={handleOptionSelect}
           onCancel={onSendKeys ? () => onSendKeys('\x1b') : undefined}
+          large={large}
         />
       )
       : null
 
   // Once a card is showing, hide the live-terminal text + dots entirely and
   // show only the card — the raw TUI frame is exactly what the card replaces.
-  if (card) {
+  if (hasCard) {
     return (
       <Animated.View style={[styles.cardWrapper, { opacity }]} testID="thinking-bubble">
-        {card}
+        {fullScreen ? (
+          <Modal
+            visible
+            animationType="slide"
+            presentationStyle="fullScreen"
+            onRequestClose={() => setMinimizedKey(promptKey)}
+          >
+            <SafeAreaView style={styles.fullScreen} testID="question-fullscreen">
+              <View style={styles.fullScreenHeader}>
+                <Question size={18} color={theme.text.accent} weight="bold" />
+                <Text style={styles.fullScreenTitle}>{tc('question.waiting')}</Text>
+                <TouchableOpacity
+                  onPress={() => setMinimizedKey(promptKey)}
+                  style={styles.headerButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={tc('question.minimize')}
+                  testID="question-fullscreen-minimize"
+                >
+                  <CaretDown size={20} color={theme.text.secondary} weight="bold" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={styles.fullScreenBody}>
+                {renderCard(true)}
+              </ScrollView>
+            </SafeAreaView>
+          </Modal>
+        ) : (
+          <>
+            {!ghost ? (
+              <TouchableOpacity
+                onPress={() => setMinimizedKey(null)}
+                style={styles.expandRow}
+                accessibilityRole="button"
+                accessibilityLabel={tc('question.openFullScreen')}
+                testID="question-open-fullscreen"
+              >
+                <ArrowsOut size={14} color={theme.text.secondary} />
+                <Text style={styles.expandText}>{tc('question.openFullScreen')}</Text>
+              </TouchableOpacity>
+            ) : null}
+            {renderCard(false)}
+          </>
+        )}
       </Animated.View>
     )
   }
@@ -188,6 +248,45 @@ function makeStyles(theme: Theme) {
       marginTop: spacing.md,
       marginBottom: spacing.xs,
       alignSelf: 'stretch',
+    },
+    fullScreen: {
+      flex: 1,
+      backgroundColor: theme.bg.primary,
+    },
+    fullScreenHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingStart: spacing.md,
+      paddingEnd: spacing.xs,
+      paddingVertical: spacing.xs,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    fullScreenTitle: {
+      flex: 1,
+      fontSize: font.sm,
+      fontWeight: '600',
+      color: theme.text.primary,
+    },
+    headerButton: {
+      padding: spacing.sm,
+    },
+    fullScreenBody: {
+      flexGrow: 1,
+      paddingBottom: spacing.xl,
+    },
+    expandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-end',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+    },
+    expandText: {
+      fontSize: font.xs,
+      color: theme.text.secondary,
     },
     bubble: {
       backgroundColor: theme.bg.card,
