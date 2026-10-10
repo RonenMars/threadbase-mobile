@@ -28,6 +28,9 @@
  *    session/release-health telemetry on the *next* launch — never a leak,
  *    since it can only ever be conservative (no session tracking starts
  *    without consent already granted at launch).
+ *  - `enableNativeCrashHandling` follows the same rule: the native (Cocoa/Java)
+ *    crash handler is armed only when consent was already on at launch, because
+ *    native crashes never pass through `beforeSend`.
  *  - Failures fail closed and never block app startup or leak raw data.
  *
  * See `docs/sentry-setup.md` for configuration and required EAS secrets.
@@ -286,6 +289,9 @@ async function performInit(startupConsent: boolean): Promise<void> {
     // release adoption. It is fixed at native-init time (see module doc), so
     // it reflects consent AT STARTUP, not later toggles this process.
     enableAutoSessionTracking: startupConsent,
+    // Same rule for the native crash handler: it is armed once at native init,
+    // so without consent at launch no native crash report can be written or sent.
+    enableNativeCrashHandling: startupConsent,
     enableLogs: full,
     enableAutoConsoleLogs: full,
     enableMetrics: full,

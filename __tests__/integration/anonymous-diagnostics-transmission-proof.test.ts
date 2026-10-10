@@ -46,6 +46,7 @@ describe('Anonymous Diagnostics — end-to-end transmission proof', () => {
     // Session/release-health tracking was configured OFF at this launch,
     // since consent was OFF at the moment the SDK became ready.
     expect(initOptions.enableAutoSessionTracking).toBe(false)
+    expect(initOptions.enableNativeCrashHandling).toBe(false)
     // No identity attached merely because the SDK became ready — setUser(null)
     // (clearing) is fine; an { id } identity object is not.
     const scope = (sdk as unknown as { __scope: { setUser: jest.Mock } }).__scope

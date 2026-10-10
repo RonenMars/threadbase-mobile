@@ -20,7 +20,7 @@ Primary artifact: `__tests__/integration/anonymous-diagnostics-transmission-proo
 
 ## What this does not cover
 
-- **Native fatal crashes.** `_initNativeSdk()` arms the native (Cocoa/Java) crash handler unconditionally at process start, regardless of consent — this is explicitly out of scope per spec §8/§21 (next-launch crash recovery is a non-goal). `services/sanitize.ts`'s own header notes a `platform: cocoa` event was observed arriving without going through the JS `beforeSend` path at all.
+- **Native fatal crashes.** Superseded: `enableNativeCrashHandling` now follows the launch-time consent value, so with consent OFF at launch the native (Cocoa/Java) crash handler is not armed. Before that change it was armed unconditionally at process start, and next-launch crash recovery remains a non-goal per spec §8/§21. `services/sanitize.ts`'s own header notes a `platform: cocoa` event was observed arriving without going through the JS `beforeSend` path at all.
 - **A live network capture.** No `mitmproxy`/Charles/`chrome://net-export` run was performed against a real device or simulator. If independent verification against real traffic is wanted, that's a manual follow-up (boot a dev build with `EXPO_PUBLIC_SENTRY_ALLOW_DEV=1`, watch the request log for `ingest.sentry.io` calls at each of the 7 steps above) — not performed here.
 
 ## Full suite result
