@@ -5,7 +5,13 @@ import { renderWithI18n } from '@/test-utils/render'
 import { useServersStore } from '@/stores/servers'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
+type Measure = (cb: (x: number, y: number, w: number, h: number) => void) => void
+const { measureInWindow } = jest.requireActual<{ default: { measureInWindow: jest.MockedFunction<Measure> } }>(
+  '@react-native/jest-preset/jest/MockNativeMethods',
+).default
+
 const mockSessions: { current: MultiSession[] } = { current: [] }
+const mockIsDone = { current: true }
 
 jest.mock('expo-router', () => {
   const { Text } = jest.requireActual<typeof import('react-native')>('react-native')
@@ -17,7 +23,7 @@ jest.mock('expo-router', () => {
 })
 
 jest.mock('@/hooks/useSession', () => ({
-  useEagerSessions: () => ({ sessions: mockSessions.current }),
+  useEagerSessions: () => ({ sessions: mockSessions.current, isDone: mockIsDone.current }),
 }))
 
 const mockConversations: { current: MultiConversation[] } = { current: [] }
@@ -85,6 +91,7 @@ describe('SessionBoard', () => {
     mockSessions.current = [waiting, running, external, idle, stale]
     mockConversations.current = []
     mockHasNextPage.current = false
+    mockIsDone.current = true
     mockFetchNextPage.mockClear()
   })
 
@@ -108,11 +115,22 @@ describe('SessionBoard', () => {
 
     // The control under the cards widens the window a step at a time; the card is 8 days old.
     await fireEvent.press(getByTestId('board-load-older'))
-    await waitFor(() => expect(getByTestId('board-within-7d').props.accessibilityState.selected).toBe(true))
+    await waitFor(() => expect(within(getByTestId('board-within')).getByText('7 days')).toBeTruthy())
     expect(queryByText('Last week')).toBeNull()
     await fireEvent.press(getByTestId('board-load-older'))
     await waitFor(() => expect(getByTestId('board-column-earlier-count').props.children).toBe('2'))
     expect(queryByText('Last week')).toBeTruthy()
+  })
+
+  it('picks the Earlier window from the menu under its pill', async () => {
+    // The preset's layout mock never calls back; the menu opens where the pill reports it is.
+    measureInWindow.mockImplementationOnce((cb) => cb(10, 20, 60, 20))
+    const { getByTestId, queryByTestId } = await renderWithI18n(<SessionBoard />)
+    expect(queryByTestId('board-within-any')).toBeNull()
+    await fireEvent.press(getByTestId('board-within'))
+    await fireEvent.press(await waitFor(() => getByTestId('board-within-any')))
+    await waitFor(() => expect(getByTestId('board-column-earlier-count').props.children).toBe('2'))
+    expect(queryByTestId('board-within-any')).toBeNull()
   })
 
   it('narrows every column by search and shows visible/total', async () => {
@@ -138,6 +156,15 @@ describe('SessionBoard', () => {
     expect(within(getByTestId('board-column-earlier')).getByTestId('conversation-row-c1')).toBeTruthy()
     // Every loaded conversation is inside "Today", so an older page may still hold more.
     expect(mockFetchNextPage).toHaveBeenCalled()
+  })
+
+  it('shows placeholder cards, not the empty line, until the first fetch lands', async () => {
+    mockSessions.current = []
+    mockIsDone.current = false
+    const { getByTestId, queryByText } = await renderWithI18n(<SessionBoard />)
+    // The placeholders are hidden from assistive tech, which the default query honours.
+    expect(getByTestId('board-column-working-loading', { includeHiddenElements: true })).toBeTruthy()
+    expect(queryByText('Nothing here')).toBeNull()
   })
 
   it('redirects to the hub on native', async () => {
