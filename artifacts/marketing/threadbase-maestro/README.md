@@ -1,6 +1,6 @@
 # Threadbase marketing captures (Maestro)
 
-Twenty screenshots from three demo flows, captured by `npm run test:e2e:marketing` (`e2e/marketing/`).
+Twenty-eight screenshots from four flows (three demos and onboarding), captured by `npm run test:e2e:marketing` (`e2e/marketing/`).
 
 ## How these were produced
 
@@ -9,6 +9,22 @@ Twenty screenshots from three demo flows, captured by `npm run test:e2e:marketin
 - **Not real agents.** No Claude Code or Codex process ran. Session state, transcripts and the reply that streams after a prompt come from `e2e/marketing/demo-data.js`. A caption that says "the agent replied" describes the app's behaviour against that contract, not a model's output.
 - **"Started outside Threadbase"** is the streamer's `ownership: external` session, which the app shows as *Observed*. Taking it over is the app's own Resume → Take over path.
 - All names, paths (`/code/...`) and URLs are demo data. No real hostnames, keys or personal paths appear.
+
+## Devices
+
+The same four flows run on four devices. The tables below describe the iPhone set; the other folders hold the same 28 file names.
+
+| Folder | Device | Size | Command |
+|---|---|---|---|
+| `.` (this folder) | iPhone simulator, iOS 26 | 1206×2622 | `npm run test:e2e:marketing` |
+| `ipad/` | iPad Pro 13-inch (M5) simulator, iOS 26.5, portrait | 2064×2752 | `MAESTRO_UDID=<udid> MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/ipad npm run test:e2e:marketing` |
+| `android-phone/` | Pixel 9 emulator, API 35 | 1080×2424 | `E2E_PLATFORM=android E2E_ANDROID_AVD=<avd> MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/android-phone npm run test:e2e:marketing` |
+| `android-tablet/` | Pixel Tablet emulator, API 35, landscape | 2560×1600 | as above with the tablet AVD and `android-tablet` |
+
+- The app has no tablet layout: both tablets show the phone layout at full width, and the iPad's portrait session screens are mostly empty above a short transcript.
+- Android pairs through `10.0.2.2` instead of `localhost`.
+- The runner sets the dark system theme on every device, so the keyboard is dark like the app, and pins the clock to 9:41 (`simctl status_bar` on iOS, SystemUI demo mode on Android).
+- All four sets were captured on 2026-10-06 from a Release build of `main` at `a82fbb2f`, the iPhone set on an iPhone 17 Pro simulator (iOS 26.5).
 
 Topology: **Work Mac** (Claude Code running, Codex waiting), **Home Mac** (finished Claude Code work), **Linux Devbox** (Codex running).
 The spec's Flow 3 step 4 asks for a Claude Code session on Linux Devbox while its topology puts Codex there; the topology was followed.
@@ -47,6 +63,21 @@ The spec's Flow 3 step 4 asks for a Claude Code session on Linux Devbox while it
 | `…/05-completed-session-other-machine.png` | Finished Claude Code review from Home Mac, with Resume Session | Finished work on a third machine stays readable | Opened from history |
 | `…/06-search-across-machines.png` | "onboarding" → Home Mac and Linux Devbox results | One search across machines | 1–1 provider tie, so no provider marks render |
 | `…/07-hero.png` | Projects layout: projects grouped per machine, live counts | Machines → projects → sessions in one place | — |
+
+## Flow 4 — Onboarding
+
+Every onboarding step on a clean install, pairing Work Mac by typed address and key.
+
+| File | Demonstrates | State assumptions |
+|---|---|---|
+| `04-onboarding/01-language.png` | Language step, the device language preselected | Fresh install, nothing paired |
+| `…/02-welcome.png` | Welcome step | — |
+| `…/03-connect.png` | Connect step: scan a QR code or paste credentials | — |
+| `…/04-connect-details.png` | Address and key typed, keyboard up | The key is shown, not hidden: iOS blanks a hidden field in screenshots. The form is scrolled to keep Connect above the keyboard, which pushes the heading off screen on the iPad |
+| `…/05-confirm-key.png` | "Add server with a pasted key?" | The app asks because a typed key is never exchanged with the server |
+| `…/06-notifications.png` | Notifications step | — |
+| `…/07-done.png` | "Thread is live." with the paired address | Shows `localhost` on iOS and `10.0.2.2` on Android |
+| `…/08-hub.png` | The hub with Work Mac's sessions | One machine, stored under a generated id because a typed key carries no machine name |
 
 ## Marketing selection
 
