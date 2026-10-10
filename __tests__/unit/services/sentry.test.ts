@@ -103,6 +103,16 @@ describe('sentry service — defensive init config', () => {
     expect((on.sdk.init as jest.Mock).mock.calls[0][0].enableAutoSessionTracking).toBe(true)
   })
 
+  it('arms the native crash handler only when consent was on at launch', async () => {
+    const off = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await off.mod.setAnonymousDiagnosticsEnabled(false)
+    expect((off.sdk.init as jest.Mock).mock.calls[0][0].enableNativeCrashHandling).toBe(false)
+
+    const on = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await on.mod.setAnonymousDiagnosticsEnabled(true)
+    expect((on.sdk.init as jest.Mock).mock.calls[0][0].enableNativeCrashHandling).toBe(true)
+  })
+
   it('filters out risky default integrations', async () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
     await mod.setAnonymousDiagnosticsEnabled(true)

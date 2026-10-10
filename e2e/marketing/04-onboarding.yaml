@@ -1,0 +1,133 @@
+# Marketing capture 4 — onboarding, every step.
+#
+# A clean install walked through Language → Welcome → Connect → Notifications
+# → Done and into the hub, pairing Work Mac by typed address and key.
+#
+# Not a regression test. Run through e2e/marketing/run.sh, which starts the
+# demo streamer and collects the screenshots.
+appId: com.ronenmars.threadbase
+---
+- runScript: scripts/reset-demo.js
+
+# expo-secure-store survives clearState, and a leftover pairing skips onboarding.
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
+# --- 01: language -----------------------------------------------------------
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-cta"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04-onboarding/01-language
+
+# --- 02: welcome ------------------------------------------------------------
+- tapOn:
+    id: "onboarding-language-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04-onboarding/02-welcome
+
+# --- 03: connect — choose how to pair ---------------------------------------
+- tapOn:
+    id: "onboarding-welcome-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-connect-paste-card"
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04-onboarding/03-connect
+
+# --- 04: connect — address and key typed ------------------------------------
+- tapOn:
+    id: "onboarding-connect-paste-card"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding-connect-url-input"
+- inputText: "http://${PAIR_HOST}:7071"
+# hideKeyboard is unusable on iOS 26.x (see CLAUDE.md); scroll instead.
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
+- waitForAnimationToEnd
+# Show the key: iOS blanks a hidden one in screenshots.
+- tapOn:
+    id: "server-form-toggle-api-key"
+- tapOn:
+    id: "onboarding-connect-token-input"
+- inputText: "mock-key-123"
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
+- waitForAnimationToEnd
+- takeScreenshot: 04-onboarding/04-connect-details
+
+# --- 05: confirm the typed key ----------------------------------------------
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+# iOS offers to save the key as a password, up to ten seconds late, and the
+# sheet covers the confirm screen. On iPad it is missing from the hierarchy,
+# so its "Not Now" is also tapped by position, which is empty space elsewhere.
+- extendedWaitUntil:
+    visible: "Not Now"
+    timeout: 10000
+    optional: true
+- tapOn:
+    text: "Not Now"
+    optional: true
+- tapOn:
+    point: "43%, 57%"
+# A typed key is never exchanged with the server, so the app asks first.
+- extendedWaitUntil:
+    visible:
+      id: "pair-confirm-add-btn"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04-onboarding/05-confirm-key
+
+# --- 06: notifications ------------------------------------------------------
+- tapOn:
+    id: "pair-confirm-add-btn"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-notifications-cta"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04-onboarding/06-notifications
+
+# --- 07: done ---------------------------------------------------------------
+- tapOn:
+    id: "onboarding-notifications-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04-onboarding/07-done
+
+# --- 08: the hub, first machine paired --------------------------------------
+- tapOn:
+    id: "onboarding-done-cta"
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "session-row-wm-claude-persistence"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 04-onboarding/08-hub

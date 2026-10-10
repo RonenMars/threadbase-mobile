@@ -91,11 +91,12 @@ appId: com.ronenmars.threadbase
     file: search.yaml
     env:
       QUERY: "session"
+# Enter first: on an Android phone the keyboard covers the Linux Devbox row.
+- pressKey: Enter
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-ld-search"
     timeout: 10000
-- pressKey: Enter
 - waitForAnimationToEnd:
     timeout: 2000
 - takeScreenshot: 02-agent-memory/07-hero
