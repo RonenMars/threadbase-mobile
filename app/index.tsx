@@ -27,6 +27,7 @@ import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { NowList } from '@/components/sessions/now/NowList'
 import { ChromeBackdrop } from '@/components/sessions/shared/ChromeBackdrop'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { FilterPresets } from '@/components/servers/FilterPresets'
 import { useAppDirection } from '@/lib/rtl'
@@ -176,6 +177,7 @@ export default function ProjectsHub() {
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
   const [classicConvSearch, setClassicConvSearch] = useState('')
+  const searchInputRef = useRef<TextInput>(null)
   const [debouncedConvSearch] = useDebounce(classicConvSearch, 300)
   const { data: convSearchData } = useConversationSearch(debouncedConvSearch)
 
@@ -526,7 +528,8 @@ export default function ProjectsHub() {
 
       {searchOpen ? (
         <View style={searchStyles.searchBar}>
-          <TextInput
+          <SearchInput
+            ref={searchInputRef}
             testID="hub-search-input"
             style={searchStyles.searchInput}
             value={classicConvSearch}
@@ -535,7 +538,6 @@ export default function ProjectsHub() {
             placeholderTextColor={theme.text.secondary}
             autoFocus
             returnKeyType="search"
-            clearButtonMode="while-editing"
           />
         </View>
       ) : null}
@@ -597,7 +599,11 @@ export default function ProjectsHub() {
       {activeServerIds.map((sid) => <SessionNamesSyncer key={sid} serverId={sid} />)}
 
       {/* Content */}
-      <View style={styles.contentArea}>
+      <Pressable
+        style={styles.contentArea}
+        accessible={false}
+        onPress={searchOpen && !classicConvSearch ? () => searchInputRef.current?.focus() : undefined}
+      >
       {activeServerIds.length === 0 && !hasEverHadServer ? (
         <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
           <NoServersWelcome />
@@ -674,7 +680,7 @@ export default function ProjectsHub() {
         </View>
       )}
       <ListBottomScrim />
-      </View>
+      </Pressable>
 
       {chrome}
       {/* Status overlays sit just below the chrome and never move the rows. */}
