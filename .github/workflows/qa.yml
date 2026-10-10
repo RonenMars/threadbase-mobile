@@ -146,9 +146,15 @@ jobs:
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
         run: |
+          deployed_sha="$(git rev-parse --short=7 HEAD)"
+          if [[ -n "$RELEASE_NOTES" ]]; then
+            RELEASE_NOTES="$deployed_sha"$'\n'"$RELEASE_NOTES"
+          else
+            RELEASE_NOTES="QA ${DEPLOY_REF} ($deployed_sha)"
+          fi
           ./.ship-workflow/scripts/ship-qa.sh --platform ios \
             --groups "$TESTER_GROUPS" \
-            --release-notes "${RELEASE_NOTES:-QA ${DEPLOY_REF} ($(git rev-parse --short HEAD))}"
+            --release-notes "$RELEASE_NOTES"
 
       - name: Summarize deployed source and changelog
         shell: bash
@@ -262,9 +268,15 @@ jobs:
           EXPO_PUBLIC_SUPPORT_EMAIL: ${{ vars.EXPO_PUBLIC_SUPPORT_EMAIL }}
           EXPO_PUBLIC_FEEDBACK_EMAIL: ${{ vars.EXPO_PUBLIC_FEEDBACK_EMAIL }}
         run: |
+          deployed_sha="$(git rev-parse --short=7 HEAD)"
+          if [[ -n "$RELEASE_NOTES" ]]; then
+            RELEASE_NOTES="$deployed_sha"$'\n'"$RELEASE_NOTES"
+          else
+            RELEASE_NOTES="QA ${DEPLOY_REF} ($deployed_sha)"
+          fi
           ./.ship-workflow/scripts/ship-qa.sh --platform android \
             --groups "$TESTER_GROUPS" \
-            --release-notes "${RELEASE_NOTES:-QA ${DEPLOY_REF} ($(git rev-parse --short HEAD))}"
+            --release-notes "$RELEASE_NOTES"
 
       - name: Summarize deployed source and changelog
         shell: bash
