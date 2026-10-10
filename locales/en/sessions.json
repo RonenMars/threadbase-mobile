@@ -231,5 +231,13 @@
   "watchersDialog": {
     "title": "Open on another device",
     "body": "This session is open on another device. Terminate when done ends it there too, and opening it there won't cancel it."
+  },
+  "board": {
+    "title": "Board",
+    "open": "Open board",
+    "earlier": "Earlier",
+    "emptyColumn": "Nothing here",
+    "searchPlaceholder": "Search sessions…",
+    "loadMore": "Load more"
   }
 }

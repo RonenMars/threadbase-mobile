@@ -39,3 +39,9 @@ export function useFetchSessionNames(serverId: string) {
     },
   })
 }
+
+/** Mount one per server: hooks cannot loop, and a renamed session needs its server's names fetched. */
+export function SessionNamesSyncer({ serverId }: { serverId: string }) {
+  useFetchSessionNames(serverId)
+  return null
+}

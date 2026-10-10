@@ -125,6 +125,20 @@ function handleSubscribeScrollback(ws) {
   }, SCROLLBACK_CLEAR_DELAY_MS)
 }
 
+// Sessions pushed through /__test__/session-update. The list route replays them,
+// because the client refetches the list when a frame names a session it has not
+// seen, and a fixtures-only reply would undo every update sent before it.
+const sessionUpdates = new Map()
+
+function listSessions() {
+  const fixtures = JSON.parse(readFixture('sessions.json'))
+  const known = new Set(fixtures.map((s) => s.id))
+  return [
+    ...fixtures.map((s) => sessionUpdates.get(s.id) ?? s),
+    ...[...sessionUpdates.values()].filter((s) => !known.has(s.id)),
+  ]
+}
+
 function broadcast(frame) {
   for (const ws of liveSockets) {
     try {
@@ -154,6 +168,21 @@ async function handleRequest(req, res) {
 
   console.log(`${method} ${p}`)
 
+  // A browser build (`npm run web`) is a cross-origin caller: every request
+  // carries Authorization, so each one is preflighted, and the preflight itself
+  // has no token. Maestro's native app sends no Origin and skips all of this.
+  if (req.headers.origin) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin)
+    res.setHeader('Vary', 'Origin')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] ?? 'Authorization, Content-Type')
+    res.setHeader('Access-Control-Expose-Headers', 'ETag')
+  }
+  if (method === 'OPTIONS') {
+    res.writeHead(204)
+    return res.end()
+  }
+
   const auth = req.headers['authorization'] ?? ''
   const bearerToken = auth.startsWith('Bearer ') ? auth.slice(7).trim() : ''
   // A fixed bad-token value lets e2e flows deterministically exercise the
@@ -163,7 +192,7 @@ async function handleRequest(req, res) {
   }
 
   if (method === 'GET' && p === '/api/sessions') {
-    const sessions = JSON.parse(readFixture('sessions.json'))
+    const sessions = listSessions()
     const hasPaginationParams =
       url.searchParams.has('limit') ||
       url.searchParams.has('cursor') ||
@@ -610,6 +639,21 @@ async function handleRequest(req, res) {
     const contentKey = body?.contentKey === null ? undefined : (body?.contentKey ?? gateContentKey(gate))
     broadcast({ type: 'permission', sessionId, ...gate, cursor: body?.cursor, ...(contentKey === undefined ? {} : { contentKey }) })
     return json(res, 200, { ok: true, contentKey: contentKey ?? null })
+  }
+
+  // Pushes a session_update frame: the body is merged over the session with the
+  // same id, or sent as a whole new session when none matches. Lasts until restart.
+  if (method === 'POST' && p === '/__test__/session-update') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    const session = { ...listSessions().find((s) => s.id === body?.id), ...body }
+    sessionUpdates.set(session.id, session)
+    broadcast({ type: 'session_update', session })
+    return json(res, 200, { ok: true, session })
   }
 
   if (method === 'POST' && p === '/__test__/question') {

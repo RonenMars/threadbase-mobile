@@ -143,8 +143,45 @@ addressed:
 
 - Layout: safe-area insets, bottom-sheet-driven navigation, and tab bars were
   designed mobile-first and have not been reworked for a wide desktop viewport.
-- Backend compatibility: whether `tb-streamer` accepts browser-origin WebSocket/API
-  connections (CORS, auth headers) has not been tested from a web client.
+- Backend compatibility: `tb-streamer` refuses browser origins unless it is started with
+  `THREADBASE_ALLOW_BROWSER_CORS=1`, which allows `http://localhost:8081`. That path has
+  not been exercised against a real streamer from a web client; only the mock has (below).
+
+## Session board (`/board`)
+
+A web-only kanban view of every session on every displayed server. It is the one route
+that leaves the 768px `WebFrame`: `app/_layout.tsx` skips the frame when the first route
+segment is `board`. On native the route redirects to the hub.
+
+- Columns are derived, not stored: `lib/sessionBoard.ts` maps the tier from
+  `deriveSessionPresentation` to Needs you / Working / Observed / Earlier. Status is
+  server-owned, so there is no drag between columns; actions live on the card's menu.
+- A session that cannot be resumed is a card in Earlier, not a column of its own.
+- Earlier also holds history conversations, minus any a listed session already stands
+  for. History is paged, so a bounded window fetches pages until a loaded conversation
+  falls outside it. A "Load more" control under the cards widens the window one step,
+  and on Any time loads one more page instead of draining everything. Each column is a virtualised list, so only the cards near the viewport are mounted:
+  against a real streamer the 30-day window held 641 cards with about 16 in the DOM.
+- Earlier is bounded by a window (Today by default); a column count reads
+  `visible/total` whenever search or the window hides cards.
+- Entry points: the board button in the hub header (web only) and the URL itself.
+- `BoardColumn` and `BoardCard` use React Native primitives only, so they can be mounted
+  in a native screen later. That has not been tried on a device.
+
+Verified in Chrome against `e2e/mock-server.js` on 2026-10-10: pairing by manual entry,
+four columns filling a 1440px window, horizontal scroll below about 1280px, the header
+wrapping at 570px, a card moving columns on a `session_update` frame without a reload,
+search, the Earlier window, the card menu, opening a session, light theme, and Hebrew
+(columns mirror), with no console errors. Not verified: a real streamer, Safari and
+Firefox, and keyboard-only navigation.
+
+To reproduce:
+
+```bash
+MOCK_PORTS=7071,7072 node e2e/mock-server.js
+npm run web
+# pair http://127.0.0.1:7071 by manual entry, then open http://localhost:8081/board
+```
 
 ## Recommended next step
 
