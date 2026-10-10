@@ -38,3 +38,16 @@ export const Filtered: Story = {
 export const Empty: Story = {
   args: { ...WithCards.args, label: 'Needs you', color: '#d29922', items: [], total: 0 },
 }
+
+export const Loading: Story = {
+  args: { ...Empty.args, loading: true },
+}
+
+export const WithHeaderAccessory: Story = {
+  args: {
+    ...WithCards.args,
+    label: 'Earlier',
+    color: '#8b949e',
+    headerAccessory: <Text style={{ color: '#8b949e', fontSize: 12 }}>Today</Text>,
+  },
+}

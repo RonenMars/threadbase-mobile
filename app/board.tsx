@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { Redirect, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { CaretLeft } from 'phosphor-react-native'
+import { CaretDown, CaretLeft, Check } from 'phosphor-react-native'
 import { BoardCard, BoardConversationCard } from '@/components/sessions/board/BoardCard'
 import { BOARD_COLUMN_MIN_WIDTH, BoardColumn } from '@/components/sessions/board/BoardColumn'
 import { NeedsYouCard } from '@/components/sessions/now/NeedsYouCard'
@@ -57,9 +57,11 @@ export default function SessionBoard() {
   const servers = useServersStore((s) => s.servers)
   const names = useSessionNamesStore((s) => s.names)
   const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
-  const { sessions } = useEagerSessions()
+  const { sessions, isDone } = useEagerSessions()
   const [query, setQuery] = useState('')
   const [earlierWithin, setEarlierWithin] = useState<ActiveWithin>('today')
+  const withinPillRef = useRef<View>(null)
+  const [withinMenuAt, setWithinMenuAt] = useState<{ x: number; y: number } | null>(null)
 
   const rows = useMemo(
     () =>
@@ -141,6 +143,55 @@ export default function SessionBoard() {
     </Pressable>
   ) : null
 
+  // The window bounds Earlier alone, so it lives in that column's header rather than the page's:
+  // a pill showing the current value, opening a menu anchored under it.
+  const withinControl = (
+    <>
+      <Pressable
+        ref={withinPillRef}
+        onPress={() => withinPillRef.current?.measureInWindow((x, y, _w, h) => setWithinMenuAt({ x, y: y + h + 4 }))}
+        accessibilityRole="button"
+        accessibilityLabel={t('board.earlier')}
+        testID="board-within"
+        style={styles.pill}
+      >
+        <Text style={styles.pillText} numberOfLines={1}>{getActiveWithinLabel(earlierWithin, tFilter)}</Text>
+        <CaretDown size={10} color={theme.text.secondary} weight="bold" />
+      </Pressable>
+      <Modal visible={withinMenuAt !== null} transparent animationType="fade" onRequestClose={() => setWithinMenuAt(null)}>
+        <Pressable style={styles.menuBackdrop} onPress={() => setWithinMenuAt(null)}>
+          <View
+            style={[styles.menu, { top: withinMenuAt?.y, left: withinMenuAt?.x }]}
+            accessibilityRole="radiogroup"
+            accessibilityLabel={t('board.earlier')}
+          >
+            {WITHIN_OPTIONS.map((within) => {
+              const selected = earlierWithin === within
+              return (
+                <Pressable
+                  key={within}
+                  onPress={() => {
+                    setEarlierWithin(within)
+                    setWithinMenuAt(null)
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  testID={`board-within-${within}`}
+                  style={({ pressed }) => [styles.menuItem, pressed && styles.loading]}
+                >
+                  <Text style={[styles.menuItemText, selected && styles.menuItemTextSelected]}>
+                    {getActiveWithinLabel(within, tFilter)}
+                  </Text>
+                  {selected ? <Check size={14} color={theme.text.accent} weight="bold" /> : null}
+                </Pressable>
+              )
+            })}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  )
+
   return (
     <View style={styles.screen} testID="board-screen">
       {activeServerIds.map((sid) => <SessionNamesSyncer key={sid} serverId={sid} />)}
@@ -165,25 +216,6 @@ export default function SessionBoard() {
           style={styles.search}
           testID="board-search"
         />
-        <View style={styles.within} accessibilityRole="radiogroup" accessibilityLabel={t('board.earlier')}>
-          {WITHIN_OPTIONS.map((within) => {
-            const selected = earlierWithin === within
-            return (
-              <Pressable
-                key={within}
-                onPress={() => setEarlierWithin(within)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                testID={`board-within-${within}`}
-                style={[styles.chip, selected && styles.chipSelected]}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                  {getActiveWithinLabel(within, tFilter)}
-                </Text>
-              </Pressable>
-            )
-          })}
-        </View>
       </View>
       <ScrollView horizontal contentContainerStyle={styles.columns} style={styles.scroller}>
         {BOARD_COLUMNS.map((column) => (
@@ -196,7 +228,9 @@ export default function SessionBoard() {
             keyExtractor={entryKey}
             total={board[column].total}
             emptyLabel={t('board.emptyColumn')}
+            loading={!isDone || (column === 'earlier' && convPages.isLoading)}
             testID={`board-column-${column}`}
+            headerAccessory={column === 'earlier' ? withinControl : undefined}
             footer={column === 'earlier' ? loadOlder : undefined}
           />
         ))}
@@ -237,7 +271,39 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
       borderColor: theme.border,
     },
-    within: { flexDirection: 'row', gap: spacing.xs },
+    pill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm,
+      // Border included, this matches the count pill, so the header stays as tall as its neighbours.
+      paddingVertical: 1,
+    },
+    pillText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '500' },
+    menuBackdrop: { flex: 1 },
+    menu: {
+      position: 'absolute',
+      minWidth: 160,
+      backgroundColor: theme.bg.secondary,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: theme.border,
+      paddingVertical: spacing.xs,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    menuItemText: { color: theme.text.secondary, fontSize: font.sm },
+    menuItemTextSelected: { color: theme.text.primary, fontWeight: '600' },
     chip: {
       borderWidth: 1,
       borderColor: theme.border,
@@ -246,9 +312,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.xs + 2,
     },
-    chipSelected: { borderColor: theme.text.accent, backgroundColor: `${theme.text.accent}1f` },
     chipText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
-    chipTextSelected: { color: theme.text.primary },
     loadOlder: { alignSelf: 'center', marginTop: spacing.sm },
     loading: { opacity: 0.5 },
     scroller: { flex: 1 },
