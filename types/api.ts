@@ -310,6 +310,15 @@ export type MessageContent =
   | { type: 'tool_use'; id?: string; name: string; input: Record<string, unknown> }
   | { type: 'tool_result'; toolUseId?: string; toolName: string; content: string; isError?: boolean }
   | { type: 'diff'; filename: string; hunks: DiffHunk[] }
+  // Client-derived, never sent by a server: an answered AskUserQuestion folded
+  // with its tool_result. Built by utils/foldAnsweredQuestions.ts.
+  | { type: 'question_answer'; toolUseId: string; items: QuestionAnswerItem[] }
+
+export interface QuestionAnswerItem {
+  header: string
+  question: string
+  answer: string
+}
 
 export interface AskOption {
   label: string

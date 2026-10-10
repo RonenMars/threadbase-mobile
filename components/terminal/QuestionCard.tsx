@@ -26,9 +26,11 @@ interface Props {
    * nothing, so an answer the server never confirms costs the user nothing.
    */
   ghost?: boolean
+  /** Full-screen presentation: borderless, with larger question and option text. */
+  large?: boolean
 }
 
-export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel, busy = false, ghost = false }: Props) {
+export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel, busy = false, ghost = false, large = false }: Props) {
   const { t } = useTranslation('common')
   const { styles } = useThemedStyles(makeStyles)
   const q = block.questions[0]
@@ -78,7 +80,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   }
 
   return (
-    <View style={[styles.container, ghost && styles.ghost]} testID={ghost ? 'question-card-ghost' : 'question-card'}>
+    <View style={[styles.container, large && styles.containerLarge, ghost && styles.ghost]} testID={ghost ? 'question-card-ghost' : 'question-card'}>
       {onCancel && !ghost ? (
         <TouchableOpacity
           style={styles.closeButton}
@@ -94,7 +96,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
         <React.Fragment key={index}>
           {item.header ? <Text style={styles.header}>{item.header}</Text> : null}
           {item.detail ? <Text style={styles.detail}>{item.detail}</Text> : null}
-          <Text style={styles.question}>{item.question}</Text>
+          <Text style={[styles.question, large && styles.questionLarge]}>{item.question}</Text>
         </React.Fragment>
       ))}
       {q.options.map((option, index) => (
@@ -112,7 +114,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
             {index === selected && <View style={styles.radioInner} />}
           </View>
           <View style={styles.optionBody}>
-            <Text style={[styles.optionText, index === selected && styles.optionTextSelected]}>
+            <Text style={[styles.optionText, large && styles.optionTextLarge, index === selected && styles.optionTextSelected]}>
               {option.label}
             </Text>
             {option.description ? (
@@ -164,6 +166,19 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
     backgroundColor: '#0d1117',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  containerLarge: {
+    borderTopWidth: 0,
+    paddingVertical: spacing.md,
+  },
+  questionLarge: {
+    fontSize: 17,
+    lineHeight: 24,
+    marginBottom: spacing.md,
+  },
+  optionTextLarge: {
+    fontSize: 15,
+    lineHeight: 21,
   },
   closeButton: {
     position: 'absolute',

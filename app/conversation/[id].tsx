@@ -35,6 +35,7 @@ import { createApiForServer, AuthError, ConversationBusyError, NotFoundError } f
 import { CODEX_CLI_PROVIDER, providerColor } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
+import { foldAnsweredQuestions } from '@/utils/foldAnsweredQuestions'
 import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
@@ -316,11 +317,11 @@ export default function ConversationDetailScreen() {
   // tool result after its call, which usually sits in an earlier message.
   const liveMerged = useMemo(() => {
     if (!conversation) return []
-    return resolveToolNames(
+    return foldAnsweredQuestions(resolveToolNames(
       liveMessages.length > 0
         ? mergeLiveMessages(conversation.messages, liveMessages)
         : conversation.messages,
-    )
+    ))
   }, [conversation, liveMessages])
 
   // Pausing freezes the transcript: hold the last live merge and keep showing it

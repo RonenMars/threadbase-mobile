@@ -121,6 +121,8 @@ function Block({ block, role }: { block: MessageContent; role: Message['role'] }
           {`⏺ ${block.filename}`}
         </Text>
       )
+    case 'question_answer':
+      return null
   }
 }
 
