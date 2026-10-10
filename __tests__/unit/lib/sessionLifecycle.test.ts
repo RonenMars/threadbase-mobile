@@ -1,6 +1,8 @@
 import { QueryClient } from '@tanstack/react-query'
 import {
   evictStaleConversationFavorite,
+  hardReloadConversation,
+  hardReloadSession,
   evictStaleSessionFavorite,
   rehydrateSessionAfterReconnect,
   removeSessionFromEagerCache,
@@ -91,5 +93,42 @@ describe('sessionLifecycle', () => {
 
     expect(invalidate).toHaveBeenCalledTimes(1)
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['session', 's1', 'sess-1'] })
+  })
+
+  it('hard reload resets every cached window of the conversation and leaves others alone', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(['conversation', 's1', 'c1'], { pages: [] })
+    qc.setQueryData(['conversation', 's1', 'c1', 'anchor-4'], { pages: [] })
+    qc.setQueryData(['conversation', 's1', 'c2'], { pages: [] })
+
+    await hardReloadConversation(qc, 's1', 'c1')
+
+    expect(qc.getQueryData(['conversation', 's1', 'c1'])).toBeUndefined()
+    expect(qc.getQueryData(['conversation', 's1', 'c1', 'anchor-4'])).toBeUndefined()
+    expect(qc.getQueryData(['conversation', 's1', 'c2'])).toEqual({ pages: [] })
+  })
+
+  it('hard reload of a session resets terminal output and conversation, then reconnects', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(['terminal-output', 's1', 'sess-1'], { output: 'stale' })
+    qc.setQueryData(['conversation', 's1', 'c1'], { pages: [] })
+    const reconnect = jest.fn()
+
+    await hardReloadSession(qc, 's1', 'sess-1', 'c1', reconnect)
+
+    expect(qc.getQueryData(['terminal-output', 's1', 'sess-1'])).toBeUndefined()
+    expect(qc.getQueryData(['conversation', 's1', 'c1'])).toBeUndefined()
+    expect(reconnect).toHaveBeenCalledTimes(1)
+  })
+
+  it('hard reload of an unbound session still resets terminal output and reconnects', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(['terminal-output', 's1', 'sess-1'], { output: 'stale' })
+    const reconnect = jest.fn()
+
+    await hardReloadSession(qc, 's1', 'sess-1', null, reconnect)
+
+    expect(qc.getQueryData(['terminal-output', 's1', 'sess-1'])).toBeUndefined()
+    expect(reconnect).toHaveBeenCalledTimes(1)
   })
 })

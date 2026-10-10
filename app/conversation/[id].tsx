@@ -16,7 +16,7 @@ import {
   type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native'
-import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star } from 'phosphor-react-native'
+import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star, ArrowsClockwise } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -34,7 +34,7 @@ import { createApiForServer, AuthError, ConversationBusyError, NotFoundError } f
 import { CODEX_CLI_PROVIDER, providerColor } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
-import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
+import { evictStaleConversationFavorite, hardReloadConversation } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
@@ -733,6 +733,15 @@ export default function ConversationDetailScreen() {
             icon: Star,
             onPress: toggleFavorite,
             testID: 'conversation-favorite-toggle',
+          },
+          {
+            key: 'hard-reload',
+            label: t('common:button.hardReload'),
+            icon: ArrowsClockwise,
+            onPress: () => {
+              void hardReloadConversation(qc, serverId, id)
+            },
+            testID: 'conversation-hard-reload',
           },
         ]}
       />
