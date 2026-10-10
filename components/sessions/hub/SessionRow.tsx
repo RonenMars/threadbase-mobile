@@ -11,7 +11,7 @@ import { ConversationListItem } from '@/components/sessions/shared/ConversationL
 import { sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession } from '@/lib/externalSession'
-import { deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, sessionMessageCount } from '@/lib/sessionPresentation'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import type { SessionRowProps } from './types'
 
@@ -45,7 +45,8 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)
   const previewMode: MessagePreviewMode = rowPreviewModeSetting === 'off' ? 'none' : rowPreviewModeSetting
 
-  const promptCountLabel = t('card.prompts', { count: session.promptCount })
+  const messageCount = sessionMessageCount(session)
+  const messageCountLabel = messageCount > 0 ? t('card.messages', { count: messageCount }) : null
   const activityTimestamp = presentation.activityAt ?? session.completedAt ?? session.startedAt
 
   return (
@@ -53,11 +54,11 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
       <ConversationListItem
         title={title}
         timestamp={activityTimestamp}
-        messageCount={session.promptCount}
+        messageCount={messageCount}
         branch={session.branch}
         tier={presentation.tier}
         lastOutput={session.lastOutput || null}
-        preview={promptCountLabel}
+        preview={messageCountLabel}
         serverLabel={session.serverLabel}
         serverColor={serverColor}
         activeServerCount={activeServerCount}

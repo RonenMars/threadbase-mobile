@@ -42,8 +42,8 @@
   },
   "card": {
     "copyId": "Copy Session ID",
-    "prompts_one": "{{count}} prompt",
-    "prompts_other": "{{count}} prompts"
+    "messages_one": "{{count}} message",
+    "messages_other": "{{count}} messages"
   },
   "hub": {
     "seeAll_one": "All {{count}} conversation",

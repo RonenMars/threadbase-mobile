@@ -42,9 +42,9 @@
   },
   "card": {
     "copyId": "העתק מזהה סשן",
-    "prompts_one": "פרומפט אחד",
-    "prompts_two": "שני פרומפטים",
-    "prompts_other": "{{count}} פרומפטים"
+    "messages_one": "הודעה אחת",
+    "messages_two": "שתי הודעות",
+    "messages_other": "{{count}} הודעות"
   },
   "hub": {
     "seeAll_one": "ראה את כל השיחה",

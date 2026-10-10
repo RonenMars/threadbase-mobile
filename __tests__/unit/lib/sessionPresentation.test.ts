@@ -2,6 +2,7 @@ import {
   deriveConversationPresentation,
   deriveSessionPresentation,
   failureTitleKind,
+  sessionMessageCount,
   sessionOpensAsHistory,
   sessionPhase,
 } from '@/lib/sessionPresentation'
@@ -376,5 +377,19 @@ describe('tier', () => {
     ).toBe('resumable')
     expect(deriveSessionPresentation(base({ status: 'on_hold' })).tier).toBe('resumable')
     expect(deriveSessionPresentation(base({ status: 'idle', ownership: 'historical' })).tier).toBe('resumable')
+  })
+})
+
+describe('sessionMessageCount', () => {
+  it('prefers the server total over the app-sent prompt count', () => {
+    expect(sessionMessageCount({ messageCount: 12, promptCount: 2 })).toBe(12)
+  })
+
+  it('keeps a reported total of zero rather than falling back', () => {
+    expect(sessionMessageCount({ messageCount: 0, promptCount: 2 })).toBe(0)
+  })
+
+  it('falls back to the prompt count when the server sends no total', () => {
+    expect(sessionMessageCount({ promptCount: 2 })).toBe(2)
   })
 })
