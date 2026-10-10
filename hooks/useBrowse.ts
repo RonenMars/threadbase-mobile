@@ -4,17 +4,18 @@ import type { BrowseResponse, MkdirResponse, Session } from '@/types/api'
 import type { ProviderName } from '@/constants/providers'
 import { clientLog } from '@/lib/clientLog'
 
+export function browseQueryKey(serverId: string, path: string) {
+  return ['browse', serverId, path] as const
+}
+
+export function fetchBrowse(serverId: string, path: string): Promise<BrowseResponse> {
+  return createApiForServer(serverId).get<BrowseResponse>(`/api/browse?path=${encodeURIComponent(path)}`)
+}
+
 export function useBrowse(serverId: string, path: string) {
-  const api = createApiForServer(serverId)
-
-  const queryKey = ['browse', serverId, path] as const
-
   return useQuery<BrowseResponse>({
-    queryKey,
-    queryFn: async () => {
-      const url = `/api/browse?path=${encodeURIComponent(path)}`
-      return api.get<BrowseResponse>(url)
-    },
+    queryKey: browseQueryKey(serverId, path),
+    queryFn: () => fetchBrowse(serverId, path),
     enabled: !!serverId,
   })
 }
