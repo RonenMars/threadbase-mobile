@@ -82,7 +82,7 @@ function ensureForegroundHook() {
  * app restarted.
  */
 export async function acquireRestContext(
-  args: OpenContextArgs & { publicUrl?: string },
+  args: OpenContextArgs & { publicUrl?: string; relayUrl?: string; relayDisabled?: boolean },
 ): Promise<TransportContext> {
   ensureForegroundHook()
   const serverId = args.serverId
@@ -96,11 +96,11 @@ export async function acquireRestContext(
   const attempt = (async () => {
     // Each open starts at the user's address; the context then carries the one
     // that answered, and requests follow it until the context rolls over.
-    const { publicUrl, baseUrl, ...rest } = args
+    const { publicUrl, relayUrl, relayDisabled, baseUrl, ...rest } = args
     const context = await openOnFirstReachable(
       { ...rest, kind: 'rest' },
       // Only pinned servers open REST contexts, so the pin is implied here.
-      serverAddresses({ url: baseUrl, publicUrl, serverPublicKey: rest.serverPublicKey, requireEncryption: true }),
+      serverAddresses({ url: baseUrl, publicUrl, relayUrl, relayDisabled, serverPublicKey: rest.serverPublicKey, requireEncryption: true }),
       opener,
     )
     const current = live.get(serverId)

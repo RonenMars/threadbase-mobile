@@ -114,6 +114,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const { mode } = useGlobalSearchParams<{ mode?: string }>()
   const navState = useRootNavigationState()
   const activeServerIds = useServersStore((s) => s.activeServerIds)
+  // The relay route arrives after the socket is up, and the toggle changes it
+  // later still; either has to reach the socket's address list.
+  const relayRoutes = useServersStore((s) =>
+    s.activeServerIds.map((id) => `${s.servers[id]?.relayUrl ?? ''}|${s.servers[id]?.relayDisabled === true}`).join(),
+  )
   const isLoading = useServersStore((s) => s.isLoading)
   const loadPersistedServers = useServersStore((s) => s.loadPersistedServers)
   const hydrateSettings = useSettingsStore((s) => s.hydrate)
@@ -202,6 +207,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           serverPublicKey: server.serverPublicKey,
           requireEncryption: server.requireEncryption,
           publicUrl: server.publicUrl,
+          relayUrl: server.relayUrl,
+          relayDisabled: server.relayDisabled,
         })
       }
     }
@@ -338,7 +345,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     // router from expo-router is a stable singleton; setConnected is a stable
     // Zustand setter. Wiring is intentionally scoped to activeServerIds changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeServerIds])
+  }, [activeServerIds, relayRoutes])
 
   // Handle notification taps (native only — expo-notifications has no web API)
   useEffect(() => {

@@ -289,15 +289,26 @@ describe('Settings – about section', () => {
     expect(getByText('AI Agent Control Center')).toBeTruthy()
   })
 
+  // Production is on this list deliberately: it used to leave the channel blank,
+  // which dropped the SHA with it on the one build whose commit is hardest to
+  // recover from anywhere else.
   it.each([
-    ['QA', 'QA · 67b3502'],
-    ['Pre-Release', 'Pre-Release · 67b3502'],
-    ['QA', 'QA · 67b3502-dirty'],
-  ])('shows %s and the short commit SHA for non-production builds', async (channel, expected) => {
+    ['QA', '67b3502', 'QA · 67b3502'],
+    ['Pre-Release', '67b3502', 'Pre-Release · 67b3502'],
+    ['Production', '67b3502', 'Production · 67b3502'],
+    ['Alpha', '67b3502', 'Alpha · 67b3502'],
+    ['Beta', '67b3502', 'Beta · 67b3502'],
+    ['Internal', '67b3502', 'Internal · 67b3502'],
+    ['QA', '67b3502-dirty', 'QA · 67b3502-dirty'],
+    ['Production', '67b3502-dirty', 'Production · 67b3502-dirty'],
+    // A channel the scripts failed to set must not cost the SHA.
+    [undefined, '67b3502', '67b3502'],
+  ])('shows %s and the short commit SHA', async (channel, sha, expected) => {
     const previousChannel = process.env.EXPO_PUBLIC_BUILD_CHANNEL
     const previousSha = process.env.EXPO_PUBLIC_GIT_SHA
-    process.env.EXPO_PUBLIC_BUILD_CHANNEL = channel
-    process.env.EXPO_PUBLIC_GIT_SHA = expected.endsWith('-dirty') ? '67b3502-dirty' : '67b3502'
+    if (channel === undefined) delete process.env.EXPO_PUBLIC_BUILD_CHANNEL
+    else process.env.EXPO_PUBLIC_BUILD_CHANNEL = channel
+    process.env.EXPO_PUBLIC_GIT_SHA = sha
 
     try {
       const { getByText, queryByText } = await renderWithTheme(<SettingsScreen />)

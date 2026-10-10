@@ -243,6 +243,13 @@ export default function SettingsScreen() {
   const isGlass = useIsGlass()
   const insets = useSafeAreaInsets()
   const { t } = useTranslation(['settings', 'servers', 'feedback'])
+  // The SHA alone is enough to render. Requiring the channel too is what let a
+  // blank channel swallow the one identifier that matters; a `-dirty` suffix
+  // means the tree had uncommitted changes when the bundle was built.
+  const buildStamp = [process.env.EXPO_PUBLIC_BUILD_CHANNEL, process.env.EXPO_PUBLIC_GIT_SHA]
+    .filter(Boolean)
+    .join(' · ')
+  const aboutSubtext = buildStamp || t('about.subtitle')
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, addServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
@@ -873,10 +880,8 @@ await refreshServerInfo(serverId)
                 : (Constants.expoConfig?.android?.versionCode ?? '—')
             })`}
           </Text>
-          <Text style={s.aboutSubtext}>
-            {process.env.EXPO_PUBLIC_BUILD_CHANNEL && process.env.EXPO_PUBLIC_GIT_SHA
-              ? `${process.env.EXPO_PUBLIC_BUILD_CHANNEL} · ${process.env.EXPO_PUBLIC_GIT_SHA}`
-              : t('about.subtitle')}
+          <Text style={s.aboutSubtext} testID="settings-build-stamp">
+            {aboutSubtext}
           </Text>
         </View>
 

@@ -59,6 +59,22 @@ describe('ServerHeaderRow identity rail', () => {
     expect(getByTestId('server-header-retry-s1')).toBeTruthy()
     expect(getByTestId('server-failure-s1')).toBeTruthy()
   })
+
+  it('names the server in the failure message instead of leaving the placeholder', async () => {
+    const { getByText } = await render(
+      <DirectionRoot>
+        <ServerHeaderRow
+          serverId="s1"
+          serverLabel="studio-linux"
+          totalCount={0}
+          failed
+          onRetry={() => {}}
+          onDetails={() => {}}
+        />
+      </DirectionRoot>,
+    )
+    expect(getByText('Nothing has loaded from studio-linux. Sessions below may be stale.')).toBeTruthy()
+  })
 })
 
 describe('ServerHeaderRow direction', () => {

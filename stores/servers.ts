@@ -12,6 +12,7 @@ import { pickNextServerColor } from '@/components/sessions/shared/serverPalette'
 import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import { clearDeviceStaticKey } from '@/services/e2ee/pair-handshake'
 import { clearOpenRefusal } from '@/services/e2ee/context'
+import { invalidateRestContext } from '@/services/e2ee/rest-session'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 const ASYNC_KEY_SERVERS = 'threadbase_servers'
@@ -55,6 +56,13 @@ export interface AddServerMeta {
   requireEncryption?: boolean
 }
 
+/**
+ * A relay route and nothing else: a bare host and `/r/<32-character route id>`.
+ * No credentials, query or fragment, so the value cannot smuggle anything into
+ * the requests built by appending a path to it.
+ */
+const RELAY_ROUTE_SHAPE = /^https?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?\/r\/[A-Za-z0-9_-]{32}$/
+
 /** Minimal shape persisted to AsyncStorage (no secrets). */
 export interface PersistedServer {
   id: string
@@ -66,6 +74,8 @@ export interface PersistedServer {
   deviceId?: string
   deviceCapabilities?: DeviceCapability[]
   publicUrl?: string
+  relayUrl?: string
+  relayDisabled?: boolean
   serverPublicKey?: string
   requireEncryption?: boolean
 }
@@ -96,6 +106,7 @@ interface ServersStore {
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setRequireEncryption: (serverId: string, requireEncryption: boolean) => void
+  setRelayDisabled: (serverId: string, relayDisabled: boolean) => void
   setConnected: (serverId: string, connected: boolean, info?: ServerInfo) => void
   setScanProgress: (serverId: string, scanned: number, total: number) => void
   setCacheAlert: (serverId: string, alert: CacheAlert | null) => void
@@ -138,6 +149,8 @@ async function persistServerList(
       deviceId: servers[id].deviceId,
       deviceCapabilities: servers[id].deviceCapabilities,
       publicUrl: servers[id].publicUrl,
+      relayUrl: servers[id].relayUrl,
+      relayDisabled: servers[id].relayDisabled,
       serverPublicKey: servers[id].serverPublicKey,
       requireEncryption: servers[id].requireEncryption,
     }))
@@ -196,6 +209,8 @@ export function serverConfigFromPersisted(
     deviceToken: secrets.deviceToken,
     deviceCapabilities: entry.deviceCapabilities,
     publicUrl: entry.publicUrl,
+    relayUrl: entry.relayUrl,
+    relayDisabled: entry.relayDisabled,
     serverPublicKey: entry.serverPublicKey,
     requireEncryption: entry.requireEncryption,
   }
@@ -339,6 +354,19 @@ export const useServersStore = create<ServersStore>((set, get) => ({
     })
   },
 
+  setRelayDisabled: (serverId: string, relayDisabled: boolean) => {
+    set((state) => {
+      const server = state.servers[serverId]
+      if (!server) return state
+      const servers = { ...state.servers, [serverId]: { ...server, relayDisabled } }
+      persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
+      return { servers }
+    })
+    // A REST context keeps the address it opened on. Without this, one opened
+    // on the relay would go on using it after the user turned the relay off.
+    invalidateRestContext(serverId)
+  },
+
   updateServerLabel: (serverId: string, label: string) => {
     set((state) => {
       const server = state.servers[serverId]
@@ -432,7 +460,25 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       set((state) => {
         const s = state.servers[serverId]
         if (!s) return state
-        const updated = { ...s, serverInfo: info, connectionError: null }
+        // Adopted only from a pinned server, whose `/api/info` arrived sealed:
+        // an address this app will dial must not come from a reply anyone on
+        // the path could have written. Absent means the server's relay is off.
+        //
+        // Pinned is judged on `server`, the record the request was sent with,
+        // and must still be the same pin now: a reply fetched in the clear and
+        // landing after a re-pair would otherwise be adopted as if it were sealed.
+        const pinned =
+          server.requireEncryption === true &&
+          !!server.serverPublicKey &&
+          s.requireEncryption === true &&
+          s.serverPublicKey === server.serverPublicKey
+        const relayUrl =
+          pinned && typeof info.relayUrl === 'string' && RELAY_ROUTE_SHAPE.test(info.relayUrl)
+            ? info.relayUrl
+            : undefined
+        // A context opened on a route the server no longer reports must not outlive it.
+        if (pinned && s.relayUrl && s.relayUrl !== relayUrl) invalidateRestContext(serverId)
+        const updated = { ...s, serverInfo: info, connectionError: null, ...(pinned ? { relayUrl } : {}) }
         const servers = { ...state.servers, [serverId]: updated }
         persistServerList(servers, state.activeServerIds, state.displayedServerIds, state.hasEverHadServer)
         return { servers }

@@ -1,15 +1,18 @@
 import React from 'react'
-import { render } from '@testing-library/react-native'
+import { fireEvent, render } from '@testing-library/react-native'
 import ProjectsHub from '@/app/index'
 import { useAlertStore } from '@/stores/alerts'
+import { useErrorSheetStore } from '@/stores/errorSheet'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
 import { createWrapper } from '@/test-utils'
 import { serverCause } from '@/types/alerts'
 
+let mockWsStatus = 'disconnected'
+
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
-    status: () => 'disconnected',
+    status: () => mockWsStatus,
     lastError: () => null,
     onAnyStatusChange: () => () => {},
   },
@@ -87,6 +90,8 @@ describe('home inline-first failures', () => {
   beforeEach(() => {
     useAlertStore.getState().reset()
     useServerFetchStatusStore.getState().reset()
+    useErrorSheetStore.setState({ open: false, serversStatusOpen: false })
+    mockWsStatus = 'disconnected'
     seedTwoServers()
   })
 
@@ -103,6 +108,29 @@ describe('home inline-first failures', () => {
     expect(queryByTestId('stale-scope-banner')).toBeNull()
     expect(getByTestId('server-failure-srv-1')).toBeTruthy()
     expect(getByTestId('now-list-scroll')).toBeTruthy()
+  })
+
+  // The banner claims its server's cause, so globalSurface() sees no global
+  // error and the status sheet stays shut. Without a fallback the button is a
+  // silent no-op — the whole point of offering it.
+  it('opens the servers modal from a failed server banner', async () => {
+    useServerFetchStatusStore.getState().recordFailure('srv-1', new Error('offline'))
+    useAlertStore.getState().upsert({
+      id: 'srv-1',
+      cause: serverCause('srv-1'),
+      level: 'error',
+      title: 'MacBook Pro',
+      message: 'down',
+      timeout: null,
+    })
+    // The surviving server must be genuinely healthy: a disconnected socket
+    // raises its own warning, and any unclaimed warning keeps the sheet
+    // openable, hiding the defect this test is about.
+    mockWsStatus = 'connected'
+    const { getByTestId } = await render(<ProjectsHub />, { wrapper: createWrapper() })
+    expect(useErrorSheetStore.getState().serversStatusOpen).toBe(false)
+    fireEvent.press(getByTestId('server-failure-srv-1-details'))
+    expect(useErrorSheetStore.getState().serversStatusOpen).toBe(true)
   })
 
   it('shows the stale-scope banner, keeps the list, and hides the pill when every server is down', async () => {
