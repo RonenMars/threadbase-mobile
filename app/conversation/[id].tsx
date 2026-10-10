@@ -4,7 +4,6 @@ import type { TFunction } from 'i18next'
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   Pressable,
   StyleSheet,
@@ -22,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
@@ -782,7 +782,7 @@ export default function ConversationDetailScreen() {
 
   const searchBar = searchOpen ? (
     <View style={searchStyles.searchBar} testID="conversation-search-bar">
-      <TextInput
+      <SearchInput
         testID="conversation-search-input"
         style={searchStyles.searchInput}
         value={searchDraft}
@@ -792,7 +792,6 @@ export default function ConversationDetailScreen() {
         placeholderTextColor={theme.text.secondary}
         autoFocus={!searchQuery}
         returnKeyType="search"
-        clearButtonMode="while-editing"
         autoCapitalize="none"
         autoCorrect={false}
       />
