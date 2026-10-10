@@ -34,6 +34,9 @@ import { HeaderOverflowMenu, type HeaderOverflowMenuItem } from '@/components/sh
 import { StatusPill } from '@/components/alerts/StatusPill'
 import { useAlertListSync } from '@/hooks/useAlertSync'
 import { useArbitratedAlerts } from '@/hooks/useArbitratedAlerts'
+import { useProviderHealth } from '@/hooks/useProviderHealth'
+import { CLAUDE_CODE_PROVIDER } from '@/constants/providers'
+import { findProviderHealth } from '@/types/provider-health'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { globalSurface } from '@/lib/alertArbitration'
 import type { AlertInput } from '@/stores/alerts'
@@ -447,7 +450,7 @@ function formatElapsed(ms: number): string {
 
 export default function SessionDetailScreen() {
   useLiveInstanceCount('SessionDetail')
-  const { t } = useTranslation(['terminal', 'common', 'sessions', 'conversation'])
+  const { t } = useTranslation(['terminal', 'common', 'sessions', 'conversation', 'browse'])
   // Literal t() calls at the presentation boundary for `failureTitleKind`.
   const sessionFailureTitle = (promptCount: number | undefined): string => {
     switch (failureTitleKind(promptCount)) {
@@ -687,9 +690,22 @@ export default function SessionDetailScreen() {
   // Warnings go behind the header bell (docs/design/alert-system/README.md).
   // Inline, they took transcript height a question card needs once the
   // keyboard is up.
+  const { data: providerHealth } = useProviderHealth(serverId)
+  const sessionProviderCaps = findProviderHealth(providerHealth?.providers, session?.provider ?? CLAUDE_CODE_PROVIDER)?.capabilities
+  const answersInRawTerminal =
+    sessionProviderCaps?.structuredQuestions === false && sessionProviderCaps.permissionGates === false
   const terminalWarnings = useMemo((): AlertInput[] => {
     if (!isLive || !id) return []
     const warnings: AlertInput[] = []
+    if (answersInRawTerminal) {
+      warnings.push({
+        id: `session-no-structured-questions:${id}`,
+        cause: `session:${id}:no-structured-questions`,
+        level: 'warning',
+        title: t('session.viewModeTerminal'),
+        message: t('browse:provider.noStructuredQuestions'),
+      })
+    }
     if (parseConfidence === 'low') {
       warnings.push({
         id: `session-raw-mode:${id}`,
@@ -709,7 +725,7 @@ export default function SessionDetailScreen() {
       })
     }
     return warnings
-  }, [isLive, id, parseConfidence, forceRawTerminal, t])
+  }, [isLive, id, parseConfidence, forceRawTerminal, answersInRawTerminal, t])
   useAlertListSync(terminalWarnings)
   const alerts = useArbitratedAlerts()
   const alertSurface = globalSurface(alerts)
