@@ -2,6 +2,7 @@ node_modules/
 .eslintcache*
 .expo/
 dist/
+.vercel/
 build/
 npm-debug.*
 
