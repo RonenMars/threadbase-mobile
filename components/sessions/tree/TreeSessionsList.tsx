@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
-import { Text, View, TextInput, FlatList, SectionList, RefreshControl } from 'react-native'
+import { Text, View, TextInput, FlatList, SectionList, RefreshControl, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -346,10 +347,14 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
   const showSearch = searchOpen && debouncedQuery.length > 0
 
   return (
-    <View style={{ flex: 1 }}>
+    <Pressable
+      style={{ flex: 1 }}
+      accessible={false}
+      onPress={searchOpen && !searchQuery ? () => inputRef.current?.focus() : undefined}
+    >
       {searchOpen ? (
         <View style={searchStyles.searchBar}>
-          <TextInput
+          <SearchInput
             ref={inputRef}
             style={searchStyles.searchInput}
             value={searchQuery}
@@ -358,7 +363,6 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
             placeholderTextColor="#7d8590"
             autoFocus
             returnKeyType="search"
-            clearButtonMode="while-editing"
           />
         </View>
       ) : null}
@@ -502,6 +506,6 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
           />
         )
       })() : null}
-    </View>
+    </Pressable>
   )
 })
