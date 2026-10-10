@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Alert, AppState, Keyboard, Linking } from 'react-native'
 import { useTranslation } from 'react-i18next'
+import { onlineManager } from '@tanstack/react-query'
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
 import { useRenameSession } from '@/hooks/useSessionName'
@@ -48,6 +49,7 @@ export interface ComposerState {
 
 export function useComposerState({ serverId, sessionId, onSend }: UseComposerStateOptions): ComposerState {
   const { t } = useTranslation('common')
+  const { t: tConversation } = useTranslation('conversation')
   const [inputText, setInputText] = useState('')
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([])
   const [isUploading, setIsUploading] = useState(false)
@@ -114,6 +116,17 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
 
   const sendAndReset = async (payload: string, optimisticText: string): Promise<boolean> => {
     if (sendingRef.current) return false
+    // react-query pauses a mutation while onlineManager reads offline, and a paused
+    // mutateAsync never settles: the composer keeps its text, sendingRef stays set, and the
+    // send replays later on reconnect. NetInfo and the WebSocket can disagree after a
+    // foreground, so refuse here instead of awaiting a send that cannot start.
+    if (!onlineManager.isOnline()) {
+      Alert.alert(
+        tConversation('connection.notConnectedTitle'),
+        tConversation('connection.notConnectedMessage'),
+      )
+      return false
+    }
     sendingRef.current = true
     // Every send path lands here. The transcript is already in the payload, so any
     // later recognition result would only refill the composer being cleared.
