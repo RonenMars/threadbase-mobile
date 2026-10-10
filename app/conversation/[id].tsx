@@ -12,12 +12,11 @@ import {
   Alert,
   ActivityIndicator,
   FlatList,
-  Animated,
   AppState,
   type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native'
-import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star } from 'phosphor-react-native'
+import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star, ArrowsClockwise } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -35,7 +34,7 @@ import { createApiForServer, AuthError, ConversationBusyError, NotFoundError } f
 import { CODEX_CLI_PROVIDER, providerColor } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
 import { mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
-import { evictStaleConversationFavorite } from '@/lib/sessionLifecycle'
+import { evictStaleConversationFavorite, hardReloadConversation } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useServersStore } from '@/stores/servers'
@@ -47,6 +46,7 @@ import { InfoModal } from '@/components/shared/InfoModal'
 import { LivePauseControl } from '@/components/conversation/LivePauseControl'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
+import { HeaderOverflowMenu } from '@/components/shared/HeaderOverflowMenu'
 import { InlineError } from '@/components/alerts/InlineError'
 import { CriticalDialog, type CriticalAction } from '@/components/alerts/CriticalDialog'
 import { useClaimInline } from '@/hooks/useClaimInline'
@@ -385,10 +385,7 @@ export default function ConversationDetailScreen() {
   const [listDrawn, setListDrawn] = useState(false)
   const favoriteId = buildFavoriteId(serverId, 'conversation', id)
   const isFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === favoriteId))
-  const [starScale] = useState(() => new Animated.Value(1))
   const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
-  const [glowOpacity] = useState(() => new Animated.Value(0))
-  const [glowScale] = useState(() => new Animated.Value(0.85))
 
   // Re-gate the skeleton when the conversation or the fetch window changes.
   // queueMicrotask defers the setState out of the effect body (avoids the
@@ -396,27 +393,6 @@ export default function ConversationDetailScreen() {
   useEffect(() => {
     queueMicrotask(() => setListDrawn(false))
   }, [id, fetchAnchorIndex])
-
-  const animateStar = useCallback(() => {
-    starScale.stopAnimation()
-    starScale.setValue(1)
-    glowOpacity.stopAnimation()
-    glowScale.stopAnimation()
-    glowOpacity.setValue(0)
-    glowScale.setValue(0.85)
-    Animated.sequence([
-      Animated.spring(starScale, { toValue: 1.14, useNativeDriver: true, friction: 8, tension: 130 }),
-      Animated.spring(starScale, { toValue: 1, useNativeDriver: true, friction: 7, tension: 110 }),
-    ]).start()
-    Animated.sequence([
-      Animated.timing(glowOpacity, { toValue: 0.28, duration: 110, useNativeDriver: true }),
-      Animated.timing(glowOpacity, { toValue: 0, duration: 190, useNativeDriver: true }),
-    ]).start()
-    Animated.sequence([
-      Animated.timing(glowScale, { toValue: 1.05, duration: 110, useNativeDriver: true }),
-      Animated.timing(glowScale, { toValue: 1.2, duration: 190, useNativeDriver: true }),
-    ]).start()
-  }, [starScale, glowOpacity, glowScale])
 
   const toggleFavorite = useCallback(() => {
     const { pinItem, unpinItem } = useQuickAccessStore.getState()
@@ -431,8 +407,7 @@ export default function ConversationDetailScreen() {
         conversationId: id,
       })
     }
-    animateStar()
-  }, [animateStar, conversation?.projectPath, conversation?.title, favoriteId, id, isFavorite, serverId])
+  }, [conversation?.projectPath, conversation?.title, favoriteId, id, isFavorite, serverId])
 
   // Skeleton stays up until the fetch lands AND FlashList has drawn its items
   // (onLoad → listDrawn). The 400ms useMinDisplayTime floor is the anti-flicker
@@ -741,42 +716,35 @@ export default function ConversationDetailScreen() {
           color={searchOpen ? theme.text.primary : theme.text.secondary}
         />
       </Pressable>
-      <Pressable
-        testID="conversation-favorite-toggle"
-        onPress={toggleFavorite}
-        hitSlop={8}
-        accessibilityLabel={isFavorite ? t('common:favorite.remove') : t('common:favorite.add')}
-        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-      >
-        <Animated.View style={{ transform: [{ scale: starScale }], position: 'relative' }}>
-          <Animated.View
-            style={{
-              transform: [{ scale: glowScale }],
-              opacity: glowOpacity,
-              position: 'absolute',
-              top: -6,
-              right: -6,
-              bottom: -6,
-              left: -6,
-            }}
-          >
-            <Star size={28} color={theme.text.accent} weight="fill" />
-          </Animated.View>
-          <Star
-            size={22}
-            color={isFavorite ? theme.text.accent : theme.text.secondary}
-            weight={isFavorite ? 'fill' : 'regular'}
-          />
-        </Animated.View>
-      </Pressable>
-      <Pressable
-        onPress={() => setInfoVisible(true)}
-        hitSlop={8}
-        accessibilityLabel={t('info.open')}
-        style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-      >
-        <InfoIcon size={22} color={theme.text.secondary} />
-      </Pressable>
+      <HeaderOverflowMenu
+        testID="conversation-overflow-menu"
+        accessibilityLabel={t('common:button.moreOptions')}
+        items={[
+          {
+            key: 'info',
+            label: t('info.open'),
+            icon: InfoIcon,
+            onPress: () => setInfoVisible(true),
+            testID: 'conversation-info-button',
+          },
+          {
+            key: 'favorite',
+            label: isFavorite ? t('common:favorite.remove') : t('common:favorite.add'),
+            icon: Star,
+            onPress: toggleFavorite,
+            testID: 'conversation-favorite-toggle',
+          },
+          {
+            key: 'hard-reload',
+            label: t('common:button.hardReload'),
+            icon: ArrowsClockwise,
+            onPress: () => {
+              void hardReloadConversation(qc, serverId, id)
+            },
+            testID: 'conversation-hard-reload',
+          },
+        ]}
+      />
     </View>
   )
 
