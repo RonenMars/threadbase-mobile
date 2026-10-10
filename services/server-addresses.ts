@@ -5,8 +5,13 @@ import { isCleartextAllowed } from '@/services/cleartext-policy'
  * answer takes milliseconds; a LAN address dialled from outside is usually
  * black-holed and never answers at all, so without this bound the fallback
  * would wait out the full 15 s socket / 10 s `/open` timeout first.
+ *
+ * Lowered from 4 s once the relay became a third address: away from home each
+ * dead address costs this long before the next is tried. Not measured on a
+ * device. A home network that answers slower than this lands on the next
+ * address for that connection, so raise it if that shows up.
  */
-export const FIRST_ADDRESS_TIMEOUT_MS = 4_000
+export const FIRST_ADDRESS_TIMEOUT_MS = 1_500
 
 const trimSlash = (url: string) => url.replace(/\/$/, '')
 
