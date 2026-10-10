@@ -12,7 +12,11 @@
     "create": "Создать",
     "startSession": "Начать сессию здесь",
     "hideRecentDirs": "Скрыть недавние папки",
-    "showRecentDirs": "Показать недавние папки"
+    "showRecentDirs": "Показать недавние папки",
+    "addDirectory": "Добавить эту папку",
+    "extraDirsTitle": "Также включить ({{selected}}/{{max}})",
+    "extraDirsHint": "Сессия запускается в текущей папке и может работать также в этих.",
+    "removeDirectory": "Удалить {{name}}"
   },
   "starting": {
     "secondsLeft": "{{seconds}} с",
@@ -23,7 +27,11 @@
       "Завариваю свежую порцию токенов, подождите…",
       "Вспоминаю, как выглядит код…",
       "Очень быстро считаю до триллиона, почти закончил…"
-    ]
+    ],
+    "moreDirectories_one": "ещё {{count}} папка",
+    "moreDirectories_few": "ещё {{count}} папки",
+    "moreDirectories_many": "ещё {{count}} папок",
+    "moreDirectories_other": "ещё {{count}} папки"
   },
   "error": {
     "loadFailed": "Не удалось загрузить беседы",

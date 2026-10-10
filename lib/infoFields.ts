@@ -1,6 +1,7 @@
 import { CLAUDE_CODE_PROVIDER, canonicalizeProviderName, providerLabelKey } from '@/constants/providers'
 import i18n from '@/lib/i18n'
 import type { InfoField } from '@/components/shared/InfoModal'
+import { sessionAdditionalPaths } from '@/lib/additionalPaths'
 import type { ConversationDetail, Session } from '@/types/api'
 
 /** The fields both info modals share, under one naming. Absent = not sent. */
@@ -17,6 +18,7 @@ export interface InfoSubject {
   sessionName?: string
   projectName?: string
   projectPath?: string
+  additionalPaths?: string[]
   account?: string
   messageCount?: number
   lastActivity?: string
@@ -85,6 +87,10 @@ export function buildSharedInfoFields(s: InfoSubject): InfoField[] {
     { label: t('sessions:info.sessionName'), value: s.sessionName },
     { label: t('sessions:info.projectName'), value: s.projectName },
     { label: t('sessions:info.projectPath'), value: s.projectPath },
+    {
+      label: t('sessions:info.additionalPaths'),
+      value: sessionAdditionalPaths(s.additionalPaths).join('\n') || undefined,
+    },
     { label: t('sessions:info.filePath'), value: s.filePath },
     { label: t('sessions:info.account'), value: s.account },
     { label: t('sessions:info.messageCount'), value: s.messageCount != null ? String(s.messageCount) : undefined },
@@ -105,6 +111,7 @@ export function sessionInfoSubject(session: Session): InfoSubject {
     sessionName: session.sessionName,
     projectName: session.projectName,
     projectPath: session.projectPath,
+    additionalPaths: session.additionalPaths,
     account: session.account,
     messageCount: session.messageCount,
     lastActivity: session.lastActivityAt,

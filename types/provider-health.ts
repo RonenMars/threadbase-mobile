@@ -16,6 +16,11 @@ export interface ProviderCapabilities {
   structuredQuestions: boolean
   permissionGates: boolean
   liveControl: boolean
+  /**
+   * The provider accepts extra directories at start (`additionalPaths`).
+   * Optional: servers that predate it omit the field, which reads as false.
+   */
+  multiDirectory?: boolean
 }
 
 export interface VerifiedAgainst {
@@ -80,6 +85,7 @@ function parseCapabilities(raw: object): ProviderCapabilities | null {
     structuredQuestions,
     permissionGates,
     liveControl,
+    multiDirectory,
   } = raw
   if (typeof freshSessionId !== 'string' || !FRESH.has(freshSessionId)) return null
   if (typeof resume !== 'string' || !RESUME.has(resume)) return null
@@ -94,6 +100,7 @@ function parseCapabilities(raw: object): ProviderCapabilities | null {
     structuredQuestions,
     permissionGates,
     liveControl,
+    ...(typeof multiDirectory === 'boolean' && { multiDirectory }),
   }
 }
 

@@ -122,6 +122,48 @@ describe('/session/new start lifecycle', () => {
     alertSpy.mockRestore()
   })
 
+  it('sends the extra directories from the `extra` param and names how many', async () => {
+    mockParams.current = {
+      server: 'srv_alpha',
+      path: 'api',
+      projectName: 'api',
+      extra: JSON.stringify(['shared-lib', 'docs']),
+    }
+    const { getByText } = await renderScreen()
+
+    expect(mockStartMutate.mock.calls[0][0]).toEqual({
+      path: 'api',
+      projectName: 'api',
+      additionalPaths: ['shared-lib', 'docs'],
+    })
+    expect(getByText('+2 more folders')).toBeTruthy()
+  })
+
+  it('ignores a malformed `extra` param', async () => {
+    mockParams.current = { server: 'srv_alpha', path: 'api', projectName: 'api', extra: '{oops' }
+    const { queryByTestId } = await renderScreen()
+
+    expect(mockStartMutate.mock.calls[0][0]).toEqual({ path: 'api', projectName: 'api' })
+    expect(queryByTestId('start-more-directories')).toBeNull()
+  })
+
+  it.each(['INVALID_ADDITIONAL_PATHS', 'MULTI_DIRECTORY_UNSUPPORTED'])(
+    'offers no Retry when the server refuses the directories (%s)',
+    async (code) => {
+      const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+      await renderScreen()
+
+      const { onError } = mockStartMutate.mock.calls[0][1]
+      await act(async () => onError(new NetworkError('Path not found: /w/gone', code)))
+
+      const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+      expect(alertSpy.mock.calls[0][1]).toBe('Path not found: /w/gone')
+      expect(buttons.some((b) => b.text === 'Retry')).toBe(false)
+
+      alertSpy.mockRestore()
+    },
+  )
+
   it('still offers Retry for an ordinary failure', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
     await renderScreen()

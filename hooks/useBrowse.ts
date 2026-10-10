@@ -71,7 +71,7 @@ export function useStartSession(serverId: string) {
   return useMutation<
     StartSessionResult,
     Error,
-    { path: string; projectName?: string; provider?: ProviderName }
+    { path: string; projectName?: string; provider?: ProviderName; additionalPaths?: string[] }
   >({
     mutationFn: async (vars) => {
       const res = await api.post<StartSessionResponse>('/api/sessions/start', vars, {

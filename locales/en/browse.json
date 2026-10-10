@@ -12,7 +12,11 @@
     "create": "Create",
     "startSession": "Start Session Here",
     "hideRecentDirs": "Hide recent directories",
-    "showRecentDirs": "Show recent directories"
+    "showRecentDirs": "Show recent directories",
+    "addDirectory": "Add this folder",
+    "extraDirsTitle": "Also include ({{selected}}/{{max}})",
+    "extraDirsHint": "The session starts in the folder you're in and can also work in these.",
+    "removeDirectory": "Remove {{name}}"
   },
   "starting": {
     "secondsLeft": "{{seconds}}s",
@@ -23,7 +27,9 @@
       "Brewing a fresh pot of tokens, hold tight…",
       "Reminding myself what code looks like…",
       "Counting to a trillion really fast, nearly done…"
-    ]
+    ],
+    "moreDirectories_one": "+{{count}} more folder",
+    "moreDirectories_other": "+{{count}} more folders"
   },
   "error": {
     "loadFailed": "Failed to load conversations",

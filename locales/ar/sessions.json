@@ -227,6 +227,7 @@
     "sessionName": "اسم الجلسة",
     "projectName": "اسم المشروع",
     "projectPath": "مسار المشروع",
+    "additionalPaths": "مجلدات إضافية",
     "filePath": "مسار الملف",
     "account": "الحساب",
     "messageCount": "عدد الرسائل",
