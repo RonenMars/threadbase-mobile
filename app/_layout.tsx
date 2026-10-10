@@ -487,6 +487,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="pair" options={{ headerShown: false }} />
+      <Stack.Screen name="board" options={{ headerShown: false }} />
       <Stack.Screen name="session" options={{ headerShown: false }} />
       <Stack.Screen name="conversation/[id]" options={{ headerShown: false }} />
       <Stack.Screen
@@ -555,7 +556,10 @@ const WEB_FRAME_GUTTER = 24
 function WebFrame({ children }: { children: React.ReactNode }) {
   const theme = useTheme()
   const { width } = useWindowDimensions()
+  const segments = useSegments()
   if (Platform.OS !== 'web') return <>{children}</>
+  // The board is the one route laid out for a wide window.
+  if (segments[0] === 'board') return <>{children}</>
   const framed = width > WEB_MAX_CONTENT_WIDTH
   return (
     <View

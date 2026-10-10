@@ -20,6 +20,7 @@ jest.mock('@/services/ws-client', () => ({
 
 jest.mock('@/hooks/useSessionName', () => ({
   useFetchSessionNames: () => {},
+  SessionNamesSyncer: () => null,
 }))
 
 jest.mock('@/hooks/useProjectSummaries', () => ({
