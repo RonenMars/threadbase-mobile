@@ -54,6 +54,28 @@ function userRowText(line: string): string | null {
   return m ? m[1].trim() : null
 }
 
+// Whitespace is dropped entirely: a terminal wraps a long prompt at the grid
+// width, mid-word or at a space, and a multi-line prompt arrives with newlines.
+const squash = (text: string): string => text.replace(/\s+/g, '')
+
+/**
+ * Whether the prompt echo starts at `lines[start]`. The echo is one `❯ <text>`
+ * row for a short prompt, but a prompt that is multi-line or wider than the
+ * grid is echoed over several rows, so the rows are accumulated until they
+ * spell the whole prompt.
+ */
+function promptEchoAt(lines: string[], start: number, prompt: string): boolean {
+  const first = userRowText(lines[start])
+  if (first == null) return false
+  const want = squash(prompt)
+  let got = squash(first)
+  for (let i = start + 1; got !== want; i++) {
+    if (got === '' || !want.startsWith(got) || i >= lines.length) return false
+    got += squash(stripAnsi(lines[i]))
+  }
+  return true
+}
+
 function messageText(m: Message): string {
   return m.content
     .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
@@ -61,9 +83,9 @@ function messageText(m: Message): string {
     .join('')
 }
 
-function lastIndex<T>(items: T[], pred: (item: T) => boolean): number {
+function lastIndex<T>(items: T[], pred: (item: T, index: number) => boolean): number {
   for (let i = items.length - 1; i >= 0; i--) {
-    if (pred(items[i])) return i
+    if (pred(items[i], i)) return i
   }
   return -1
 }
@@ -79,7 +101,7 @@ export function splitTerminalView({
     return { transcript: messages, live: [], anchor: 'none' }
   }
 
-  const promptRow = lastIndex(gridLines, (line) => userRowText(line) === current)
+  const promptRow = lastIndex(gridLines, (_line, i) => promptEchoAt(gridLines, i, current))
   if (promptRow === -1) {
     return { transcript: messages, live: gridLines, anchor: 'frame' }
   }
