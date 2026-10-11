@@ -13,15 +13,22 @@ import type { Message } from '@/types/api'
  * line's seq is the offset index's `message_index`, the same numbering REST
  * serves. A live line with neither (the initial replay when a Cursor transcript
  * binds) is kept.
+ *
+ * Anything older than the newest loaded history message is dropped as well: the
+ * history is byte-bounded to the conversation's tail, so a live batch that
+ * replays the head (the streamer re-reads a file that shrank) holds messages
+ * history never loaded and the sets above cannot recognise them. Only the
+ * index is trusted for this: live order deliberately ignores timestamps, so a
+ * replay that carries no seq is still kept.
  */
 export function dropSeenLive(history: Message[], live: Message[]): Message[] {
   const seenUuids = new Set(history.map((m) => m.uuid).filter(Boolean))
   const seenIndexes = new Set(history.map((m) => m.messageIndex).filter((i) => i !== undefined))
-  return live.filter(
-    (m) =>
-      !(m.uuid && seenUuids.has(m.uuid)) &&
-      !(m.messageIndex !== undefined && seenIndexes.has(m.messageIndex)),
-  )
+  const newestIndex = Math.max(-1, ...history.map((m) => m.messageIndex ?? -1))
+  return live.filter((m) => {
+    if (m.uuid && seenUuids.has(m.uuid)) return false
+    return m.messageIndex === undefined || (!seenIndexes.has(m.messageIndex) && m.messageIndex > newestIndex)
+  })
 }
 
 /**
