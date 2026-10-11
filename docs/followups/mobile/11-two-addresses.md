@@ -28,7 +28,7 @@ An HTTP response of any status is not a reason to fall back, because the server 
 The same goes for a permanent E2EE refusal (`retryable === false`) and for a `429`/`5xx` answer from `/api/e2ee/open`.
 The second attempt would cost a handshake against the five-per-minute budget to get the same answer.
 
-**Bounded first attempt.** When a second address exists, the first attempt gets `FIRST_ADDRESS_TIMEOUT_MS = 4000`.
+**Bounded first attempt.** When a second address exists, the first attempt gets `FIRST_ADDRESS_TIMEOUT_MS = 1500`.
 That applies to `/api/e2ee/open` (instead of 10 s), which picks the address for both the socket and sealed REST.
 A LAN answer takes milliseconds, and a black-holed LAN address never answers at all.
 The second attempt keeps today's timeouts. A server with one address behaves exactly as it does today.
@@ -52,7 +52,7 @@ The fallback never drops to plaintext or to a `?key=` URL on a pinned server.
 **Reconnect cost at idle.** Nothing new runs at idle: no timer and no probe. A healthy socket costs nothing extra.
 On each backoff tick of a failed WebSocket, the dial makes at most one extra attempt.
 If the first address never answered, that attempt spent no handshake: an unreachable `/open` never reaches the streamer.
-The worst case is a first `/open` that did reach the streamer but answered after 4 s. That spends two handshakes on that tick instead of one, and the existing 1–30 s backoff still paces it.
+The worst case is a first `/open` that did reach the streamer but answered after 1.5 s. That spends two handshakes on that tick instead of one, and the existing 1–30 s backoff still paces it.
 
 ## Known limits
 
@@ -92,10 +92,10 @@ Tests use `192.0.2.x` and `https://tb.example.com` only: `e2ee-two-addresses.tes
 
 ## Decisions for approval
 
-1. **REST follows the context, not every request (pinned servers).** A per-request fallback on sealed REST would make every request away from home pay the 4 s timeout.
+1. **REST follows the context, not every request (pinned servers).** A per-request fallback on sealed REST would make every request away from home pay the 1.5 s timeout.
    It would also need a fresh seal per retry. Binding the address to the REST context keeps "no sticky switch" at the connection level, which is the same granularity as the socket.
    *Recommend: as designed.*
-2. **Plaintext writes don't take the 4 s timeout.** A timeout can fire after a `POST` already reached the server.
+2. **Plaintext writes don't take the 1.5 s timeout.** A timeout can fire after a `POST` already reached the server.
    A retry on `publicUrl` would then run it twice, for example two sessions.
    `POST`/`PUT`/`PATCH`/`DELETE` fall back only on a network error. `GET`/`HEAD` also fall back on the timeout.
    The ceiling is a write to a black-holed LAN address, which waits the caller's own timeout. *Recommend: as designed.*
@@ -107,7 +107,7 @@ Tests use `192.0.2.x` and `https://tb.example.com` only: `e2ee-two-addresses.tes
    A genuine revocation then costs one refused `/open` per address, which is still no loop, and the classification itself does not change.
    `clearOpenRefusal(serverId)` still clears every address of the server. A success on one address clears only that address's verdict.
    *Owner decision (2026-09-23): fix here; criterion `refusal-scoped-to-address` added before the freeze.*
-4. **4 s first-attempt timeout.** *Approved: 4000 ms.*
+4. **First-attempt timeout.** *Approved: 4000 ms on 2026-09-23. Lowered to 1500 ms by the owner on 2026-10-11: with the relay as a third address, a phone away from home waited 4 s per dead address. The value is not measured on a device, and no criterion names it.*
 
 Decisions 1, 2 and 4 approved as recommended on 2026-09-23.
 
