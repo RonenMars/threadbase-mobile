@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
+  Platform,
   } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -20,7 +21,7 @@ import { useServersStore } from '@/stores/servers'
 import { useLiveInstanceCount } from '@/lib/openTrace'
 import { useSettingsStore } from '@/stores/settings'
 import { useTreeDrillStore } from '@/stores/treeDrill'
-import { useFetchSessionNames } from '@/hooks/useSessionName'
+import { SessionNamesSyncer } from '@/hooks/useSessionName'
 import { wsManager } from '@/services/ws-client'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
@@ -33,6 +34,7 @@ import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
+import { sessionLastActivityMs as lastActivityMs } from '@/lib/sessionBoard'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
@@ -40,7 +42,7 @@ import { ListBottomScrim } from '@/components/sessions/shared/ListBottomScrim'
 import { useHideOnScrollDown } from '@/hooks/useHideOnScrollDown'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, Gear } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, Gear, Kanban } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
@@ -76,17 +78,6 @@ const EMPTY_CONVERSATIONS: MultiConversation[] = []
 // the segmented control); onLayout replaces it before anything scrolls.
 const CHROME_ESTIMATE = 120
 
-// A server may send a timestamp this build cannot parse; NaN would reach
-// `toISOString()` in the Now list and throw, so it degrades to 0 like conversations do.
-function lastActivityMs(s: MultiSession): number {
-  const ms = s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0)
-  return Number.isFinite(ms) ? ms : 0
-}
-
-function SessionNamesSyncer({ serverId }: { serverId: string }) {
-  useFetchSessionNames(serverId)
-  return null
-}
 
 export default function ProjectsHub() {
   useLiveInstanceCount('ProjectsHub')
@@ -454,6 +445,17 @@ export default function ProjectsHub() {
             <SlidersHorizontal size={20} color={isSheetActive ? theme.text.accent : theme.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
           </Pressable>
+          {Platform.OS === 'web' ? (
+            <Pressable
+              testID="hub-board-btn"
+              onPress={() => router.push('/board')}
+              hitSlop={8}
+              style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
+              accessibilityLabel={t('board.open')}
+            >
+              <Kanban size={20} color={theme.text.secondary} />
+            </Pressable>
+          ) : null}
           <Pressable
             testID="hub-settings-btn"
             onPress={() => router.push('/settings')}
