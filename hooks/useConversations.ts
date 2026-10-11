@@ -607,22 +607,25 @@ export function useConversation(
     // Reset the imperative handle first; only the active tail-view path below
     // re-points it at a live runDelta.
     triggerDeltaRef.current = () => {}
-    // Delta-on-open lives only on the plain tail view; anchored windows are
-    // navigation artifacts with their own bidirectional pagination, and a
-    // byte-bounded seed view is a one-shot history read (the live PTY stream
-    // is the "present" for that surface, not a drained/resumed conversation
-    // cursor) — draining it would also target the wrong cache entry, since
-    // the tailKey rebuilt below doesn't carry the maxBytes suffix. A consumer
-    // that mounts with enabled: false must not trigger either — imperative
-    // fetches (fetchPreviousPage) bypass react-query's `enabled` gate, so
-    // without this check a disabled consumer with a warm cache would still
-    // fire mount/foreground/WS deltas.
-    if (!triggerEnabled || anchorIndex != null || maxBytes != null || !serverId || !id) return
+    // Delta-on-open runs on the tail view and on the byte-bounded seed view;
+    // anchored windows are navigation artifacts with their own bidirectional
+    // pagination. The seed view is what the session screen's chat and terminal
+    // both open on, and nothing else revalidates it (refetchOnMount is off with
+    // a 7-day persisted gcTime, and the streamer replays no conversation lines
+    // on subscribe), so without the drain an entry that is behind the server
+    // stays behind. A consumer that mounts with enabled: false must not trigger
+    // either — imperative fetches (fetchPreviousPage) bypass react-query's
+    // `enabled` gate, so without this check a disabled consumer with a warm
+    // cache would still fire mount/foreground/WS deltas.
+    if (!triggerEnabled || anchorIndex != null || !serverId || !id) return
 
-    // Rebuild the tail key locally so queryKey (a fresh array each render) never
-    // enters the deps array. Only the tail view reaches here, so this is always
-    // the plain key.
-    const tailKey = ['conversation', serverId, id] as const
+    // Rebuild the key locally so queryKey (a fresh array each render) never
+    // enters the deps array. It must carry the seed suffix: the drain has to
+    // read and write the entry this consumer actually renders.
+    const tailKey =
+      maxBytes != null
+        ? (['conversation', serverId, id, `seed-${maxBytes}`] as const)
+        : (['conversation', serverId, id] as const)
 
     let cancelled = false
 
