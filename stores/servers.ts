@@ -1,3 +1,4 @@
+import { AppState } from 'react-native'
 import { create } from 'zustand'
 // Static, not `import()`: Jest 29 (jest-expo / SDK 57) throws
 // "A dynamic import callback was invoked without --experimental-vm-modules"
@@ -131,6 +132,26 @@ interface ServersStore {
   get apiKey(): string
 }
 
+// iOS refuses keychain writes while the device is locked ("User interaction is
+// not allowed"). Most callers fire persistServerList without awaiting it, so a
+// rejection would surface as an unhandled error. Keep the latest write and
+// replay it when the app is foregrounded again.
+const KEYCHAIN_LOCKED = /User interaction is not allowed/i
+let pendingPersist: (() => Promise<void>) | null = null
+let foregroundListener = false
+
+function retryPersistOnForeground(write: () => Promise<void>) {
+  pendingPersist = write
+  if (foregroundListener) return
+  foregroundListener = true
+  AppState.addEventListener('change', (state) => {
+    if (state !== 'active' || !pendingPersist) return
+    const run = pendingPersist
+    pendingPersist = null
+    run().catch(() => {})
+  })
+}
+
 async function persistServerList(
   servers: Record<string, ServerConfig>,
   order: string[],
@@ -160,7 +181,14 @@ async function persistServerList(
     hasEverHadServer,
   }
   // SecureStore uses iOS Keychain, which survives app uninstalls
-  await SecureStore.setItemAsync(ASYNC_KEY_SERVERS, JSON.stringify(payload))
+  const write = () => SecureStore.setItemAsync(ASYNC_KEY_SERVERS, JSON.stringify(payload))
+  try {
+    await write()
+    pendingPersist = null
+  } catch (e) {
+    if (!KEYCHAIN_LOCKED.test(String(e))) throw e
+    retryPersistOnForeground(write)
+  }
 }
 
 /**
