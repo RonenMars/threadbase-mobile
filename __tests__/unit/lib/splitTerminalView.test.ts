@@ -118,6 +118,35 @@ describe('splitTerminalView', () => {
     expect(out.anchor).toBe('prompt-row')
   })
 
+  it('anchors on a multi-line prompt echoed over several rows', () => {
+    const text = 'summarise the diff\n\n- list the risks\n- list the tests'
+    const grid = ['⏺ Earlier reply.', '❯ summarise the diff', '', '  - list the risks', '  - list the tests', '⏺ Working.']
+    const messages = [msg('assistant', 'Earlier reply.', 0)]
+    const out = splitTerminalView({ gridLines: grid, prompts: [{ text, ts: 1 }], messages, turnOpen: true })
+    expect(out.anchor).toBe('prompt-row')
+    expect(out.live).toEqual(grid.slice(1))
+    expect(out.transcript).toEqual(messages)
+  })
+
+  it('anchors on a prompt wrapped mid-word at the grid width', () => {
+    const text = 'please investigate why the session list does not refresh'
+    const grid = ['⏺ Earlier reply.', '❯ please investigate why the session li', '  st does not refresh', '⏺ Working.']
+    const out = splitTerminalView({ gridLines: grid, prompts: [{ text, ts: 1 }], messages: [], turnOpen: true })
+    expect(out.anchor).toBe('prompt-row')
+    expect(out.live).toEqual(grid.slice(1))
+  })
+
+  it('does not anchor on an earlier prompt that is only a prefix of the current one', () => {
+    const grid = ['❯ run the tests', '⏺ Passed.']
+    const out = splitTerminalView({
+      gridLines: grid,
+      prompts: [{ text: 'run the tests again', ts: 2 }],
+      messages: [],
+      turnOpen: true,
+    })
+    expect(out.anchor).toBe('frame')
+  })
+
   it('does not treat a numbered picker row as the prompt', () => {
     const out = splitTerminalView({
       gridLines: ['❯ 1. now run the tests', 'Enter to confirm'],
