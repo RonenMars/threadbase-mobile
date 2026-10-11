@@ -31,6 +31,16 @@ function live(uuid: string, text: string, role: 'user' | 'assistant' = 'assistan
 const texts = (msgs: Message[]) =>
   msgs.map((m) => (m.content.find((b) => b.type === 'text') as { text: string } | undefined)?.text)
 
+describe('mergeLiveMessages – replayed head', () => {
+  it('drops live messages older than the loaded history tail', () => {
+    const hist = [historical(8, 'h8', 'eighth'), historical(9, 'h9', 'ninth')]
+    // A re-read of the file replays the head: index below the loaded window.
+    const byIndex = { ...live('L0', 'replayed head'), messageIndex: 0 }
+    const fresh = { ...live('L2', 'new reply'), messageIndex: 10 }
+    expect(texts(mergeLiveMessages(hist, [byIndex, fresh]))).toEqual(['eighth', 'ninth', 'new reply'])
+  })
+})
+
 describe('mergeLiveMessages', () => {
   it('appends live messages after REST history, preserving file/arrival order', () => {
     const hist = [historical(0, 'h0', 'first'), historical(1, 'h1', 'second')]
