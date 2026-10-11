@@ -391,6 +391,23 @@ describe('reorderServers', () => {
     expect(displayedServerIds).toEqual(['srv_a', 'srv_b'])
   })
 
+  it('swallows a locked-keychain write and replays it on foreground', async () => {
+    const { AppState } = require('react-native')
+    const handlers: ((s: string) => void)[] = []
+    jest.spyOn(AppState, 'addEventListener').mockImplementation(((_t: string, h: (s: string) => void) => {
+      handlers.push(h)
+      return { remove: jest.fn() }
+    }) as typeof AppState.addEventListener)
+    setItemAsync.mockRejectedValueOnce(new Error('KeyChainException: User interaction is not allowed.'))
+    seedTwoServers()
+    useServersStore.getState().reorderServers(['srv_b', 'srv_a'])
+    await new Promise((r) => setImmediate(r))
+    setItemAsync.mockClear()
+    handlers.forEach((h) => h('active'))
+    await new Promise((r) => setImmediate(r))
+    expect(setItemAsync).toHaveBeenCalledWith('threadbase_servers', expect.stringContaining('"srv_b"'))
+  })
+
   it('calls persistServerList (SecureStore.setItemAsync)', () => {
     const SecureStore = require('expo-secure-store')
     seedTwoServers()
