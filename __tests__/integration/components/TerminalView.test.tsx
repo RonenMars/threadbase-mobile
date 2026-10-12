@@ -336,7 +336,22 @@ describe('TerminalView', () => {
       const list = screen.getByTestId('terminal-output-list')
       expect(list.props.drawDistance).toBe(2000)
       expect(mockHistoryFetchNextPage).not.toHaveBeenCalled()
-      fireEvent(list, 'startReached')
+      await fireEvent(list, 'startReached')
+      expect(mockHistoryFetchNextPage).toHaveBeenCalledTimes(1)
+      expect(mockHistoryFetchNextPage).toHaveBeenCalledWith({ cancelRefetch: false })
+    })
+
+    it('asks for one older page while the reader bounces at the top during a slow fetch', async () => {
+      mockHistoryMessages = [user('older message', 0)]
+      mockHistoryTotalMessages = 1
+      mockHistoryHasNextPage = true
+      // Never resolves: the page is still on the wire for the whole test.
+      mockHistoryFetchNextPage.mockImplementationOnce(() => new Promise(() => {}))
+      await renderView({ conversationId: 'conv-1' })
+      const list = screen.getByTestId('terminal-output-list')
+      await fireEvent(list, 'startReached')
+      await fireEvent(list, 'startReached')
+      await fireEvent(list, 'startReached')
       expect(mockHistoryFetchNextPage).toHaveBeenCalledTimes(1)
     })
 

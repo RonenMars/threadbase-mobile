@@ -203,9 +203,15 @@ jest.mock('@shopify/flash-list', () => {
   // Shared across instances so a test can assert that something scrolled the
   // list; exposed as __scrollToEndMock.
   const scrollToEnd = jest.fn()
+  // The props each list received on its latest render, keyed by testID, so a
+  // test can assert prop identity (e.g. a memoized renderItem) at the FlashList
+  // boundary. The host view can't be used for that: RN's FlatList hands its
+  // ScrollView a fresh renderItem wrapper on every render outside strict mode.
+  const propsByTestId = {}
   return {
     __esModule: true,
     __scrollToEndMock: scrollToEnd,
+    __propsByTestId: propsByTestId,
     // Real FlashList's imperative scroll methods resolve offscreen indices
     // internally and never throw FlatList's getItemLayout invariant. Expose
     // no-op scroll stubs on the ref so tests that call scrollToIndex/End/Offset
@@ -224,6 +230,7 @@ jest.mock('@shopify/flash-list', () => {
       // forwarded so tests can assert chat-list config and fire the backward-
       // scroll trigger; FlatList ignores the ones it doesn't implement.
       const { onLoad, ...flatProps } = props
+      if (props.testID) propsByTestId[props.testID] = props
       React.useEffect(() => {
         if (onLoad && (props.data?.length ?? 0) > 0) onLoad({ elapsedTimeInMs: 0 })
         // eslint-disable-next-line react-hooks/exhaustive-deps

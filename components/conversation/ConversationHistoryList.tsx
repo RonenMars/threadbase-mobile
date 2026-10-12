@@ -16,8 +16,8 @@ import { CaretDown } from 'phosphor-react-native'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { InheritedHistoryDivider } from '@/components/conversation/InheritedHistoryDivider'
 import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
+import { CHAT_ANCHOR, CHAT_ANCHOR_DISABLED, MESSAGE_LIST_PROPS } from '@/hooks/useVirtualizedMessageList'
 import type { Message } from '@/types/api'
-import { messageItemType } from '@/utils/messageItemType'
 import type { InheritedHistorySeam } from '@/utils/inheritedHistory'
 import { spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -183,13 +183,7 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
 
     // FlashList v2 owns bottom-anchoring; the tail view opts into the chat
     // preset. The anchored view disables it so its own scrollToIndex wins.
-    const maintainVisibleContentPosition = useMemo(
-      () =>
-        disableAutoAnchor
-          ? { disabled: true }
-          : { autoscrollToBottomThreshold: 0.2, startRenderingFromBottom: true },
-      [disableAutoAnchor],
-    )
+    const maintainVisibleContentPosition = disableAutoAnchor ? CHAT_ANCHOR_DISABLED : CHAT_ANCHOR
 
     // FlashList re-lays-out the header/footer whenever the element identity
     // changes, and an inline conditional recreates it on every parent render —
@@ -251,33 +245,19 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     return (
       <View style={styles.wrapper} onLayout={onLayout}>
         <FlashList
+          {...MESSAGE_LIST_PROPS}
           ref={listRef}
           testID="conversation-history-list"
           data={messages}
-          keyExtractor={(m) => m.id}
           renderItem={renderItem}
-          getItemType={messageItemType}
-          // drawDistance is PIXELS of pre-rendered runway, not rows, and the
-          // iOS default is 250 — split 70/30 toward the scroll direction, so
-          // scrolling up pre-renders only ~350px above the viewport and evicts
-          // rows ~150px below it. A single table answer here measures ~3,100px
-          // (≈5 viewports), so the default buffer is outrun by any real flick
-          // and just-passed rows unmount into visible blanks. 2000px keeps the
-          // engaged window ahead of momentum scrolling and clears the known-bad
-          // "item taller than 2×drawDistance" mVCP-correction regime
-          // (Shopify/flash-list#2136) for rows up to 4,000px.
-          drawDistance={2000}
           contentContainerStyle={contentContainerStyle}
           maintainVisibleContentPosition={maintainVisibleContentPosition}
           onLoad={handleLoad}
           onContentSizeChange={stickToEnd}
           onScrollBeginDrag={releasePin}
           onScroll={handleScroll}
-          scrollEventThrottle={16}
           onStartReached={onStartReached}
-          onStartReachedThreshold={0.3}
           onEndReached={onEndReached}
-          onEndReachedThreshold={0.3}
           ListHeaderComponent={listHeader}
           ListFooterComponent={listFooter}
         />
