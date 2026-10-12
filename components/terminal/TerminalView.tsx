@@ -11,6 +11,7 @@ import { font, spacing } from '@/constants/theme'
 import { usePromptSuggestion } from '@/hooks/usePromptSuggestion'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useComposerState } from '@/hooks/useComposerState'
+import { useFileMentions } from '@/hooks/useFileMentions'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
 import { useQuestionCancel } from '@/hooks/useQuestionCancel'
@@ -27,6 +28,8 @@ interface Props {
   serverId: string
   sessionId: string
   provider?: ProviderName | string | null
+  /** Session cwd on the streamer's machine; `@` mentions list files relative to it. */
+  projectPath?: string | null
   disabled?: boolean
   /** The raw-keys row, when open; rides the keyboard with the composer. */
   composerAccessory?: React.ReactNode
@@ -40,6 +43,7 @@ export function TerminalView({
   serverId,
   sessionId,
   provider,
+  projectPath = null,
   disabled = false,
   composerAccessory = null,
   resumedConversationId = null,
@@ -167,6 +171,13 @@ export function TerminalView({
     micGranted,
     handleToggleMic,
   } = useComposerState({ serverId, sessionId, onSend })
+  const fileMentions = useFileMentions({
+    serverId,
+    projectPath,
+    provider,
+    text: inputText,
+    onChangeText: handleInputChange,
+  })
   const keyboardInset = useKeyboardInset()
 
   // The server closes the question's menu on its own (common, self-healing —
@@ -274,6 +285,9 @@ export function TerminalView({
           handleInputChange(text)
         }}
         accessory={composerAccessory}
+        mention={fileMentions.mention}
+        selection={fileMentions.selection}
+        onSelectionChange={fileMentions.onSelectionChange}
       />
 
       <SlashCommandBoard

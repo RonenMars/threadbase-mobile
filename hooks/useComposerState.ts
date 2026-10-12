@@ -18,6 +18,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
 import type { SlashCommand } from '@/constants/slashCommands'
+import { escapeMentionPath } from '@/lib/mentionToken'
 
 export interface UseComposerStateOptions {
   serverId: string
@@ -98,10 +99,8 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const buildPayload = (text: string): string | null => {
     const trimmed = text.trim()
     if (!trimmed && attachments.length === 0) return null
-    // Escape spaces in paths so Claude Code's @path parser doesn't split them.
-    // The streamer now sanitizes filenames, but this handles legacy uploads.
-    const escapePath = (p: string) => p.replace(/ /g, '\\ ')
-    const refs = attachments.map((a) => `@${escapePath(a.path)}`).join(' ')
+    // The streamer now sanitizes upload filenames; escaping covers legacy uploads.
+    const refs = attachments.map((a) => `@${escapeMentionPath(a.path)}`).join(' ')
     return refs && trimmed ? `${refs} ${trimmed}` : refs || trimmed
   }
 

@@ -4,6 +4,8 @@ import {
   View,
   Text,
   TextInput,
+  type NativeSyntheticEvent,
+  type TextInputSelectionChangeEventData,
   TouchableOpacity,
   ScrollView,
   Modal,
@@ -29,6 +31,8 @@ import {
 import { isPreviewableImage, type ComposerAttachment } from '@/services/uploads'
 import { lendComposerFocus, returnComposerFocus, useComposerFocus } from '@/hooks/useComposerFocus'
 import { AttachmentPreview } from '@/components/conversation/AttachmentPreview'
+import { FileMentionPanel } from '@/components/conversation/FileMentionBoard'
+import type { ComposerMention } from '@/hooks/useFileMentions'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { layoutDirectionStyle, ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
@@ -71,6 +75,11 @@ export interface ChatComposerProps {
    *  It sits above the composer's own safe-area padding, so that padding stays
    *  the single owner of the bottom inset. */
   accessory?: React.ReactNode
+  /** Open `@` mention under the cursor; null closes the file picker. */
+  mention?: ComposerMention | null
+  /** Caret to apply once, after a mention is inserted. */
+  selection?: { start: number; end: number }
+  onSelectionChange?: (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void
 }
 
 // A style object may not be shared between components, so each area calls this.
@@ -102,6 +111,9 @@ export function ChatComposer({
   onSendSuggestion,
   onFillSuggestion,
   accessory = null,
+  mention = null,
+  selection,
+  onSelectionChange,
 }: ChatComposerProps) {
   const { t } = useTranslation('terminal')
   const theme = useTheme()
@@ -187,6 +199,9 @@ export function ChatComposer({
         </Text>
       </TouchableOpacity>
     ) : null
+
+  const mentionBoard =
+    mention !== null && !disabled && !voice.listening ? <FileMentionPanel mention={mention} /> : null
 
   const previewImages = attachments.filter(isPreviewableImage)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
@@ -331,6 +346,7 @@ export function ChatComposer({
       {errors}
       {chips}
       {suggestionChip}
+      {expanded ? null : mentionBoard}
       <View style={styles.inputRow}>
         {attachButton}
         {Platform.OS === 'android' ? (
@@ -342,6 +358,8 @@ export function ChatComposer({
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
+              selection={selection}
+              onSelectionChange={onSelectionChange}
               onBlur={onInputBlur}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
@@ -371,6 +389,8 @@ export function ChatComposer({
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
+              selection={selection}
+              onSelectionChange={onSelectionChange}
               onBlur={onInputBlur}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
@@ -419,6 +439,7 @@ export function ChatComposer({
             >
               {errors}
               {chips}
+              {mentionBoard}
               <TextInput
                 ref={expandedInputRef}
                 testID="message-input-expanded"
@@ -426,6 +447,8 @@ export function ChatComposer({
                 value={disabled ? '' : value}
                 onChangeText={disabled ? undefined : onChangeText}
                 onFocus={() => onInputFocus('expanded')}
+                selection={selection}
+                onSelectionChange={onSelectionChange}
                 onBlur={() => {
                   // Closing the editor takes its input's focus with it (iOS blurs it before
                   // onDismiss). That is not the user putting the keyboard away, so it must
