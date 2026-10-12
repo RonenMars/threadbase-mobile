@@ -46,14 +46,26 @@ npx serve dist -p 4173           # serves ./dist at http://localhost:4173
 
 ## Hosted build (Vercel)
 
-The same static export is served at https://threadbase.rbv1000.win from the Vercel project `threadbase-web` (team `ronen-mars-projects`), which is linked to this repo.
+The same static export is served at https://app.threadbase.sh (and still at https://threadbase.rbv1000.win) from the Vercel project `threadbase-web` (team `ronen-mars-projects`), which is linked to this repo.
 Build settings live in `vercel.json`: `npx expo export --platform web` into `dist/`, with every path rewritten to `index.html` so Expo Router deep links survive a reload.
 Every deployment, the custom domain included, sits behind HTTP Basic Auth from `middleware.js` (Vercel Routing Middleware, never bundled by Metro).
 The credentials are the `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD` project environment variables; if either is unset the site answers 401, never open.
 Vercel's own password protection is a Pro feature, which is why this is middleware.
-DNS is an unproxied `A threadbase → 76.76.21.21` record in the Cloudflare `rbv1000.win` zone.
+`app.threadbase.sh` needs no DNS record of its own: the `threadbase.sh` zone uses Vercel nameservers and its wildcard record already points at Vercel.
+`threadbase.rbv1000.win` is an unproxied `A threadbase → 76.76.21.21` record in the Cloudflare `rbv1000.win` zone.
 Vercel builds from git, so the gitignored `.env*` files never reach it; any `EXPO_PUBLIC_*` value the hosted bundle needs must be set in the project's environment variables — and it is public, since it is inlined into the bundle.
 It is a static client only: the browser still talks directly to the streamers the user runs.
+
+**A push to `main` does not deploy it.**
+The project's ignored-build step cancels every git-triggered build, so a merge leaves the live site on the previous deployment.
+Deploy from a checkout of the commit you want, with the Vercel CLI:
+
+```bash
+vercel link --yes --project threadbase-web --scope ronen-mars-projects   # writes .vercel/ and a .env.local; delete the .env.local
+vercel deploy --prod --yes --scope ronen-mars-projects
+```
+
+Then check that `https://app.threadbase.sh` answers `401` with `WWW-Authenticate: Basic realm="Threadbase"`.
 
 ## Status: early spike, not full parity
 
@@ -161,7 +173,7 @@ QR pairing, starting or resuming a session, and the terminal were not exercised.
 
 A browser is a stricter client than the native app, and each of these fails with a generic error rather than a useful one:
 
-- **The streamer must allow the page's origin.** Set `browser_cors: https://threadbase.rbv1000.win` in `~/.threadbase/server.yaml` (unquoted — the line is read by regex) and restart; the localhost dev origins are added automatically. Without it every request fails with `TypeError: Failed to fetch`.
+- **The streamer must allow the page's origin.** Set `browser_cors` to the origin you open the page from (`https://app.threadbase.sh` or `https://threadbase.rbv1000.win`) in `~/.threadbase/server.yaml` (unquoted — the line is read by regex) and restart; the localhost dev origins are added automatically. Without it every request fails with `TypeError: Failed to fetch`.
 - **The streamer must be new enough.** Streamers that do not list `X-Client-Id` in `Access-Control-Allow-Headers` fail every list call with `Failed to fetch`, and ones whose CORS middleware assumed a Node response object refuse the browser's WebSocket upgrade with `500`, which shows as a red server dot and "Disconnected … Showing cached sessions" while REST still works. Both are fixed in tb-streamer's `cors.middleware.ts`; its `docs/troubleshooting.md` → "Browser clients (Expo web)" has the `curl` checks.
 - **An `https://` page can only reach `https://` / `wss://` servers.** A LAN URL like `http://192.168.1.5:8766` is blocked as mixed content before it leaves the browser, so the hosted build needs the streamer behind a tunnel or TLS proxy. `npx expo start --web` serves `http://localhost:8081`, which can reach a plain-HTTP streamer.
 
