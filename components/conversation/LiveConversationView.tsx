@@ -63,12 +63,27 @@ interface Props {
   onPreferRawTerminal?: () => void
 }
 
-// Concatenate a user message's text blocks for echo matching.
+// Concatenate a user message's text blocks. Used for display (RenderErrorBoundary's
+// rawFallback) as well as echo matching below — keep it exact/unnormalized.
 function userMessageText(m: Message): string {
   return m.content
     .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
     .map((b) => b.text)
     .join('')
+    .trim()
+}
+
+// Echo-matching key only (never display): the optimistic bubble shows the typed
+// caption alone, but a send with an attachment echoes back as `@path/to/file
+// caption` — strip the @refs so both sides compare on the same substance, and
+// collapse whitespace so incidental differences don't strand the bubble.
+// ponytail: still exact-text matching under the hood, so a normalization this
+// doesn't anticipate can still leave a pending bubble stuck; upgrade path is
+// tying removal to a confirmed turn boundary (session status) instead of text.
+function echoMatchKey(m: Message): string {
+  return userMessageText(m)
+    .replace(/@\S+\s*/g, '')
+    .replace(/\s+/g, ' ')
     .trim()
 }
 
@@ -168,11 +183,11 @@ export function LiveConversationView({
 
     // Drop optimistic turns whose echo has landed — matched one-for-one by text.
     const allStreamed = [...orderedHistorical, ...newLive]
-    const echoedUserTexts = allStreamed.filter((m) => m.role === 'user').map((m) => userMessageText(m))
+    const echoedUserTexts = allStreamed.filter((m) => m.role === 'user').map((m) => echoMatchKey(m))
     const stillPending = (() => {
       const remaining = [...pendingSends]
       for (const echoText of echoedUserTexts) {
-        const idx = remaining.findIndex((m) => userMessageText(m) === echoText)
+        const idx = remaining.findIndex((m) => echoMatchKey(m) === echoText)
         if (idx !== -1) remaining.splice(idx, 1)
       }
       return remaining
