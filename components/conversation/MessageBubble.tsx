@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Linking,
 } from 'react-native'
+import Markdown from 'react-native-markdown-display'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
@@ -103,7 +105,11 @@ function TextContent({
 
 
 
-const CODE_THEME = themes.oneDark
+// oneDark's saturated magenta/cyan tokens are tuned for a full editor pane;
+// in a narrow chat bubble with tight padding they read as neon. vsDark (VS
+// Code Dark+) carries the same intent at lower saturation — the same
+// reference point GitHub/Slack/Discord code blocks use.
+const CODE_THEME = themes.vsDark
 
 function DiffLines({ code }: { code: string }) {
   const { styles } = useBubbleStyles()
@@ -269,6 +275,96 @@ function parseTextParts(text: string): ParsedPart[] {
   })
 }
 
+function makeMarkdownStyles(theme: Theme) {
+  return {
+    // Base text props cascade to all leaf text nodes via inheritedStyles
+    body: {
+      color: theme.text.primary,
+      fontSize: font.base,
+      lineHeight: 22,
+    },
+    // Tighten the default 10/10 top+bottom margins so paragraphs sit compactly
+    // inside the bubble rather than adding double spacing around code blocks.
+    paragraph: {
+      marginTop: 0,
+      marginBottom: spacing.xs,
+    },
+    heading1: { color: theme.text.primary, fontSize: font.xxl, fontWeight: '700' as const, marginBottom: spacing.xs },
+    heading2: { color: theme.text.primary, fontSize: font.xl,  fontWeight: '700' as const, marginBottom: spacing.xs },
+    heading3: { color: theme.text.primary, fontSize: font.lg,  fontWeight: '700' as const, marginBottom: spacing.xs },
+    heading4: { color: theme.text.primary, fontSize: font.base, fontWeight: '700' as const },
+    heading5: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '700' as const },
+    heading6: { color: theme.text.secondary, fontSize: font.sm },
+    strong: { fontWeight: '700' as const },
+    em: { fontStyle: 'italic' as const },
+    s: { textDecorationLine: 'line-through' as const },
+    code_inline: {
+      fontFamily: 'monospace',
+      fontSize: font.sm,
+      backgroundColor: `${theme.text.accent}22`,
+      color: theme.text.accent,
+      borderRadius: 3,
+    },
+    link: { color: theme.text.accent, textDecorationLine: 'underline' as const },
+    blockquote: {
+      borderStartWidth: 3,
+      borderStartColor: theme.text.secondary,
+      paddingStart: spacing.sm,
+      marginStart: 0,
+      color: theme.text.secondary,
+    },
+    bullet_list: { marginStart: spacing.sm },
+    ordered_list: { marginStart: spacing.sm },
+    hr: { backgroundColor: theme.border, height: 1, marginVertical: spacing.xs },
+  }
+}
+
+// Splits a markdown text node's plain content around a search needle so a
+// highlighted span can render inline in a Text run — rendering markdown via
+// <Markdown> and highlighting via a separate plain-text pass are mutually
+// exclusive, so highlighting is done as a rule override on the same tree
+// instead, keeping links/emphasis/etc. intact while searching.
+function renderHighlightedRun(content: string, needle: string, style: object) {
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = content.split(new RegExp(`(${escaped})`, 'ig'))
+  return parts.map((part, i) =>
+    part.toLowerCase() === needle.toLowerCase() ? (
+      <Text key={i} style={style}>{part}</Text>
+    ) : (
+      part
+    ),
+  )
+}
+
+function MarkdownProse({ text, highlight, activeMatch }: { text: string; highlight?: string; activeMatch?: boolean }) {
+  const { styles, theme } = useBubbleStyles()
+  const mdStyle = useMemo(() => makeMarkdownStyles(theme), [theme])
+  const onLinkPress = useCallback((url: string) => {
+    void Linking.openURL(url)
+    return false
+  }, [])
+  const needle = highlight?.trim()
+  const markStyle = activeMatch ? styles.match : styles.matchInactive
+  const rules = useMemo(
+    () =>
+      needle
+        ? {
+            text: (node: { key: string; content: string }, _children: unknown, _parent: unknown, mdStyles: { text?: object }, inherited: object = {}) => (
+              <Text key={node.key} style={[inherited, mdStyles.text]}>
+                {renderHighlightedRun(node.content, needle, markStyle)}
+              </Text>
+            ),
+          }
+        : undefined,
+    [needle, markStyle],
+  )
+  return (
+    <Markdown style={mdStyle} onLinkPress={onLinkPress} mergeStyle rules={rules}>
+      {text}
+    </Markdown>
+  )
+}
+
 function TextBlockBody({
   text,
   isUser,
@@ -292,6 +388,8 @@ function TextBlockBody({
       {parts.map((part, i) =>
         part.kind === 'code' ? (
           <CodeBlock key={i} code={part.code} language={part.language} />
+        ) : !isUser ? (
+          <MarkdownProse key={i} text={part.text} highlight={highlight} activeMatch={activeMatch} />
         ) : (
           <TextContent
             key={i}
@@ -462,7 +560,6 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     codeToken: {
       fontFamily: 'monospace',
       fontSize: font.sm,
-      fontWeight: '600',
       color: theme.text.primary,
     },
     diffAdd: {
