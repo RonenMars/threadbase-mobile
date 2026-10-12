@@ -35,7 +35,10 @@ const ALLOW_STALE = process.env.E2E_ALLOW_STALE_BUILD === '1'
 // Promo capture (and any other local path that must not stop for a human)
 // rebuilds a stale .app with xcodebuild instead of failing or hanging in
 // `expo run:ios`, which holds Metro open after the compile.
-const REBUILD_STALE = process.env.E2E_REBUILD_STALE === '1'
+// `--rebuild-stale` is the same switch as an argument, because npm scripts cannot
+// set an env var portably (cmd.exe has no `VAR=1 cmd`).
+const REBUILD_STALE =
+  process.env.E2E_REBUILD_STALE === '1' || process.argv.includes('--rebuild-stale')
 
 // `expo run:ios --configuration Release` may emit the .app either into a
 // project-local `ios/build/...` dir or (Expo's default) a hashed Xcode
