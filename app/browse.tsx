@@ -16,9 +16,8 @@ import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder, X } from 'phosphor-react-native'
-import { basename } from '@/components/sessions/shared/pathTail'
 import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
-import { useSessions } from '@/hooks/useSession'
+import { useRecentDirs } from '@/hooks/useRecentDirs'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
@@ -93,35 +92,8 @@ export default function BrowseScreen() {
       selectedHealth?.capabilities.permissionGates === false) ||
     selectedHealth?.capabilities.liveControl === false
 
-  const { data: allSessions = [] } = useSessions()
-  // Newest → oldest by last session start; first hit wins for path dedupe.
-  const recentDirs = useMemo<RecentDir[]>(() => {
-    if (!serverId) {
-      return []
-    }
-    const seen = new Set<string>()
-    const dirs: RecentDir[] = []
-    const sorted = [...allSessions]
-      .filter((s) => s.serverId === serverId && s.projectPath)
-      .sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''))
-    for (const session of sorted) {
-      const path = session.projectPath
-      if (seen.has(path)) {
-        continue
-      }
-      seen.add(path)
-      const name = basename(path) ?? path
-      dirs.push({
-        path,
-        name,
-        lastUsedAt: session.startedAt,
-      })
-      if (dirs.length >= MAX_RECENT_DIRS) {
-        break
-      }
-    }
-    return dirs
-  }, [allSessions, serverId])
+  // Newest → oldest; kept on the server across restarts when it supports it.
+  const recentDirs: RecentDir[] = useRecentDirs(serverId, MAX_RECENT_DIRS)
   const previewRecentDirs = recentDirs.slice(0, PREVIEW_RECENT_DIRS)
   const hasMoreRecents = recentDirs.length > PREVIEW_RECENT_DIRS
 
