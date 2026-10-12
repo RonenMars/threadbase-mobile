@@ -37,5 +37,9 @@
     "rowNeedsYou": "{{label}}, needs you",
     "saved": "Saved to your chats",
     "removed": "Removed from your saved chats"
+  },
+  "savedItems": {
+    "syncFailedTitle": "Couldn't save to the server",
+    "syncFailedMessage": "Your saved chats were put back to match the server. Check the connection and try again."
   }
 }

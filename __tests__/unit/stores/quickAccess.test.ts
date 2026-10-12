@@ -140,3 +140,31 @@ describe('QuickAccessStore – shelf position', () => {
     expect(useQuickAccessStore.getState().shelfPosition).toEqual(expected)
   })
 })
+
+describe('QuickAccessStore – saved-items sync state', () => {
+  const setItem = AsyncStorage.setItem as jest.Mock
+  const getItem = AsyncStorage.getItem as jest.Mock
+
+  it('persists bootstrapped servers once each, under the existing key', () => {
+    useQuickAccessStore.setState({ savedItemsBootstrapped: [] })
+    useQuickAccessStore.getState().markSavedItemsBootstrapped('srv1')
+    useQuickAccessStore.getState().markSavedItemsBootstrapped('srv1')
+    const [key, payload] = setItem.mock.calls.at(-1)
+    expect(key).toBe('threadbase_quick_access')
+    expect(JSON.parse(payload).savedItemsBootstrapped).toEqual(['srv1'])
+  })
+
+  it('marks itself hydrated even when nothing is stored', async () => {
+    useQuickAccessStore.setState({ hydrated: false })
+    getItem.mockResolvedValueOnce(null)
+    await useQuickAccessStore.getState().hydrate()
+    expect(useQuickAccessStore.getState().hydrated).toBe(true)
+  })
+
+  it('hydrates bootstrapped servers and drops malformed entries', async () => {
+    useQuickAccessStore.setState({ savedItemsBootstrapped: [] })
+    getItem.mockResolvedValueOnce(JSON.stringify({ favorites: [], savedItemsBootstrapped: ['srv1', 7] }))
+    await useQuickAccessStore.getState().hydrate()
+    expect(useQuickAccessStore.getState().savedItemsBootstrapped).toEqual(['srv1'])
+  })
+})
