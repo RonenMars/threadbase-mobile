@@ -96,7 +96,10 @@
   },
   "question": {
     "answerSent": "Answer sent — waiting for the agent to move on.",
-    "unsupportedShape": "This prompt needs an answer this app can't send yet — answer it in the terminal."
+    "unsupportedShape": "This prompt needs an answer this app can't send yet — answer it in the terminal.",
+    "openFullScreen": "Open full screen",
+    "minimize": "Minimize",
+    "waiting": "A question is waiting for your answer"
   },
   "errorBanner": {
     "titleSessions": "Sessions didn't load.",
