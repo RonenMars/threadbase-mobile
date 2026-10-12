@@ -100,18 +100,17 @@ describe('ProjectHubCard', () => {
     })
   })
 
-  it('uses distinct keys when merged sessions and conversations share an id', () => {
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+  it('shows a live session once, not again as its own transcript', async () => {
+    const { queryByText, getByText } = await renderCard()
+    expect(getByText('session:shared-id')).toBeTruthy()
+    expect(queryByText('conversation:shared-id')).toBeNull()
+  })
 
-    try {
-      renderCard()
-    } finally {
-      const duplicateKeyWarning = errorSpy.mock.calls.find((args) =>
-        args.some((arg) => typeof arg === 'string' && arg.includes('same key')),
-      )
-      errorSpy.mockRestore()
-      expect(duplicateKeyWarning).toBeUndefined()
-    }
+  it('shows a held session once too', async () => {
+    const held: ProjectGroup = { ...group, sessions: [{ ...session, status: 'idle', ptyAttached: false }] }
+    const { queryByText, getByText } = await renderCard(true, held)
+    expect(getByText('session:shared-id')).toBeTruthy()
+    expect(queryByText('conversation:shared-id')).toBeNull()
   })
 
   const todayGroup: ProjectGroup = { ...group, sessions: [{ ...session, startedAt: new Date().toISOString() }] }

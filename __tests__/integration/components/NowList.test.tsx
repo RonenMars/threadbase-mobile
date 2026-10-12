@@ -287,6 +287,19 @@ describe('NowList', () => {
     expect(queryByText('LAST 7 DAYS')).toBeNull()
   })
 
+  it('does not repeat a held session as a conversation row', async () => {
+    const id = 'cc832dea-a40d-475d-917b-7aa74eb36313'
+    const held = session({ id, conversationId: id, status: 'idle', ptyAttached: false, lifecycle: 'resumable', sessionName: 'Hi' })
+    const transcript = conversation({ id, title: 'Identify which highlight library is used in this project' })
+    const { getByTestId, queryByTestId } = await renderList([
+      asItem(held, NOW - 60 * 60_000),
+      asConv(transcript, NOW - 3 * 60 * 60_000),
+    ])
+
+    expect(getByTestId('first-session-card')).toBeTruthy()
+    expect(queryByTestId(`conversation-row-${id}`)).toBeNull()
+  })
+
   it('offers New session on an empty list', async () => {
     const onNewSession = jest.fn()
     const { getByTestId } = await renderList([], 'state', { onNewSession })
