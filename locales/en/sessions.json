@@ -187,6 +187,7 @@
     "sessionName": "Session Name",
     "projectName": "Project Name",
     "projectPath": "Project Path",
+    "additionalPaths": "Additional Directories",
     "filePath": "File Path",
     "account": "Account",
     "messageCount": "Message Count",
