@@ -5,12 +5,12 @@ describe('i18n', () => {
     expect(i18n.t('common:button.cancel')).toBe('Cancel');
   });
 
-  it('returns singular prompt count', () => {
-    expect(i18n.t('sessions:card.prompts', { count: 1 })).toBe('1 prompt');
+  it('returns singular message count', () => {
+    expect(i18n.t('sessions:card.messages', { count: 1 })).toBe('1 message');
   });
 
-  it('returns plural prompt count', () => {
-    expect(i18n.t('sessions:card.prompts', { count: 3 })).toBe('3 prompts');
+  it('returns plural message count', () => {
+    expect(i18n.t('sessions:card.messages', { count: 3 })).toBe('3 messages');
   });
 
   it('interpolates server name', () => {

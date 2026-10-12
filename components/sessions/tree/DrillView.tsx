@@ -9,7 +9,7 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { useNavLockStore } from '@/stores/navLock'
 import { useServersStore } from '@/stores/servers'
-import { deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, sessionMessageCount } from '@/lib/sessionPresentation'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
@@ -91,7 +91,7 @@ export function DrillView({ node, serverId, onBack, topInset = 0, onScroll }: Pr
     key: `session:${s.serverId}::${s.id}`,
     label: sessionRowTitle(s, { name: getSessionName(s.serverId, s.id), origin: getNameOrigin(s.serverId, s.id) }),
     timestamp: s.completedAt ?? s.startedAt,
-    messageCount: s.promptCount,
+    messageCount: sessionMessageCount(s),
     lastOutput: s.lastOutput ?? null,
     branch: s.branch ?? null,
     tier: deriveSessionPresentation(s).tier,
