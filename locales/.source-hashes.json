@@ -1156,6 +1156,7 @@
   "shared.json:commands.run": "90d3a7847032",
   "shared.json:banner.moreInfo": "59842d981c57",
   "shared.json:app.title": "25cae95b6d51",
+  "shared.json:app.qaBadge": "d851aefa460e",
   "shared.json:quickAccess.tabs.favorites": "07b3e447db02",
   "shared.json:quickAccess.newSessionHere": "e539447e6d81",
   "shared.json:quickAccess.browseDirectory": "dd7a3e19faff",

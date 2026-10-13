@@ -9,7 +9,8 @@
     "moreInfo": "مزيد من المعلومات"
   },
   "app": {
-    "title": "Threadbase"
+    "title": "Threadbase",
+    "qaBadge": "QA"
   },
   "quickAccess": {
     "tabs": {
