@@ -227,7 +227,13 @@ export function ChatComposer({
 
   const chips =
     attachments.length > 0 ? (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+      <ScrollView
+        testID="attachment-chips"
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsScroll}
+        contentContainerStyle={styles.chipsRow}
+      >
         {attachments.map((a) => (
           <View key={a.id} style={styles.chip}>
             <TouchableOpacity
@@ -580,6 +586,9 @@ function makeStyles(theme: Theme) {
       justifyContent: 'center',
       alignItems: 'center',
     },
+    // A horizontal ScrollView defaults to flexGrow: 1, so in the expanded editor's flex column it
+    // split the height with the text field and stretched every chip to fill its half.
+    chipsScroll: { flexGrow: 0, flexShrink: 0 },
     chipsRow: { flexDirection: 'row', ...layoutDirectionStyle('ltr'), gap: spacing.xs, paddingVertical: spacing.xs },
     chip: {
       flexDirection: 'row',
