@@ -25,6 +25,7 @@ import {
 } from '@/hooks/conversationCursor'
 import { cliPromptText } from '@/lib/cliPromptText'
 import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
+import { isTaskNotification } from '@/lib/taskNotificationContext'
 import { inheritedHistorySeam, type RawInheritedHistory } from '@/utils/inheritedHistory'
 
 // The Go server returns snake_case SessionMeta objects in a plain array.
@@ -403,7 +404,8 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
     .reverse()
     .flatMap((page) =>
       (page.messages ?? [])
-        .filter((m) => !(m.role === 'user' && typeof m.text === 'string' && isCodexInjectedContext(m.text)))
+        .filter((m) => !(m.role === 'user' && typeof m.text === 'string'
+          && (isCodexInjectedContext(m.text) || isTaskNotification(m.text))))
         .flatMap((m, i) => {
           const idx = m.message_index ?? (page.message_pagination?.from_index ?? 0) + i
           if (seenIndexes.has(idx)) return []
