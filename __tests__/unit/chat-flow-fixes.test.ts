@@ -3,6 +3,7 @@
 // These tests target the pure logic extracted from each fix — no component
 // rendering needed, no mocks required.
 
+import { isWorkingTurn } from '@/lib/sessionPresentation'
 import type { Message } from '@/types/api'
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -28,18 +29,23 @@ function userMessageText(m: Message): string {
 }
 
 // ── Fix 1+2: isAgentThinking ────────────────────────────────────────────────
-// Condition: session?.status === 'running'
+// Condition: isWorkingTurn(session)
 //            || (pendingSends.length > 0 && lastMessage?.role !== 'assistant')
-// While running the bubble always shows — mid-turn assistant messages
-// (interim replies, sub-agent dispatches) must not hide it. The last-message
-// gate applies only to the optimistic-send window where status lags.
+// While the badge says Working the bubble stays up — mid-turn assistant
+// messages (interim replies, sub-agent dispatches) must not hide it. A gate
+// that holds status at running presents as Needs you and must not. The
+// last-message gate applies only to the optimistic-send window where status lags.
 
 function isAgentThinking(
   status: string | undefined,
   pendingSendsCount: number,
   lastMessageRole: 'user' | 'assistant' | undefined,
+  hasOpenPrompt?: boolean,
 ): boolean {
-  return status === 'running' || (pendingSendsCount > 0 && lastMessageRole !== 'assistant')
+  const session = status
+    ? { status, ptyAttached: true, ownership: 'managed' as const, hasOpenPrompt }
+    : null
+  return isWorkingTurn(session) || (pendingSendsCount > 0 && lastMessageRole !== 'assistant')
 }
 
 describe('isAgentThinking (Fix 1+2)', () => {
@@ -57,6 +63,10 @@ describe('isAgentThinking (Fix 1+2)', () => {
 
   it('true when running even after an interim assistant message (sub-agent run)', () => {
     expect(isAgentThinking('running', 0, 'assistant')).toBe(true)
+  })
+
+  it('false when a gate keeps status running but the badge says needs you', () => {
+    expect(isAgentThinking('running', 0, 'assistant', true)).toBe(false)
   })
 
   it('false when send echoed (assistant replied) and status no longer running', () => {
