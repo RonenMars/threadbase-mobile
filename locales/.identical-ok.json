@@ -4,6 +4,7 @@
   "feedback.json:form.emailPlaceholder": "example address you@example.com",
   "onboarding.json:notifications.previewBrand": "brand wordmark THREADBASE",
   "shared.json:app.title": "brand name \"Threadbase\"",
+  "shared.json:app.qaBadge": "QA build badge; the acronym stays QA in every locale",
   "sessions.json:provider.claude": "product name \"Claude\"",
   "sessions.json:provider.codex": "product name \"Codex\"",
   "sessions.json:provider.copilot": "product name Copilot",
