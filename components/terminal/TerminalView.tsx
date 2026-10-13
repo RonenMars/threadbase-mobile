@@ -162,6 +162,7 @@ export function TerminalView({
     isUploading,
     attachError,
     handleAttach,
+    cancelUpload,
     removeAttachment,
     voice,
     micGranted,
@@ -253,6 +254,7 @@ export function TerminalView({
         // a locked app.
         sendDisabled={answerPhase === 'active'}
         onAttach={handleAttach}
+        onCancelUpload={cancelUpload}
         attachments={attachments}
         onRemoveAttachment={removeAttachment}
         isUploading={isUploading}

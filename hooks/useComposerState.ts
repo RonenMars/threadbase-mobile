@@ -40,6 +40,7 @@ export interface ComposerState {
   isUploading: boolean
   attachError: string | null
   handleAttach: () => void
+  cancelUpload: () => void
   removeAttachment: (id: string) => void
   voice: { listening: boolean; start: () => Promise<void>; stop: () => void }
   micGranted: boolean
@@ -56,6 +57,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const [pendingArgCommand, setPendingArgCommand] = useState<SlashCommand | null>(null)
   const [micGranted, setMicGranted] = useState(false)
   const sendingRef = useRef(false)
+  const uploadAbortRef = useRef<AbortController | null>(null)
   const autoNameTriedRef = useRef(false)
 
   const setDraft = useDraftsStore((s) => s.setDraft)
@@ -199,12 +201,19 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
         images = await pickFromFiles()
         if (images.length === 0) return
       }
+      const controller = new AbortController()
+      uploadAbortRef.current = controller
       setIsUploading(true)
       const uploaded = await Promise.all(
-        images.map(async (img) => ({ ...(await uploadAttachment(serverId, sessionId, img)), localUri: img.uri })),
+        images.map(async (img) => ({
+          ...(await uploadAttachment(serverId, sessionId, img, controller.signal)),
+          localUri: img.uri,
+        })),
       )
+      if (controller.signal.aborted) return
       setAttachments((prev) => [...prev, ...uploaded])
     } catch (err) {
+      if (uploadAbortRef.current?.signal.aborted) return
       if (err instanceof Error && err.message === 'CAMERA_PERMISSION_BLOCKED') {
         Alert.alert(t('error.cameraAccessNeededTitle'), t('error.cameraAccessNeededMessage'), [
           { text: t('button.cancel'), style: 'cancel' },
@@ -216,8 +225,15 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
         setAttachError(attachErrorMessage(err))
       }
     } finally {
+      uploadAbortRef.current = null
       setIsUploading(false)
     }
+  }
+
+  // A slow or unreachable server would otherwise hold the spinner, and the
+  // attach button with it, until the request timed out.
+  const cancelUpload = () => {
+    uploadAbortRef.current?.abort()
   }
 
   // A composer sub-flow: the sheet and the picker borrow focus and hand it back,
@@ -275,6 +291,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     isUploading,
     attachError,
     handleAttach,
+    cancelUpload,
     removeAttachment,
     voice,
     micGranted,

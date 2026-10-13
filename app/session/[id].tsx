@@ -109,6 +109,8 @@ const WAKING_UP_BACKSTOP_MS = 15_000
 // instead of leaving the user on an indefinite spinner.
 const PENDING_PROGRESS_WINDOW_MS = 10_000
 const STUCK_AFTER_MS = 20_000
+// The global slow-query flag waits 60 s; a blank screen needs an exit sooner.
+const DETAIL_CANCEL_AFTER_MS = 6_000
 
 const RAW_KEY_BYTES: Record<'escape' | 'up' | 'down' | 'left' | 'right' | 'tab' | 'shift_tab' | 'enter', string> = {
   escape: '\x1b',
@@ -488,7 +490,19 @@ export default function SessionDetailScreen() {
   // more: its session_ready fired before we got here, and the pending screen
   // would sit on the spinner waiting for an event that will never come again.
   const isPending = (id?.startsWith('pending_') ?? false) || (isStarting && session?.ptyAttached !== true)
-  const isDetailSlow = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
+  const isDetailSlowGlobal = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
+  const isBlankLoading = isLoading && !session
+  const [slowSince, setSlowSince] = useState<string | null>(null)
+  useEffect(() => {
+    if (!isBlankLoading) return
+    const timer = setTimeout(() => setSlowSince(id ?? null), DETAIL_CANCEL_AFTER_MS)
+    return () => {
+      clearTimeout(timer)
+      setSlowSince(null)
+    }
+  }, [isBlankLoading, id])
+  const isDetailSlowLocal = isBlankLoading && slowSince != null && slowSince === id
+  const isDetailSlow = isDetailSlowGlobal || isDetailSlowLocal
   const isSessionNotFound = sessionError instanceof NotFoundError
 
   // When the app returns from background, iOS may have torn down the WS
@@ -939,7 +953,14 @@ export default function SessionDetailScreen() {
         <View style={[styles.flex, { justifyContent: 'center', alignItems: 'center' }]}>
           <ActivityIndicator color={theme.text.secondary} />
         </View>
-        {isDetailSlow ? <SessionDetailSlowBanner onAbort={() => router.back()} /> : null}
+        {isDetailSlow ? (
+          <SessionDetailSlowBanner
+            onAbort={() => {
+              void qc.cancelQueries({ queryKey: ['session', serverId, id] })
+              router.back()
+            }}
+          />
+        ) : null}
         {infoModal}
       </SafeAreaView>
     )
