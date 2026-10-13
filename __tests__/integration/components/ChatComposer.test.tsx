@@ -370,6 +370,18 @@ describe('ChatComposer', () => {
       expect(screen.queryByTestId('attachment-preview')).toBeNull()
     })
 
+    it('shows a thumbnail of the image in its chip and the generic icon for other files', async () => {
+      await renderComposer({ attachments: [photo, log] })
+      expect(screen.getByTestId('attachment-chip-thumb-att-1').props.source).toEqual({ uri: 'file:///tmp/photo.jpg' })
+      expect(screen.queryByTestId('attachment-chip-thumb-att-2')).toBeNull()
+    })
+
+    it('falls back to the generic icon when the thumbnail cannot be decoded', async () => {
+      await renderComposer({ attachments: [photo] })
+      await fireEvent(screen.getByTestId('attachment-chip-thumb-att-1'), 'error')
+      expect(screen.queryByTestId('attachment-chip-thumb-att-1')).toBeNull()
+    })
+
     it('shows a position counter when several images are attached', async () => {
       await renderComposer({ attachments: [photo, { ...photo, id: 'att-3', originalName: 'second.png' }] })
       await fireEvent.press(screen.getByTestId('attachment-chip-att-3'))
