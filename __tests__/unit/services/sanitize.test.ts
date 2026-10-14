@@ -228,11 +228,29 @@ describe('sanitize — circular & malformed', () => {
 })
 
 describe('normalizeError', () => {
-  it('normalizes a real Error and scrubs its message', () => {
-    const err = new Error(`Failed to reach ${LEAKS.serverUrl}`)
+  it('keeps an error message and replaces only the sensitive span', () => {
+    const err = new Error(`Failed to reach ${LEAKS.serverUrl} after timeout`)
     const out = normalizeError(err)
     expect(out.name).toBe('Error')
-    expect(out.message).toBe(REDACTED)
+    expect(out.message).toBe(`Failed to reach ${REDACTED} after timeout`)
+    expect(out.message.includes(LEAKS.serverUrl)).toBe(false)
+    expect(out.message.includes('mymachine.tunnel.example.com')).toBe(false)
+  })
+
+  it('replaces several sensitive spans in one message', () => {
+    const out = normalizeError(
+      new Error(`User ${LEAKS.email} on ${LEAKS.hostname} at ${LEAKS.ip} gave up`),
+    )
+    expect(out.message).toBe(`User ${REDACTED} on ${REDACTED} at ${REDACTED} gave up`)
+    expect(out.message.includes(LEAKS.email)).toBe(false)
+    expect(out.message.includes(LEAKS.hostname)).toBe(false)
+    expect(out.message.includes(LEAKS.ip)).toBe(false)
+  })
+
+  it('keeps the words around a file path', () => {
+    const out = normalizeError(new Error(`open (${LEAKS.absPath}) failed`))
+    expect(out.message).toBe(`open (${REDACTED}) failed`)
+    expect(out.message.includes('secret-project')).toBe(false)
   })
 
   it('keeps a safe error message intact', () => {
@@ -416,7 +434,8 @@ describe('sanitizeEvent — allowlist', () => {
   it('scrubs exception message and drops frame vars/context_line', () => {
     const out = sanitizeEvent(baseEvent()) as Record<string, unknown>
     const exc = (out.exception as { values: Record<string, unknown>[] }).values[0]
-    expect(exc.value).toBe(REDACTED)
+    expect(exc.value).toBe(`Boom at ${REDACTED}`)
+    expect(String(exc.value).includes(LEAKS.serverUrl)).toBe(false)
     const frame = (exc.stacktrace as { frames: Record<string, unknown>[] }).frames[0]
     expect(frame.function).toBe('doThing')
     expect(frame.vars).toBeUndefined()
