@@ -36,6 +36,10 @@ on:
           - internal
           - beta
           - production
+      production_confirmation:
+        description: 'Type PRODUCTION to confirm any App Store or Google Play production deployment'
+        required: false
+        type: string
       release_notes:
         description: 'Release notes (iOS production only)'
         required: false
@@ -68,6 +72,16 @@ jobs:
       # than trusting the image default, which moves between image refreshes.
       DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
     steps:
+      - name: Confirm App Store production deployment
+        if: ${{ inputs.target == 'production' }}
+        env:
+          CONFIRMATION: ${{ inputs.production_confirmation }}
+        run: |
+          if [[ "$CONFIRMATION" != 'PRODUCTION' ]]; then
+            echo '::error::App Store production deployment requires production_confirmation=PRODUCTION'
+            exit 1
+          fi
+
       - name: Warn when building a non-main ref
         if: ${{ inputs.deploy_ref != 'main' }}
         env:
@@ -319,6 +333,16 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Confirm Google Play production deployment
+        if: ${{ inputs.android_track == 'production' }}
+        env:
+          CONFIRMATION: ${{ inputs.production_confirmation }}
+        run: |
+          if [[ "$CONFIRMATION" != 'PRODUCTION' ]]; then
+            echo '::error::Google Play production deployment requires production_confirmation=PRODUCTION'
+            exit 1
+          fi
+
       - name: Warn when building a non-main ref
         if: ${{ inputs.deploy_ref != 'main' }}
         env:
