@@ -40,7 +40,10 @@ import type { AlertInput } from '@/stores/alerts'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
+import { RecoveryOverlay } from '@/components/ui/RecoveryOverlay'
 import { useWsStatus } from '@/hooks/useWsStatus'
+import { useWsReconnectAttempt } from '@/hooks/useWsReconnectAttempt'
+import { queryCause } from '@/types/alerts'
 import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { ModelEffortSheet } from '@/components/sessions/ModelEffortSheet'
 import { canSetModelEffort } from '@/lib/modelEffortSupport'
@@ -91,7 +94,10 @@ const PENDING_PHRASES = [
   "Convincing the electrons to cooperate…",
 ]
 
-const RECONNECTING_BANNER_DELAY_MS = 5_000
+/** Show reconnecting UI once the second WS reconnect has been scheduled. */
+const WS_RECONNECT_LOADER_ATTEMPT = 2
+/** After the loader appears, escalate to an error alert if still down. */
+const WS_RECONNECT_ESCALATE_MS = 15_000
 // Max time the waking-up overlay waits on a first terminal_output before it
 // gives up and renders the terminal underneath (see wakeTimedOut).
 const WAKING_UP_WS_TIMEOUT_MS = 8_000
@@ -537,18 +543,38 @@ export default function SessionDetailScreen() {
   }, [isSessionNotFound, serverId, id, qc])
 
   // Connection staleness: a dead WS must not masquerade as a live session.
-  // Delay the visible stale state so brief WS reconnects don't interrupt the UI.
+  // First reconnect stays silent; loader from the second scheduled attempt.
   const wsStatus = useWsStatus(serverId)
+  const wsReconnectAttempt = useWsReconnectAttempt(serverId)
   const wsDisconnected = wsStatus !== 'connected'
-  const [showReconnectBanner, setShowReconnectBanner] = useState(false)
+  const showReconnectLoader =
+    wsDisconnected && wsReconnectAttempt >= WS_RECONNECT_LOADER_ATTEMPT
+  const serverCount = useServersStore((s) => Object.keys(s.servers).length)
+  const showReconnectBanner = showReconnectLoader && serverCount !== 1
+  const showReconnectOverlay = showReconnectLoader && serverCount === 1
+  const [wsEscalated, setWsEscalated] = useState(false)
   useEffect(() => {
-    if (!wsDisconnected) {
-      queueMicrotask(() => setShowReconnectBanner(false))
+    if (!showReconnectLoader) {
+      queueMicrotask(() => setWsEscalated(false))
       return
     }
-    const timer = setTimeout(() => setShowReconnectBanner(true), RECONNECTING_BANNER_DELAY_MS)
+    const timer = setTimeout(() => setWsEscalated(true), WS_RECONNECT_ESCALATE_MS)
     return () => clearTimeout(timer)
-  }, [wsDisconnected])
+  }, [showReconnectLoader])
+
+  const wsEscalatedAlerts = useMemo((): AlertInput[] => {
+    if (!wsEscalated || !showReconnectLoader) return []
+    return [{
+      id: 'ws-reconnect-escalated',
+      cause: queryCause('ws-reconnect'),
+      level: 'error',
+      title: t('common:recovery.wsEscalatedTitle'),
+      message: t('common:recovery.wsEscalatedMessage'),
+      retryable: true,
+      hideCloseButton: true,
+    }]
+  }, [wsEscalated, showReconnectLoader, t])
+  useAlertListSync(wsEscalatedAlerts)
 
   const [infoVisible, setInfoVisible] = useState(false)
   const [renameSheetVisible, setRenameSheetVisible] = useState(false)
@@ -1269,6 +1295,7 @@ export default function SessionDetailScreen() {
             {showReconnectBanner ? (
               <ConnectionBanner variant="reconnecting" />
             ) : null}
+            <RecoveryOverlay visible={showReconnectOverlay} />
             {/*
               An external session falls through the DiscoveredSessionScreen gate
               into this live view, where it streams transcript and can never
@@ -1281,7 +1308,7 @@ export default function SessionDetailScreen() {
                 isTakingOver={adoptSession.isPending}
               />
             ) : null}
-            <View style={showReconnectBanner ? [styles.flex, styles.staleContent] : styles.flex}>
+            <View style={showReconnectLoader ? [styles.flex, styles.staleContent] : styles.flex}>
             {showTerminalSurface ? (
               <TerminalView
                 serverId={serverId}
