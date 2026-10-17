@@ -190,6 +190,7 @@ class WSClient {
   private _status: 'connecting' | 'connected' | 'disconnected' = 'disconnected'
   private _lastError: WsPermanentError | null = null
   private statusListeners: Set<(s: WSClient['_status']) => void> = new Set()
+  private attemptListeners: Set<(attempt: number) => void> = new Set()
   private encryption: WsConnectOptions = {}
   private dialIndex = 0
   private context: TransportContext | null = null
@@ -254,7 +255,7 @@ class WSClient {
     this.url = wsUrl
     this.addresses = addresses
     this.wsUrls = wsUrls
-    this.reconnectAttempt = 0
+    this._setReconnectAttempt(0)
     this.ticketUpgradeRetryAvailable = true
     void this._doConnect()
   }
@@ -364,7 +365,7 @@ class WSClient {
       // once a frame unseals (below). Plaintext keeps resetting here — a bad
       // frame never closes it, and a redial costs no handshake.
       if (!context) {
-        this.reconnectAttempt = 0
+        this._setReconnectAttempt(0)
         this.ticketUpgradeRetryAvailable = true
       }
       this._setStatus('connected')
@@ -411,7 +412,7 @@ class WSClient {
       }
       if (context && !firstFrameVerified) {
         firstFrameVerified = true
-        this.reconnectAttempt = 0
+        this._setReconnectAttempt(0)
         this.ticketUpgradeRetryAvailable = true
       }
       if (msg.type === 'session_ready') {
@@ -486,9 +487,15 @@ class WSClient {
   private _scheduleReconnect() {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
     const delay = BACKOFF_MS[Math.min(this.reconnectAttempt, BACKOFF_MS.length - 1)]
-    this.reconnectAttempt++
+    this._setReconnectAttempt(this.reconnectAttempt + 1)
     logConnection(this.serverId, 'schedule_reconnect', this.reconnectAttempt)
     this.reconnectTimer = setTimeout(() => void this._doConnect(), delay)
+  }
+
+  private _setReconnectAttempt(attempt: number) {
+    if (this.reconnectAttempt === attempt) return
+    this.reconnectAttempt = attempt
+    this.attemptListeners.forEach((l) => l(attempt))
   }
 
   private _setStatus(s: WSClient['_status']) {
@@ -529,7 +536,7 @@ class WSClient {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
-    this.reconnectAttempt = 0
+    this._setReconnectAttempt(0)
     void this._doConnect()
   }
 
@@ -557,6 +564,11 @@ class WSClient {
     return this._status
   }
 
+  /** How many reconnects have been scheduled since the last successful open (0 = none yet). */
+  reconnectAttemptCount(): number {
+    return this.reconnectAttempt
+  }
+
   lastError(): WsPermanentError | null {
     return this._lastError
   }
@@ -570,6 +582,11 @@ class WSClient {
     this.statusListeners.add(listener)
     return () => this.statusListeners.delete(listener)
   }
+
+  onReconnectAttempt(listener: (attempt: number) => void): () => void {
+    this.attemptListeners.add(listener)
+    return () => this.attemptListeners.delete(listener)
+  }
 }
 
 export type WSMessageWithServer = WSMessage & { serverId: string }
@@ -580,6 +597,7 @@ class WSClientManager {
   private clients: Map<string, WSClient> = new Map()
   // Manager-level status listeners that survive individual client replacement.
   private managerStatusListeners: Set<(serverId: string, s: 'connecting' | 'connected' | 'disconnected') => void> = new Set()
+  private managerAttemptListeners: Set<(serverId: string, attempt: number) => void> = new Set()
   // How many focused session/conversation views currently want each session's
   // PTY stream. One socket stays subscribed until the last view releases.
   private sessionRefCounts = new Map<string, Map<string, number>>()
@@ -601,6 +619,9 @@ class WSClientManager {
       client.onStatusChange((s) => {
         if (s === 'connected') this.resubscribeHeldSessions(serverId)
         this.managerStatusListeners.forEach((l) => l(serverId, s))
+      })
+      client.onReconnectAttempt((attempt) => {
+        this.managerAttemptListeners.forEach((l) => l(serverId, attempt))
       })
     }
     client.connect(url, apiKey, encryption)
@@ -675,6 +696,15 @@ class WSClientManager {
 
   status(serverId: string): 'connecting' | 'connected' | 'disconnected' {
     return this.clients.get(serverId)?.status() ?? 'disconnected'
+  }
+
+  reconnectAttempt(serverId: string): number {
+    return this.clients.get(serverId)?.reconnectAttemptCount() ?? 0
+  }
+
+  onAnyReconnectAttempt(listener: (serverId: string, attempt: number) => void): () => void {
+    this.managerAttemptListeners.add(listener)
+    return () => this.managerAttemptListeners.delete(listener)
   }
 
   lastError(serverId: string): WsPermanentError | null {

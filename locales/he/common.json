@@ -45,7 +45,8 @@
       "loadedAgo_one": "לפני דקה",
       "loadedAgo_two": "לפני שתי דקות",
       "loadedAgo_other": "לפני {{count}} דקות",
-      "retryNow": "נסה שוב עכשיו"
+      "retryNow": "נסה שוב עכשיו",
+      "dismiss": "הסתר"
     }
   },
   "error": {
@@ -133,5 +134,11 @@
     "timeout": "השרת לקח יותר מדי זמן להגיב",
     "tooManyRequests": "יותר מדי בקשות",
     "serverError": "השרת לא הצליח להשלים את הבקשה"
+  },
+  "recovery": {
+    "title": "מתחברים מחדש…",
+    "message": "מנסים שוב בקשה שנכשלה.",
+    "wsEscalatedTitle": "עדיין מנותקים",
+    "wsEscalatedMessage": "החיבור החי עדיין לא חזר. ממשיכים לנסות ברקע."
   }
 }
