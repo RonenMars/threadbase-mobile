@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useThrottledCallback } from 'use-debounce'
 import { narrowSessionStatus } from '@/lib/sessionPresentation'
 import { createApiForServer } from '@/services/api-client'
+import { withSilentRetries } from '@/services/error-policy'
 import { getServerWarmupState } from '@/services/server-warmup'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
@@ -199,21 +200,24 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
           const label = server?.label
 
           try {
-            const sessions = await fetchAllPagesForServer(
-              serverId,
-              label,
-              wireSortBy,
-              order,
-              status,
-              (loadedSoFar, serverTotal) => {
-                const slice = serverProgressRef.current.get(serverId)
-                if (slice) {
-                  slice.loaded = loadedSoFar
-                  slice.total = serverTotal
-                  flushAggregate()
-                }
-              },
-              signal,
+            const sessions = await withSilentRetries(
+              () => fetchAllPagesForServer(
+                serverId,
+                label,
+                wireSortBy,
+                order,
+                status,
+                (loadedSoFar, serverTotal) => {
+                  const slice = serverProgressRef.current.get(serverId)
+                  if (slice) {
+                    slice.loaded = loadedSoFar
+                    slice.total = serverTotal
+                    flushAggregate()
+                  }
+                },
+                signal,
+              ),
+              { signal },
             )
             recordSuccess(serverId)
             lastGoodByServerRef.current.set(serverId, sessions)

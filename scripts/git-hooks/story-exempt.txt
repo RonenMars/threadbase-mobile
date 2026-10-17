@@ -11,6 +11,8 @@ components/alerts/StatusSheet.tsx
 components/sessions/now/NowList.tsx
 # Store-driven host: announcements, CriticalDialog, and StatusSheet.
 components/alerts/AlertHost.tsx
+# Store-driven host: RecoveryOverlay + Status pill while RQ silently retries.
+components/alerts/RecoveryHost.tsx
 # Store-driven producer: warning lives on the status pill and Status sheet.
 components/servers/HostPressureBanner.tsx
 # Store-driven producer: cache integrity lives on the pill and Status sheet.

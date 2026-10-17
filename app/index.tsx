@@ -34,7 +34,7 @@ import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
-import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { isServerFetchErrorVisible, useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
 import { ListBottomScrim } from '@/components/sessions/shared/ListBottomScrim'
 import { useHideOnScrollDown } from '@/hooks/useHideOnScrollDown'
@@ -124,6 +124,8 @@ export default function ProjectsHub() {
   // Connection status. Banners and the servers modal AND-combine WS with the
   // last HTTP fetch; the header no longer carries a status bell.
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
+  const dismissedFailureAt = useServerFetchStatusStore((s) => s.dismissedFailureAt)
+  const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
   const [wsConnectedCount, setWsConnectedCount] = useState(0)
   useEffect(() => {
     const updateCount = () => {
@@ -294,8 +296,12 @@ export default function ProjectsHub() {
   const allServersFailed =
     activeServerIds.length > 0 &&
     sessionsDone &&
-    activeServerIds.every((serverId) => fetchStatuses[serverId]?.status === 'error')
-  const failedServerIds = activeServerIds.filter((id) => fetchStatuses[id]?.status === 'error')
+    activeServerIds.every((serverId) =>
+      isServerFetchErrorVisible(fetchStatuses[serverId], dismissedFailureAt[serverId]),
+    )
+  const failedServerIds = activeServerIds.filter((id) =>
+    isServerFetchErrorVisible(fetchStatuses[id], dismissedFailureAt[id]),
+  )
   useClaimInline(allServersFailed ? [] : failedServerIds.map(serverCause))
 
   // Sessions cluster to the top of the merged list under the LIVE header
@@ -554,6 +560,9 @@ export default function ProjectsHub() {
           onRetry={() => retryFailed()}
           onDetails={openStatusSurface}
           detailsLabel={t('servers:action.details')}
+          onDismiss={() => {
+            for (const id of activeServerIds) dismissFailure(id)
+          }}
         />
       ) : null}
 

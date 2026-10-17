@@ -1,4 +1,4 @@
-import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { isServerFetchErrorVisible, useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 
 beforeEach(() => {
   useServerFetchStatusStore.getState().reset()
@@ -36,6 +36,21 @@ describe('useServerFetchStatusStore', () => {
     const entry = useServerFetchStatusStore.getState().statuses['srv-A']
     expect(entry?.status).toBe('ok')
     expect(entry?.error).toBeUndefined()
+  })
+
+  it('dismissFailure hides only the current failure episode', () => {
+    useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('boom'))
+    const first = useServerFetchStatusStore.getState().statuses['srv-A']!
+    expect(isServerFetchErrorVisible(first, undefined)).toBe(true)
+
+    useServerFetchStatusStore.getState().dismissFailure('srv-A')
+    const dismissedAt = useServerFetchStatusStore.getState().dismissedFailureAt['srv-A']
+    expect(isServerFetchErrorVisible(first, dismissedAt)).toBe(false)
+
+    useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('boom again'))
+    const second = useServerFetchStatusStore.getState().statuses['srv-A']!
+    expect(second.lastCheckedAt).not.toBe(first.lastCheckedAt)
+    expect(isServerFetchErrorVisible(second, dismissedAt)).toBe(true)
   })
 
   it('recordSuccess is a no-op reference when the server is already ok', () => {
