@@ -25,6 +25,7 @@ interface Props {
   failed?: boolean
   onRetry?: () => void
   onDetails?: () => void
+  onDismiss?: () => void
 }
 
 /**
@@ -44,6 +45,7 @@ export function ServerHeaderRow({
   failed,
   onRetry,
   onDetails,
+  onDismiss,
 }: Props) {
   const { styles, theme } = useThemedStyles(makeStyles)
   const { t } = useTranslation(['common', 'sessions', 'servers'])
@@ -120,6 +122,7 @@ export function ServerHeaderRow({
           retryLabel={t('common:alert.inline.retryNow')}
           onDetails={onDetails}
           detailsLabel={t('servers:action.details')}
+          onDismiss={onDismiss}
         />
       ) : null}
     </View>

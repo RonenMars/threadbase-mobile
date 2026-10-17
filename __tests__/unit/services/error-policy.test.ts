@@ -1,5 +1,13 @@
-import { AuthError, NotFoundError } from '@/services/api-client'
-import { classifyError, isTransientError } from '@/services/error-policy'
+import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
+import { EnvelopeError } from '@/services/authed-fetch'
+import {
+  AUTH_RETRY_DELAY_MS,
+  classifyError,
+  isTransientError,
+  queryRetryDelay,
+  shouldRetryQuery,
+  withSilentRetries,
+} from '@/services/error-policy'
 import i18n from '@/test-utils/i18n-setup'
 
 const t = i18n.getFixedT('en', 'common')
@@ -89,5 +97,74 @@ describe('isTransientError', () => {
 
   it('does not treat an unknown code with no status as transient', () => {
     expect(isTransientError({ code: 'SOMETHING_ELSE' })).toBe(false)
+  })
+})
+
+describe('shouldRetryQuery', () => {
+  it('never retries a 404', () => {
+    expect(shouldRetryQuery(0, { status: 404 })).toBe(false)
+    expect(shouldRetryQuery(0, new NotFoundError('/api/x'))).toBe(false)
+  })
+
+  it('gives 401/403 exactly one retry', () => {
+    expect(shouldRetryQuery(0, new AuthError('shared', '/api/sessions'))).toBe(true)
+    expect(shouldRetryQuery(1, new AuthError('shared', '/api/sessions'))).toBe(false)
+    expect(shouldRetryQuery(0, { status: 403 })).toBe(true)
+    expect(shouldRetryQuery(1, { status: 403 })).toBe(false)
+  })
+
+  it('does not retry a permanent EnvelopeError', () => {
+    const err = new EnvelopeError('E2EE_DEVICE_REVOKED', 'revoked', '/api/x', false)
+    expect(shouldRetryQuery(0, err)).toBe(false)
+  })
+
+  it('retries a retryable EnvelopeError twice', () => {
+    const err = new EnvelopeError('E2EE_TRANSIENT', 'busy', '/api/x', true)
+    expect(shouldRetryQuery(0, err)).toBe(true)
+    expect(shouldRetryQuery(1, err)).toBe(true)
+    expect(shouldRetryQuery(2, err)).toBe(false)
+  })
+
+  it('retries ordinary network failures twice', () => {
+    const err = new NetworkError('Failed to reach server')
+    expect(shouldRetryQuery(0, err)).toBe(true)
+    expect(shouldRetryQuery(1, err)).toBe(true)
+    expect(shouldRetryQuery(2, err)).toBe(false)
+  })
+})
+
+describe('queryRetryDelay', () => {
+  it('uses 1.5s for auth failures', () => {
+    expect(queryRetryDelay(0, { status: 401 })).toBe(AUTH_RETRY_DELAY_MS)
+  })
+
+  it('uses 2s then 1s for ordinary failures', () => {
+    expect(queryRetryDelay(0, new NetworkError('boom'))).toBe(2000)
+    expect(queryRetryDelay(1, new NetworkError('boom'))).toBe(1000)
+  })
+})
+
+describe('withSilentRetries', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('returns on first success without delaying', async () => {
+    const fn = jest.fn().mockResolvedValue('ok')
+    await expect(withSilentRetries(fn)).resolves.toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries then succeeds after the first delay', async () => {
+    const fn = jest.fn()
+      .mockRejectedValueOnce(new NetworkError('boom'))
+      .mockResolvedValueOnce('ok')
+    const pending = withSilentRetries(fn)
+    await jest.advanceTimersByTimeAsync(2000)
+    await expect(pending).resolves.toBe('ok')
+    expect(fn).toHaveBeenCalledTimes(2)
   })
 })
