@@ -388,6 +388,7 @@ jest.mock('@sentry/react-native', () => {
     getClient: jest.fn(() => undefined),
     spanToJSON: jest.fn(() => ({})),
     metrics: { count: jest.fn(), gauge: jest.fn(), distribution: jest.fn() },
+    logger: { info: jest.fn() },
     ErrorBoundary: ({ children }) => children,
     __scope: scope,
   }

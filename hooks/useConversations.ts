@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { AppState } from 'react-native'
 import { createApiForServer } from '@/services/api-client'
+import { traceHistoryPayload, isHistoryPayloadTracingEnabled } from '@/services/history-payload-trace'
 import { getServerWarmupState } from '@/services/server-warmup'
 import { getEtag, setEtag, deleteEtag } from '@/services/etag-store'
 import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'
@@ -479,85 +480,112 @@ export function useConversation(
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     queryFn: async ({ pageParam }) => {
-      const params = new URLSearchParams()
+      const tracing = isHistoryPayloadTracingEnabled()
+      // eslint-disable-next-line react-hooks/purity -- queryFn runs on fetch, not during render.
+      const startedAt = Date.now()
+      const cached = tracing
+        ? queryClient.getQueryData<InfiniteData<RawConversationDetail, ConversationPageParam>>(queryKey)
+        : undefined
+      let responseStatus = 200
+      const fetchPage = async () => {
+        const params = new URLSearchParams()
 
-      // Newer-direction page. { after } = anchored backfill (msg_limit 120);
-      // { resume } = tail delta-on-open (msg_limit 80). Both are plain fetches —
-      // after_index/anchored windows always answer 200, never 304, so
-      // If-None-Match would be misleading dead code.
-      if (typeof pageParam === 'object') {
-        const isResume = 'resume' in pageParam
-        // The server window is [after_index, after_index + limit) — INCLUSIVE
-        // of the cursor. { after } carries the server's own next_after_index
-        // (already the first index we don't have), but { resume } is the
-        // client-derived max index we DO have — so it must be bumped by one.
-        // Without the +1 every delta drain re-fetches the tail message, and
-        // each re-fetch appends a duplicate-id row (see mergeConversationPages)
-        // that grows the list by one phantom message per poll tick.
-        const cursor = isResume ? pageParam.resume + 1 : pageParam.after
-        params.set('msg_limit', String(isResume ? CONVERSATION_MESSAGE_LIMIT : CONVERSATION_ANCHORED_LIMIT))
-        params.set('after_index', String(cursor))
-        return api.get<RawConversationDetail>(
-          `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
+        // Newer-direction page. { after } = anchored backfill (msg_limit 120);
+        // { resume } = tail delta-on-open (msg_limit 80). Both are plain fetches —
+        // after_index/anchored windows always answer 200, never 304, so
+        // If-None-Match would be misleading dead code.
+        if (typeof pageParam === 'object') {
+          const isResume = 'resume' in pageParam
+          // The server window is [after_index, after_index + limit) — INCLUSIVE
+          // of the cursor. { after } carries the server's own next_after_index
+          // (already the first index we don't have), but { resume } is the
+          // client-derived max index we DO have — so it must be bumped by one.
+          // Without the +1 every delta drain re-fetches the tail message, and
+          // each re-fetch appends a duplicate-id row (see mergeConversationPages)
+          // that grows the list by one phantom message per poll tick.
+          const cursor = isResume ? pageParam.resume + 1 : pageParam.after
+          params.set('msg_limit', String(isResume ? CONVERSATION_MESSAGE_LIMIT : CONVERSATION_ANCHORED_LIMIT))
+          params.set('after_index', String(cursor))
+          return api.get<RawConversationDetail>(
+            `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
+          )
+        }
+
+        const isFirstPage = pageParam === -1
+
+        // Anchored first page: a bounded window centered on the anchor. Bypasses
+        // the ETag path entirely — it must not read or write the tail page's
+        // validator.
+        if (isFirstPage && anchorIndex != null) {
+          params.set('msg_limit', String(CONVERSATION_ANCHORED_LIMIT))
+          params.set('anchor_index', String(anchorIndex))
+          return api.get<RawConversationDetail>(
+            `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
+          )
+        }
+
+        params.set('msg_limit', String(CONVERSATION_MESSAGE_LIMIT))
+        if (!isFirstPage) {
+          params.set('before_index', String(pageParam))
+        } else if (maxBytes != null) {
+          // Additive param (see docs/superpowers/specs/2026-08-15-session-history-byte-budget-design.md).
+          // Only the first page is byte-bounded — older pages page in by
+          // before_index/msg_limit like any other backward fetch.
+          params.set('max_bytes', String(maxBytes))
+        }
+        const path = `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
+
+        // Back-pages are immutable history — fetch normally, no conditional check.
+        if (!isFirstPage) {
+          return api.get<RawConversationDetail>(path)
+        }
+
+        // First page: send If-None-Match with the last known ETag (if any) and
+        // use the conditional path so a 304 keeps the cached copy. Scoped by
+        // maxBytes so a byte-bounded seed and the plain tail view never trade
+        // each other's validator.
+        const etagKey = maxBytes != null ? `${serverId}::${id}::seed-${maxBytes}` : `${serverId}::${id}`
+        const knownEtag = getEtag(etagKey)
+        const res = await api.getWithMeta<RawConversationDetail>(
+          path,
+          knownEtag ? { headers: { 'If-None-Match': knownEtag } } : undefined,
         )
+
+        responseStatus = res.status
+        if (res.status === 304) {
+          // Unchanged: reuse the previously cached first page so merge output is
+          // identical. If somehow nothing is cached, fall back to a full fetch.
+          const cached =
+            queryClient.getQueryData<InfiniteData<RawConversationDetail, ConversationPageParam>>(queryKey)
+          const cachedFirst = cached?.pages?.[0]
+          if (cachedFirst) return cachedFirst
+          responseStatus = 200
+          return api.get<RawConversationDetail>(path)
+        }
+
+        // 200: remember the validator (null against a non-ETag server clears it,
+        // so we simply stop sending If-None-Match — graceful degradation).
+        if (res.etag) setEtag(etagKey, res.etag)
+        else deleteEtag(etagKey)
+        // body is non-null on a 200 from requestWithMeta.
+        return res.body as RawConversationDetail
       }
-
-      const isFirstPage = pageParam === -1
-
-      // Anchored first page: a bounded window centered on the anchor. Bypasses
-      // the ETag path entirely — it must not read or write the tail page's
-      // validator.
-      if (isFirstPage && anchorIndex != null) {
-        params.set('msg_limit', String(CONVERSATION_ANCHORED_LIMIT))
-        params.set('anchor_index', String(anchorIndex))
-        return api.get<RawConversationDetail>(
-          `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
-        )
+      const page = await fetchPage()
+      if (tracing) {
+        traceHistoryPayload(page, {
+          // eslint-disable-next-line react-hooks/purity -- queryFn runs on fetch, not during render.
+          duration_ms: Date.now() - startedAt,
+          status: responseStatus,
+          before_index: typeof pageParam === 'number' ? pageParam : -1,
+          after_index: typeof pageParam === 'object'
+            ? ('resume' in pageParam ? pageParam.resume + 1 : pageParam.after) : -1,
+          anchor_index: anchorIndex ?? -1,
+          max_bytes: maxBytes ?? -1,
+          cached_pages: cached?.pages.length ?? 0,
+          cached_messages: cached?.pages.reduce((n, p) => n + (p.messages?.length ?? 0), 0) ?? 0,
+        })
       }
-
-      params.set('msg_limit', String(CONVERSATION_MESSAGE_LIMIT))
-      if (!isFirstPage) {
-        params.set('before_index', String(pageParam))
-      } else if (maxBytes != null) {
-        // Additive param (see docs/superpowers/specs/2026-08-15-session-history-byte-budget-design.md).
-        // Only the first page is byte-bounded — older pages page in by
-        // before_index/msg_limit like any other backward fetch.
-        params.set('max_bytes', String(maxBytes))
-      }
-      const path = `/api/conversations/${encodeURIComponent(id)}?${params.toString()}`
-
-      // Back-pages are immutable history — fetch normally, no conditional check.
-      if (!isFirstPage) {
-        return api.get<RawConversationDetail>(path)
-      }
-
-      // First page: send If-None-Match with the last known ETag (if any) and
-      // use the conditional path so a 304 keeps the cached copy. Scoped by
-      // maxBytes so a byte-bounded seed and the plain tail view never trade
-      // each other's validator.
-      const etagKey = maxBytes != null ? `${serverId}::${id}::seed-${maxBytes}` : `${serverId}::${id}`
-      const knownEtag = getEtag(etagKey)
-      const res = await api.getWithMeta<RawConversationDetail>(
-        path,
-        knownEtag ? { headers: { 'If-None-Match': knownEtag } } : undefined,
-      )
-
-      if (res.status === 304) {
-        // Unchanged: reuse the previously cached first page so merge output is
-        // identical. If somehow nothing is cached, fall back to a full fetch.
-        const cached =
-          queryClient.getQueryData<InfiniteData<RawConversationDetail, ConversationPageParam>>(queryKey)
-        const cachedFirst = cached?.pages?.[0]
-        if (cachedFirst) return cachedFirst
-        return api.get<RawConversationDetail>(path)
-      }
-
-      // 200: remember the validator (null against a non-ETag server clears it,
-      // so we simply stop sending If-None-Match — graceful degradation).
-      if (res.etag) setEtag(etagKey, res.etag)
-      else deleteEtag(etagKey)
-      // body is non-null on a 200 from requestWithMeta.
-      return res.body as RawConversationDetail
+      return page
     },
     getNextPageParam: (last) => {
       const p = last.message_pagination

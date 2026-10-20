@@ -38,6 +38,7 @@
 
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sentry from '@sentry/react-native'
+import { SAFE_API_ROUTES } from './api-route-template'
 import {
   sanitizeEvent,
   sanitizeBreadcrumb,
@@ -119,7 +120,7 @@ export function isSentryTrackingEnforced(): boolean {
 
 /** Bump when the launch diagnostics notice changes in substance, so everyone is
  * asked again. */
-const DIAGNOSTICS_TERMS_VERSION = 1
+const DIAGNOSTICS_TERMS_VERSION = 2
 
 /**
  * Which diagnostics terms this build asks the user to accept. Enforced builds
@@ -292,7 +293,7 @@ async function performInit(startupConsent: boolean): Promise<void> {
     // Same rule for the native crash handler: it is armed once at native init,
     // so without consent at launch no native crash report can be written or sent.
     enableNativeCrashHandling: startupConsent,
-    enableLogs: full,
+    enableLogs: true,
     enableAutoConsoleLogs: full,
     enableMetrics: full,
     enableWatchdogTerminationTracking: full,
@@ -321,6 +322,17 @@ async function performInit(startupConsent: boolean): Promise<void> {
           ]
         : filterIntegrations(defaults),
 
+    beforeSendLog: (log) => {
+      if (!diagnosticsEnabled) return null
+      if (full) return log
+      if (log.message !== 'api.response_size') return null
+      const route = log.attributes?.api_route
+      const size = log.attributes?.response_body_bytes
+      if (typeof route !== 'string' || !SAFE_API_ROUTES.has(route) ||
+          typeof size !== 'number' || !Number.isSafeInteger(size) || size < 0) return null
+      // Drop all SDK/call-site attributes except the two explicitly disclosed fields.
+      return { ...log, attributes: { api_route: route, response_body_bytes: size } }
+    },
     beforeSend: (event) => beforeSend(event as unknown as SentryLikeEvent) as never,
     beforeBreadcrumb: (breadcrumb) =>
       beforeBreadcrumb(breadcrumb as unknown as SentryLikeBreadcrumb) as never,
@@ -635,3 +647,32 @@ export const wrap = Sentry.wrap
 
 /** The Sentry ErrorBoundary (used inside our RootErrorBoundary fallback path). */
 export const SentryErrorBoundary = Sentry.ErrorBoundary
+
+/** Numeric-only history diagnostics, using the existing QA logs and consent gates. */
+export function isHistoryPayloadTracingEnabled(): boolean {
+  return sdkReady && ENFORCE_TRACKING && diagnosticsEnabled
+}
+
+export function logHistoryPayload(fields: Record<string, number>): void {
+  if (!isHistoryPayloadTracingEnabled()) return
+  try {
+    const numeric = Object.fromEntries(Object.entries(fields).filter(([, value]) => Number.isFinite(value)))
+    Sentry.logger.info('conversation.history_payload', numeric)
+  } catch {
+    // Diagnostics must never interrupt history loading.
+  }
+}
+
+export function isApiPayloadDiagnosticsEnabled(): boolean {
+  return sdkReady && diagnosticsEnabled
+}
+
+export function logApiPayload(route: string, bytes: number): void {
+  if (!isApiPayloadDiagnosticsEnabled() || !SAFE_API_ROUTES.has(route)) return
+  if (!Number.isSafeInteger(bytes) || bytes < 0) return
+  try {
+    Sentry.logger.info('api.response_size', { api_route: route, response_body_bytes: bytes })
+  } catch {
+    // Diagnostics must not interrupt API requests.
+  }
+}
