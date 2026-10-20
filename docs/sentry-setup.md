@@ -18,7 +18,7 @@ work independent of that setting and send only that one report (see
 
 ## What is (and isn't) sent
 
-Everything that leaves the device passes through the centralized sanitizer
+Crash events and breadcrumbs pass through the centralized sanitizer
 (`services/sanitize.ts`) via `beforeSend` / `beforeBreadcrumb`. See
 `docs/privacy-policy/proposed-privacy-policy.md` for the authoritative list. In short:
 
@@ -34,6 +34,18 @@ Everything that leaves the device passes through the centralized sanitizer
   credentials, tokens, headers, server URLs, hostnames, IPs, repository
   names/paths, absolute/home paths, session names/titles, WebSocket payloads,
   request/response bodies, clipboard contents, or device names.
+
+Consented API payload diagnostics also send only a fixed, allowlisted route template
+(for example `/api/conversations/:id`) and the decoded JSON response-body size in
+UTF-8 bytes. These are Sentry logs named `api.response_size`, not wire-transfer
+measurements. They cover successful JSON responses on supported routes in the
+shared API client; errors, empty/304 responses, unknown routes and streaming
+responses are not measured. IDs, query parameters, URLs, headers and bodies are
+never log attributes. `beforeSendLog` drops unrelated logs and extra attributes in
+standard builds. Diagnostics terms version 2 requires a fresh answer before
+reporting starts, including for users who previously opted in. Detailed history
+payload breakdowns remain QA-only. Log retention follows the Sentry project
+log-retention setting.
 
 Session Replay, screenshots, view-hierarchy attachment, console capture,
 network breadcrumbs, and default PII are all **disabled** in
@@ -85,7 +97,7 @@ Whenever a build can send anything (a DSN, and an environment that permits repor
 Standard builds offer "Allow diagnostics" and "Don't allow", and the app works either way.
 Enforced builds (`EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING`) offer only "I agree".
 Until the notice is answered, `useCrashReportingSync` holds consent off whatever the stored setting says.
-The answer is stored against a terms key (`standard-1`, `enforced-1`), so bumping `DIAGNOSTICS_TERMS_VERSION` in `services/sentry.ts` asks everyone again, and moving from a test build to a store build (which keeps app data) asks again too.
+The answer is stored against a terms key (`standard-2`, `enforced-2`), so bumping `DIAGNOSTICS_TERMS_VERSION` in `services/sentry.ts` asks everyone again, and moving from a test build to a store build (which keeps app data) asks again too.
 Local E2E builds (`e2e/ensure-release-build.js`) blank the DSN so the notice never sits in front of a Maestro flow.
 
 ## The QA channel

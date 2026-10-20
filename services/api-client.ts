@@ -1,3 +1,4 @@
+import { readApiJson } from './api-payload-diagnostics'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
@@ -437,7 +438,7 @@ async function request<T>(
   }
 
   if (traced) traceMark('response', `HTTP ${response.status}`)
-  const json = (await response.json()) as T
+  const json = await readApiJson<T>(response, path)
   if (traced) traceMark('parsed')
   if (isWarmupFetchEndpoint(method, path)) {
     useServerFetchStatusStore.getState().recordReady(serverId)
@@ -620,7 +621,7 @@ async function requestWithMeta<T>(
 
   useServerFetchStatusStore.getState().recordReady(serverId)
   if (traced) traceMark('response', `HTTP ${response.status}`)
-  const parsed = (await response.json()) as T
+  const parsed = await readApiJson<T>(response, path)
   if (traced) traceMark('parsed')
   return { status: response.status, etag, body: parsed }
 }
