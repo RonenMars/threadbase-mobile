@@ -299,6 +299,8 @@ The `[skip-ci]` suffix keeps CI from re-triggering on the bump-only commit. Neve
 
 **Deploying to QA, Beta, or Production — Always Ask Which Platform(s):** Before triggering the QA (Firebase), Beta, or Deploy workflows, always ask the user which platform(s) to build and deploy: iOS, Android, or both. Do not assume `all`. This applies to every deployment request unless the user explicitly specifies the platform(s) in their message.
 
+`.claude/hooks/block-multi-platform-deploy.js` enforces this for Bash calls: it blocks `npm run ship:all`, `ship-ios` and `ship-android` chained in one command, and `gh workflow run deploy|qa` without `platform=ios|android`. `ship-qa.sh` rejects a missing `--platform` itself. The hook only sees the command text, so a platform per Bash call still needs the user's yes.
+
 ## npm Scripts — Cross-Platform (Windows) Compatibility
 
 `package.json` scripts must work on Windows (`cmd.exe`) as well as macOS/Linux. Never use Unix shell syntax in scripts — `2>/dev/null`, `||  true`, `&&`, `$VAR`, subshells, etc. all break on Windows.
