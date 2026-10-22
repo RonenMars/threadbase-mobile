@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
@@ -101,12 +101,21 @@ export function useTerminalTranscript({
     [gridLines, prompts, messages, turnOpen],
   )
 
+  // Narrowed to the guarded-loader contract (hooks/useVirtualizedMessageList):
+  // the caller passes cancelRefetch and only needs to know when the page settles.
+  const fetchNextPage = history.fetchNextPage
+  const fetchOlder = useCallback(
+    (options: { cancelRefetch: false }): Promise<void> =>
+      Promise.resolve(fetchNextPage(options)).then(() => undefined),
+    [fetchNextPage],
+  )
+
   return {
     ...split,
     turnOpen,
     totalMessages: conversationId ? history.totalMessages : 0,
     hasOlder: Boolean(conversationId && history.hasNextPage),
     isFetchingOlder: Boolean(conversationId && history.isFetchingNextPage),
-    fetchOlder: history.fetchNextPage,
+    fetchOlder,
   }
 }

@@ -42,9 +42,19 @@ let mockHistorical: Message[] = []
 let mockLive: Message[] = []
 let mockPtyLines: string[] = []
 let mockHistoryLoading = false
+// Backward paging, as react-query reports it. The page fetch resolves only
+// when a test says so, to stand in for a slow server.
+let mockHasNextPage = false
+const mockFetchNextPage = jest.fn(() => new Promise<void>(() => {}))
 
 jest.mock('@/hooks/useConversations', () => ({
-  useConversation: () => ({ data: { messages: mockHistorical }, isLoading: mockHistoryLoading }),
+  useConversation: () => ({
+    data: { messages: mockHistorical },
+    isLoading: mockHistoryLoading,
+    fetchNextPage: mockFetchNextPage,
+    hasNextPage: mockHasNextPage,
+    isFetchingNextPage: false,
+  }),
 }))
 
 jest.mock('@/hooks/useConversationStream', () => ({
@@ -164,6 +174,8 @@ afterEach(() => {
     delete wsHandlers[key]
   }
   mockSendInputState = { isError: false, error: null }
+  mockHasNextPage = false
+  mockFetchNextPage.mockClear()
 })
 
 async function renderView(onPreferRawTerminal?: () => void) {
@@ -181,8 +193,11 @@ async function renderView(onPreferRawTerminal?: () => void) {
 // The list's scrollToEnd and the keyboard handler both come from jest.setup's
 // mocks: one records what scrolled, the other lets a test play the keyboard
 // animation's start and end.
-const { __scrollToEndMock: scrollToEndMock } = jest.requireMock('@shopify/flash-list') as {
+const { __scrollToEndMock: scrollToEndMock, __propsByTestId: listPropsByTestId } = jest.requireMock(
+  '@shopify/flash-list',
+) as {
   __scrollToEndMock: jest.Mock
+  __propsByTestId: Record<string, { renderItem?: (info: { item: Message }) => React.ReactNode } | undefined>
 }
 // FlashList is mocked, so drive the FAB the way the real list does: a scroll
 // event whose distance-from-bottom is past the threshold.
@@ -754,5 +769,62 @@ describe('LiveConversationView — cancel on a prompt card', () => {
 
     expect(mockRawKeyMutate).toHaveBeenCalledWith({ action: 'escape', promptId: 'prompt-1' }, expect.any(Object))
     expect(screen.getByTestId('question-card')).toBeTruthy()
+  })
+})
+
+describe('LiveConversationView virtualized paging', () => {
+  it('asks for older history once while a slow page is still loading, and never cancels it', async () => {
+    mockHasNextPage = true
+    mockHistorical = [
+      { id: 'h1', uuid: 'h1', role: 'user', content: [{ type: 'text', text: 'hello' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    mockLive = []
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    expect(list.props.onStartReached).toEqual(expect.any(Function))
+
+    // FlashList re-fires onStartReached each time the reader re-enters the top
+    // zone; a reader bouncing at the top during a slow fetch must not restart it.
+    await act(async () => {
+      list.props.onStartReached()
+      list.props.onStartReached()
+      list.props.onStartReached()
+    })
+    expect(mockFetchNextPage).toHaveBeenCalledTimes(1)
+    expect(mockFetchNextPage).toHaveBeenCalledWith({ cancelRefetch: false })
+    mockHistorical = []
+  })
+
+  it('exposes no backward-page handler once the whole history is loaded', async () => {
+    mockHasNextPage = false
+    await renderView()
+    expect(screen.getByTestId('live-conversation-list').props.onStartReached).toBeUndefined()
+  })
+
+  it('keeps renderItem stable across a PTY-driven re-render so mounted rows are not re-rendered', async () => {
+    mockHistorical = [
+      { id: 'h1', uuid: 'h1', role: 'user', content: [{ type: 'text', text: 'hello' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    mockPtyLines = []
+    const view = await renderView()
+    // Read the prop at the FlashList boundary (recorded by the jest.setup mock),
+    // not off the host view: RN's FlatList hands its ScrollView a fresh
+    // renderItem wrapper on every render.
+    const listRenderItem = () => listPropsByTestId['live-conversation-list']?.renderItem
+    const before = listRenderItem()
+    expect(before).toEqual(expect.any(Function))
+
+    // A new PTY chunk re-renders the view (useTerminalStream state) without
+    // changing the messages. FlashList's ViewHolder memo compares renderItem by
+    // identity, so a fresh closure here would re-render every mounted row.
+    mockPtyLines = ['$ npm test']
+    await act(async () => {
+      view.rerender(
+        <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />,
+      )
+    })
+    expect(listRenderItem()).toBe(before)
+    mockHistorical = []
+    mockPtyLines = []
   })
 })

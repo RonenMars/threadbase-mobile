@@ -25,6 +25,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
+import { useVirtualizedMessageList } from '@/hooks/useVirtualizedMessageList'
 import { ConversationSearchView } from '@/components/conversation/ConversationSearchView'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useNavLockStore } from '@/stores/navLock'
@@ -231,11 +232,19 @@ export default function ConversationDetailScreen() {
     hasNextPage,
     isFetchingNextPage,
     fetchNewerPage,
+    hasNewerPage,
     isFetchingNewerPage,
     totalMessages,
     loadedMessages,
     triggerDelta,
   } = useConversation(serverId, id, { anchorIndex: fetchAnchorIndex, enabled: !isResolvingTarget })
+  // Guarded page loaders for both list views below. Newer-direction paging only
+  // exists on the anchored search window; the tail view's "newer" is the delta
+  // drain, which the hook runs on its own triggers, never from a scroll edge.
+  const { onStartReached: loadOlder, onEndReached: loadNewer } = useVirtualizedMessageList({
+    older: { hasMore: Boolean(hasNextPage), isFetching: isFetchingNextPage, fetch: fetchNextPage },
+    newer: { hasMore: Boolean(hasNewerPage), isFetching: isFetchingNewerPage, fetch: fetchNewerPage },
+  })
 
   // P2.2: external-session live push. Phase-1 keys external transcript frames by
   // the conversation UUID in the sessionId field, so mounting the stream with
@@ -961,8 +970,8 @@ export default function ConversationDetailScreen() {
               activeMatchPos={activeMatchPos}
               onStep={handleStep}
               onReady={handleListReady}
-              onStartReached={fetchNextPage}
-              onEndReached={fetchNewerPage}
+              onStartReached={loadOlder}
+              onEndReached={loadNewer}
               isFetchingOlder={isFetchingNextPage}
               isFetchingNewer={isFetchingNewerPage}
               inheritedHistory={conversation.inheritedHistory}
@@ -977,7 +986,7 @@ export default function ConversationDetailScreen() {
               highlight={searchQuery}
               inheritedHistory={conversation.inheritedHistory}
               onReady={handleListReady}
-              onStartReached={fetchNextPage}
+              onStartReached={loadOlder}
               isFetchingOlder={isFetchingNextPage}
               contentContainerStyle={listContentStyle}
             />

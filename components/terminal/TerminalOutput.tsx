@@ -28,6 +28,12 @@ import { TranscriptRow } from '@/components/terminal/TranscriptRow'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { messageItemType } from '@/utils/messageItemType'
+import {
+  CHAT_ANCHOR,
+  VIRTUALIZED_LIST_PROPS,
+  useVirtualizedMessageList,
+  type PageLoader,
+} from '@/hooks/useVirtualizedMessageList'
 import type { Message } from '@/types/api'
 
 // Strip any remaining ANSI escape codes that slipped through the VT
@@ -108,8 +114,8 @@ interface Props {
   /** Older transcript pages remain above the first one loaded. */
   hasOlder?: boolean
   isFetchingOlder?: boolean
-  /** Fetch the next older transcript page (top-of-list reach). */
-  onLoadOlder?: () => void
+  /** Fetch the next older transcript page (top-of-list reach). Guarded here, never called directly. */
+  onLoadOlder?: PageLoader['fetch']
   /** Ground-truth user-message texts from the stream; empty → heuristic fallback. */
   userMessageTexts?: Set<string>
   onSendInput?: (text: string) => void
@@ -181,6 +187,11 @@ export function TerminalOutput({
     return out
   }, [transcript, collapsedLines])
   const listRef = useRef<FlashListRef<Row>>(null)
+  // Same guarded loader as the chat lists: a reader bouncing at the top while
+  // a page is slow must not cancel and restart it (see the hook).
+  const { onStartReached } = useVirtualizedMessageList({
+    older: onLoadOlder ? { hasMore: hasOlder, isFetching: isFetchingOlder, fetch: onLoadOlder } : undefined,
+  })
   // mVCP handles the "follow" decision itself; we only track scroll position
   // here to drive the jump-to-top / jump-to-bottom pill visibility. Plain
   // useState (not Reanimated shared values) because FlashList v2 calls
@@ -441,20 +452,13 @@ export function TerminalOutput({
           renderItem={renderItem}
           getItemType={getItemType}
           ListHeaderComponent={listHeader}
-          onStartReached={onLoadOlder && hasOlder ? onLoadOlder : undefined}
-          onStartReachedThreshold={0.3}
-          // A transcript message can be far taller than the iOS default 250px
-          // draw distance, which puts mVCP corrections in the regime that
-          // teleports the viewport while scrolling up (Shopify/flash-list#2136).
-          drawDistance={2000}
+          {...VIRTUALIZED_LIST_PROPS}
+          onStartReached={onStartReached}
           onScroll={handleScroll}
           onLoad={stickToBottom}
           onContentSizeChange={handleContentSizeChange}
           scrollEventThrottle={100}
-          maintainVisibleContentPosition={{
-            startRenderingFromBottom: true,
-            autoscrollToBottomThreshold: 0.2,
-          }}
+          maintainVisibleContentPosition={CHAT_ANCHOR}
           contentContainerStyle={styles.listContent}
           keyboardShouldPersistTaps="handled"
         />
