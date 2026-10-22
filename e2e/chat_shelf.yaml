@@ -33,6 +33,9 @@ appId: com.ronenmars.threadbase
     timeout: 12000
 
 - tapOn:
+    id: "conversation-overflow-menu"
+
+- tapOn:
     id: "conversation-favorite-toggle"
 
 - extendedWaitUntil:

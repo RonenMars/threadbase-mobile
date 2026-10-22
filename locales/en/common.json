@@ -9,7 +9,8 @@
     "apply": "Apply",
     "openSettings": "Open Settings",
     "settings": "Settings",
-    "moreOptions": "More options"
+    "moreOptions": "More options",
+    "hardReload": "Hard reload transcript"
   },
   "alert": {
     "level": {
