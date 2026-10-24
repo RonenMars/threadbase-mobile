@@ -29,8 +29,7 @@ jest.mock('react-native-keyboard-controller', () => ({
   useReanimatedKeyboardAnimation: () => ({ height: mockKeyboardHeight, progress: mockKeyboardProgress }),
 }))
 jest.mock('react-native-safe-area-context', () => ({
-  SafeAreaView: ({ children }: { children: unknown }) => children,
-  useSafeAreaInsets: () => ({ top: 0, bottom: 34, left: 0, right: 0 }),
+  useSafeAreaInsets: () => ({ top: 59, bottom: 34, left: 0, right: 0 }),
 }))
 
 function makeProps(overrides: Partial<ChatComposerProps> = {}): ChatComposerProps {
@@ -140,6 +139,15 @@ describe('ChatComposer', () => {
     const container = screen.getByTestId('expanded-composer-container')
     expect(StyleSheet.flatten(container.props.style).paddingBottom).toBe(300)
     mockKeyboardHeight.value = 0
+  })
+
+  // A native SafeAreaView inside the expand Modal reports a zero top inset on
+  // iOS, so attachment chips sat under the notch. Pad from the app provider.
+  it('keeps the expanded editor below the status bar', async () => {
+    await renderComposer({ value: 'draft' })
+    await fireEvent.press(screen.getByTestId('expand-input-button'))
+    const safeTop = screen.getByTestId('expanded-composer-safe-top')
+    expect(StyleSheet.flatten(safeTop.props.style).paddingTop).toBe(59)
   })
   // The gap used to switch discretely on keyboard visibility, jumping 26 pt at
   // the start of every open and the end of every close while the lift animated.
