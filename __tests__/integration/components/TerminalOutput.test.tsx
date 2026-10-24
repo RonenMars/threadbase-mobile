@@ -156,6 +156,18 @@ describe('TerminalOutput – wrapped prompt collapsing', () => {
     ).toBeTruthy()
     expect(queryByText('wrapped across multiple')).toBeNull()
   })
+
+  it('highlights a collapsed prompt whose ground-truth text spans several lines', async () => {
+    const text = 'summarise the diff\n\n- list the risks\n- list the tests'
+    const { getByText } = await render(
+      <TerminalOutput
+        lines={['❯ summarise the diff', '', '  - list the risks', '  - list the tests', '⏺ Working.']}
+        isStreaming={false}
+        userMessageTexts={new Set([text])}
+      />
+    )
+    expect(StyleSheet.flatten(getByText(`❯ ${text}`).props.style).color).toBe('#58a6ff')
+  })
 })
 
 describe('TerminalOutput – row testIDs', () => {
