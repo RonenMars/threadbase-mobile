@@ -9,7 +9,8 @@
     "apply": "تطبيق",
     "openSettings": "فتح الإعدادات",
     "settings": "الإعدادات",
-    "moreOptions": "خيارات إضافية"
+    "moreOptions": "خيارات إضافية",
+    "hardReload": "إعادة تحميل كاملة للنص"
   },
   "alert": {
     "level": {
