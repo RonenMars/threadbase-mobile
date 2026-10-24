@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Image,
   Modal,
   Platform,
   ActivityIndicator,
@@ -71,6 +72,24 @@ export interface ChatComposerProps {
    *  It sits above the composer's own safe-area padding, so that padding stays
    *  the single owner of the bottom inset. */
   accessory?: React.ReactNode
+}
+
+const CHIP_THUMB_SIZE = 20
+
+// Falls back to the generic icon when the file can't be decoded (e.g. a format the platform has no codec for).
+function AttachmentChipIcon({ attachment, theme }: { attachment: ComposerAttachment; theme: Theme }) {
+  const [failed, setFailed] = useState(false)
+  if (!isPreviewableImage(attachment) || failed) return <PhosphorImage size={14} color={theme.text.primary} />
+  return (
+    <Image
+      testID={`attachment-chip-thumb-${attachment.id}`}
+      source={{ uri: attachment.localUri }}
+      style={{ width: CHIP_THUMB_SIZE, height: CHIP_THUMB_SIZE, borderRadius: 4 }}
+      resizeMode="cover"
+      accessible={false}
+      onError={() => setFailed(true)}
+    />
+  )
 }
 
 // A style object may not be shared between components, so each area calls this.
@@ -219,7 +238,7 @@ export function ChatComposer({
               accessibilityRole="button"
               accessibilityLabel={t('preview.openLabel', { name: a.originalName })}
             >
-              <PhosphorImage size={14} color={theme.text.primary} />
+              <AttachmentChipIcon attachment={a} theme={theme} />
               <Text style={[styles.chipText, ltrContentStyle]} numberOfLines={1}>
                 {a.originalName}
               </Text>
