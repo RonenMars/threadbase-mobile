@@ -65,7 +65,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
-import { DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
+import { DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, displayedListItems, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
 
 
 // Stable empty reference so a memo/child does not see a fresh [] each render
@@ -330,10 +330,16 @@ export default function ProjectsHub() {
     return [...liveSessions, ...idleSessions, ...convs]
   }, [visibleSessions, paginatedConversations, debouncedConvSearch, convSearchData])
 
-  const filteredItems = useMemo(() => applyListFilters(mergedClassicItems, filters), [mergedClassicItems, filters])
-  const tierCounts = useMemo(() => countByTier(mergedClassicItems), [mergedClassicItems])
-  const providerCounts = useMemo(() => countByProvider(mergedClassicItems), [mergedClassicItems])
-  const resultCount = filteredItems.length
+  const displayedItems = useMemo(
+    () => displayedListItems(mergedClassicItems, filters),
+    [mergedClassicItems, filters],
+  )
+  const tierCounts = useMemo(() => countByTier(displayedItems), [displayedItems])
+  const providerCounts = useMemo(() => countByProvider(displayedItems), [displayedItems])
+  const resultCount = displayedItems.length
+  // Preset visibility is the loaded catalog, not the badge counts. Those follow
+  // the active filter, so unchecking Needs you would otherwise hide the preset.
+  const needsYouAvailable = useMemo(() => countByTier(mergedClassicItems).needsYou, [mergedClassicItems])
 
   // FAB
   // When the user is drilled into a directory in TreeView, the drill store
@@ -545,7 +551,7 @@ export default function ProjectsHub() {
       {serverBanners}
 
       {/* Nothing needs you → the presets have nothing to offer; keep them while the preset is on so it can be undone. */}
-      {sessionsLayout === 'now' && (tierCounts.needsYou > 0 || isNeedsMePreset(filters)) ? (
+      {sessionsLayout === 'now' && (needsYouAvailable > 0 || isNeedsMePreset(filters)) ? (
         <View style={styles.presets}>
           <FilterPresets filters={filters} onChange={setFilters} />
         </View>
@@ -599,7 +605,7 @@ export default function ProjectsHub() {
       ) : (
         <View style={styles.classicContainer}>
           <NowList
-            items={filteredItems}
+            items={displayedItems}
             order={sortBy}
             direction={sortOrder}
             refreshing={manualRefreshing}
