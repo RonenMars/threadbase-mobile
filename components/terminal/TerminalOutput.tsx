@@ -450,7 +450,12 @@ export function TerminalOutput({
           onScroll={handleScroll}
           onLoad={stickToBottom}
           onContentSizeChange={handleContentSizeChange}
-          scrollEventThrottle={100}
+          // FlashList's velocity tracker declares "momentum ended" after 100ms
+          // without a scroll event. At a 100ms throttle that timer fires
+          // mid-scroll, resetting velocity and re-running offset correction
+          // while paging older history in — rows past the first screen then
+          // stay unmounted.
+          scrollEventThrottle={16}
           maintainVisibleContentPosition={{
             startRenderingFromBottom: true,
             autoscrollToBottomThreshold: 0.2,
