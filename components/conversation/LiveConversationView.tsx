@@ -44,7 +44,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { spacing, type Theme } from '@/constants/theme'
 import type { ProviderName } from '@/constants/providers'
 import { preferRawTerminal } from '@/lib/renderConfidence'
-import { deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, isWorkingTurn } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
@@ -257,16 +257,16 @@ export function LiveConversationView({
     }
   }, [isHistoryLoading, allMessages.length, ptyLines.length, parseConfidence, onPreferRawTerminal])
 
-  // Show thinking bubble whenever the session is running. Mid-turn assistant
-  // messages (interim replies, sub-agent dispatches) land while Claude is
-  // still working — gating on "last message isn't assistant" hid the bubble
-  // for the rest of the turn, so long sub-agent runs showed no activity at
-  // all. The running → waiting_input flip is what ends the turn.
-  // The last-message gate stays only for the optimistic-send window, where
-  // status can lag behind the echo.
+  // Show the thinking bubble only while the badge would say Working.
+  // Mid-turn assistant messages (interim replies, sub-agent dispatches) land
+  // while Claude is still working — gating on "last message isn't assistant"
+  // hid the bubble for the rest of the turn. A gate holds `status: running`
+  // with `hasOpenPrompt`, which presents as Needs you; raw status would leave
+  // the scanner up beside that badge. The last-message gate stays only for
+  // the optimistic-send window, where status lags behind the echo.
   const lastMessage = allMessages[allMessages.length - 1]
   const isAgentThinking =
-    session?.status === 'running'
+    isWorkingTurn(session)
     || (pendingSends.length > 0 && lastMessage?.role !== 'assistant')
 
   // 'hidden' → 'thinking' (agent running) → 'fading' (agent done) → 'hidden'
