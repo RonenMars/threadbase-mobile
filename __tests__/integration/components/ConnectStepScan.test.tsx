@@ -46,6 +46,7 @@ const SCAN_FIXTURE: ExchangeResult = {
   url: 'http://192.168.1.20:8766',
   apiKey: 'tb_scan_key',
   publicUrl: 'https://public.example.test',
+  relayUrl: null,
   machineName: 'scan-machine',
   deviceId: 'device-1',
   deviceToken: 'device-token-1',
