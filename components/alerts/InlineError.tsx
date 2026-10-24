@@ -15,16 +15,30 @@ type Props = {
   retryLabel?: string
   onDetails?: () => void
   detailsLabel?: string
+  /** Hides this error episode only — a later distinct failure may show again. */
+  onDismiss?: () => void
+  dismissLabel?: string
   testID?: string
 }
 
-export function InlineError({ title, message, onRetry, retryLabel, onDetails, detailsLabel, testID }: Props) {
+export function InlineError({
+  title,
+  message,
+  onRetry,
+  retryLabel,
+  onDetails,
+  detailsLabel,
+  onDismiss,
+  dismissLabel,
+  testID,
+}: Props) {
   const { t } = useTranslation('common')
   const theme = useTheme()
   const appearance = alertAppearance('error', theme)
   const styles = useMemo(() => makeStyles(theme), [theme])
   const Icon = appearance.Icon
   const retry = retryLabel ?? t('button.retry')
+  const dismiss = dismissLabel ?? t('alert.inline.dismiss')
   const accessibilityLabel = `${getAlertLevelLabel('error', t)}. ${title}`
 
   return (
@@ -40,7 +54,7 @@ export function InlineError({ title, message, onRetry, retryLabel, onDetails, de
         <Text style={styles.title}>{title}</Text>
       </View>
       <Text style={styles.message}>{message}</Text>
-      {onRetry || onDetails ? (
+      {onRetry || onDetails || onDismiss ? (
         <View style={styles.actions}>
           {onRetry ? (
             <TouchableOpacity
@@ -62,6 +76,17 @@ export function InlineError({ title, message, onRetry, retryLabel, onDetails, de
               testID={testID ? `${testID}-details` : undefined}
             >
               <Text style={styles.detailsText}>{detailsLabel}</Text>
+            </TouchableOpacity>
+          ) : null}
+          {onDismiss ? (
+            <TouchableOpacity
+              style={styles.details}
+              onPress={onDismiss}
+              accessibilityRole="button"
+              accessibilityLabel={dismiss}
+              testID={testID ? `${testID}-dismiss` : undefined}
+            >
+              <Text style={styles.detailsText}>{dismiss}</Text>
             </TouchableOpacity>
           ) : null}
         </View>

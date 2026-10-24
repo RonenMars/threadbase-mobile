@@ -1,4 +1,5 @@
 import { StatusSheet } from '@/components/alerts/StatusSheet'
+import { RecoveryHost } from '@/components/alerts/RecoveryHost'
 import { CriticalDialog, type CriticalAction } from '@/components/alerts/CriticalDialog'
 import { SlowQueryBanner } from '@/components/SlowQueryBanner'
 import { useAlertAnnouncements } from '@/hooks/useAlertAnnouncements'
@@ -53,6 +54,7 @@ export function AlertHost() {
   return (
     <>
       <SlowQueryBanner />
+      <RecoveryHost />
       <CriticalDialogHost />
       <StatusSheet />
     </>

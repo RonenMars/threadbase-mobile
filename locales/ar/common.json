@@ -60,7 +60,8 @@
       "loadedAgo_few": "قبل {{count}} دقائق",
       "loadedAgo_many": "قبل {{count}} دقيقة",
       "loadedAgo_other": "قبل {{count}} دقيقة",
-      "retryNow": "إعادة المحاولة الآن"
+      "retryNow": "إعادة المحاولة الآن",
+      "dismiss": "إخفاء"
     }
   },
   "error": {
@@ -148,5 +149,11 @@
     "timeout": "استغرق الخادم وقتاً طويلاً للاستجابة",
     "tooManyRequests": "عدد كبير جداً من الطلبات",
     "serverError": "تعذّر على الخادم إكمال الطلب"
+  },
+  "recovery": {
+    "title": "جارٍ إعادة الاتصال…",
+    "message": "إعادة محاولة طلب فشل.",
+    "wsEscalatedTitle": "ما زال الاتصال مقطوعاً",
+    "wsEscalatedMessage": "لم يعد الاتصال المباشر بعد. نعيد المحاولة في الخلفية."
   }
 }

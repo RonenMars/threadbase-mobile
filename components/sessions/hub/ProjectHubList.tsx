@@ -34,7 +34,7 @@ import {
   collidingProjectPaths,
   shouldForceServerChip,
 } from '@/lib/projectDisambiguation'
-import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { isServerFetchErrorVisible, useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
 
@@ -91,6 +91,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const servers = useServersStore((s) => s.servers)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
+  const dismissedFailureAt = useServerFetchStatusStore((s) => s.dismissedFailureAt)
+  const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
   const serverLabels = useMemo(
     () => Object.fromEntries(activeServerIds.map((id) => [id, servers[id]?.label ?? id])),
     [activeServerIds, servers],
@@ -291,8 +293,10 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     // one a stale collapsed flag would hide its groups with no way to expand
     // (the header isn't collapsible below).
     const collapseApplies = serverGroups.length > 1
+    const visibleError = (id: string) =>
+      isServerFetchErrorVisible(fetchStatuses[id], dismissedFailureAt[id])
     const allFailed = activeServerIds.length > 0
-      && activeServerIds.every((id) => fetchStatuses[id]?.status === 'error')
+      && activeServerIds.every((id) => visibleError(id))
     // A server too old for /api/projects/summary gets its own row — omitting it
     // would read as "this server has no projects", which is not what happened.
     const unsupportedRows: HubFlatItem[] = unsupportedServerIds.map((serverId) => ({
@@ -303,7 +307,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     return showServerHeaders
       ? [...serverGroups.flatMap((sg) => {
           const expanded = !collapseApplies || !collapsedServers.includes(sg.serverId)
-          const failed = !allFailed && fetchStatuses[sg.serverId]?.status === 'error'
+          const failed = !allFailed && visibleError(sg.serverId)
           const body: HubFlatItem[] =
             sg.totalCount > 0
               ? tiered(sg.groups, sg.serverId)
@@ -316,7 +320,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           ]
         }), ...unsupportedRows]
       : [...tiered(groups, 'all'), ...unsupportedRows]
-  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, olderOpen, toggleOlder, t, activeServerIds, fetchStatuses])
+  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, olderOpen, toggleOlder, t, activeServerIds, fetchStatuses, dismissedFailureAt])
 
   return (
     <View style={styles.container}>
@@ -386,6 +390,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
                   failed={item.failed}
                   onRetry={item.failed ? () => onRetryServer?.(item.serverId) : undefined}
                   onDetails={item.failed ? onOpenStatus : undefined}
+                  onDismiss={item.failed ? () => dismissFailure(item.serverId) : undefined}
                 />
               )
             }

@@ -50,7 +50,8 @@
       "loadedAgo_few": "{{count}} минуты назад",
       "loadedAgo_many": "{{count}} минут назад",
       "loadedAgo_other": "{{count}} минуты назад",
-      "retryNow": "Повторить сейчас"
+      "retryNow": "Повторить сейчас",
+      "dismiss": "Скрыть"
     }
   },
   "error": {
@@ -138,5 +139,11 @@
     "timeout": "Сервер слишком долго не отвечал",
     "tooManyRequests": "Слишком много запросов",
     "serverError": "Сервер не смог выполнить запрос"
+  },
+  "recovery": {
+    "title": "Переподключение…",
+    "message": "Повтор неудачного запроса.",
+    "wsEscalatedTitle": "Всё ещё нет связи",
+    "wsEscalatedMessage": "Живое соединение ещё не восстановилось. Повтор идёт в фоне."
   }
 }

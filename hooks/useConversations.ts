@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { AppState } from 'react-native'
 import { createApiForServer } from '@/services/api-client'
+import { withSilentRetries } from '@/services/error-policy'
 import { getServerWarmupState } from '@/services/server-warmup'
 import { getEtag, setEtag, deleteEtag } from '@/services/etag-store'
 import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'
@@ -153,8 +154,11 @@ export function useConversations(
           if (pageParam === 0 && isFreshEpoch) {
             params.set('refresh', '1')
           }
-          const raw = await api.get<RawSessionMeta[] | ConversationPage>(
-            `/api/conversations?${params.toString()}`,
+          const raw = await withSilentRetries(
+            () => api.get<RawSessionMeta[] | ConversationPage>(
+              `/api/conversations?${params.toString()}`,
+              { signal },
+            ),
             { signal },
           )
           const page = adaptPage(raw, pageParam as number, limit)
@@ -833,7 +837,9 @@ export function useConversationSearch(query: string) {
       const settled = await Promise.allSettled(
         displayedServerIds.map(async (serverId) => {
           const api = createApiForServer(serverId)
-          const raw = await api.get<RawSessionMeta[] | ConversationPage>(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
+          const raw = await withSilentRetries(
+            () => api.get<RawSessionMeta[] | ConversationPage>(`/api/search?q=${encodeURIComponent(query)}&limit=50`),
+          )
           return { serverId, page: adaptPage(raw, 0, 50) }
         })
       )

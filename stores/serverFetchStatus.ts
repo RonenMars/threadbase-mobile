@@ -22,6 +22,11 @@ export interface ServerFetchStatusEntry {
 
 interface State {
   statuses: Record<string, ServerFetchStatusEntry>
+  /**
+   * Per-server `lastCheckedAt` the user dismissed. Only that failure episode is
+   * hidden — a later `recordFailure` (new timestamp) shows the banner again.
+   */
+  dismissedFailureAt: Record<string, number>
 }
 
 interface Actions {
@@ -29,8 +34,19 @@ interface Actions {
   recordReady: (serverId: string) => void
   recordFailure: (serverId: string, error: unknown) => void
   recordWarmingUp: (serverId: string, warmupState: ServerWarmupState) => void
+  /** Hide the current error UI for this server until the next distinct failure. */
+  dismissFailure: (serverId: string) => void
   clearServer: (serverId: string) => void
   reset: () => void
+}
+
+/** True when status is error and the user has not dismissed this failure episode. */
+export function isServerFetchErrorVisible(
+  entry: ServerFetchStatusEntry | undefined,
+  dismissedAt: number | undefined,
+): boolean {
+  if (!entry || entry.status !== 'error') return false
+  return dismissedAt !== entry.lastCheckedAt
 }
 
 function describeError(error: unknown): string {
@@ -45,6 +61,7 @@ function describeError(error: unknown): string {
 
 export const useServerFetchStatusStore = create<State & Actions>((set) => ({
   statuses: {},
+  dismissedFailureAt: {},
   recordSuccess: (serverId) =>
     // No-op when nothing changes: a warming server stays warming, and a server
     // already 'ok' keeps its entry. Returning the same state means zustand does
@@ -54,11 +71,13 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
     set((s) => {
       const cur = s.statuses[serverId]?.status
       if (cur === 'warming_up' || cur === 'ok') return s
+      const { [serverId]: _dismissed, ...dismissedFailureAt } = s.dismissedFailureAt
       return {
         statuses: {
           ...s.statuses,
           [serverId]: { status: 'ok', lastCheckedAt: Date.now() },
         },
+        dismissedFailureAt,
       }
     }),
   recordReady: (serverId) =>
@@ -66,11 +85,13 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
     // of 'warming_up', so it only short-circuits when already 'ok'.
     set((s) => {
       if (s.statuses[serverId]?.status === 'ok') return s
+      const { [serverId]: _dismissed, ...dismissedFailureAt } = s.dismissedFailureAt
       return {
         statuses: {
           ...s.statuses,
           [serverId]: { status: 'ok', lastCheckedAt: Date.now() },
         },
+        dismissedFailureAt,
       }
     }),
   recordFailure: (serverId, error) =>
@@ -90,6 +111,18 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
         },
       },
     })),
+  dismissFailure: (serverId) =>
+    set((s) => {
+      const entry = s.statuses[serverId]
+      if (!entry || entry.status !== 'error') return s
+      if (s.dismissedFailureAt[serverId] === entry.lastCheckedAt) return s
+      return {
+        dismissedFailureAt: {
+          ...s.dismissedFailureAt,
+          [serverId]: entry.lastCheckedAt,
+        },
+      }
+    }),
   recordWarmingUp: (serverId, warmupState) =>
     set((s) => ({
       statuses: {
@@ -102,10 +135,11 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
   // renders a row for a server it cannot resolve.
   clearServer: (serverId) =>
     set((s) => {
-      if (!s.statuses[serverId]) return s
+      if (!s.statuses[serverId] && !s.dismissedFailureAt[serverId]) return s
       const { [serverId]: _removed, ...statuses } = s.statuses
-      return { statuses }
+      const { [serverId]: _dismissed, ...dismissedFailureAt } = s.dismissedFailureAt
+      return { statuses, dismissedFailureAt }
     }),
 
-  reset: () => set({ statuses: {} }),
+  reset: () => set({ statuses: {}, dismissedFailureAt: {} }),
 }))
