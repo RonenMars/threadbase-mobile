@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Reanimated, { useAnimatedStyle } from 'react-native-reanimated'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
@@ -412,7 +412,13 @@ export function ChatComposer({
           style={[styles.modalContainer, directionStyle, expandedKeyboardInset]}
           testID="expanded-composer-container"
         >
-          <SafeAreaView style={styles.flex} edges={['top']}>
+          {/* Same Modal trap as AttachmentPreview: a native SafeAreaView inside a
+              Modal reports a zero top inset on iOS, so chips sat under the notch
+              when the editor opened with the keyboard already up. */}
+          <View
+            style={[styles.flex, { paddingTop: insets.top }]}
+            testID="expanded-composer-safe-top"
+          >
             <Reanimated.View
               style={[styles.inputArea, styles.inputAreaExpanded, expandedInputAreaPadding]}
               testID="composer-input-area-expanded"
@@ -482,7 +488,7 @@ export function ChatComposer({
                 </TouchableOpacity>
               </View>
             </Reanimated.View>
-          </SafeAreaView>
+          </View>
         </Reanimated.View>
         {expanded ? preview : null}
       </Modal>
