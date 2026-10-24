@@ -36,7 +36,8 @@ function stripAnsi(str: string): string {
   return str.replace(/\x1b(\[[0-9;?]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[A-Z\\])/g, '')
 }
 
-const USER_PREFIX_RE = /^[❯›>]\s(.*)$/
+// `[\s\S]` not `.`: the ground-truth text of a multi-line prompt holds newlines.
+const USER_PREFIX_RE = /^[❯›>]\s([\s\S]*)$/
 
 // A line is user-owned when it's a `❯|›|> <text>` transcript row AND either the
 // streamer confirmed `<text>` as ground truth (userMessageTexts) or the set is
