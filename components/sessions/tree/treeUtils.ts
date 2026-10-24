@@ -5,6 +5,7 @@ import {
   isPresentationLive,
   type SessionTier,
 } from '@/lib/sessionPresentation'
+import { sessionActivityMs } from '@/lib/sessionActivity'
 import type { MultiSession } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { TreeNode, FlatNode } from './types'
@@ -154,9 +155,7 @@ export function toMs(iso: string | undefined): number {
 export function latestActivityMs(node: TreeNode): number {
   let latest = 0
   for (const s of node.sessions) {
-    const ms = s.completedAt
-      ? toMs(s.completedAt)
-      : toMs(s.startedAt) + (s.elapsedMs ?? 0)
+    const ms = sessionActivityMs(s)
     if (ms > latest) latest = ms
   }
   if (node.conversationActivityMs > latest) latest = node.conversationActivityMs
