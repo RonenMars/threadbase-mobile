@@ -12,7 +12,11 @@
     "create": "إنشاء",
     "startSession": "ابدأ سيشن هنا",
     "hideRecentDirs": "إخفاء المجلدات الأخيرة",
-    "showRecentDirs": "عرض المجلدات الأخيرة"
+    "showRecentDirs": "عرض المجلدات الأخيرة",
+    "addDirectory": "أضف هذا المجلد",
+    "extraDirsTitle": "تضمين أيضًا ({{selected}}/{{max}})",
+    "extraDirsHint": "تبدأ الجلسة في المجلد الحالي ويمكنها العمل في هذه المجلدات أيضًا.",
+    "removeDirectory": "إزالة {{name}}"
   },
   "starting": {
     "secondsLeft": "{{seconds}} ث",
@@ -23,7 +27,13 @@
       "أحضّر دفعة جديدة من التوكنز، انتظر قليلًا…",
       "أذكّر نفسي كيف يبدو الكود…",
       "أعدّ إلى تريليون بسرعة كبيرة، أوشكت…"
-    ]
+    ],
+    "moreDirectories_zero": "لا مجلدات إضافية",
+    "moreDirectories_one": "ومجلد واحد آخر",
+    "moreDirectories_two": "ومجلدان آخران",
+    "moreDirectories_few": "و{{count}} مجلدات أخرى",
+    "moreDirectories_many": "و{{count}} مجلدًا آخر",
+    "moreDirectories_other": "و{{count}} مجلد آخر"
   },
   "error": {
     "loadFailed": "فشل تحميل المحادثات",
