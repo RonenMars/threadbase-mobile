@@ -60,6 +60,8 @@ const MESSAGE_SKELETON_KEYS = Array.from({ length: 10 }, (_, i) => `msg-sk-${i}`
 // stale-while-revalidate (~2s) and the drain self-throttles (5s canTrigger), so
 // a 3s tick converges without a ?refresh=1 or over-fetching.
 const LIVE_POLL_INTERVAL_MS = 3000
+// The global slow-query flag waits 60 s; a skeleton screen needs an exit sooner.
+const SLOW_CANCEL_AFTER_MS = 6_000
 
 function getResumeReasonLabel(reason: string, t: TFunction<['conversation', 'common']>): string {
   switch (reason) {
@@ -386,7 +388,7 @@ export default function ConversationDetailScreen() {
   const favoriteId = buildFavoriteId(serverId, 'conversation', id)
   const isFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === favoriteId))
   const [starScale] = useState(() => new Animated.Value(1))
-  const showSlowLoadingMsg = useLoadingStateStore((s) => s.slowCounts.messages > 0)
+  const isMessagesSlowGlobal = useLoadingStateStore((s) => s.slowCounts.messages > 0)
   const [glowOpacity] = useState(() => new Animated.Value(0))
   const [glowScale] = useState(() => new Animated.Value(0.85))
 
@@ -440,6 +442,18 @@ export default function ConversationDetailScreen() {
   const isReady = conversation !== undefined && listDrawn
   const isGated = useMinDisplayTime(isReady, 400, id)
 
+  const isSkeletonShown = (isLoading && !conversation) || isGated
+  const [slowSince, setSlowSince] = useState<string | null>(null)
+  useEffect(() => {
+    if (!isSkeletonShown) return
+    const timer = setTimeout(() => setSlowSince(id ?? null), SLOW_CANCEL_AFTER_MS)
+    return () => {
+      clearTimeout(timer)
+      setSlowSince(null)
+    }
+  }, [isSkeletonShown, id])
+  const showSlowLoadingMsg = isMessagesSlowGlobal || (isSkeletonShown && slowSince != null && slowSince === id)
+
   const handleListReady = useCallback(() => {
     traceMark('listDrawn')
     finishOpenTrace('listDrawn')
@@ -455,6 +469,10 @@ export default function ConversationDetailScreen() {
   }, [conversation])
 
   const qc = useQueryClient()
+  const abortLoad = useCallback(() => {
+    void qc.cancelQueries({ queryKey: ['conversation', serverId, id] })
+    router.back()
+  }, [qc, serverId, id, router])
   const { resume, adoptSession, forkSession } = useSessionActions(serverId, id)
 
   // Seed the session cache from the resume snapshot (so /session/:id renders
@@ -873,7 +891,7 @@ export default function ConversationDetailScreen() {
             renderItem={renderSkeletonItem}
             contentContainerStyle={styles.listContent}
           />
-          {showSlowLoadingMsg ? <SlowLoadingBanner onAbort={() => router.back()} /> : null}
+          {showSlowLoadingMsg ? <SlowLoadingBanner onAbort={abortLoad} /> : null}
         </View>
       </SafeAreaView>
     )
@@ -934,7 +952,12 @@ export default function ConversationDetailScreen() {
               contentContainerStyle={styles.listContent}
               scrollEnabled={false}
             />
-            {showSlowLoadingMsg ? <SlowLoadingBanner onAbort={() => router.back()} /> : null}
+          </View>
+        ) : null}
+        {/* Outside the overlay: its pointerEvents="none" made Cancel untappable. */}
+        {isGated && showSlowLoadingMsg ? (
+          <View style={styles.slowBannerOverlay} pointerEvents="box-none">
+            <SlowLoadingBanner onAbort={abortLoad} />
           </View>
         ) : null}
         {isLoadingMessages && totalMessages > 0 ? (
@@ -1051,6 +1074,13 @@ function makeStyles(theme: Theme) {
     },
     providerDot: { width: 8, height: 8, borderRadius: 4 },
     inner: { flex: 1 },
+    slowBannerOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 11,
+    },
     skeletonOverlay: {
       position: 'absolute',
       top: 0,

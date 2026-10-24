@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { useTranslation } from 'react-i18next'
@@ -35,6 +35,29 @@ export function StatusSheet() {
   const serversStatusOpen = useErrorSheetStore((s) => s.serversStatusOpen)
   const setServersStatusOpen = useErrorSheetStore((s) => s.setServersStatusOpen)
   const visible = sheetOpen && rows.length > 0 && arb.critical == null
+
+  // Under load, errors clear and re-push every few seconds. If the open flag
+  // outlived its rows, the next error remounted the sheet uninvited, and its
+  // full-screen backdrop swallowed every tap on the list underneath.
+  // Only a transition to empty counts: rows are derived in an effect, so the
+  // first render after opening can legitimately have none yet.
+  const hasRows = rows.length > 0
+  const hadRows = useRef(hasRows)
+  const hasCritical = arb.critical != null
+  useEffect(() => {
+    const lostRows = hadRows.current && !hasRows
+    hadRows.current = hasRows
+    if (sheetOpen && (lostRows || hasCritical)) closeSheet()
+  }, [sheetOpen, hasRows, hasCritical, closeSheet])
+
+  // onClose fires only after the close animation finishes, which a starved JS
+  // thread can delay indefinitely; leaving index -1 is the earlier signal.
+  const handleSheetChange = useCallback(
+    (index: number) => {
+      if (index === -1) closeSheet()
+    },
+    [closeSheet],
+  )
   const summary = getStatusSummary(arb.errors.length, arb.warnings.length, t)
   const title = t('alert.status.title')
   const serverStatusLabel = tServers('statusModal.titleSingle')
@@ -70,6 +93,7 @@ export function StatusSheet() {
           bottomInset={insets.bottom}
           enablePanDownToClose
           onClose={closeSheet}
+          onChange={handleSheetChange}
           backdropComponent={renderBackdrop}
           backgroundStyle={styles.sheetBg}
           handleIndicatorStyle={styles.handle}
