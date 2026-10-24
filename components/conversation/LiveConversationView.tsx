@@ -25,6 +25,7 @@ import { useSessionDetail } from '@/hooks/useSession'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { usePromptSuggestion } from '@/hooks/usePromptSuggestion'
 import { useComposerState } from '@/hooks/useComposerState'
+import { useFileMentions } from '@/hooks/useFileMentions'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
@@ -55,6 +56,8 @@ interface Props {
   sessionId: string
   conversationId: string
   provider?: ProviderName | string | null
+  /** Session cwd on the streamer's machine; `@` mentions list files relative to it. */
+  projectPath?: string | null
   /** Disable the composer while the session's PTY is still waking up. */
   disabled?: boolean
   /** The raw-keys row, when open; rides the keyboard with the composer. */
@@ -120,6 +123,7 @@ export function LiveConversationView({
   sessionId,
   conversationId,
   provider,
+  projectPath = null,
   disabled = false,
   composerAccessory = null,
   onPreferRawTerminal,
@@ -385,6 +389,13 @@ export function LiveConversationView({
     micGranted,
     handleToggleMic,
   } = useComposerState({ serverId, sessionId, onSend: send })
+  const fileMentions = useFileMentions({
+    serverId,
+    projectPath,
+    provider,
+    text: inputText,
+    onChangeText: handleInputChange,
+  })
 
   // The server closes the question's menu on its own (common, self-healing —
   // it also broadcasts question_cancelled, which dismisses the card), so that
@@ -600,6 +611,9 @@ export function LiveConversationView({
           handleInputChange(text)
         }}
         accessory={composerAccessory}
+        mention={fileMentions.mention}
+        selection={fileMentions.selection}
+        onSelectionChange={fileMentions.onSelectionChange}
       />
 
       <SlashCommandBoard

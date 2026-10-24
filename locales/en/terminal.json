@@ -59,6 +59,15 @@
     "suggestionLabel": "Send suggestion: {{text}}",
     "suggestionHint": "Hold to edit before sending"
   },
+  "mentions": {
+    "close": "Close file suggestions",
+    "unsupported": "File suggestions aren't available for this session's folder.",
+    "error": "Couldn't load files. Check your connection.",
+    "empty": "No files match “{{query}}”",
+    "emptyFolder": "This folder is empty.",
+    "folderLabel": "Folder {{name}}",
+    "fileLabel": "File {{name}}"
+  },
   "preview": {
     "openLabel": "Preview {{name}}",
     "close": "Close preview",
