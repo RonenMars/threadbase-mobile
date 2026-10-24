@@ -5,6 +5,7 @@ import { wsManager } from '@/services/ws-client'
 import type { Message, MessageContent } from '@/types/api'
 import { cliPromptText } from '@/lib/cliPromptText'
 import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
+import { isTaskNotification } from '@/lib/taskNotificationContext'
 
 function extractCodexText(content: unknown): string {
   if (typeof content === 'string') return content.trim()
@@ -84,6 +85,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
     // own message renders instead of throwing on `.flatMap` and being dropped.
     const rawContentValue = entry.message.content ?? []
     if (typeof rawContentValue === 'string') {
+      if (isUser && isTaskNotification(rawContentValue)) return null
       return {
         id: entry.uuid ?? `${entry.timestamp ?? ''}-${entry.type ?? ''}-${entry.message.role}`,
         uuid: entry.uuid ?? null,

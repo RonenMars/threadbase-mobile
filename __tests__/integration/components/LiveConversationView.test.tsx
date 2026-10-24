@@ -445,6 +445,38 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(screen.getAllByText('ping')).toHaveLength(1)
   })
 
+  // Regression: an attachment send's optimistic bubble shows the typed caption
+  // alone, but the echoed JSONL line carries the full payload (`@path caption`)
+  // — exact-string matching never saw these as the same message, so the
+  // optimistic bubble was orphaned next to the real echo forever.
+  it('does not duplicate the message when the echo carries an attachment @ref the optimistic bubble omitted', async () => {
+    const { rerender } = await renderView()
+
+    const input = screen.getByTestId('chat-message-input')
+    await fireEvent.changeText(input, 'check this out')
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
+    expect(screen.getByText('check this out')).toBeTruthy()
+
+    mockLive = [
+      {
+        id: 'echo-2',
+        uuid: 'echo-2',
+        role: 'user',
+        content: [{ type: 'text', text: '@uploads/photo.png check this out' }],
+        timestamp: '2026-06-18T10:00:00Z',
+        is_sidechain: false,
+        parent_uuid: null,
+      },
+    ]
+    await act(async () => {
+      rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
+    })
+
+    expect(screen.getAllByTestId('message-text').map((n) => n.props.children)).toEqual([
+      '@uploads/photo.png check this out',
+    ])
+  })
+
   it('renders historical messages in message_index order, then live messages by arrival', async () => {
     // historical out of natural order to prove index sorting (not array order).
     mockHistorical = [
