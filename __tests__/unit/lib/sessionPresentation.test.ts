@@ -2,6 +2,7 @@ import {
   deriveConversationPresentation,
   deriveSessionPresentation,
   failureTitleKind,
+  isWorkingTurn,
   sessionOpensAsHistory,
   sessionPhase,
 } from '@/lib/sessionPresentation'
@@ -347,6 +348,29 @@ describe('hasOpenPrompt', () => {
     expect(p.kind).toBe('resumed')
     expect(p.tier).toBe('needsYou')
     expect(p.statusLabel).toBe('waiting')
+  })
+})
+
+describe('isWorkingTurn', () => {
+  it('is true for a running session the badge calls working', () => {
+    expect(isWorkingTurn(base({ status: 'running' }))).toBe(true)
+    expect(isWorkingTurn(base({ status: 'running', hasOpenPrompt: false }))).toBe(true)
+  })
+
+  it('is false when a gate holds status at running and the badge says needs you', () => {
+    expect(isWorkingTurn(base({ status: 'running', hasOpenPrompt: true }))).toBe(false)
+    expect(
+      isWorkingTurn(
+        base({ status: 'running', resumedFromConversationId: 'c1', hasOpenPrompt: true }),
+      ),
+    ).toBe(false)
+  })
+
+  it('is false while waiting for input, idle, or absent', () => {
+    expect(isWorkingTurn(base({ status: 'waiting_input' }))).toBe(false)
+    expect(isWorkingTurn(base({ status: 'idle' }))).toBe(false)
+    expect(isWorkingTurn(null)).toBe(false)
+    expect(isWorkingTurn(undefined)).toBe(false)
   })
 })
 
