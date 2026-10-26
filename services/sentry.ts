@@ -277,8 +277,9 @@ async function performInit(startupConsent: boolean): Promise<void> {
     // ---- Privacy hardening: disable everything that could capture content ----
     // Enforced tracking (never a store build) turns it all back on; see isSentryTrackingEnforced.
     sendDefaultPii: false,
-    attachScreenshot: full,
-    attachViewHierarchy: full,
+    // TEMP experiment: QA error events never arrive; these two await native calls with no timeout.
+    attachScreenshot: false,
+    attachViewHierarchy: false,
     attachStacktrace: true, // stack traces are scrubbed by our sanitizer
     enableCaptureFailedRequests: full,
     enableUserInteractionTracing: full,
