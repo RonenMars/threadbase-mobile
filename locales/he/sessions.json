@@ -184,7 +184,8 @@
   },
   "layout": {
     "now": "עכשיו",
-    "projects": "פרויקטים"
+    "projects": "פרויקטים",
+    "subagents": "סוכני משנה"
   },
   "info": {
     "sessionId": "מזהה סשן Threadbase",
@@ -241,5 +242,28 @@
   "watchersDialog": {
     "title": "פתוח במכשיר אחר",
     "body": "הסשן הזה פתוח במכשיר אחר. סיום בסוף התור יסיים אותו גם שם, ופתיחה שלו שם לא תבטל את זה."
+  },
+  "subagents": {
+    "title": "סוכני משנה",
+    "titleCount": "סוכני משנה ({{n}})",
+    "active": "פעיל",
+    "messages": "{{n}} הודעות",
+    "empty": "אין סוכני משנה.",
+    "unsupported": "השרת הזה עדיין לא תומך בסוכני משנה.",
+    "loadFailed": "לא ניתן לטעון סוכני משנה.",
+    "loadMore": "טען עוד",
+    "board": {
+      "active": "פעילים",
+      "all": "הכול",
+      "summaryActive": "פעילים עכשיו",
+      "summaryParents": "הורים",
+      "summaryTotal": "סה״כ",
+      "parentFallback": "שיחה {{id}}",
+      "parentActive": "{{n}} פעילים",
+      "unsupported": "השרת הזה עדיין לא מציג סוכני משנה.",
+      "emptyActive": "אין סוכני משנה פעילים.",
+      "empty": "אין עדיין סוכני משנה.",
+      "openParent": "פתיחת השיחה הראשית"
+    }
   }
 }

@@ -195,6 +195,13 @@ export interface Conversation {
   filePath?: string
   /** Subagent transcripts only: the conversation that spawned this one. */
   parentConversationId?: string | null
+  /** Subagent rows only (`?parent=` / `?include=subagents`). Absent on older streamers. */
+  isSubagent?: boolean
+  /** True when the transcript was written in the last 60 s: a guess, not a process state. */
+  subagentActive?: boolean
+  subagentType?: string
+  subagentDescription?: string
+  subagentName?: string
   /** Stable backend identity. Optional during migration; will be required. */
   projectId?: string
   projectPath: string
