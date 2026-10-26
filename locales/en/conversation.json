@@ -128,5 +128,8 @@
   "share": {
     "roleUser": "User",
     "roleAssistant": "Assistant"
+  },
+  "question": {
+    "label": "Question"
   }
 }
