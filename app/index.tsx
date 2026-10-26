@@ -58,6 +58,7 @@ import { HomeStatusPill } from '@/components/alerts/StatusPill'
 import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
 import { InlineError } from '@/components/alerts/InlineError'
 import { useClaimInline } from '@/hooks/useClaimInline'
+import { SubagentBoard } from '@/components/sessions/SubagentBoard'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { serverCause } from '@/types/alerts'
 import { PROVIDER_COLOR } from '@/constants/providers'
@@ -97,6 +98,7 @@ export default function ProjectsHub() {
   const { direction } = useAppDirection()
   const searchStyles = makeSearchStyles(theme, direction)
   const [chromeHeight, setChromeHeight] = useState(insets.top + CHROME_ESTIMATE)
+  const [showSubagents, setShowSubagents] = useState(false)
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
@@ -258,6 +260,10 @@ export default function ProjectsHub() {
       return pages ? dedupeByServerAndId(pages.flatMap((p) => p.conversations)) : EMPTY_CONVERSATIONS
     },
     [convPages.data],
+  )
+  const subagentParentTitles = useMemo(
+    () => new Map(paginatedConversations.map((c) => [c.id, c.title])),
+    [paginatedConversations],
   )
 
   // The persisted React Query cache rehydrates sessions/conversations
@@ -466,25 +472,34 @@ export default function ProjectsHub() {
         </View>
       </View>
 
-      {/* Now | Projects */}
+      {/* Now | Projects | Sub-agents */}
       <View style={styles.segmentRow} accessibilityRole="tablist">
         <TouchableOpacity
-          style={[styles.segmentTab, sessionsLayout === 'now' && styles.segmentTabActive]}
-          onPress={() => { revealFab(); setSessionsLayout('now') }}
+          style={[styles.segmentTab, !showSubagents && sessionsLayout === 'now' && styles.segmentTabActive]}
+          onPress={() => { revealFab(); setShowSubagents(false); setSessionsLayout('now') }}
           accessibilityRole="tab"
-          accessibilityState={{ selected: sessionsLayout === 'now' }}
+          accessibilityState={{ selected: !showSubagents && sessionsLayout === 'now' }}
           testID="layout-now"
         >
-          <Text style={[styles.segmentText, sessionsLayout === 'now' && styles.segmentTextActive]}>{t('layout.now')}</Text>
+          <Text style={[styles.segmentText, !showSubagents && sessionsLayout === 'now' && styles.segmentTextActive]}>{t('layout.now')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.segmentTab, sessionsLayout === 'projects' && styles.segmentTabActive]}
-          onPress={() => { revealFab(); setSessionsLayout('projects') }}
+          style={[styles.segmentTab, !showSubagents && sessionsLayout === 'projects' && styles.segmentTabActive]}
+          onPress={() => { revealFab(); setShowSubagents(false); setSessionsLayout('projects') }}
           accessibilityRole="tab"
-          accessibilityState={{ selected: sessionsLayout === 'projects' }}
+          accessibilityState={{ selected: !showSubagents && sessionsLayout === 'projects' }}
           testID="layout-projects"
         >
-          <Text style={[styles.segmentText, sessionsLayout === 'projects' && styles.segmentTextActive]}>{t('layout.projects')}</Text>
+          <Text style={[styles.segmentText, !showSubagents && sessionsLayout === 'projects' && styles.segmentTextActive]}>{t('layout.projects')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentTab, showSubagents && styles.segmentTabActive]}
+          onPress={() => { revealFab(); setShowSubagents(true) }}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: showSubagents }}
+          testID="layout-subagents"
+        >
+          <Text style={[styles.segmentText, showSubagents && styles.segmentTextActive]}>{t('layout.subagents')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -563,6 +578,8 @@ export default function ProjectsHub() {
         <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
           <NoServersWelcome />
         </View>
+      ) : showSubagents ? (
+        <SubagentBoard serverIds={activeServerIds} parentTitles={subagentParentTitles} topInset={chromeHeight} />
       ) : sessionsLayout === 'projects' && sessionsTreeView ? (
         <TreeSessionsList
           sessions={filteredSessions}

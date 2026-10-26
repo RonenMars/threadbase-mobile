@@ -15,6 +15,9 @@ This file is a snapshot of that project's `README.md`; when the two disagree, th
 It is generated from this repository by `design/figma-plugin/`, so for the **mobile** app it reads the actual values out of `constants/theme.ts` and `constants/providers.ts` rather than deriving them.
 Where it disagrees with the derived numbers below, the Figma file and the code win; see "Figma" at the end of this document.
 
+**Sub-agent board:** the [Sub-agent board design](https://claude.ai/artifact/UxtqKjMHTNW1V9DDfFREsL) — board, manage sheet, read-only transcript and degraded states, built on this system.
+What is built and what is not is in `docs/design/subagent-board.md`.
+
 This system was reverse-engineered from the publicly accessible parts of the Threadbase monorepo. **Treat link access as not assumed for the reader.**
 
 - Root repo: `github.com/RonenMars/threadbase` — README, CLAUDE.md, IMPLEMENTATION-GUIDELINES.md, feature-comparison.md, status-mobile.md
