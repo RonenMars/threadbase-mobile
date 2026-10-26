@@ -27,7 +27,7 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
-  const [onlyActive, setOnlyActive] = useState(true)
+  const [onlyActive, setOnlyActive] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const { items, unsupportedServerIds, isLoading, isError, refetch } = useAllSubagents(serverIds)
 
@@ -167,7 +167,7 @@ function makeStyles(theme: Theme) {
     scroll: { flex: 1 },
     pad: { paddingVertical: spacing.md, paddingHorizontal: spacing.md },
     note: { color: theme.text.secondary, fontSize: font.sm },
-    summary: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
+    summary: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
     stat: { flex: 1, backgroundColor: theme.bg.card, borderRadius: 12, padding: spacing.sm + 2 },
     statLabel: { color: theme.text.secondary, fontSize: font.xs - 1, fontWeight: '600' },
     statValue: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600', marginTop: 4 },

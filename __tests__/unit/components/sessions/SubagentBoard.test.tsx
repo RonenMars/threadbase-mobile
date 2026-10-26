@@ -32,16 +32,16 @@ const renderBoard = () =>
 beforeEach(() => mockGet.mockReset())
 
 describe('SubagentBoard', () => {
-  it('requests every sub-agent in one call and defaults to the active ones', async () => {
+  it('requests every sub-agent in one call and defaults to all of them', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p1')]))
     const r = await renderBoard()
     await waitFor(() => expect(r.getByTestId('subagent-board-row-a')).toBeTruthy())
     expect(mockGet.mock.calls[0][0]).toContain('include=subagents')
-    expect(r.queryByTestId('subagent-board-row-b')).toBeNull()
+    expect(r.getByTestId('subagent-board-row-b')).toBeTruthy()
     expect(r.getByText('Parent one')).toBeTruthy()
 
-    await fireEvent.press(r.getByTestId('subagent-filter-all'))
-    await waitFor(() => expect(r.getByTestId('subagent-board-row-b')).toBeTruthy())
+    await fireEvent.press(r.getByTestId('subagent-filter-active'))
+    await waitFor(() => expect(r.queryByTestId('subagent-board-row-b')).toBeNull())
   })
 
   it('opens the transcript from a row and the parent from the group header', async () => {
@@ -73,6 +73,7 @@ describe('SubagentBoard', () => {
     mockGet.mockResolvedValue(page([sub('b', 'p1')]))
     const r = await renderBoard()
     await waitFor(() => expect(r.queryByTestId('subagent-filter-active')).toBeTruthy())
+    await fireEvent.press(r.getByTestId('subagent-filter-active'))
     await waitFor(() => expect(r.queryByTestId('subagent-board-row-b')).toBeNull())
     expect(r.queryByText(/resume|send/i)).toBeNull()
   })
