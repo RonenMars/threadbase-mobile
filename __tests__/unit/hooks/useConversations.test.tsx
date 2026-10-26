@@ -638,32 +638,28 @@ describe('useConversation — byte-bounded seed (maxBytes)', () => {
     expect(calls).toBe(2)
   })
 
-  it('does not drain after_index deltas for a byte-bounded seed view (history is a one-shot read, not a live-following cursor)', async () => {
-    setActiveServers(['srv_no_drain'])
+  it('drains the after_index delta into the seed entry on mount, so a cache that is behind the server catches up', async () => {
+    setActiveServers(['srv_seed_drain'])
     const paths: string[] = []
-    // A cold mount never has a cursor to resume from, so the mount-time drain
-    // is a no-op with or without the guard — that would make this test pass
-    // for the wrong reason. Pre-warm the cache (under the seed-suffixed key
-    // the maxBytes view actually reads/writes) so a cursor is available the
-    // instant the component mounts, same as the plain-tail-view drain tests
-    // above do via warmTailCache.
-    metaHandlers.srv_no_drain = () => Promise.reject(new Error('tail fetch must not fire — cache is warm'))
-    handlers.srv_no_drain = (path) => {
+    // Pre-warm under the seed-suffixed key the maxBytes view reads and writes:
+    // messages 0..2 are cached, the server already holds 0..3.
+    metaHandlers.srv_seed_drain = () => Promise.reject(new Error('tail fetch must not fire — cache is warm'))
+    handlers.srv_seed_drain = (path) => {
       paths.push(path)
-      return Promise.reject(new Error('must not drain deltas for a maxBytes view'))
+      return Promise.resolve(rawAnchoredPage('c_sd', 3, 1, 4, { has_more_newer: false, next_after_index: null }))
     }
     const { qc, wrapper } = wrapperWithClient()
-    qc.setQueryData(['conversation', 'srv_no_drain', 'c_nd', 'seed-524288'], warmTailCache('c_nd'))
+    qc.setQueryData(['conversation', 'srv_seed_drain', 'c_sd', 'seed-524288'], warmTailCache('c_sd'))
 
     const { result } = await renderHook(
-      () => useConversation('srv_no_drain', 'c_nd', { maxBytes: 524_288 }),
+      () => useConversation('srv_seed_drain', 'c_sd', { maxBytes: 524_288 }),
       { wrapper },
     )
-    await waitFor(() => expect(result.current.data).toBeDefined())
-    // Give the mount-time drain effect (if it were wrongly active) time to fire.
-    await new Promise((r) => setTimeout(r, 50))
 
-    expect(paths).toHaveLength(0)
+    await waitFor(() => expect(result.current.data!.messages.length).toBe(4))
+    expect(paths.filter((p) => p.includes('after_index=3'))).toHaveLength(1)
+    // The plain tail entry is never created or touched by the seed view's drain.
+    expect(qc.getQueryData(['conversation', 'srv_seed_drain', 'c_sd'])).toBeUndefined()
   })
 })
 
