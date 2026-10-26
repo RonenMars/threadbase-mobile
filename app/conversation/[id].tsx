@@ -23,6 +23,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
+import { SubagentSection } from '@/components/conversation/SubagentSection'
+import { isSubagentRow } from '@/lib/subagents'
 import { ConversationHistoryList } from '@/components/conversation/ConversationHistoryList'
 import { ConversationSearchView } from '@/components/conversation/ConversationSearchView'
 import { useLoadingStateStore } from '@/stores/loading-state'
@@ -887,6 +889,7 @@ export default function ConversationDetailScreen() {
       ? t('unavailable.worktreeRemoved')
       : t('unavailable.pathMissing')
     : null
+  const isSubagentTranscript = isSubagentRow(conversation)
   const showBackToLive = Boolean(fromSession)
   const canResume = !showBackToLive && !notResumable && !resume.isPending
   const resumeLabel = showBackToLive
@@ -911,6 +914,7 @@ export default function ConversationDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScreenHeader title={conversation.title} titleRight={providerDot} right={headerActions} />
       {searchBar}
+      {isSubagentTranscript ? null : <SubagentSection serverId={serverId} parentId={id} />}
       <View style={styles.inner}>
         {isGated ? (
           <View style={styles.skeletonOverlay} pointerEvents="none" testID="skeleton-overlay">
@@ -980,6 +984,7 @@ export default function ConversationDetailScreen() {
           </View>
         )}
 
+        {isSubagentTranscript ? null : (
         <View style={styles.footer} onLayout={handleFooterLayout} testID="conversation-bottom-bar">
           <View style={styles.resumeWrapper}>
             <TouchableOpacity
@@ -997,6 +1002,7 @@ export default function ConversationDetailScreen() {
             </TouchableOpacity>
           </View>
         </View>
+        )}
       </View>
 
       <InfoModal
