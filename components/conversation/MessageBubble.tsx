@@ -17,6 +17,7 @@ import { useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import type { Message, MessageContent } from '@/types/api'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
+import { isOpenableLinkUrl } from '@/lib/isOpenableLinkUrl'
 import { layoutDirectionStyle, type RtlStyleKit } from '@/lib/rtl'
 
 function useBubbleStyles() {
@@ -340,7 +341,7 @@ function MarkdownProse({ text, highlight, activeMatch }: { text: string; highlig
   const { styles, theme } = useBubbleStyles()
   const mdStyle = useMemo(() => makeMarkdownStyles(theme), [theme])
   const onLinkPress = useCallback((url: string) => {
-    void Linking.openURL(url)
+    if (isOpenableLinkUrl(url)) void Linking.openURL(url)
     return false
   }, [])
   const needle = highlight?.trim()
