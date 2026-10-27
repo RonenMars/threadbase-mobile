@@ -175,6 +175,18 @@ export function isAgentPhase(value: string | null | undefined): value is AgentPh
 }
 
 /**
+ * Chat thinking indicator: a live turn the badge would call Working.
+ *
+ * `status: running` is not enough. A permission or question gate holds status
+ * at `running` so the finished push does not fire mid-turn, and `hasOpenPrompt`
+ * is what makes the badge say Needs you. The indicator follows that tier.
+ */
+export function isWorkingTurn(session: SessionPresentationInput | null | undefined): boolean {
+  if (session?.status !== 'running') return false
+  return deriveSessionPresentation(session).tier === 'working'
+}
+
+/**
  * Derive a single presentation model for badges, live pills, and action gates.
  */
 export function deriveSessionPresentation(
