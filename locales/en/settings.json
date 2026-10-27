@@ -73,7 +73,8 @@
       "sun": "Sun"
     },
     "testFailedTitle": "Test notification not delivered",
-    "testFailedBody": "The server could not reach this device. Open Delivery health for details."
+    "testFailedBody": "The server could not reach this device. Open Delivery health for details.",
+    "testLocalFailedBody": "Could not post a notification. Check that notifications are allowed for Threadbase in your device settings."
   },
   "notification": {
     "testTitle": "Test Notification",

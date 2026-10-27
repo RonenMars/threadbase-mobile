@@ -306,13 +306,19 @@ export default function SettingsScreen() {
 
   const handleTestNotification = async () => {
     if (pushPrefsServerIds.length === 0) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: i18n.t('settings:notification.testTitle'),
-          body: i18n.t('settings:notification.testBody'),
-        },
-        trigger: null,
-      })
+      try {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: i18n.t('settings:notification.testTitle'),
+            body: i18n.t('settings:notification.testBody'),
+          },
+          trigger: null,
+        })
+      } catch (error) {
+        // expo-notifications rejects with an empty reason; the real message is only in the error itself.
+        captureHandledError(error, { tag: 'test_notification' })
+        Alert.alert(t('notifications.testFailedTitle'), t('notifications.testLocalFailedBody'))
+      }
       return
     }
     const results = await Promise.allSettled(pushPrefsServerIds.map((id) => sendTestPush(id)))

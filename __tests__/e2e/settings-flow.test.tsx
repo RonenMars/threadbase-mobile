@@ -154,6 +154,22 @@ describe('Settings – notifications section', () => {
 
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalled()
   })
+
+  it('alerts instead of throwing when the local test notification cannot be scheduled', async () => {
+    const Notifications = require('expo-notifications')
+    Notifications.scheduleNotificationAsync.mockRejectedValueOnce(new Error('ERR_NOTIFICATIONS_FAILED_TO_SCHEDULE'))
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
+
+    await act(async () => {
+      await fireEvent.press(getByText('Send Test Notification'))
+    })
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      'Test notification not delivered',
+      expect.stringContaining('Could not post a notification'),
+    )
+  })
 })
 
 // ── Server-enforced notification preferences ──────────────────────────────────
