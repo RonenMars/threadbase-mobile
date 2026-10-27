@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import * as Updates from 'expo-updates'
 import i18n from '@/lib/i18n'
-import { captureHandledError, reportOneShot } from '@/services/sentry'
+import { captureHandledError, flushPendingEvents, reportOneShot } from '@/services/sentry'
 import { useSettingsStore } from '@/stores/settings'
 
 interface Props {
@@ -142,9 +142,12 @@ export class RootErrorBoundary extends React.Component<Props, State> {
   handleReload = () => {
     // Attempt a JS reload; if unavailable (dev/Expo Go) just clear the boundary
     // so a re-render can recover.
-    Updates.reloadAsync().catch(() => {
-      this.setState({ hasError: false, error: null })
-    })
+    // The crash event is still being built when the user taps; flush first or the reload kills it.
+    flushPendingEvents()
+      .then(() => Updates.reloadAsync())
+      .catch(() => {
+        this.setState({ hasError: false, error: null })
+      })
   }
 
   render() {
