@@ -63,6 +63,9 @@ describe('conversation detail — sub-agent transcript', () => {
     expect(r.queryByTestId('resume-button')).toBeNull()
     expect(r.queryByTestId('conversation-bottom-bar')).toBeNull()
     expect(r.queryByTestId('subagent-section')).toBeNull()
+    expect(r.getByTestId('conversation-history-list').props.maintainVisibleContentPosition).toMatchObject({
+      disabled: true,
+    })
   })
 
   it('keeps Resume and shows the collapsed sub-agent section on a top-level conversation', async () => {
@@ -70,5 +73,8 @@ describe('conversation detail — sub-agent transcript', () => {
     const r = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
     await waitFor(() => expect(r.getByTestId('resume-button')).toBeTruthy())
     expect(r.getByTestId('subagent-section')).toBeTruthy()
+    expect(r.getByTestId('conversation-history-list').props.maintainVisibleContentPosition).toMatchObject({
+      startRenderingFromBottom: true,
+    })
   })
 })
