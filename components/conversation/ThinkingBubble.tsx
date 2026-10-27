@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ArrowsOut, CaretDown, Question } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { getAgentPhaseLabel } from '@/components/sessions/agentPhaseLabel'
@@ -163,7 +163,9 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
             presentationStyle="fullScreen"
             onRequestClose={() => setMinimizedKey(promptKey)}
           >
-            <SafeAreaView style={styles.fullScreen} testID="question-fullscreen">
+            {/* A Modal is its own native window: without a provider the insets read 0 and the header sits under the status bar. */}
+            <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+            <SafeAreaView style={styles.fullScreen} edges={['top', 'bottom']} testID="question-fullscreen">
               <View style={styles.fullScreenHeader}>
                 <Question size={18} color={theme.text.accent} weight="bold" />
                 <Text style={styles.fullScreenTitle}>{tc('question.waiting')}</Text>
@@ -181,6 +183,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
                 {renderCard(true)}
               </ScrollView>
             </SafeAreaView>
+            </SafeAreaProvider>
           </Modal>
         ) : (
           <>
