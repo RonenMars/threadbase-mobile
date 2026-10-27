@@ -217,9 +217,12 @@ export function parseOpenMessage2(
 /** The streamer's sliding window is 60 s; with no `Retry-After` that is the safe wait. */
 const RATE_LIMIT_FALLBACK_S = 60
 
+// The streamer sends 1-60. The header is unauthenticated input, so a larger value is clamped, not obeyed.
+const RATE_LIMIT_MAX_S = 120
+
 function rateLimitWaitSeconds(retryAfter: string | null | undefined): number {
   const seconds = Number(retryAfter)
-  return Number.isInteger(seconds) && seconds > 0 ? seconds : RATE_LIMIT_FALLBACK_S
+  return Number.isInteger(seconds) && seconds > 0 ? Math.min(seconds, RATE_LIMIT_MAX_S) : RATE_LIMIT_FALLBACK_S
 }
 
 /** Maps an `/open` HTTP refusal onto the client's contract. */
@@ -332,15 +335,20 @@ function contextFor(
  * all stop at the same place without sending a request that is certain to be
  * refused.
  */
-const gates = new Map<string, { until: number; reason: 'rate-limit' | 'timeout' }>()
+const gates = new Map<string, { until: number; reason: 'rate-limit' | 'timeout'; pin: string }>()
 const timeoutStreak = new Map<string, number>()
 
 const TIMEOUT_BACKOFF_BASE_MS = 2000
 const TIMEOUT_BACKOFF_CAP_MS = 30000
 
-function assertNoWait(serverId: string): void {
+function assertNoWait(serverId: string, pin: string): void {
   const gate = gates.get(serverId)
   if (!gate) return
+  // A different pin is a different server identity; the old wait says nothing about it.
+  if (gate.pin !== pin) {
+    gates.delete(serverId)
+    return
+  }
   const remaining = gate.until - Date.now()
   if (remaining <= 0) {
     gates.delete(serverId)
@@ -357,8 +365,8 @@ function assertNoWait(serverId: string): void {
   )
 }
 
-function armGate(serverId: string, waitMs: number, reason: 'rate-limit' | 'timeout'): void {
-  gates.set(serverId, { until: Date.now() + waitMs, reason })
+function armGate(serverId: string, pin: string, waitMs: number, reason: 'rate-limit' | 'timeout'): void {
+  gates.set(serverId, { until: Date.now() + waitMs, reason, pin })
 }
 
 /**
@@ -427,7 +435,7 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
     }
     const failure = mapOpenFailure(response.status, code, response.headers?.get(HEADER_RETRY_AFTER))
     if (failure.retryAfterMs !== undefined) {
-      armGate(args.serverId, failure.retryAfterMs, 'rate-limit')
+      armGate(args.serverId, args.serverPublicKey, failure.retryAfterMs, 'rate-limit')
     }
     throw failure
   }
@@ -555,7 +563,7 @@ export async function openContext(args: OpenContextArgs): Promise<TransportConte
   }
 
   // After the verdict: a wait must not hide a permanent refusal reached first.
-  assertNoWait(args.serverId)
+  assertNoWait(args.serverId, args.serverPublicKey)
 
   try {
     const context = await runOpenHandshake(args)
@@ -600,6 +608,7 @@ export async function openOnFirstReachable(
         timeoutStreak.set(args.serverId, streak)
         armGate(
           args.serverId,
+          args.serverPublicKey,
           Math.min(TIMEOUT_BACKOFF_BASE_MS * 2 ** (streak - 1), TIMEOUT_BACKOFF_CAP_MS),
           'timeout',
         )
