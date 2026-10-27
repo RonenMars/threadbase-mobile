@@ -73,6 +73,9 @@ export type OpenErrorCode =
 // eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
 export const HEADER_RELAY_ERROR = 'X-TB-Relay-Error'
 
+// eslint-disable-next-line i18next/no-literal-string -- HTTP header name, never rendered
+const HEADER_RETRY_AFTER = 'Retry-After'
+
 export class OpenError extends Error {
   readonly code: OpenErrorCode
   /** `true` for exactly the codes a client may retry. */
@@ -84,13 +87,20 @@ export class OpenError extends Error {
    * reaches too.
    */
   readonly unreachable: boolean
+  /**
+   * How long no `/open` may be started, set on a `429` and on every local
+   * refusal while a wait is pending. Callers that schedule a redial use it as
+   * the floor of their delay.
+   */
+  readonly retryAfterMs?: number
 
-  constructor(code: OpenErrorCode, message: string, unreachable = false) {
+  constructor(code: OpenErrorCode, message: string, unreachable = false, retryAfterMs?: number) {
     super(message)
     this.name = 'OpenError'
     this.code = code
     this.retryable = code === 'E2EE_CTX_UNKNOWN' || code === 'E2EE_TRANSIENT'
     this.unreachable = unreachable
+    if (retryAfterMs !== undefined) this.retryAfterMs = retryAfterMs
   }
 }
 
@@ -204,8 +214,16 @@ export function parseOpenMessage2(
   return { ctxId, ctxIdRaw, expiresAt: expiresAtRaw, provisional }
 }
 
+/** The streamer's sliding window is 60 s; with no `Retry-After` that is the safe wait. */
+const RATE_LIMIT_FALLBACK_S = 60
+
+function rateLimitWaitSeconds(retryAfter: string | null | undefined): number {
+  const seconds = Number(retryAfter)
+  return Number.isInteger(seconds) && seconds > 0 ? seconds : RATE_LIMIT_FALLBACK_S
+}
+
 /** Maps an `/open` HTTP refusal onto the client's contract. */
-export function mapOpenFailure(status: number, code: unknown): OpenError {
+export function mapOpenFailure(status: number, code: unknown, retryAfter?: string | null): OpenError {
   const named = typeof code === 'string' ? code : ''
   if (named === 'E2EE_DEVICE_REVOKED' || status === 403) {
     return new OpenError('E2EE_DEVICE_REVOKED', 'This device is not paired for encryption')
@@ -224,7 +242,16 @@ export function mapOpenFailure(status: number, code: unknown): OpenError {
   }
   // 429 and 5xx are transient. Retry with backoff — never the re-auth path,
   // never a pin change. A sealed 503 STORE_UNAVAILABLE lands here too.
-  if (status === 429 || status >= 500) {
+  if (status === 429) {
+    const seconds = rateLimitWaitSeconds(retryAfter)
+    return new OpenError(
+      'E2EE_TRANSIENT',
+      `Too many connection attempts. Reconnecting in ${seconds} s. (HTTP 429, Retry-After: ${retryAfter || 'absent'})`,
+      false,
+      seconds * 1000,
+    )
+  }
+  if (status >= 500) {
     return new OpenError('E2EE_TRANSIENT', 'The server is busy; retrying shortly')
   }
   return new OpenError('E2EE_HANDSHAKE_FAILED', `The encryption handshake failed (${status})`)
@@ -295,6 +322,46 @@ function contextFor(
 }
 
 /**
+ * Per-server wait before the next `/open` may start. The streamer's limit is per
+ * device and per server, so both addresses share one entry.
+ *
+ * Armed by a `429` (for `Retry-After`) and by a timeout of every address
+ * (exponential: a timed-out `/open` is still counted by the server, and cannot
+ * be told apart from a refusal). Checked in `openContext`, the one funnel the
+ * socket and REST opens share, so a foreground, a silence timer and a Retry tap
+ * all stop at the same place without sending a request that is certain to be
+ * refused.
+ */
+const gates = new Map<string, { until: number; reason: 'rate-limit' | 'timeout' }>()
+const timeoutStreak = new Map<string, number>()
+
+const TIMEOUT_BACKOFF_BASE_MS = 2000
+const TIMEOUT_BACKOFF_CAP_MS = 30000
+
+function assertNoWait(serverId: string): void {
+  const gate = gates.get(serverId)
+  if (!gate) return
+  const remaining = gate.until - Date.now()
+  if (remaining <= 0) {
+    gates.delete(serverId)
+    return
+  }
+  const seconds = Math.ceil(remaining / 1000)
+  throw new OpenError(
+    'E2EE_TRANSIENT',
+    gate.reason === 'rate-limit'
+      ? `Too many connection attempts. Reconnecting in ${seconds} s.`
+      : `Could not reach the server; trying again in ${seconds} s.`,
+    false,
+    remaining,
+  )
+}
+
+function armGate(serverId: string, waitMs: number, reason: 'rate-limit' | 'timeout'): void {
+  gates.set(serverId, { until: Date.now() + waitMs, reason })
+}
+
+/**
  * Runs one `/open` handshake and returns the context it leaves behind.
  *
  * **Every attempt runs `writeMessage1` afresh, with a new ephemeral.** A retry
@@ -349,6 +416,7 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
   if (response.headers?.get(HEADER_RELAY_ERROR)) {
     throw new OpenError('E2EE_TRANSIENT', 'The relay could not reach the server', true)
   }
+  timeoutStreak.delete(args.serverId)
 
   if (!response.ok) {
     let code: unknown
@@ -357,7 +425,11 @@ async function runOpenHandshake(args: OpenContextArgs): Promise<TransportContext
     } catch {
       code = undefined
     }
-    throw mapOpenFailure(response.status, code)
+    const failure = mapOpenFailure(response.status, code, response.headers?.get(HEADER_RETRY_AFTER))
+    if (failure.retryAfterMs !== undefined) {
+      armGate(args.serverId, failure.retryAfterMs, 'rate-limit')
+    }
+    throw failure
   }
 
   let body: unknown
@@ -452,6 +524,8 @@ export function _openRefusalCount(): number {
 
 export function _resetOpenRefusalsForTests(): void {
   refused.clear()
+  gates.clear()
+  timeoutStreak.clear()
 }
 
 /**
@@ -480,9 +554,13 @@ export async function openContext(args: OpenContextArgs): Promise<TransportConte
     forget()
   }
 
+  // After the verdict: a wait must not hide a permanent refusal reached first.
+  assertNoWait(args.serverId)
+
   try {
     const context = await runOpenHandshake(args)
     forget()
+    gates.delete(args.serverId)
     return context
   } catch (error) {
     // Only a permanent refusal is remembered. A retryable one — `429`, a 5xx, an
@@ -516,7 +594,17 @@ export async function openOnFirstReachable(
     try {
       return await open({ ...args, baseUrl: addresses[i], ...(last ? {} : { timeoutMs: FIRST_ADDRESS_TIMEOUT_MS }) })
     } catch (error) {
-      if (last || !(error instanceof OpenError && error.unreachable)) throw error
+      if (!last && error instanceof OpenError && error.unreachable) continue
+      if (error instanceof OpenError && error.unreachable) {
+        const streak = (timeoutStreak.get(args.serverId) ?? 0) + 1
+        timeoutStreak.set(args.serverId, streak)
+        armGate(
+          args.serverId,
+          Math.min(TIMEOUT_BACKOFF_BASE_MS * 2 ** (streak - 1), TIMEOUT_BACKOFF_CAP_MS),
+          'timeout',
+        )
+      }
+      throw error
     }
   }
 }
