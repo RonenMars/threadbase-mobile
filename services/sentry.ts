@@ -439,6 +439,22 @@ export function captureHandledError(
   return doCaptureException(error, context)
 }
 
+/**
+ * Wait (bounded) for queued events to reach the native transport. Call before
+ * anything that tears down the JS context (`Updates.reloadAsync`): capture is
+ * async, so a reload straight after `captureHandledError` drops the event.
+ * Never throws.
+ */
+export async function flushPendingEvents(timeoutMs = 2000): Promise<void> {
+  if (!sdkReady) return
+  try {
+    // Sentry.flush() takes no timeout here, so bound it ourselves.
+    await Promise.race([Sentry.flush(), new Promise((resolve) => setTimeout(resolve, timeoutMs))])
+  } catch {
+    // best effort — the reload must still happen
+  }
+}
+
 /** The actual capture call, shared by captureHandledError and reportOneShot.
  * Callers are responsible for ensuring the SDK is ready first.
  * `oneShot: true` tags the event so `beforeSend` lets it through exactly once

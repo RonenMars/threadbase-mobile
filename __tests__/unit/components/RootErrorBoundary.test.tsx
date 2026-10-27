@@ -1,10 +1,12 @@
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
-import { RootErrorBoundaryFallback } from '@/components/RootErrorBoundary'
+import * as Updates from 'expo-updates'
+import { RootErrorBoundary, RootErrorBoundaryFallback } from '@/components/RootErrorBoundary'
 import { useSettingsStore } from '@/stores/settings'
-import { reportOneShot } from '@/services/sentry'
+import { flushPendingEvents, reportOneShot } from '@/services/sentry'
 
 jest.mock('@/services/sentry', () => ({
   captureHandledError: jest.fn(),
+  flushPendingEvents: jest.fn(),
   reportOneShot: jest.fn(),
 }))
 
@@ -83,5 +85,30 @@ describe('RootErrorBoundaryFallback — Anonymous Diagnostics checkbox (spec §8
     const { queryByTestId } = await render(<RootErrorBoundaryFallback onReload={jest.fn()} />)
     expect(queryByTestId('error-boundary-diagnostics-checkbox')).toBeNull()
     expect(queryByTestId('error-boundary-report')).toBeNull()
+  })
+})
+
+describe('RootErrorBoundary — reload', () => {
+  it('flushes Sentry before reloading, so the crash event is not killed mid-send', async () => {
+    const order: string[] = []
+    ;(flushPendingEvents as jest.Mock).mockImplementation(async () => {
+      order.push('flush')
+    })
+    jest.spyOn(Updates, 'reloadAsync').mockImplementation(async () => {
+      order.push('reload')
+    })
+    const Boom = () => {
+      throw new Error('boom')
+    }
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    const { getByTestId } = await render(
+      <RootErrorBoundary>
+        <Boom />
+      </RootErrorBoundary>,
+    )
+    await fireEvent.press(getByTestId('error-boundary-reload'))
+
+    await waitFor(() => expect(order).toEqual(['flush', 'reload']))
   })
 })
