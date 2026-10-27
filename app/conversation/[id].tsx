@@ -976,6 +976,9 @@ export default function ConversationDetailScreen() {
               onStartReached={fetchNextPage}
               isFetchingOlder={isFetchingNextPage}
               contentContainerStyle={listContentStyle}
+              // With no bottom bar, bottom-anchoring loops FlashList's layout effect
+              // ("Maximum update depth exceeded").
+              disableAutoAnchor={isSubagentTranscript}
             />
           )
         ) : (
