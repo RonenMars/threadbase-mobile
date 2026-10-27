@@ -89,6 +89,28 @@ describe('429 with Retry-After', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
+  it('clamps an oversized Retry-After', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(tooMany('86400'))
+    const first = await outcome(open(fetchImpl))
+    expect(first?.retryAfterMs).toBe(120_000)
+    jest.advanceTimersByTime(120_000)
+    await outcome(open(fetchImpl))
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not apply a wait to a different pin', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(tooMany('30'))
+    await outcome(open(fetchImpl))
+    await outcome(
+      openOnFirstReachable(
+        { ...base, serverPublicKey: 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', fetchImpl: fetchImpl as unknown as typeof fetch },
+        ADDRESSES,
+        openContext,
+      ),
+    )
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
   it('does not hop to the other address after a 429', async () => {
     const fetchImpl = jest.fn().mockResolvedValue(tooMany('30'))
     await outcome(open(fetchImpl))
