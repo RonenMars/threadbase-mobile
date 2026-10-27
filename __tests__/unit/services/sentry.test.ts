@@ -444,8 +444,8 @@ describe('sentry service — EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING', () => {
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
     expect(opts.sendDefaultPii).toBe(false)
     expect(opts).toMatchObject({
-      attachScreenshot: false,
-      attachViewHierarchy: false,
+      attachScreenshot: true,
+      attachViewHierarchy: true,
       enableCaptureFailedRequests: true,
       enableStallTracking: true,
       enableAppHangTracking: true,
