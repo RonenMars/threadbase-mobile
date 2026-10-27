@@ -375,6 +375,24 @@ describe('sanitizeBreadcrumb', () => {
   })
 })
 
+describe('sanitizeEvent — event_id', () => {
+  const id = 'fa24cf1e506f4421885719bb2ce788df'
+  const exception = { values: [{ type: 'Error', value: 'x' }] }
+
+  it('keeps a real 32-hex event id; redacting it makes Sentry dedupe every later crash', () => {
+    expect(sanitizeEvent({ event_id: id, level: 'error', exception })?.event_id).toBe(id)
+  })
+
+  it('drops a malformed event id instead of forwarding it', () => {
+    expect(sanitizeEvent({ event_id: `${id}-leak`, level: 'error', exception })).not.toHaveProperty('event_id')
+  })
+
+  it('keeps the event id on a feedback event too', () => {
+    const fb = sanitizeEvent({ event_id: id, type: 'feedback', contexts: { feedback: { message: 'hi' } } })
+    expect(fb?.event_id).toBe(id)
+  })
+})
+
 describe('sanitizeEvent — allowlist', () => {
   function baseEvent(): Record<string, unknown> {
     return {
