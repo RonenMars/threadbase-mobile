@@ -85,7 +85,7 @@
   },
   "diagnosticsSuggestion": {
     "title": "Help improve Threadbase",
-    "body": "Enable anonymous diagnostics to automatically send future crash reports and basic stability information.",
+    "body": "Optional diagnostics include crash reports, stability data, and API route templates with response sizes, without request or response contents.",
     "enable": "Enable anonymous diagnostics",
     "notNow": "Not now"
   }
