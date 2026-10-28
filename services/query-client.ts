@@ -4,7 +4,9 @@ import { QueryClient, onlineManager, focusManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { AppState, type AppStateStatus } from 'react-native'
 import i18n from '@/lib/i18n'
+import { queryRetryDelay, shouldRetryQuery } from '@/services/error-policy'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
+import { useQueryRecoveryStore } from '@/stores/query-recovery'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
 const ONE_MINUTE = 1000 * 60
@@ -34,18 +36,36 @@ function categoryForHash(hash: string): QueryCategory {
   return 'other'
 }
 
+function syncQueryRecovery() {
+  // Still retrying: at least one failure, but not yet in terminal error (RQ
+  // only flips to error after shouldRetryQuery returns false).
+  const recovering = queryClient.getQueryCache().getAll().some((query) => {
+    const { fetchFailureCount, status } = query.state
+    return fetchFailureCount > 0 && status !== 'error'
+  })
+  useQueryRecoveryStore.getState().setRecovering(recovering)
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Per-hook overrides where stronger retry semantics are warranted.
-      // Default 0 keeps a 3-server, multi-page eager loop from amplifying a
-      // single transient failure into 3×N×3 retried requests.
-      retry: 0,
+      // Silent outer retries before Status-sheet / overlay promotion. Per-query
+      // only (a failing server B does not re-hammer healthy server A). Mutations
+      // stay at 0 — writes are not auto-retried.
+      retry: shouldRetryQuery,
+      retryDelay: queryRetryDelay,
       staleTime: 0,
       gcTime: QUERY_GC_TIME,
       refetchOnReconnect: true,
     },
+    mutations: {
+      retry: 0,
+    },
   },
+})
+
+queryClient.getQueryCache().subscribe(() => {
+  syncQueryRecovery()
 })
 
 interface ConversationCollection {
