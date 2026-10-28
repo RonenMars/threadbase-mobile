@@ -146,15 +146,19 @@ const SECRET_VALUE_PATTERNS: readonly RegExp[] = [
  * Value-shape patterns for URLs / paths / IPs / emails. These are content, not
  * secrets, but equally must not leak. Redacted wherever they appear as a value.
  */
+// Any scheme://... URL (http, https, ws, wss, file, threadbase, …)
+const URL_VALUE_PATTERN = /\b[a-z][a-z0-9+.-]*:\/\/\S+/i
+// Absolute POSIX path (>= 2 segments so we don't nuke "/" or "/x").
+// The first group is the leading delimiter and is preserved when a message is scrubbed.
+const POSIX_PATH_PATTERN = /(^|[\s"'([{])\/(?:[\w.-]+\/)+[\w.-]*/
+const HOME_PATH_PATTERN = /~\/[\w./-]+/
+const WINDOWS_PATH_PATTERN = /\b[A-Za-z]:\\[^\s"']+/
+
 const CONTENT_VALUE_PATTERNS: readonly RegExp[] = [
-  // Any scheme://... URL (http, https, ws, wss, file, threadbase, …)
-  /\b[a-z][a-z0-9+.-]*:\/\/\S+/i,
-  // Absolute POSIX path (>= 2 segments so we don't nuke "/" or "/x")
-  /(^|[\s"'([{])\/(?:[\w.-]+\/)+[\w.-]*/,
-  // Home-relative path
-  /~\/[\w./-]+/,
-  // Windows path
-  /\b[A-Za-z]:\\[^\s"']+/,
+  URL_VALUE_PATTERN,
+  POSIX_PATH_PATTERN,
+  HOME_PATH_PATTERN,
+  WINDOWS_PATH_PATTERN,
   // IPv4 (with optional port)
   /\b\d{1,3}(?:\.\d{1,3}){3}(?::\d{1,5})?\b/,
   // IPv6 (loose)
@@ -229,6 +233,59 @@ function truncateString(value: string): string {
 export function scrubString(value: string): string {
   if (valueLooksSensitive(value)) return REDACTED
   return truncateString(value)
+}
+
+function globalCopy(re: RegExp): RegExp {
+  const flags = re.flags.includes('g') ? re.flags : `${re.flags}g`
+  return new RegExp(re.source, flags)
+}
+
+/**
+ * Replace one pattern's matches. The POSIX path pattern captures its leading
+ * delimiter; that character stays so "failed (/path/to/file)" does not swallow
+ * the parenthesis.
+ */
+function replaceSpans(value: string, re: RegExp, keepDelimiter: boolean): string {
+  return value.replace(globalCopy(re), (_match, delimiter: string | number) => {
+    if (keepDelimiter && typeof delimiter === 'string') return `${delimiter}${REDACTED}`
+    return REDACTED
+  })
+}
+
+/**
+ * Error messages are part of a crash report. Cut out tokens, URLs, hostnames,
+ * addresses, and paths, and keep the surrounding words. A message that is
+ * nothing but those spans collapses to REDACTED. Field values that are not
+ * an error message still go through scrubString, which drops the whole value.
+ */
+export function scrubMessage(value: string): string {
+  try {
+    // URLs and paths before secrets. A token inside a path (secret-project)
+    // would otherwise split the path and leave the rest of it in the message.
+    let out = replaceSpans(value, URL_VALUE_PATTERN, false)
+    out = replaceSpans(out, POSIX_PATH_PATTERN, true)
+    out = replaceSpans(out, HOME_PATH_PATTERN, false)
+    out = replaceSpans(out, WINDOWS_PATH_PATTERN, false)
+    for (const re of SECRET_VALUE_PATTERNS) out = replaceSpans(out, re, false)
+    for (const re of CONTENT_VALUE_PATTERNS) {
+      if (
+        re === URL_VALUE_PATTERN ||
+        re === POSIX_PATH_PATTERN ||
+        re === HOME_PATH_PATTERN ||
+        re === WINDOWS_PATH_PATTERN
+      ) {
+        continue
+      }
+      out = replaceSpans(out, re, false)
+    }
+    if (out.includes(REDACTED)) {
+      const leftover = out.split(REDACTED).join('').replace(/[\s,.;:()[\]{}"'`!?/\\-]+/g, '')
+      if (leftover.length === 0) return REDACTED
+    }
+    return truncateString(out)
+  } catch {
+    return REDACTED
+  }
 }
 
 type Primitive = string | number | boolean | null
@@ -357,26 +414,26 @@ export interface NormalizedError {
 
 /**
  * Normalize an unknown thrown value into a safe {name, message, stack}. The
- * message is scrubbed for secrets/URLs/paths; the stack is passed through the
- * dedicated stack scrubber. Handles non-Error throws, nulls, and circular
- * error causes.
+ * message keeps its wording and only sensitive spans are replaced; the stack
+ * goes through the dedicated stack scrubber. Handles non-Error throws, nulls,
+ * and circular error causes.
  */
 export function normalizeError(err: unknown): NormalizedError {
   try {
     if (err instanceof Error) {
       return {
         name: typeof err.name === 'string' ? truncateString(err.name) : 'Error',
-        message: scrubString(err.message ?? ''),
+        message: scrubMessage(err.message ?? ''),
         stack: err.stack ? scrubStack(err.stack) : undefined,
       }
     }
     if (typeof err === 'string') {
-      return { name: 'Error', message: scrubString(err) }
+      return { name: 'Error', message: scrubMessage(err) }
     }
     if (err && typeof err === 'object') {
       const rec = err as Record<string, unknown>
       const message =
-        typeof rec.message === 'string' ? scrubString(rec.message) : REDACTED
+        typeof rec.message === 'string' ? scrubMessage(rec.message) : REDACTED
       const name = typeof rec.name === 'string' ? truncateString(rec.name) : 'Error'
       const stack = typeof rec.stack === 'string' ? scrubStack(rec.stack) : undefined
       return { name, message, stack }
@@ -477,7 +534,7 @@ function sanitizeExceptionValue(exc: unknown): unknown {
   const rec = exc as Record<string, unknown>
   const out: Record<string, unknown> = {}
   if (typeof rec.type === 'string') out.type = truncateString(rec.type)
-  if (typeof rec.value === 'string') out.value = scrubString(rec.value)
+  if (typeof rec.value === 'string') out.value = scrubMessage(rec.value)
   if (typeof rec.module === 'string') out.module = scrubString(rec.module)
   // Keep stacktrace frames but scrub each frame's paths/vars.
   const st = rec.stacktrace as { frames?: unknown[] } | undefined
