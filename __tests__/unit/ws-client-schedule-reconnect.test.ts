@@ -1,6 +1,6 @@
 import { wsClient } from '@/services/ws-client'
 
-type Scheduler = { _scheduleReconnect: (waitMs?: number) => void; reconnectAttempt: number; _doConnect: () => unknown }
+type Scheduler = { _scheduleReconnect: (waitMs?: number) => void; reconnectAttempt: number; _doConnect: () => Promise<void> }
 
 const WSClientClass = wsClient.constructor as new (serverId?: string) => Scheduler
 
