@@ -318,7 +318,7 @@ class WSClient {
       // A bad pin, revoked device, or malformed handshake cannot heal through
       // retries. In particular, it must never fall back to the URL credential.
       if (error instanceof OpenError && !error.retryable) return
-      this._scheduleReconnect()
+      this._scheduleReconnect(error instanceof OpenError ? error.retryAfterMs : undefined)
       return
     }
     // Guard every callback below against firing after this socket has been
@@ -483,10 +483,13 @@ class WSClient {
     }
   }
 
-  private _scheduleReconnect() {
+  // `waitMs` is a pending `/open` wait (a 429's Retry-After, or a local refusal
+  // that is still counting one down). It replaces the ladder and spends none of
+  // it: a redial before it passes would only be refused again.
+  private _scheduleReconnect(waitMs?: number) {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
-    const delay = BACKOFF_MS[Math.min(this.reconnectAttempt, BACKOFF_MS.length - 1)]
-    this.reconnectAttempt++
+    const delay = waitMs ?? BACKOFF_MS[Math.min(this.reconnectAttempt, BACKOFF_MS.length - 1)]
+    if (waitMs === undefined) this.reconnectAttempt++
     logConnection(this.serverId, 'schedule_reconnect', this.reconnectAttempt)
     this.reconnectTimer = setTimeout(() => void this._doConnect(), delay)
   }

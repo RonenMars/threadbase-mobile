@@ -44,6 +44,7 @@ const b64 = (s: string): Uint8Array => Uint8Array.from(Buffer.from(s, 'base64'))
 
 /** The two messages row 8 watched swap places on screen. */
 const REVOKED_TEXT = 'This device is not paired for encryption'
+const TOO_MANY_TEXT = 'Too many connection attempts. Reconnecting in 60 s. (HTTP 429, Retry-After: absent)'
 const BUSY_TEXT = 'The server is busy; retrying shortly'
 
 const PIN = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -161,7 +162,7 @@ describe('the storm, as row 8 observed it', () => {
     // The laundering: the first ten refusals are permanent and say so; from the
     // eleventh the rate limiter's own answer is read as a temporary condition.
     expect(seen.slice(0, 10)).toEqual(Array(10).fill(REVOKED_TEXT))
-    expect(seen.slice(10)).toEqual(Array(ATTEMPTS - 10).fill(BUSY_TEXT))
+    expect(seen.slice(10)).toEqual(Array(ATTEMPTS - 10).fill(TOO_MANY_TEXT))
   })
 
   it('unguarded, the classification itself flips from permanent to retryable', async () => {
@@ -300,7 +301,7 @@ describe('genuinely retryable refusals still retry', () => {
    * The positive control. A fix that stopped all retrying would be a regression,
    * not a fix, and would pass every assertion above.
    */
-  it('a 429 on its own never records a verdict — every attempt reaches the server', async () => {
+  it('a 429 on its own never records a verdict — it is waited out, still retryable', async () => {
     const busy = refusingServer(() => ({ status: 429, code: 'E2EE_TRANSIENT' }))
 
     for (let i = 0; i < ATTEMPTS; i++) {
@@ -308,7 +309,8 @@ describe('genuinely retryable refusals still retry', () => {
       expect(error.retryable).toBe(true)
     }
 
-    expect(busy.calls()).toBe(ATTEMPTS)
+    // One request reached the server; the rest were refused locally for the wait.
+    expect(busy.calls()).toBe(1)
     expect(_openRefusalCount()).toBe(0)
   })
 
