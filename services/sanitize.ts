@@ -299,6 +299,12 @@ function isPlainPrimitive(value: unknown): value is Primitive {
   )
 }
 
+// A Sentry event id is 32 hex chars, which the long-hex secret rule redacts. A redacted id makes the
+// native SDK send the nil id, and Sentry drops every later event with that id as a duplicate.
+function sanitizeEventId(value: unknown): string | undefined {
+  return typeof value === 'string' && /^[0-9a-f]{32}$/i.test(value) ? value : undefined
+}
+
 /**
  * Recursively sanitize an arbitrary value into a plain, safe, serializable
  * structure. Removes sensitive keys, scrubs sensitive string values, caps
@@ -778,8 +784,12 @@ export function sanitizeEvent(
           }
           break
         }
+        case 'event_id': {
+          const id = sanitizeEventId(value)
+          if (id !== undefined) out.event_id = id
+          break
+        }
         case 'sdk':
-        case 'event_id':
         case 'timestamp':
         case 'platform':
         case 'level':
@@ -844,7 +854,9 @@ function sanitizeFeedbackEvent(src: Record<string, unknown>): SentryLikeEvent | 
     contexts: { feedback: safeFeedback },
   }
   // Carry through only safe scalar metadata from the standard allowlist.
-  for (const key of ['event_id', 'timestamp', 'platform', 'level', 'environment', 'release', 'dist'] as const) {
+  const eventId = sanitizeEventId(src.event_id)
+  if (eventId !== undefined) out.event_id = eventId
+  for (const key of ['timestamp', 'platform', 'level', 'environment', 'release', 'dist'] as const) {
     if (key in src) {
       const v = sanitizeValue(src[key], 0, new WeakSet<object>())
       if (v !== undefined) out[key] = v
