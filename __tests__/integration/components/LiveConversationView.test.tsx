@@ -8,7 +8,7 @@
  */
 import React from 'react'
 import { Alert, Keyboard } from 'react-native'
-import { act, fireEvent, render, screen } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { NetworkError } from '@/services/api-client'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
 import { createWrapper } from '@/test-utils'
@@ -46,6 +46,7 @@ let mockHistoryLoading = false
 // when a test says so, to stand in for a slow server.
 let mockHasNextPage = false
 const mockFetchNextPage = jest.fn(() => new Promise<void>(() => {}))
+let mockSessionStatus = 'waiting_input'
 
 jest.mock('@/hooks/useConversations', () => ({
   useConversation: () => ({
@@ -107,7 +108,7 @@ jest.mock('@/services/ws-client', () => ({
 }))
 
 jest.mock('@/hooks/useSession', () => ({
-  useSessionDetail: () => ({ data: { status: 'waiting_input' } }),
+  useSessionDetail: () => ({ data: { status: mockSessionStatus } }),
 }))
 
 jest.mock('@/hooks/useTerminalStream', () => ({
@@ -234,6 +235,7 @@ describe('LiveConversationView — optimistic sent message', () => {
     mockLive = []
     mockPtyLines = []
     mockHistoryLoading = false
+    mockSessionStatus = 'waiting_input'
   })
 
   it('subscribes to WS reconnect so a status flip missed while backgrounded is resynced', async () => {
@@ -420,6 +422,23 @@ describe('LiveConversationView — optimistic sent message', () => {
     // …and the user's text shows up right away as a bubble, with no live echo.
     expect(screen.getByText('hello there')).toBeTruthy()
     expect(input.props.value).toBe('')
+  })
+
+  // Copilot has no transcript, so its echo never arrives: the optimistic bubble must not
+  // keep the thinking indicator up once the turn it started has ended.
+  it('drops the thinking indicator when the turn ends even though no echo ever arrives', async () => {
+    const view = await renderView()
+    await fireEvent.changeText(screen.getByTestId('chat-message-input'), 'hello there')
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
+    expect(screen.getByTestId('thinking-bubble')).toBeTruthy()
+
+    mockSessionStatus = 'running'
+    await view.rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
+    mockSessionStatus = 'waiting_input'
+    await view.rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
+
+    await waitFor(() => expect(screen.queryByTestId('thinking-bubble')).toBeNull())
+    expect(screen.getByText('hello there')).toBeTruthy()
   })
 
   it('keeps composer text and does not leave an optimistic bubble when send fails', async () => {
