@@ -745,7 +745,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
 
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.data?.pages.length).toBe(1))
+    await waitFor(() => expect(result.current.data?.pages.length).toBe(1), { timeout: 6000 })
 
     const ids = result.current.data!.pages[0].conversations.map((c) => c.id)
     expect(ids).toEqual(expect.arrayContaining(['a1', 'a2']))
@@ -760,7 +760,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
     handlers['srv-B'] = () => Promise.reject(new Error('host unreachable'))
 
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.data).toBeDefined())
+    await waitFor(() => expect(result.current.data).toBeDefined(), { timeout: 6000 })
 
     const statuses = useServerFetchStatusStore.getState().statuses
     expect(statuses['srv-A']?.status).toBe('ok')
@@ -776,7 +776,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
     })
 
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.isError).toBe(true))
+    await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 6000 })
 
     expect(useServerFetchStatusStore.getState().statuses['srv-A']).toMatchObject({
       status: 'warming_up',
@@ -789,7 +789,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
     handlers['srv-A'] = () => Promise.reject(new Error('down'))
 
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.isError).toBe(true))
+    await waitFor(() => expect(result.current.isError).toBe(true), { timeout: 6000 })
     expect(result.current.data).toBeUndefined()
   })
 
@@ -806,7 +806,7 @@ describe('useConversations — partial failure (Bug 32)', () => {
     handlers['srv-malformed'] = () => Promise.reject(new Error('Unexpected token < in JSON'))
 
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.data?.pages.length).toBe(1))
+    await waitFor(() => expect(result.current.data?.pages.length).toBe(1), { timeout: 6000 })
 
     const ids = result.current.data!.pages[0].conversations.map((c) => c.id)
     expect(ids).toEqual(expect.arrayContaining(['healthy-1', 'slow-1']))
@@ -862,7 +862,7 @@ describe('useConversationSearch — partial failure (Bug 32)', () => {
     const { result } = await renderHook(() => useConversationSearch('alpha'), {
       wrapper: createWrapper(),
     })
-    await waitFor(() => expect(result.current.data).toBeDefined())
+    await waitFor(() => expect(result.current.data).toBeDefined(), { timeout: 6000 })
 
     expect(result.current.data!.conversations.map((c) => c.id)).toEqual(['a1'])
     expect(result.current.isError).toBe(false)

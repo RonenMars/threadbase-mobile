@@ -183,7 +183,7 @@ describe('useEagerSessions', () => {
 
     const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.isDone).toBe(true))
+    await waitFor(() => expect(result.current.isDone).toBe(true), { timeout: 6000 })
     // The query itself succeeds — partial results are not a fatal error.
     expect(result.current.error).toBeNull()
     // Only sessions from the healthy server are present.
@@ -204,21 +204,22 @@ describe('useEagerSessions', () => {
       await result.current.refetch()
     })
     await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
-    await waitFor(() => expect(result.current.isDone).toBe(true))
+    await waitFor(() => expect(result.current.isDone).toBe(true), { timeout: 6000 })
 
     expect(result.current.sessions.map((s) => s.id)).toEqual(['a1'])
     expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error')
   })
 
-  it('uses the short initial timeout without retrying a failed server', async () => {
+  it('uses the short initial timeout and retries a failed server silently before reporting it', async () => {
     setActiveServers([{ id: 'srv-A', label: 'A' }])
-    mockGet.mockRejectedValueOnce(new Error('offline'))
+    mockGet.mockRejectedValue(new Error('offline'))
 
     const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
 
-    await waitFor(() => expect(result.current.isDone).toBe(true))
+    await waitFor(() => expect(result.current.isDone).toBe(true), { timeout: 6000 })
 
-    expect(mockGet).toHaveBeenCalledTimes(1)
+    // first attempt + QUERY_RETRY_COUNT silent retries (error-policy)
+    expect(mockGet).toHaveBeenCalledTimes(3)
     expect(mockGet.mock.calls[0][1]).toEqual(expect.objectContaining({
       timeoutMs: 12_000,
       retry: false,
@@ -247,17 +248,19 @@ describe('useEagerSessions', () => {
   it('after an explicit retry a handshake-refused server is reachable again', async () => {
     _resetOpenRefusalsForTests()
     setActiveServers([{ id: 'srv-A', label: 'A' }])
-    mockGet.mockRejectedValueOnce(new Error('offline')).mockResolvedValue(pageOf(['a1']))
+    mockGet.mockRejectedValue(new Error('offline'))
     const secureRead = getItemAsync as jest.MockedFunction<typeof getItemAsync>
     secureRead.mockImplementation(async (key: string) =>
       key === 'threadbase_e2ee_device_key_srv-A' ? DEVICE_STATIC_KEY_B64 : null,
     )
 
     const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.isDone).toBe(true))
-    await waitFor(() =>
-      expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error'),
+    await waitFor(() => expect(result.current.isDone).toBe(true), { timeout: 6000 })
+    await waitFor(
+      () => expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error'),
+      { timeout: 6000 },
     )
+    mockGet.mockResolvedValue(pageOf(['a1']))
 
     let opens = 0
     const refusing = (async () => {
@@ -315,7 +318,7 @@ describe('useEagerSessions', () => {
       .mockResolvedValueOnce(pageOf(['a1'], { nextCursor: null, total: 1 }))
 
     const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
-    await waitFor(() => expect(result.current.isDone).toBe(true))
+    await waitFor(() => expect(result.current.isDone).toBe(true), { timeout: 6000 })
 
     await act(async () => {
       result.current.retryFailed()
