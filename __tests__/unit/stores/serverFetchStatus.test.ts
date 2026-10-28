@@ -47,7 +47,10 @@ describe('useServerFetchStatusStore', () => {
     const dismissedAt = useServerFetchStatusStore.getState().dismissedFailureAt['srv-A']
     expect(isServerFetchErrorVisible(first, dismissedAt)).toBe(false)
 
+    // distinct episodes need distinct timestamps; same-ms failures would look identical
+    const now = jest.spyOn(Date, 'now').mockReturnValue(first.lastCheckedAt + 1)
     useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('boom again'))
+    now.mockRestore()
     const second = useServerFetchStatusStore.getState().statuses['srv-A']!
     expect(second.lastCheckedAt).not.toBe(first.lastCheckedAt)
     expect(isServerFetchErrorVisible(second, dismissedAt)).toBe(true)
