@@ -174,7 +174,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
                   ) : null}
                   {hasMore && convCount > 0 ? (
                     <TouchableOpacity
-                      onPress={() => router.push(`/project/${projectId}?path=${encodedPath}`)}
+                      onPress={() => router.push(`/project/${projectId}?path=${encodedPath}&server=${encodeURIComponent(group.serverId)}`)}
                       activeOpacity={0.6}
                       style={styles.seeAllRow}
                       testID={`hub-see-all-${group.projectPath}`}

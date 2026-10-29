@@ -1,5 +1,6 @@
 import React from 'react'
-import { render } from '@testing-library/react-native'
+import { render, fireEvent } from '@testing-library/react-native'
+import { useRouter } from 'expo-router'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ProjectHubCard } from '@/components/sessions/hub/ProjectHubCard'
 import { useServersStore } from '@/stores/servers'
@@ -146,5 +147,14 @@ describe('ProjectHubCard', () => {
     expect(getByText('session:s3')).toBeTruthy()
     expect(getByText('session:s2')).toBeTruthy()
     expect(queryByText('session:s1')).toBeNull()
+  })
+
+  it('opens the project screen on the card\'s own server', async () => {
+    const push = jest.fn()
+    ;(useRouter as jest.Mock).mockReturnValue({ push })
+    const more: ProjectGroup = { ...group, serverId: 'srv-2', conversationCount: 9 }
+    const { getByTestId } = await renderCard(true, more)
+    fireEvent.press(getByTestId('hub-see-all-/tmp/project'))
+    expect(push).toHaveBeenCalledWith('/project/project-1?path=%2Ftmp%2Fproject&server=srv-2')
   })
 })
