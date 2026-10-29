@@ -70,7 +70,9 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
     body = groups.map((g) => {
       const serverId = serverByRowId.get(g.items[0].id) ?? serverIds[0]
       const title =
-        parentTitles.get(g.parentId) ?? t('subagents.board.parentFallback', { id: g.parentId.slice(0, 8) })
+        parentTitles.get(g.parentId) ??
+        g.items.find((i) => i.parentTitle)?.parentTitle ??
+        t('subagents.board.parentFallback', { id: g.parentId.slice(0, 8) })
       return (
         <View key={g.parentId} style={styles.group} testID={`subagent-group-${g.parentId}`}>
           <Pressable
