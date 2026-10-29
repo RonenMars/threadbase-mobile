@@ -266,5 +266,13 @@
       "empty": "אין עדיין סוכני משנה.",
       "openParent": "פתיחת השיחה הראשית"
     }
+  },
+  "board": {
+    "title": "לוח",
+    "open": "פתיחת הלוח",
+    "earlier": "מוקדם יותר",
+    "emptyColumn": "אין כאן כלום",
+    "searchPlaceholder": "חיפוש סשנים…",
+    "loadMore": "טעינת עוד"
   }
 }

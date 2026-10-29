@@ -254,6 +254,17 @@ curl -sX POST localhost:7071/__test__/question -H 'Authorization: Bearer test-ke
 
 `/__test__/gate` accepts `sessionId`, `prompt`, `detail`, `options`, `cursor` and `contentKey`. `contentKey` is derived from the content when omitted, so two gates that differ visibly also differ in identity — pinning one by hand while changing the detail describes a gate the real server could not produce.
 
+`/__test__/session-update` broadcasts a `session_update` frame. The body is merged over the session with the same `id`, or sent as a new session when none matches, and `GET /api/sessions` keeps returning the result until the mock restarts — without that, the refetch an unknown id triggers would put the fixtures back.
+
+```bash
+# move a session into "Needs you"
+curl -sX POST localhost:7071/__test__/session-update \
+  -H 'Authorization: Bearer test-key' -H 'Content-Type: application/json' \
+  -d '{"id": "session-abc123", "status": "waiting_input", "hasOpenPrompt": true}'
+```
+
+The mock also answers browser origins: it echoes CORS headers when a request carries `Origin` and replies `204` to `OPTIONS` before the bearer check, so the app can pair with it under `npm run web`.
+
 To drive the answer route's failure branches, arm the next reply first. It is one-shot: a sticky rejection would make every later tap in the flow fail for a reason the flow never asked for.
 
 ```bash
