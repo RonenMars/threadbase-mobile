@@ -129,8 +129,8 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
         <Stat styles={styles} label={t('subagents.board.summaryTotal')} value={items.length} />
       </View>
       <View style={styles.chips}>
-        <Chip styles={styles} selected={onlyActive} label={t('subagents.board.active')} onPress={() => setOnlyActive(true)} testID="subagent-filter-active" />
         <Chip styles={styles} selected={!onlyActive} label={t('subagents.board.all')} onPress={() => setOnlyActive(false)} testID="subagent-filter-all" />
+        <Chip styles={styles} selected={onlyActive} label={t('subagents.board.active')} onPress={() => setOnlyActive(true)} testID="subagent-filter-active" />
       </View>
       {body}
     </ScrollView>
