@@ -4,6 +4,7 @@ import { isSubagentPageSupported } from '@/lib/subagents'
 import type { Conversation, ConversationPage } from '@/types/api'
 
 const LIMIT = 50
+export const SUBAGENT_POLL_MS = 5000
 
 interface SubagentPage {
   items: Conversation[]
@@ -38,6 +39,9 @@ export function useSubagents(serverId: string, parentId: string, opts?: { enable
       last.hasMore ? all.reduce((n, p) => n + p.items.length, 0) : undefined,
     initialPageParam: 0,
     enabled: (opts?.enabled ?? true) && !!serverId && !!parentId,
+    // Poll only while a loaded child is still running; an idle parent costs nothing.
+    refetchInterval: (q) =>
+      q.state.data?.pages.some((p) => p.items.some((c) => c.subagentActive === true)) ? SUBAGENT_POLL_MS : false,
   })
 
   const pages = query.data?.pages ?? []

@@ -69,3 +69,29 @@ describe('useSubagents', () => {
     expect(result.current.hasNextPage).toBe(false)
   })
 })
+
+describe('useSubagents polling', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  it('refetches every 5s while a child is active and stops once none is', async () => {
+    mockGet
+      .mockResolvedValueOnce({ conversations: [child('a', 'p1', { subagentActive: true })], hasMore: false })
+      .mockResolvedValueOnce({ conversations: [child('a', 'p1', { subagentActive: false })], hasMore: false })
+    const { result } = await renderHook(() => useSubagents('s1', 'p1'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.items).toHaveLength(1))
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    await jest.advanceTimersByTimeAsync(5000)
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    await jest.advanceTimersByTimeAsync(20000)
+    expect(mockGet).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not poll when no child is active', async () => {
+    mockGet.mockResolvedValue({ conversations: [child('a')], hasMore: false })
+    const { result } = await renderHook(() => useSubagents('s1', 'p1'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.items).toHaveLength(1))
+    await jest.advanceTimersByTimeAsync(20000)
+    expect(mockGet).toHaveBeenCalledTimes(1)
+  })
+})
