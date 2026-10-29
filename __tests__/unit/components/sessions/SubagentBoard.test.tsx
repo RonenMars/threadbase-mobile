@@ -44,6 +44,14 @@ describe('SubagentBoard', () => {
     await waitFor(() => expect(r.queryByTestId('subagent-board-row-b')).toBeNull())
   })
 
+  it('lists All before Active', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1')]))
+    const r = await renderBoard()
+    await waitFor(() => expect(r.getByTestId('subagent-filter-all')).toBeTruthy())
+    const labels = r.getAllByTestId(/^subagent-filter-/).map((n) => n.props.testID)
+    expect(labels).toEqual(['subagent-filter-all', 'subagent-filter-active'])
+  })
+
   it('opens the transcript from a row and the parent from the group header', async () => {
     const push = jest.fn()
     ;(useRouter as jest.Mock).mockReturnValue({ push, back: jest.fn(), replace: jest.fn() })
@@ -67,6 +75,16 @@ describe('SubagentBoard', () => {
     const r = await renderBoard()
     await waitFor(() => expect(r.getByText("This server doesn't list sub-agents yet.")).toBeTruthy())
     expect(r.queryByTestId('subagent-board-row-x')).toBeNull()
+  })
+
+  it('keeps the board when one sub-agent has no parent, and leaves that row off', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p1'), sub('codex', 'p1', { parentConversationId: undefined })]))
+    const r = await renderBoard()
+    await waitFor(() => expect(r.getByTestId('subagent-board-row-a')).toBeTruthy())
+    expect(r.queryByText("This server doesn't list sub-agents yet.")).toBeNull()
+    expect(r.queryByTestId('subagent-board-row-codex')).toBeNull()
+    expect(r.getByText('2')).toBeTruthy()
+    expect(r.queryByText('3')).toBeNull()
   })
 
   it('shows the empty line when nothing is active, with no resume or input affordance', async () => {
