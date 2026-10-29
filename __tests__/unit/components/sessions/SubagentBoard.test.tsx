@@ -69,6 +69,19 @@ describe('SubagentBoard', () => {
     expect(r.queryByTestId('subagent-board-row-x')).toBeNull()
   })
 
+  it('drops a sub-agent with no parent instead of marking the server unsupported', async () => {
+    mockGet.mockResolvedValue(
+      page([sub('a', 'p1', { subagentActive: true }), sub('orphan', 'p1', { parentConversationId: undefined, subagentActive: true })]),
+    )
+    const r = await renderBoard()
+    await waitFor(() => expect(r.getByTestId('subagent-board-row-a')).toBeTruthy())
+    expect(r.queryByText("This server doesn't list sub-agents yet.")).toBeNull()
+    expect(r.queryByTestId('subagent-board-row-orphan')).toBeNull()
+    expect(r.getByTestId('subagent-group-p1')).toBeTruthy()
+    // Summary stats (active, parents, total) count only the parented row.
+    expect(r.queryByText('2')).toBeNull()
+  })
+
   it('shows the empty line when nothing is active, with no resume or input affordance', async () => {
     mockGet.mockResolvedValue(page([sub('b', 'p1')]))
     const r = await renderBoard()

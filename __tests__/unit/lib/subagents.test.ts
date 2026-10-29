@@ -77,6 +77,10 @@ describe('isAllSubagentsPageSupported', () => {
   it('rejects the normal list an older streamer returns', () => {
     expect(isAllSubagentsPageSupported([row(), sub('p1')])).toBe(false)
   })
+
+  it('still accepts a page with a sub-agent the server has no parent for', () => {
+    expect(isAllSubagentsPageSupported([sub('p1'), row({ isSubagent: true })])).toBe(true)
+  })
 })
 
 describe('groupSubagentsByParent', () => {
