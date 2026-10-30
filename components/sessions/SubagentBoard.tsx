@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
+import { ConvRow } from '@/components/sessions/hub/ConvRow'
 import { Card } from '@/components/ui/Card'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
@@ -12,9 +13,7 @@ import { makeStyles as makeCardStyles } from '@/components/sessions/hub/ProjectH
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useAllSubagents, type BoardSubagent } from '@/hooks/useAllSubagents'
 import { conversationHref } from '@/lib/conversationHref'
-import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
-import { getProviderLabel } from '@/components/sessions/providerLabel'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel } from '@/lib/subagents'
 
 interface Props {
   serverIds: readonly string[]
@@ -94,7 +93,7 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
           isOpen={openIds.has(g.parentId)}
           onToggle={toggleOpen}
           onOpenParent={() => router.push(conversationHref(g.parentId, serverId))}
-          onOpenRow={(id) => router.push(conversationHref(id, serverByRowId.get(id) ?? serverId))}
+          serverIdFor={(id) => serverByRowId.get(id) ?? serverId}
         />
       )
     })
@@ -126,11 +125,11 @@ interface GroupCardProps {
   isOpen: boolean
   onToggle: (parentId: string) => void
   onOpenParent: () => void
-  onOpenRow: (id: string) => void
+  serverIdFor: (rowId: string) => string
 }
 
 /** One parent session as a collapsible card, laid out like a project card on the Projects tab. */
-function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, onOpenRow }: GroupCardProps) {
+function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, serverIdFor }: GroupCardProps) {
   const { t } = useTranslation('sessions')
   const { styles: card, theme } = useThemedStyles(makeCardStyles)
   const styles = useMemo(() => makeStyles(theme), [theme])
@@ -180,25 +179,9 @@ function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, on
             {isOpen ? (
               <View style={card.body}>
                 <View style={card.section}>
-                  {g.items.map((c) => {
-                    const type = resolveSubagentType(c)
-                    return (
-                      <Pressable key={c.id} style={styles.row} onPress={() => onOpenRow(c.id)} testID={`subagent-board-row-${c.id}`}>
-                        <View style={styles.rowTop}>
-                          {c.subagentActive === true ? (
-                            <View style={styles.activeDot} accessibilityLabel={t('subagents.active')} testID={`subagent-board-active-${c.id}`} />
-                          ) : null}
-                          <Text style={styles.label} numberOfLines={1}>{resolveSubagentLabel(c)}</Text>
-                          {type ? <Text style={styles.tag}>{type}</Text> : null}
-                        </View>
-                        <Text style={styles.meta} numberOfLines={1}>
-                          {[getProviderLabel(c.provider, t), t('subagents.messages', { n: c.messageCount }), formatListTime(c.lastActivity)]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
+                  {g.items.map((c) => (
+                    <ConvRow key={c.id} conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }} />
+                  ))}
                   <TouchableOpacity
                     onPress={onOpenParent}
                     activeOpacity={0.6}
