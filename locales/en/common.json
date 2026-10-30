@@ -41,7 +41,8 @@
       "sessionsStale_other": "The {{count}} sessions below were last loaded {{ago}}. Check the machine is awake and on the same network.",
       "loadedAgo_one": "{{count}} minute ago",
       "loadedAgo_other": "{{count}} minutes ago",
-      "retryNow": "Retry now"
+      "retryNow": "Retry now",
+      "dismiss": "Dismiss"
     }
   },
   "error": {
@@ -132,5 +133,11 @@
     "timeout": "The server took too long to respond",
     "tooManyRequests": "Too many requests",
     "serverError": "The server couldn't complete the request"
+  },
+  "recovery": {
+    "title": "Reconnecting…",
+    "message": "Retrying a failed request.",
+    "wsEscalatedTitle": "Still disconnected",
+    "wsEscalatedMessage": "The live connection has not come back yet. Retrying in the background."
   }
 }

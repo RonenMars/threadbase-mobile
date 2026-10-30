@@ -71,12 +71,14 @@ jest.mock('@/services/ws-client', () => ({
     send: (...args: unknown[]) => mockSend(...args),
     status: () => 'connected',
     onAnyStatusChange: () => () => {},
+    reconnectAttempt: () => 0,
+    onAnyReconnectAttempt: () => () => {},
     holdSessionWaitingInput: jest.fn(() => Promise.resolve({ ok: true })),
   },
 }))
 jest.mock('@/stores/servers', () => ({
-  useServersStore: (sel: (s: { activeServerIds: string[] }) => unknown) =>
-    sel({ activeServerIds: ['srv1'] }),
+  useServersStore: (sel: (s: { activeServerIds: string[]; servers: Record<string, unknown> }) => unknown) =>
+    sel({ activeServerIds: ['srv1'], servers: { srv1: {} } }),
 }))
 jest.mock('@/stores/loading-state', () => ({
   useLoadingStateStore: () => 0,

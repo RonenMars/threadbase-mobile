@@ -33,7 +33,7 @@ import { useNavLockStore } from '@/stores/navLock'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
-import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { isServerFetchErrorVisible, useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -226,6 +226,8 @@ export const NowList = React.memo(function NowList({
   const collapsedDayBuckets = useViewPrefsStore((s) => s.collapsedDayBuckets)
   const toggleDayBucket = useViewPrefsStore((s) => s.toggleDayBucketCollapsed)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
+  const dismissedFailureAt = useServerFetchStatusStore((s) => s.dismissedFailureAt)
+  const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
   const multiServer = activeServerIds.length > 1
@@ -281,12 +283,14 @@ export const NowList = React.memo(function NowList({
     }
 
     if (multiServer) {
+      const visibleError = (id: string) =>
+        isServerFetchErrorVisible(fetchStatuses[id], dismissedFailureAt[id])
       const allFailed = activeServerIds.length > 0
-        && activeServerIds.every((id) => fetchStatuses[id]?.status === 'error')
+        && activeServerIds.every((id) => visibleError(id))
       const withRows = activeServerIds.filter((id) =>
         earlier.some((e) => e.item.item.serverId === id)
         || warming.has(id)
-        || (!allFailed && fetchStatuses[id]?.status === 'error'),
+        || (!allFailed && visibleError(id)),
       )
       const collapsible = withRows.length > 1
       for (const id of withRows) {
@@ -297,7 +301,7 @@ export const NowList = React.memo(function NowList({
           serverId: id,
           serverLabel: servers[id]?.label ?? id,
           totalCount: bucket.length,
-          failed: !allFailed && fetchStatuses[id]?.status === 'error',
+          failed: !allFailed && visibleError(id),
         })
         if (collapsible && collapsedServers.includes(id)) continue
         out.push(...bucket.map(toRow))
@@ -326,7 +330,7 @@ export const NowList = React.memo(function NowList({
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, collapsedDayBuckets, warming, fetchStatuses, t])
+  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, collapsedDayBuckets, warming, fetchStatuses, dismissedFailureAt, t])
 
   const highlight = searchQuery.trim() || undefined
 
@@ -357,6 +361,7 @@ export const NowList = React.memo(function NowList({
             failed={item.failed}
             onRetry={item.failed ? () => onRetryServer?.(item.serverId) : undefined}
             onDetails={item.failed ? onOpenStatus : undefined}
+            onDismiss={item.failed ? () => dismissFailure(item.serverId) : undefined}
           />
         )
       case 'skeleton':
@@ -415,7 +420,7 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, collapsedDayBuckets, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus])
+  }, [collapsedServers, toggleServer, collapsedDayBuckets, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, dismissFailure])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">

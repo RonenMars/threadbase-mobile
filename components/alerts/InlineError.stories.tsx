@@ -29,3 +29,14 @@ export const WithDetails: Story = {
     detailsLabel: 'Details',
   },
 }
+
+export const WithDismiss: Story = {
+  args: {
+    title: 'Unreachable since now',
+    message: 'The 152 sessions below were last loaded 1 minute ago. Check the machine is awake and on the same network.',
+    onRetry: fn(),
+    onDetails: fn(),
+    detailsLabel: 'Details',
+    onDismiss: fn(),
+  },
+}

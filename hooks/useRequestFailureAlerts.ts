@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
 import type { TFunction } from 'i18next'
 import { useLoadingStateStore, type QueryCategory, type QueryError } from '@/stores/loading-state'
-import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { isServerFetchErrorVisible, useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
 import { queryClient } from '@/services/query-client'
 import { classifyError } from '@/services/error-policy'
@@ -89,6 +89,8 @@ export function useRequestFailureAlerts() {
   const errors = useLoadingStateStore((s) => s.errors)
   const dismissError = useLoadingStateStore((s) => s.dismissError)
   const statuses = useServerFetchStatusStore((s) => s.statuses)
+  const dismissedFailureAt = useServerFetchStatusStore((s) => s.dismissedFailureAt)
+  const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
   const servers = useServersStore((s) => s.servers)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const { t } = useTranslation('common')
@@ -114,8 +116,10 @@ export function useRequestFailureAlerts() {
   )
 
   const failedServerIds = useMemo(
-    () => Object.keys(statuses).filter((id) => statuses[id].status === 'error' && servers[id]),
-    [statuses, servers],
+    () => Object.keys(statuses).filter(
+      (id) => servers[id] && isServerFetchErrorVisible(statuses[id], dismissedFailureAt[id]),
+    ),
+    [statuses, dismissedFailureAt, servers],
   )
 
   const retry = async (id: string, run: () => Promise<unknown>) => {
@@ -161,6 +165,7 @@ export function useRequestFailureAlerts() {
           )
         },
         buttonVariant: 'primary',
+        onClose: () => dismissFailure(serverId),
       }
     })
 
@@ -219,7 +224,7 @@ export function useRequestFailureAlerts() {
 
     const rest = failedServerIds.length > 0 ? serverRows : categoryRows
     return [...blockingRows, ...rest]
-  }, [failedServerIds, sheetErrors, blockingErrors, servers, displayedServerIds, statuses, retryingIds, t, dismissError, router])
+  }, [failedServerIds, sheetErrors, blockingErrors, servers, displayedServerIds, statuses, retryingIds, t, dismissError, dismissFailure, router])
 
   useAlertListSync(entries)
 }
