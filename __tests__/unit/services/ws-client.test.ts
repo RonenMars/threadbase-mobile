@@ -1052,4 +1052,21 @@ describe('WSClient – two addresses', () => {
     expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
     expect(mockedOpenContextOnce.mock.calls[0][0].baseUrl).toBe(LAN)
   })
+
+  it('redials after the 429 wait, not on the 1 s ladder', async () => {
+    const pinned = { serverPublicKey: 'pinned-server-key', requireEncryption: true }
+    mockedOpenContextOnce.mockRejectedValue(new OpenError('E2EE_TRANSIENT', 'wait', false, 30_000))
+
+    wsManager.connect('pinned-429', LAN, 'long-term-api-key', pinned)
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+
+    jest.advanceTimersByTime(29_999)
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(1)
+
+    jest.advanceTimersByTime(1)
+    await flushAsyncConnect()
+    expect(mockedOpenContextOnce).toHaveBeenCalledTimes(2)
+  })
 })
