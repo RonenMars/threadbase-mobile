@@ -215,8 +215,7 @@
   "layout": {
     "now": "الآن",
     "projects": "المشاريع",
-    "subagents": "الوكلاء الفرعيون",
-    "board": "اللوحة"
+    "subagents": "الوكلاء الفرعيون"
   },
   "info": {
     "sessionId": "معرّف جلسة Threadbase",
@@ -309,6 +308,27 @@
   "boardTab": {
     "earlier": "في وقت سابق",
     "emptyColumn": "لا شيء هنا",
-    "columns": "حالات الجلسات"
+    "columns": "حالات الجلسات",
+    "showBoard": "عرض اللوحة",
+    "showList": "عرض القائمة",
+    "openSession": "فتح الجلسة {{title}}",
+    "showQuestion": "عرض سؤال {{title}}",
+    "showSubagents_zero": "عرض {{count}} وكيل فرعي",
+    "showSubagents_one": "عرض وكيل فرعي واحد",
+    "showSubagents_two": "عرض وكيلين فرعيين",
+    "showSubagents_few": "عرض {{count}} وكلاء فرعيين",
+    "showSubagents_many": "عرض {{count}} وكيلًا فرعيًا",
+    "showSubagents_other": "عرض {{count}} وكيل فرعي",
+    "closeQuestion": "إغلاق دون إجابة",
+    "questionCount": "السؤال {{current}} من {{total}}",
+    "answerInSession": "أجب عن هذا السؤال داخل الجلسة.",
+    "previousColumn": "العمود السابق",
+    "nextColumn": "العمود التالي",
+    "orphanHeading": "الوكلاء الفرعيون لجلسات أخرى",
+    "subagentsFailed": "تعذّر تحميل الوكلاء الفرعيين.",
+    "emptyNeedsYou": "تظهر هنا الجلسات التي تنتظر إجابتك.",
+    "emptyWorking": "تظهر هنا الجلسات الجارية الآن.",
+    "emptyObserved": "تظهر هنا الجلسات التي تتابعها ولم تبدأها.",
+    "emptyEarlier": "تظهر هنا الجلسات المنتهية."
   }
 }

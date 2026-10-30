@@ -175,8 +175,7 @@
   "layout": {
     "now": "Now",
     "projects": "Projects",
-    "subagents": "Sub-agents",
-    "board": "Board"
+    "subagents": "Sub-agents"
   },
   "info": {
     "sessionId": "Threadbase Session ID",
@@ -269,6 +268,23 @@
   "boardTab": {
     "earlier": "Earlier",
     "emptyColumn": "Nothing here",
-    "columns": "Session states"
+    "columns": "Session states",
+    "showBoard": "Show board",
+    "showList": "Show list",
+    "openSession": "Open session {{title}}",
+    "showQuestion": "Show the question for {{title}}",
+    "showSubagents_one": "Show {{count}} sub-agent",
+    "showSubagents_other": "Show {{count}} sub-agents",
+    "closeQuestion": "Close without answering",
+    "questionCount": "Question {{current}} of {{total}}",
+    "answerInSession": "Answer this one in the session.",
+    "previousColumn": "Previous column",
+    "nextColumn": "Next column",
+    "orphanHeading": "Sub-agents of other sessions",
+    "subagentsFailed": "Couldn't load sub-agents.",
+    "emptyNeedsYou": "Sessions waiting for your answer show in this column.",
+    "emptyWorking": "Sessions running now show in this column.",
+    "emptyObserved": "Sessions you watch but did not start show in this column.",
+    "emptyEarlier": "Finished sessions show in this column."
   }
 }

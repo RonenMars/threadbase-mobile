@@ -185,8 +185,7 @@
   "layout": {
     "now": "עכשיו",
     "projects": "פרויקטים",
-    "subagents": "סוכני משנה",
-    "board": "לוח"
+    "subagents": "סוכני משנה"
   },
   "info": {
     "sessionId": "מזהה סשן Threadbase",
@@ -279,6 +278,24 @@
   "boardTab": {
     "earlier": "מוקדם יותר",
     "emptyColumn": "אין כאן כלום",
-    "columns": "מצבי סשן"
+    "columns": "מצבי סשן",
+    "showBoard": "הצגת לוח",
+    "showList": "הצגת רשימה",
+    "openSession": "פתיחת הסשן {{title}}",
+    "showQuestion": "הצגת השאלה של {{title}}",
+    "showSubagents_one": "הצגת סוכן משנה אחד",
+    "showSubagents_two": "הצגת {{count}} סוכני משנה",
+    "showSubagents_other": "הצגת {{count}} סוכני משנה",
+    "closeQuestion": "סגירה בלי לענות",
+    "questionCount": "שאלה {{current}} מתוך {{total}}",
+    "answerInSession": "יש לענות על השאלה הזו בתוך הסשן.",
+    "previousColumn": "העמודה הקודמת",
+    "nextColumn": "העמודה הבאה",
+    "orphanHeading": "סוכני משנה של סשנים אחרים",
+    "subagentsFailed": "לא ניתן לטעון סוכני משנה.",
+    "emptyNeedsYou": "סשנים שמחכים לתשובה שלך מופיעים בעמודה הזו.",
+    "emptyWorking": "סשנים שרצים עכשיו מופיעים בעמודה הזו.",
+    "emptyObserved": "סשנים שבמעקב ולא התחלת בעצמך מופיעים בעמודה הזו.",
+    "emptyEarlier": "סשנים שהסתיימו מופיעים בעמודה הזו."
   }
 }

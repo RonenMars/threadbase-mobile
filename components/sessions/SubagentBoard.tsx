@@ -121,7 +121,7 @@ interface GroupCardProps {
 }
 
 /** One parent session as a collapsible card, laid out like a project card on the Projects tab. */
-function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, serverIdFor }: GroupCardProps) {
+export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, serverIdFor }: GroupCardProps) {
   const { t } = useTranslation('sessions')
   const { styles: card, theme } = useThemedStyles(makeCardStyles)
   const styles = useMemo(() => makeStyles(theme), [theme])
