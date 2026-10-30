@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ConvRow } from '@/components/sessions/hub/ConvRow'
+import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { makeStyles as makeCardStyles } from '@/components/sessions/base/CollapsibleCard.styles'
@@ -30,14 +31,7 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
   const [onlyActive, setOnlyActive] = useState(false)
-  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set())
-  const toggleOpen = useCallback((id: string) => {
-    setOpenIds((prev) => {
-      const next = new Set(prev)
-      if (!next.delete(id)) next.add(id)
-      return next
-    })
-  }, [])
+  const { openIds, toggleOpen } = useOpenIds()
   const [refreshing, setRefreshing] = useState(false)
   const { items, unsupportedServerIds, isLoading, isError, refetch } = useAllSubagents(serverIds)
 

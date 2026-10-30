@@ -1,3 +1,4 @@
+import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import React, { useState, useCallback, useMemo } from 'react'
 import { FlatList, View, Text, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
@@ -67,7 +68,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   const [debouncedQuery] = useDebounce(searchQuery, 300)
   // Tracks which groups are expanded, keyed by projectId (with projectPath
   // fallback during migration — see useProjectGroups).
-  const [openIds, setOpenIds] = useState<Set<string>>(new Set())
+  const { openIds, toggleOpen } = useOpenIds()
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
 
@@ -109,15 +110,6 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   )
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
-
-  const toggleOpen = useCallback((projectId: string) => {
-    setOpenIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(projectId)) next.delete(projectId)
-      else next.add(projectId)
-      return next
-    })
-  }, [])
 
   const handleConversationPress = useCallback(
     (item: MultiConversation) => {
