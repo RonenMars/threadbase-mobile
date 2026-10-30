@@ -988,6 +988,8 @@ export default function ConversationDetailScreen() {
               // With no bottom bar, bottom-anchoring loops FlashList's layout effect
               // ("Maximum update depth exceeded").
               disableAutoAnchor={isSubagentTranscript}
+              // Native anchoring loops here, so the JS pin is what opens and follows the tail.
+              pinToEnd
             />
           )
         ) : (
