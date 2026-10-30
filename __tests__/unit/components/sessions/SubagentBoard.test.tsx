@@ -31,10 +31,16 @@ const renderBoard = () =>
 
 beforeEach(() => mockGet.mockReset())
 
+const expand = async (r: Awaited<ReturnType<typeof renderBoard>>, parentId: string) => {
+  await waitFor(() => expect(r.getByTestId(`subagent-group-toggle-${parentId}`)).toBeTruthy())
+  await fireEvent.press(r.getByTestId(`subagent-group-toggle-${parentId}`))
+}
+
 describe('SubagentBoard', () => {
   it('requests every sub-agent in one call and defaults to all of them', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p1')]))
     const r = await renderBoard()
+    await expand(r, 'p1')
     await waitFor(() => expect(r.getByTestId('subagent-board-row-a')).toBeTruthy())
     expect(mockGet.mock.calls[0][0]).toContain('include=subagents')
     expect(r.getByTestId('subagent-board-row-b')).toBeTruthy()
@@ -52,11 +58,27 @@ describe('SubagentBoard', () => {
     expect(labels).toEqual(['subagent-filter-all', 'subagent-filter-active'])
   })
 
+  it('starts every group collapsed and toggles its sub-agents like a project card', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1'), sub('b', 'p1')]))
+    const r = await renderBoard()
+    await waitFor(() => expect(r.getByTestId('subagent-group-toggle-p1')).toBeTruthy())
+    expect(r.getByText('Parent one')).toBeTruthy()
+    expect(r.queryByTestId('subagent-board-row-a')).toBeNull()
+    expect(r.getByTestId('subagent-group-toggle-p1').props.accessibilityState).toEqual({ expanded: false })
+
+    await fireEvent.press(r.getByTestId('subagent-group-toggle-p1'))
+    expect(r.getByTestId('subagent-board-row-a')).toBeTruthy()
+    expect(r.getByTestId('subagent-group-toggle-p1').props.accessibilityState).toEqual({ expanded: true })
+
+    await fireEvent.press(r.getByTestId('subagent-group-toggle-p1'))
+    expect(r.queryByTestId('subagent-board-row-a')).toBeNull()
+  })
+
   it('names a group from the row parentTitle when the parent is not a loaded session', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p9', { parentTitle: 'Runner session' }), sub('b', 'p8')]))
     const r = await renderBoard()
     await waitFor(() => expect(r.getByText('Runner session')).toBeTruthy())
-    expect(r.getByTestId('subagent-parent-p8')).toBeTruthy()
+    expect(r.getByTestId('subagent-group-toggle-p8')).toBeTruthy()
   })
 
   it('opens the transcript from a row and the parent from the group header', async () => {
@@ -64,6 +86,7 @@ describe('SubagentBoard', () => {
     ;(useRouter as jest.Mock).mockReturnValue({ push, back: jest.fn(), replace: jest.fn() })
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true })]))
     const r = await renderBoard()
+    await expand(r, 'p1')
     await waitFor(() => expect(r.getByTestId('subagent-board-row-a')).toBeTruthy())
     await fireEvent.press(r.getByTestId('subagent-board-row-a'))
     expect(push).toHaveBeenLastCalledWith('/conversation/a?server=s1')
@@ -87,10 +110,11 @@ describe('SubagentBoard', () => {
   it('keeps the board when one sub-agent has no parent, and leaves that row off', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p1'), sub('codex', 'p1', { parentConversationId: undefined })]))
     const r = await renderBoard()
+    await expand(r, 'p1')
     await waitFor(() => expect(r.getByTestId('subagent-board-row-a')).toBeTruthy())
     expect(r.queryByText("This server doesn't list sub-agents yet.")).toBeNull()
     expect(r.queryByTestId('subagent-board-row-codex')).toBeNull()
-    expect(r.getByText('2')).toBeTruthy()
+    expect(r.getAllByText('2').length).toBeGreaterThan(0)
     expect(r.queryByText('3')).toBeNull()
   })
 
