@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
-import { ConvRow } from '@/components/sessions/hub/ConvRow'
+import { SubagentRow } from '@/components/sessions/hub/SubagentRow'
 import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
@@ -139,7 +139,7 @@ function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, se
         headerTestID={`subagent-group-toggle-${g.parentId}`}
       >
         {g.items.map((c) => (
-          <ConvRow key={c.id} conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }} />
+          <SubagentRow key={c.id} conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }} />
         ))}
         <TouchableOpacity
           onPress={onOpenParent}

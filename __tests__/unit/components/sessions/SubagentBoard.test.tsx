@@ -126,4 +126,14 @@ describe('SubagentBoard', () => {
     await waitFor(() => expect(r.queryByTestId('conversation-row-b')).toBeNull())
     expect(r.queryByText(/resume|send/i)).toBeNull()
   })
+
+  it('shows the live dot only for an active sub-agent and its type tag', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true, subagentType: 'Explore' }), sub('b', 'p1')]))
+    const r = await renderBoard()
+    await expand(r, 'p1')
+    await waitFor(() => expect(r.getByTestId('conversation-row-a')).toBeTruthy())
+    expect(r.getByTestId('subagent-board-active-a')).toBeTruthy()
+    expect(r.queryByTestId('subagent-board-active-b')).toBeNull()
+    expect(r.getByText('Explore')).toBeTruthy()
+  })
 })
