@@ -70,6 +70,30 @@ describe('parseProvidersResponse', () => {
     )
   })
 
+  // Additive: an older streamer omits it, and that must still parse — a
+  // required field would drop every provider such a server lists.
+  it('keeps multiDirectory when sent and parses without it', () => {
+    const withFlag = parseProvidersResponse({
+      providers: [
+        { ...valid.providers[0], capabilities: { ...valid.providers[0].capabilities, multiDirectory: true } },
+        { ...valid.providers[2], capabilities: { ...valid.providers[2].capabilities, multiDirectory: false } },
+      ],
+    })
+    expect(findProviderHealth(withFlag?.providers, 'claude-code')?.capabilities.multiDirectory).toBe(true)
+    expect(findProviderHealth(withFlag?.providers, 'cursor')?.capabilities.multiDirectory).toBe(false)
+
+    const withoutFlag = parseProvidersResponse(valid)
+    expect(withoutFlag?.providers).toHaveLength(3)
+    expect(findProviderHealth(withoutFlag?.providers, 'claude-code')?.capabilities).not.toHaveProperty(
+      'multiDirectory',
+    )
+
+    const malformed = parseProvidersResponse({
+      providers: [{ ...valid.providers[0], capabilities: { ...valid.providers[0].capabilities, multiDirectory: 'yes' } }],
+    })
+    expect(malformed?.providers[0].capabilities).not.toHaveProperty('multiDirectory')
+  })
+
   it('retains Copilot capability and health data', () => {
     const parsed = parseProvidersResponse({providers: [{...valid.providers[0], name: 'copilot', capabilities: {
       freshSessionId: 'explicit', resume: 'native', systemPrompt: 'unsupported',
