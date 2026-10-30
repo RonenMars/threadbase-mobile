@@ -279,9 +279,9 @@
   },
   "anonymousDiagnostics": {
     "title": "Anonymous diagnostics",
-    "description": "Help improve Threadbase by sending crash reports and basic stability data not linked to your identity.",
+    "description": "Optional diagnostics include crash reports, stability data, and API route templates with response sizes, without request or response contents.",
     "learnMore": "Learn more",
-    "learnMoreBody": "Diagnostic reports use a random installation ID so related reports from the same app installation can be grouped. They are not linked to your name, email, account, or device identity.",
+    "learnMoreBody": "Diagnostic reports use a random installation ID so related reports from the same app installation can be grouped. They are not linked to your name, email, account, or device identity. With Anonymous diagnostics enabled, Sentry also receives the fixed template of supported API routes (for example, /api/conversations/:id) and the decoded response-body size in bytes to diagnose excessive downloads. Actual resource identifiers, server addresses, query parameters, headers, and request or response contents are excluded. These records contain no resource or installation identifiers, are processed by Sentry in the European Union, and are retained according to the Sentry project’s configured log-retention period. Existing users are asked to accept the updated diagnostics notice before this collection starts.",
     "privacyPolicy": "Privacy policy",
     "testCrash": "Test crash reporting",
     "testThrow": "Throw uncaught exception",
@@ -292,7 +292,7 @@
   "diagnosticsTerms": {
     "title": "Diagnostics and your privacy",
     "intro": "Threadbase can send anonymous diagnostic reports to Sentry, the error-monitoring service we use, so we can find and fix problems. Nothing is sent unless you allow it.",
-    "collected": "What is sent: crash reports, error details and basic stability data, such as the app version and your device's operating system.",
+    "collected": "Optional diagnostics include crash reports, stability data, and API route templates with response sizes, without request or response contents.",
     "pseudonymous": "Reports carry a random installation ID so reports from the same install can be grouped. It is not linked to your name, email, account or device identity.",
     "never": "What is never sent: your conversations, terminal output, code, file paths, server addresses or credentials. App errors are filtered on your device, and Sentry scrubs every report again before storing it.",
     "purpose": "Diagnostics are used only to find and fix problems in Threadbase. They are never sold, used for advertising, or used to identify you.",

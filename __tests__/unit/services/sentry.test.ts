@@ -485,7 +485,7 @@ describe('sentry service — EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING', () => {
     const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
     await mod.setAnonymousDiagnosticsEnabled(true)
     const opts = (sdk.init as jest.Mock).mock.calls[0][0]
-    expect(opts).toMatchObject({ replaysSessionSampleRate: 0, tracesSampleRate: 0, profilesSampleRate: 0, enableLogs: false, enableMetrics: false, attachScreenshot: false })
+    expect(opts).toMatchObject({ replaysSessionSampleRate: 0, tracesSampleRate: 0, profilesSampleRate: 0, enableLogs: true, enableMetrics: false, attachScreenshot: false })
     expect(sdk.mobileReplayIntegration).not.toHaveBeenCalled()
   })
 
@@ -506,5 +506,29 @@ describe('sentry service — EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING', () => {
       await mod.setAnonymousDiagnosticsEnabled(true)
       expect((sdk.init as jest.Mock).mock.calls[0][0].environment).toBe('production')
     })
+  })
+})
+
+
+describe('API response size log privacy', () => {
+  it('allows only fixed routes and byte counts in standard builds, and stops on revocation', async () => {
+    const { mod, sdk } = loadService({ EXPO_PUBLIC_ENFORCE_SENTRY_TRACKING: undefined, EXPO_PUBLIC_SENTRY_DSN: DSN, EXPO_PUBLIC_SENTRY_ALLOW_DEV: '1' })
+    await mod.setAnonymousDiagnosticsEnabled(true)
+    const filter = (sdk.init as jest.Mock).mock.calls[0][0].beforeSendLog
+    mod.logApiPayload('/api/conversations/:id', 123)
+    expect(sdk.logger.info).toHaveBeenCalledWith('api.response_size', { api_route: '/api/conversations/:id', response_body_bytes: 123 })
+    jest.mocked(sdk.logger.info).mockClear()
+    mod.logApiPayload('/api/conversations/private-id', 123)
+    expect(sdk.logger.info).not.toHaveBeenCalled()
+    const safe = { message: 'api.response_size', attributes: { api_route: '/api/conversations/:id', response_body_bytes: 123, secret: 'private' } }
+    expect(filter(safe).attributes).toEqual({ api_route: '/api/conversations/:id', response_body_bytes: 123 })
+    expect(filter({ ...safe, message: 'console output' })).toBeNull()
+    expect(filter({ ...safe, attributes: { api_route: '/api/conversations/private-id', response_body_bytes: 123 } })).toBeNull()
+    expect(filter({ ...safe, attributes: { api_route: '/api/info', response_body_bytes: -1 } })).toBeNull()
+    await mod.setAnonymousDiagnosticsEnabled(false)
+    expect(filter(safe)).toBeNull()
+    mod.logApiPayload('/api/conversations/:id', 123)
+    expect(sdk.logger.info).not.toHaveBeenCalled()
+    expect(mod.currentDiagnosticsTermsKey()).toBe('standard-2')
   })
 })
