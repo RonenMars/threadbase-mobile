@@ -5,6 +5,7 @@ import { useAlertStore } from '@/stores/alerts'
 import { useErrorSheetStore } from '@/stores/errorSheet'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
+import { useSettingsStore } from '@/stores/settings'
 import { createWrapper } from '@/test-utils'
 import { serverCause } from '@/types/alerts'
 
@@ -158,5 +159,17 @@ describe('home inline-first failures', () => {
     expect(getByTestId('now-list-scroll')).toBeTruthy()
     expect(queryByTestId('server-failure-srv-1')).toBeNull()
     expect(queryByTestId('status-pill')).toBeNull()
+  })
+
+  it('switches to the board from the header, hides the tabs, and comes back', async () => {
+    useSettingsStore.setState({ boardOpen: false })
+    const { getByTestId, queryByTestId } = await render(<ProjectsHub />, { wrapper: createWrapper() })
+    await fireEvent.press(getByTestId('header-board-btn'))
+    expect(getByTestId('phone-board')).toBeTruthy()
+    expect(useSettingsStore.getState().boardOpen).toBe(true)
+    expect(queryByTestId('now-list-scroll')).toBeNull()
+    await fireEvent.press(getByTestId('header-board-btn'))
+    expect(queryByTestId('phone-board')).toBeNull()
+    expect(getByTestId('now-list-scroll')).toBeTruthy()
   })
 })

@@ -10,7 +10,7 @@ const noop = () => {}
 const COUNTS = { needsYou: 1, working: 2, resumable: 41, cantResume: 3, observed: 2 }
 const PROVIDERS = { 'claude-code': 38, 'codex-cli': 11, 'cursor': 2, copilot: 0 }
 
-async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilters; resultCount?: number; onChangeFilters?: (f: ListFilters) => void } = {}) {
+async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilters; resultCount?: number; onChangeFilters?: (f: ListFilters) => void; boardMode?: boolean } = {}) {
   await i18n.changeLanguage(locale)
   return renderWithI18n(
     <FilterSortSheet
@@ -27,6 +27,7 @@ async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilte
       resultCount={overrides.resultCount ?? 44}
       treeView={false}
       onChangeTreeView={noop}
+      boardMode={overrides.boardMode}
     />,
   )
 }
@@ -112,5 +113,27 @@ describe('FilterSortSheet selection model', () => {
     const { getByTestId } = await renderSheet('en', { onChangeFilters })
     fireEvent.press(getByTestId('preset-needs-me'))
     expect(onChangeFilters).toHaveBeenCalledWith({ ...DEFAULT_FILTERS, tiers: ['needsYou'] })
+  })
+})
+
+describe('FilterSortSheet on the board', () => {
+  it('keeps Agent and Order but drops Show, the presets and Tree view', async () => {
+    const { getByTestId, queryByTestId } = await renderSheet('en', { boardMode: true })
+    expect(getByTestId('order-state')).toBeTruthy()
+    expect(getByTestId('within-any')).toBeTruthy()
+    expect(queryByTestId('tier-toggle-needsYou')).toBeNull()
+    expect(queryByTestId('preset-needs-me')).toBeNull()
+    expect(queryByTestId('filter-sort-tree-view-toggle')).toBeNull()
+  })
+
+  it('does not count a tier choice from the list, and Reset leaves it for the list', async () => {
+    const tiers: ListFilters['tiers'] = ['needsYou']
+    const onChangeFilters = jest.fn()
+    const narrowed = await renderSheet('en', { boardMode: true, filters: { ...DEFAULT_FILTERS, tiers } })
+    expect(narrowed.getByTestId('filter-reset').props.accessibilityState.disabled).toBe(true)
+    await cleanup()
+    const { getByTestId } = await renderSheet('en', { boardMode: true, filters: { ...DEFAULT_FILTERS, tiers, providers: ['codex-cli'] }, onChangeFilters })
+    fireEvent.press(getByTestId('filter-reset'))
+    expect(onChangeFilters).toHaveBeenCalledWith({ ...DEFAULT_FILTERS, tiers })
   })
 })
