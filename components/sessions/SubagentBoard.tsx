@@ -1,13 +1,18 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, TouchableOpacity, LayoutAnimation } from 'react-native'
+import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate } from 'react-native-reanimated'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
+import { Card } from '@/components/ui/Card'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
+import { makeStyles as makeCardStyles } from '@/components/sessions/hub/ProjectHubCard.styles'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useAllSubagents, type BoardSubagent } from '@/hooks/useAllSubagents'
 import { conversationHref } from '@/lib/conversationHref'
-import { groupSubagentsByParent, resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
+import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
 import { getProviderLabel } from '@/components/sessions/providerLabel'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 
@@ -28,6 +33,14 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
   const [onlyActive, setOnlyActive] = useState(false)
+  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set())
+  const toggleOpen = useCallback((id: string) => {
+    setOpenIds((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }, [])
   const [refreshing, setRefreshing] = useState(false)
   const { items, unsupportedServerIds, isLoading, isError, refetch } = useAllSubagents(serverIds)
 
@@ -74,47 +87,15 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
         g.items.find((i) => i.parentTitle)?.parentTitle ??
         t('subagents.board.parentFallback', { id: g.parentId.slice(0, 8) })
       return (
-        <View key={g.parentId} style={styles.group} testID={`subagent-group-${g.parentId}`}>
-          <Pressable
-            style={styles.groupHeader}
-            onPress={() => router.push(conversationHref(g.parentId, serverId))}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
-            testID={`subagent-parent-${g.parentId}`}
-          >
-            <View style={styles.groupTitleCol}>
-              <Text style={styles.groupTitle} numberOfLines={1}>{title}</Text>
-              {g.activeCount > 0 ? (
-                <Text style={styles.meta}>{t('subagents.board.parentActive', { n: g.activeCount })}</Text>
-              ) : null}
-            </View>
-            <CaretRight size={16} color={theme.text.accent} />
-          </Pressable>
-          {g.items.map((c) => {
-            const type = resolveSubagentType(c)
-            return (
-              <Pressable
-                key={c.id}
-                style={styles.row}
-                onPress={() => router.push(conversationHref(c.id, serverByRowId.get(c.id) ?? serverId))}
-                testID={`subagent-board-row-${c.id}`}
-              >
-                <View style={styles.rowTop}>
-                  {c.subagentActive === true ? (
-                    <View style={styles.activeDot} accessibilityLabel={t('subagents.active')} testID={`subagent-board-active-${c.id}`} />
-                  ) : null}
-                  <Text style={styles.label} numberOfLines={1}>{resolveSubagentLabel(c)}</Text>
-                  {type ? <Text style={styles.tag}>{type}</Text> : null}
-                </View>
-                <Text style={styles.meta} numberOfLines={1}>
-                  {[getProviderLabel(c.provider, t), t('subagents.messages', { n: c.messageCount }), formatListTime(c.lastActivity)]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
-              </Pressable>
-            )
-          })}
-        </View>
+        <SubagentGroupCard
+          key={g.parentId}
+          group={g}
+          title={title}
+          isOpen={openIds.has(g.parentId)}
+          onToggle={toggleOpen}
+          onOpenParent={() => router.push(conversationHref(g.parentId, serverId))}
+          onOpenRow={(id) => router.push(conversationHref(id, serverByRowId.get(id) ?? serverId))}
+        />
       )
     })
 
@@ -136,6 +117,106 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
       </View>
       {body}
     </ScrollView>
+  )
+}
+
+interface GroupCardProps {
+  group: SubagentGroup
+  title: string
+  isOpen: boolean
+  onToggle: (parentId: string) => void
+  onOpenParent: () => void
+  onOpenRow: (id: string) => void
+}
+
+/** One parent session as a collapsible card, laid out like a project card on the Projects tab. */
+function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, onOpenRow }: GroupCardProps) {
+  const { t } = useTranslation('sessions')
+  const { styles: card, theme } = useThemedStyles(makeCardStyles)
+  const styles = useMemo(() => makeStyles(theme), [theme])
+  const reduceMotion = useReduceMotion()
+  const chevronProgress = useSharedValue(isOpen ? 1 : 0)
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(chevronProgress.value, [0, 1], [0, 90])}deg` }],
+  }))
+
+  const handleToggle = useCallback(() => {
+    if (!reduceMotion) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    const next = isOpen ? 0 : 1
+    // Reanimated shared value: assigning .value is its API.
+    // eslint-disable-next-line react-hooks/immutability
+    chevronProgress.value = withTiming(next, { duration: reduceMotion ? 0 : 200 })
+    onToggle(g.parentId)
+    // chevronProgress is a Reanimated shared value (stable across renders).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, onToggle, g.parentId, reduceMotion])
+
+  return (
+    <View style={styles.cardWrap} testID={`subagent-group-${g.parentId}`}>
+      <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
+        <View style={card.spineRow}>
+          <View style={[card.spine, g.activeCount > 0 && { backgroundColor: theme.text.accent }]} />
+          <View style={card.spineRowBody}>
+            <TouchableOpacity
+              onPress={handleToggle}
+              activeOpacity={0.75}
+              style={card.header}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: isOpen }}
+              accessibilityLabel={title}
+              testID={`subagent-group-toggle-${g.parentId}`}
+            >
+              <View style={card.headerBody}>
+                <Text style={card.headerSuffix} numberOfLines={1}>{title}</Text>
+                {g.activeCount > 0 ? (
+                  <Text style={card.headerActivity} numberOfLines={1}>{t('subagents.board.parentActive', { n: g.activeCount })}</Text>
+                ) : null}
+              </View>
+              <Text style={card.countBadge}>{g.items.length}</Text>
+              <Animated.View style={chevronStyle}>
+                <CaretRight size={16} color={theme.text.secondary} />
+              </Animated.View>
+            </TouchableOpacity>
+            {isOpen ? (
+              <View style={card.body}>
+                <View style={card.section}>
+                  {g.items.map((c) => {
+                    const type = resolveSubagentType(c)
+                    return (
+                      <Pressable key={c.id} style={styles.row} onPress={() => onOpenRow(c.id)} testID={`subagent-board-row-${c.id}`}>
+                        <View style={styles.rowTop}>
+                          {c.subagentActive === true ? (
+                            <View style={styles.activeDot} accessibilityLabel={t('subagents.active')} testID={`subagent-board-active-${c.id}`} />
+                          ) : null}
+                          <Text style={styles.label} numberOfLines={1}>{resolveSubagentLabel(c)}</Text>
+                          {type ? <Text style={styles.tag}>{type}</Text> : null}
+                        </View>
+                        <Text style={styles.meta} numberOfLines={1}>
+                          {[getProviderLabel(c.provider, t), t('subagents.messages', { n: c.messageCount }), formatListTime(c.lastActivity)]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                  <TouchableOpacity
+                    onPress={onOpenParent}
+                    activeOpacity={0.6}
+                    style={card.seeAllRow}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
+                    testID={`subagent-parent-${g.parentId}`}
+                  >
+                    <Text style={card.seeAllText}>{t('subagents.board.openParent')}</Text>
+                    <CaretRight size={16} color={theme.text.accent} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </Card>
+    </View>
   )
 }
 
@@ -179,11 +260,8 @@ function makeStyles(theme: Theme) {
     chipSelected: { backgroundColor: `${theme.text.accent}24` },
     chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     chipTextSelected: { color: theme.text.accent },
-    group: { marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 12, backgroundColor: theme.bg.card, overflow: 'hidden' },
-    groupHeader: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingStart: spacing.md, paddingEnd: spacing.sm },
-    groupTitleCol: { flex: 1 },
-    groupTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
-    row: { paddingVertical: spacing.sm, paddingStart: spacing.md, paddingEnd: spacing.md, gap: 2 },
+    cardWrap: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
+    row: { paddingVertical: spacing.sm, gap: 2 },
     rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
     label: { flexShrink: 1, color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
     tag: { color: theme.text.secondary, fontSize: font.xs - 1, backgroundColor: theme.bg.primary, borderRadius: 4, paddingHorizontal: 5, overflow: 'hidden' },
