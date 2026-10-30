@@ -5,12 +5,14 @@
  * conversation keeps both.
  */
 import React from 'react'
-import { render, waitFor } from '@testing-library/react-native'
+import { act, render, waitFor } from '@testing-library/react-native'
 import { useLocalSearchParams } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
 import { createWrapper } from '@/test-utils'
 import '@/test-utils/i18n-setup'
+
+const { __scrollToEndMock: scrollToEndMock } = jest.requireMock('@shopify/flash-list') as { __scrollToEndMock: jest.Mock }
 
 const mockMetaRef: { current: Record<string, unknown> } = { current: {} }
 
@@ -66,6 +68,9 @@ describe('conversation detail — sub-agent transcript', () => {
     expect(r.getByTestId('conversation-history-list').props.maintainVisibleContentPosition).toMatchObject({
       disabled: true,
     })
+    scrollToEndMock.mockClear()
+    await act(async () => r.getByTestId('conversation-history-list').props.onContentSizeChange(0, 5000))
+    expect(scrollToEndMock).toHaveBeenCalledWith({ animated: false })
   })
 
   it('keeps Resume and shows the collapsed sub-agent section on a top-level conversation', async () => {
