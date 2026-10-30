@@ -185,7 +185,8 @@
   "layout": {
     "now": "עכשיו",
     "projects": "פרויקטים",
-    "subagents": "סוכני משנה"
+    "subagents": "סוכני משנה",
+    "board": "לוח"
   },
   "info": {
     "sessionId": "מזהה סשן Threadbase",
@@ -274,5 +275,10 @@
     "emptyColumn": "אין כאן כלום",
     "searchPlaceholder": "חיפוש סשנים…",
     "loadMore": "טעינת עוד"
+  },
+  "boardTab": {
+    "earlier": "מוקדם יותר",
+    "emptyColumn": "אין כאן כלום",
+    "columns": "מצבי סשן"
   }
 }

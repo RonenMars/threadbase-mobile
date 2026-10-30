@@ -175,7 +175,8 @@
   "layout": {
     "now": "Now",
     "projects": "Projects",
-    "subagents": "Sub-agents"
+    "subagents": "Sub-agents",
+    "board": "Board"
   },
   "info": {
     "sessionId": "Threadbase Session ID",
@@ -264,5 +265,10 @@
     "emptyColumn": "Nothing here",
     "searchPlaceholder": "Search sessions…",
     "loadMore": "Load more"
+  },
+  "boardTab": {
+    "earlier": "Earlier",
+    "emptyColumn": "Nothing here",
+    "columns": "Session states"
   }
 }

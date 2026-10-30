@@ -195,7 +195,8 @@
   "layout": {
     "now": "Сейчас",
     "projects": "Проекты",
-    "subagents": "Субагенты"
+    "subagents": "Субагенты",
+    "board": "Доска"
   },
   "info": {
     "sessionId": "ID сессии Threadbase",
@@ -284,5 +285,10 @@
     "emptyColumn": "Здесь пусто",
     "searchPlaceholder": "Поиск сессий…",
     "loadMore": "Загрузить ещё"
+  },
+  "boardTab": {
+    "earlier": "Ранее",
+    "emptyColumn": "Здесь пусто",
+    "columns": "Состояния сессий"
   }
 }

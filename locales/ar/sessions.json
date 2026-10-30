@@ -215,7 +215,8 @@
   "layout": {
     "now": "الآن",
     "projects": "المشاريع",
-    "subagents": "الوكلاء الفرعيون"
+    "subagents": "الوكلاء الفرعيون",
+    "board": "اللوحة"
   },
   "info": {
     "sessionId": "معرّف جلسة Threadbase",
@@ -304,5 +305,10 @@
     "emptyColumn": "لا شيء هنا",
     "searchPlaceholder": "البحث في الجلسات…",
     "loadMore": "تحميل المزيد"
+  },
+  "boardTab": {
+    "earlier": "في وقت سابق",
+    "emptyColumn": "لا شيء هنا",
+    "columns": "حالات الجلسات"
   }
 }
