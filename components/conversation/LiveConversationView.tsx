@@ -134,6 +134,11 @@ export function LiveConversationView({
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
   // matching echo arrives in the historical/live stream (matched on text).
   const [pendingSends, setPendingSends] = useState<Message[]>([])
+  // A provider with no transcript (Copilot) never echoes the user's text back, so a
+  // pending send is not a reliable "turn still open" signal. It only counts until the
+  // turn it started has run and ended.
+  const [awaitingTurn, setAwaitingTurn] = useState(false)
+  const sawRunning = useRef(false)
 
   // Historical messages (REST). Bounded by SESSION_HISTORY_MAX_BYTES so a huge
   // conversation doesn't seed the whole heap on open — the rest pages in on
@@ -261,7 +266,16 @@ export function LiveConversationView({
   const lastMessage = allMessages[allMessages.length - 1]
   const isAgentThinking =
     isWorkingTurn(session)
-    || (pendingSends.length > 0 && lastMessage?.role !== 'assistant')
+    || (awaitingTurn && pendingSends.length > 0 && lastMessage?.role !== 'assistant')
+
+  useEffect(() => {
+    if (!awaitingTurn) return
+    if (session?.status === 'running') sawRunning.current = true
+    else if (sawRunning.current) {
+      sawRunning.current = false
+      setAwaitingTurn(false) // eslint-disable-line react-hooks/set-state-in-effect
+    }
+  }, [awaitingTurn, session?.status])
 
   // 'hidden' → 'thinking' (agent running) → 'fading' (agent done) → 'hidden'
   const [thinkingState, setThinkingState] = useState<'hidden' | 'thinking' | 'fading'>('hidden')
@@ -339,6 +353,8 @@ export function LiveConversationView({
       const msg = makeOptimisticMessage(optimisticText)
       optimisticId = msg.id
       setPendingSends((prev) => [...prev, msg])
+      sawRunning.current = false
+      setAwaitingTurn(true)
     }
     try {
       await sendInput.mutateAsync(payload)
