@@ -1,5 +1,5 @@
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
-import { boardColumnFor, bucketBoard, firstNonEmptyColumn, subagentParentKeys } from '@/lib/boardColumns'
+import { boardColumnFor, boardScrollX, bucketBoard, firstNonEmptyColumn, startingColumn, subagentParentKeys } from '@/lib/boardColumns'
 import type { SessionTier } from '@/lib/sessionPresentation'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -80,5 +80,63 @@ describe('subagentParentKeys', () => {
 
   it('uses the conversation id for history', () => {
     expect(subagentParentKeys({ kind: 'conversation', ms: 0, item: conversation({ id: 'h' }) })).toEqual(['h'])
+  })
+})
+
+describe('bucketBoard order', () => {
+  const at = (id: string, ms: number, projectName: string, tier: SessionTier) => ({
+    item: { kind: 'session', ms, item: session({ id, projectName }) } as MergedItem,
+    tier,
+  })
+  const ids = (list: { item: MergedItem }[]) => list.map((e) => e.item.item.id)
+
+  it('reverses a column when Order is ascending', () => {
+    const board = bucketBoard([at('old', 1, 'p', 'working'), at('new', 2, 'p', 'working')], 'state', 'asc')
+    expect(ids(board.working)).toEqual(['old', 'new'])
+  })
+
+  it('sorts by project name inside a column', () => {
+    const board = bucketBoard([at('b', 2, 'zeta', 'working'), at('a', 1, 'alpha', 'working')], 'projectName')
+    expect(ids(board.working)).toEqual(['a', 'b'])
+  })
+
+  it('keeps a row with no wait to measure after the waiting ones', () => {
+    const conv = { item: { kind: 'conversation', ms: 9, item: conversation({ id: 'conv' }) } as MergedItem, tier: 'needsYou' as const }
+    const waited = { item: { kind: 'session', ms: 1, item: session({ id: 'waited', status: 'waiting_input', statusUpdatedAt: '2026-10-30T08:00:00Z' }) } as MergedItem, tier: 'needsYou' as const }
+    expect(ids(bucketBoard([conv, waited]).needsYou)).toEqual(['waited', 'conv'])
+  })
+
+  it('drops the longest-wait rule when Order is last activity', () => {
+    const waitedLong = { item: { kind: 'session', ms: 1, item: session({ id: 'long', status: 'waiting_input', statusUpdatedAt: '2026-10-30T08:00:00Z' }) } as MergedItem, tier: 'needsYou' as const }
+    const waitedShort = { item: { kind: 'session', ms: 2, item: session({ id: 'short', status: 'waiting_input', statusUpdatedAt: '2026-10-30T09:00:00Z' }) } as MergedItem, tier: 'needsYou' as const }
+    expect(ids(bucketBoard([waitedLong, waitedShort], 'lastActivity').needsYou)).toEqual(['short', 'long'])
+  })
+})
+
+describe('startingColumn', () => {
+  const empty = { needsYou: [], working: [], observed: [], earlier: [] }
+
+  it('starts on Needs you when anything waits, whatever was remembered', () => {
+    expect(startingColumn({ ...empty, needsYou: [1], earlier: [2] }, 'earlier')).toBe('needsYou')
+  })
+
+  it('otherwise returns to the remembered column, even an empty one', () => {
+    expect(startingColumn({ ...empty, working: [1] }, 'observed')).toBe('observed')
+  })
+
+  it('falls back to the first column with something in it on first use', () => {
+    expect(startingColumn({ ...empty, working: [1] }, null)).toBe('working')
+  })
+})
+
+describe('boardScrollX', () => {
+  it('uses the layout x as is on native, in either direction', () => {
+    expect(boardScrollX(300, { content: 1200, viewport: 800, rtl: false, web: false })).toBe(300)
+    expect(boardScrollX(300, { content: 1200, viewport: 800, rtl: true, web: false })).toBe(300)
+    expect(boardScrollX(300, { content: 1200, viewport: 800, rtl: false, web: true })).toBe(300)
+  })
+
+  it('measures from the right edge on RTL web, where scrollLeft runs negative', () => {
+    expect(boardScrollX(300, { content: 1200, viewport: 800, rtl: true, web: true })).toBe(-100)
   })
 })

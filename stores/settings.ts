@@ -6,6 +6,7 @@ import {
   type StoredNotificationPreferences,
 } from '@/lib/notification-prefs'
 import type { SessionsLayout } from '@/types/ui'
+import type { BoardColumnId } from '@/lib/boardColumns'
 import { THEMES } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import {
@@ -67,6 +68,8 @@ interface SettingsStore {
   /** Renders Projects as the flat multi-server tree instead of the project
    *  card list. Toggled from the Filter & Sort drawer. */
   sessionsTreeView: boolean
+  boardOpen: boolean
+  boardColumn: BoardColumnId | null
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
   locale: SupportedLocale
@@ -105,6 +108,8 @@ interface SettingsStore {
   setSkipLeaveNotice: (v: boolean) => void
   setSessionsLayout: (v: SessionsLayout) => void
   setSessionsTreeView: (v: boolean) => void
+  setBoardOpen: (v: boolean) => void
+  setBoardColumn: (v: BoardColumnId) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
@@ -146,6 +151,8 @@ interface PersistedSettings {
   skipLeaveNotice: boolean
   sessionsLayout: SessionsLayout
   sessionsTreeView: boolean
+  boardOpen: boolean
+  boardColumn: BoardColumnId | null
   showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
@@ -180,6 +187,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   skipLeaveNotice: false,
   sessionsLayout: 'now',
   sessionsTreeView: false,
+  boardOpen: false,
+  boardColumn: null,
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
@@ -212,6 +221,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSkipLeaveNotice: (skipLeaveNotice) => set({ skipLeaveNotice }),
   setSessionsLayout: (sessionsLayout) => set({ sessionsLayout }),
   setSessionsTreeView: (sessionsTreeView) => set({ sessionsTreeView }),
+  setBoardOpen: (boardOpen) => set({ boardOpen }),
+  setBoardColumn: (boardColumn) => set({ boardColumn }),
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
   setLocale: (locale) => set({ locale }),
@@ -253,6 +264,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         skipLeaveNotice: parsed.skipLeaveNotice ?? state.skipLeaveNotice,
         sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
         sessionsTreeView: parsed.sessionsTreeView ?? state.sessionsTreeView,
+        boardOpen: parsed.boardOpen ?? state.boardOpen,
+        boardColumn: parsed.boardColumn ?? state.boardColumn,
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
         locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
@@ -309,6 +322,8 @@ export function persistSettingsNow(): Promise<void> {
     skipLeaveNotice: state.skipLeaveNotice,
     sessionsLayout: state.sessionsLayout,
     sessionsTreeView: state.sessionsTreeView,
+    boardOpen: state.boardOpen,
+    boardColumn: state.boardColumn,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
     biometricLock: state.biometricLock,
