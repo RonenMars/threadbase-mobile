@@ -53,6 +53,8 @@ export interface ConversationHistoryListProps {
   onEndReached?: () => void
   /** Anchored view disables native bottom-anchoring and drives scroll itself. */
   disableAutoAnchor?: boolean
+  /** Keep the list pinned to the content bottom by JS even with native anchoring off. */
+  pinToEnd?: boolean
   isFetchingOlder?: boolean
   isFetchingNewer?: boolean
   /** Fork seam to mark, when the conversation inherited history from a parent. */
@@ -73,6 +75,7 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
       onStartReached,
       onEndReached,
       disableAutoAnchor,
+      pinToEnd = !disableAutoAnchor,
       isFetchingOlder,
       isFetchingNewer,
       inheritedHistory,
@@ -90,7 +93,7 @@ export const ConversationHistoryList = forwardRef<FlashListRef<Message>, Convers
     // forwarded ref so the search view can drive scrolling. Each method reads
     // listRef.current at call time, so a null capture at mount can't stick.
     const listRef = useRef<FlashListRef<Message>>(null)
-    const { stickToEnd, releasePin } = useInitialScrollToEnd(listRef, !disableAutoAnchor)
+    const { stickToEnd, releasePin } = useInitialScrollToEnd(listRef, pinToEnd)
     useImperativeHandle(
       ref,
       () =>
