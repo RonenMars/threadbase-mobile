@@ -89,6 +89,8 @@ export interface ConversationListItemProps {
   provider?: ProviderName
   /** The screen's majority provider; a mark renders only on rows that differ from it. */
   dominantProvider?: ProviderName
+  /** Rendered at the end of the tail, inside the row's press target. */
+  trailing?: React.ReactNode
 
   onPress?: () => void
   onLongPress?: () => void
@@ -148,6 +150,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
     showBranch = true,
     provider,
     dominantProvider,
+    trailing,
     onPress,
     onLongPress,
     onServerPress,
@@ -317,6 +320,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
             />
           ) : null}
           {provider != null && showsProviderMark(provider, dominantProvider) ? <ProviderMark provider={provider} /> : null}
+          {trailing}
         </View>
       ) : null}
     </Wrapper>
