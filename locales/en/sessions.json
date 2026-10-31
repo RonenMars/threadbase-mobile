@@ -256,13 +256,6 @@
       "openParent": "Open parent session"
     }
   },
-  "board": {
-    "title": "Board",
-    "earlier": "Earlier",
-    "emptyColumn": "Nothing here",
-    "searchPlaceholder": "Search sessions…",
-    "loadMore": "Load more"
-  },
   "boardTab": {
     "earlier": "Earlier",
     "emptyColumn": "Nothing here",

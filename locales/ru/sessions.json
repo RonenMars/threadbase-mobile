@@ -276,13 +276,6 @@
       "openParent": "Открыть родительскую сессию"
     }
   },
-  "board": {
-    "title": "Доска",
-    "earlier": "Ранее",
-    "emptyColumn": "Здесь пусто",
-    "searchPlaceholder": "Поиск сессий…",
-    "loadMore": "Загрузить ещё"
-  },
   "boardTab": {
     "earlier": "Ранее",
     "emptyColumn": "Здесь пусто",
