@@ -2,7 +2,8 @@
 #
 # Verifies that on the conversation detail screen for a codex-cli conversation:
 #  1. The Codex badge is shown on the conversation row (testID="codex-provider-badge").
-#  2. The Provider field in the info modal shows "codex-cli".
+#  2. The Provider field in the info modal shows the display name "Codex" (the raw
+#     value codex-cli is only the wire format).
 #  3. Resume Session is offered, because the server's `resumable` field is
 #     authoritative for codex-cli exactly as it is for claude-code. A resumable
 #     Codex conversation resumes normally; if another Codex client holds its
@@ -49,5 +50,5 @@ appId: com.ronenmars.threadbase
 - tapOn:
     id: "conversation-info-button"
 
-# The info modal should show provider = codex-cli.
-- assertVisible: "codex-cli"
+# The info modal shows the provider display name, not the wire value.
+- assertVisible: "Codex"
