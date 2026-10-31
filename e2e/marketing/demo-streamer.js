@@ -15,8 +15,13 @@ const http = require('http')
 const nacl = require('tweetnacl')
 const { WebSocketServer } = require('ws')
 const { MACHINES } = require('./demo-data')
+const { createNoiseResponder, derivePairPsk, serverPublicKey } = require('./noise-responder')
 
 const API_KEY = 'mock-key-123'
+// Fixed so the `spk` a flow puts in a pair link stays valid across restarts.
+const SERVER_STATIC_PRIVATE = Buffer.from('threadbase-demo-streamer-static!', 'utf8')
+const SPK = Buffer.from(serverPublicKey(SERVER_STATIC_PRIVATE)).toString('base64url')
+const PROVIDER_VERSIONS = { 'claude-code': '2.0.0', 'codex-cli': '0.9.0', copilot: '1.0.0' }
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json' })
@@ -116,6 +121,7 @@ function startMachine(port, seed) {
   function reset() {
     machine = structuredClone(seed)
     for (const s of machine.sessions) s.machineName = machine.machineName
+    machine.gateAnswered = false
   }
   reset()
 
@@ -162,6 +168,29 @@ function startMachine(port, seed) {
     // pointing here pairs.
     if (method === 'POST' && p === '/api/pair/exchange') {
       const body = await readJsonBody(req)
+      // A link carrying `spk` sends Noise message 1; the reply is message 2
+      // with the device credential inside. Enough to reach the encrypted
+      // pair-confirm screen — nothing past the handshake is sealed here.
+      if (body.e2ee?.noise) {
+        const responder = createNoiseResponder({
+          serverStaticPrivate: SERVER_STATIC_PRIVATE,
+          psk: derivePairPsk(String(body.token ?? '')),
+          ephemeralPrivate: nacl.randomBytes(32),
+        })
+        responder.readMessage1(Buffer.from(String(body.e2ee.noise), 'base64'))
+        const payload = Buffer.from(JSON.stringify({
+          v: 1,
+          deviceId: 'demo-device',
+          deviceToken: API_KEY,
+          capabilities: [],
+          publicUrl: null,
+          machineName: machine.machineName,
+          serverVersion: '1.90.0',
+          e2eeRequired: true,
+        }), 'utf8')
+        const noise = Buffer.from(responder.writeMessage2(payload)).toString('base64')
+        return json(res, 200, { e2ee: { v: 1, noise }, machineName: machine.machineName })
+      }
       const ephemeral = nacl.box.keyPair()
       const nonce = nacl.randomBytes(nacl.box.nonceLength)
       const sealed = nacl.box(
@@ -195,6 +224,7 @@ function startMachine(port, seed) {
       setStatus(s, body.status, body.lastOutput)
       return json(res, 200, { ok: true })
     }
+    if (method === 'GET' && p === '/__demo__/spk') return json(res, 200, { spk: SPK })
 
     if (method === 'GET' && p === '/api/info') {
       return json(res, 200, {
@@ -222,11 +252,12 @@ function startMachine(port, seed) {
         },
         warnings: [],
       })
-      return json(res, 200, { providers: [provider('claude-code', '2.0.0', true), provider('codex-cli', '0.9.0', false)] })
+      const names = machine.providers ?? ['claude-code', 'codex-cli']
+      return json(res, 200, { providers: names.map((n) => provider(n, PROVIDER_VERSIONS[n], n === 'claude-code')) })
     }
 
     if (method === 'GET' && p === '/api/profiles') return json(res, 200, { profiles: [] })
-    if (method === 'GET' && p === '/api/browse') return json(res, 200, { directories: [] })
+    if (method === 'GET' && p === '/api/browse') return json(res, 200, { directories: machine.directories ?? [] })
     if (method === 'GET' && p === '/api/devices') return json(res, 200, { available: true, devices: [] })
 
     // ── sessions ─────────────────────────────────────────────────────────────
@@ -299,6 +330,26 @@ function startMachine(port, seed) {
       return json(res, 200, { ...resumed })
     }
 
+    // Answering the permission gate resumes the blocked turn.
+    const answerRoute = p.match(/^\/api\/sessions\/([^/]+)\/permission\/answer$/)
+    if (method === 'POST' && answerRoute) {
+      const s = machine.sessions.find((x) => x.id === answerRoute[1])
+      if (!s || machine.gate?.sessionId !== s.id) return json(res, 404, { error: 'No pending permission' })
+      await readJsonBody(req)
+      json(res, 200, { ok: true })
+      machine.gateAnswered = true
+      const lines = machine.gate.answeredLines
+      machine.terminal[s.id] = [...(machine.terminal[s.id] ?? []), '', ...lines]
+      setTimeout(() => {
+        broadcast({ type: 'permission_cancelled', sessionId: s.id })
+        setStatus(s, 'running', 'Running the test suite')
+      }, 100)
+      setTimeout(() => {
+        broadcast({ type: 'terminal_output', sessionId: s.id, data: `\r\n${lines.join('\r\n')}\r\n`, seq: Date.now() })
+      }, 900)
+      return
+    }
+
     const sessionRoute = p.match(/^\/api\/sessions\/([^/]+)(?:\/([a-z-]+))?$/)
     if (sessionRoute) {
       // The conversation screen adopts by conversation id, the session screen by
@@ -327,7 +378,7 @@ function startMachine(port, seed) {
         json(res, 200, { ok: true })
         const mark = s.provider === 'codex-cli' ? '›' : '❯'
         const bullet = s.provider === 'codex-cli' ? '•' : '⏺'
-        const reply = [`${bullet} On it.`, '', '  Read src/sessions/store.ts', '  Read src/sessions/rehydrate.ts']
+        const reply = machine.inputReply ?? [`${bullet} On it.`, '', '  Read src/sessions/store.ts', '  Read src/sessions/rehydrate.ts']
         machine.terminal[s.id] = [...(machine.terminal[s.id] ?? []), '', `${mark} ${text}`, '', ...reply]
         s.promptCount += 1
         setTimeout(() => {
@@ -430,7 +481,12 @@ function startMachine(port, seed) {
         } catch {
           return
         }
-        if (msg?.type === 'subscribe_session') ws.send(JSON.stringify(replay(msg.sessionId)))
+        if (msg?.type === 'subscribe_session') {
+          ws.send(JSON.stringify(replay(msg.sessionId)))
+          if (machine.gate?.sessionId === msg.sessionId && !machine.gateAnswered) {
+            ws.send(JSON.stringify({ type: 'permission', sessionId: msg.sessionId, ...machine.gate.permission }))
+          }
+        }
       })
     })
   })

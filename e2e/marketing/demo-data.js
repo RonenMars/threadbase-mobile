@@ -305,4 +305,226 @@ const MACHINES = {
   },
 }
 
-module.exports = { MACHINES }
+// Hero video profile (DEMO_PROFILE=hero): one agent per machine — a Claude
+// session blocked on a permission gate, a Codex session working, a Copilot
+// session working — so the hub reads Claude / Codex / Copilot at a glance.
+const ACME_API = '/code/acme-api'
+const ACME_WEB = '/code/acme-web'
+const INFRA = '/code/infra'
+const ACME_DIRECTORIES = [{ name: 'acme-api' }, { name: 'acme-web' }, { name: 'infra' }]
+const ALL_PROVIDERS = ['claude-code', 'codex-cli', 'copilot']
+
+const HERO_MACHINES = {
+  7071: {
+    machineName: 'Work Mac',
+    platform: 'darwin',
+    providers: ALL_PROVIDERS,
+    directories: ACME_DIRECTORIES,
+    sessions: [
+      session({
+        id: 'wm-claude-auth',
+        provider: 'claude-code',
+        status: 'waiting_input',
+        projectPath: ACME_API,
+        branch: 'fix/auth-callback',
+        sessionName: 'Fix authentication callback',
+        lastOutput: 'Do you want to proceed? Bash(npm test)',
+        startedMinutesAgo: 9,
+        promptCount: 1,
+        conversationId: 'conv-wm-auth',
+        extra: { statusSource: 'turn-signal', model: 'Opus 5.5' },
+      }),
+    ],
+    // The gate the Claude session is blocked on. Sent as a `permission` frame
+    // when the session is subscribed; answering it resumes the turn with
+    // `answeredLines`.
+    gate: {
+      sessionId: 'wm-claude-auth',
+      permission: {
+        prompt: 'Do you want to proceed?',
+        detail: 'Bash command\nnpm test\nRun the test suite',
+        options: [
+          { index: 1, label: 'Yes' },
+          { index: 2, label: "Yes, and don't ask again for similar commands in acme-api" },
+          { index: 3, label: 'No, and tell Claude what to do differently (esc)' },
+        ],
+        contentKey: 'bash:npm test',
+        gateId: 'gate-npm-test',
+      },
+      answeredLines: ['  Bash(npm test)', '  ✓ 42 tests passed (3.1s)', '  Read tests/callback.spec.ts'],
+    },
+    inputReply: ['⏺ Adding tests for the callback.', '', '  Read tests/callback.spec.ts', '  Edit tests/callback.spec.ts'],
+    terminal: {
+      'wm-claude-auth': [
+        '❯ Fix the authentication callback so it works on every environment.',
+        '',
+        '⏺ The callback URL is hard-coded to the production host, so local and',
+        '  staging logins bounce back to the wrong origin.',
+        '',
+        '  Read src/auth/callback.ts',
+        '  Edit src/auth/callback.ts',
+        '',
+        '⏺ Derived the callback from the request origin. Running the suite',
+        '  before touching the tests.',
+      ],
+    },
+    conversations: [
+      conversation({
+        id: 'conv-wm-auth',
+        title: 'Fix authentication callback',
+        projectPath: ACME_API,
+        branch: 'fix/auth-callback',
+        provider: 'claude-code',
+        endedMinutesAgo: 3,
+        turns: [
+          ['user', 'Fix the authentication callback so it works on every environment.'],
+          ['assistant', 'The callback URL is hard-coded to the production host, so local and staging logins bounce back to the wrong origin. I derived the callback from the request origin and am running the suite before touching the tests.'],
+        ],
+      }),
+      conversation({
+        id: 'conv-wm-sessions',
+        title: 'Expire idle sessions',
+        projectPath: ACME_API,
+        branch: 'feat/session-expiry',
+        provider: 'claude-code',
+        endedMinutesAgo: 60 * 27,
+        turns: [
+          ['user', 'Sessions never expire. Add an idle timeout of 30 minutes.'],
+          ['assistant', 'Added a 30-minute idle timeout: the session store stamps lastSeen on every request and a sweeper drops rows past the limit. Existing sessions pick it up on their next request.'],
+        ],
+      }),
+    ],
+  },
+
+  7072: {
+    machineName: 'Home Mac',
+    platform: 'darwin',
+    providers: ALL_PROVIDERS,
+    directories: ACME_DIRECTORIES,
+    sessions: [
+      session({
+        id: 'hm-codex-webhooks',
+        provider: 'codex-cli',
+        status: 'running',
+        projectPath: ACME_WEB,
+        branch: 'feat/webhooks',
+        sessionName: 'Migrate billing webhooks',
+        lastOutput: 'Rewriting the Stripe webhook handler',
+        startedMinutesAgo: 14,
+        promptCount: 2,
+        conversationId: 'conv-hm-webhooks',
+      }),
+    ],
+    terminal: {
+      'hm-codex-webhooks': [
+        '› Migrate the billing webhooks to the new Stripe event format.',
+        '',
+        '• Three handlers still read the legacy payload shape. Migrating them',
+        '  one event type at a time.',
+        '',
+        '• Edited src/billing/webhooks/invoice.ts',
+        '• Edited src/billing/webhooks/subscription.ts',
+        '• Rewriting the Stripe webhook handler',
+      ],
+    },
+    conversations: [
+      conversation({
+        id: 'conv-hm-webhooks',
+        title: 'Migrate billing webhooks',
+        projectPath: ACME_WEB,
+        branch: 'feat/webhooks',
+        provider: 'codex-cli',
+        endedMinutesAgo: 2,
+        turns: [
+          ['user', 'Migrate the billing webhooks to the new Stripe event format.'],
+          ['assistant', 'Three handlers still read the legacy payload shape. I am migrating them one event type at a time, starting with invoices and subscriptions.'],
+        ],
+      }),
+      conversation({
+        id: 'conv-hm-checkout',
+        title: 'Fix the checkout double-submit',
+        projectPath: ACME_WEB,
+        branch: 'fix/checkout-double-submit',
+        provider: 'claude-code',
+        endedMinutesAgo: 60 * 5,
+        turns: [
+          ['user', 'Customers can submit the checkout form twice and get charged twice.'],
+          ['assistant', 'The submit button stayed enabled while the request was in flight. Disabled it on submit and added an idempotency key to the charge call, so a repeat click is a no-op on the server as well.'],
+        ],
+      }),
+      conversation({
+        id: 'conv-hm-dashboard',
+        title: 'Speed up the usage dashboard',
+        projectPath: ACME_WEB,
+        branch: 'perf/usage-dashboard',
+        provider: 'codex-cli',
+        endedMinutesAgo: 60 * 29,
+        turns: [
+          ['user', 'The usage dashboard takes six seconds to load for large accounts.'],
+          ['assistant', 'The page issued one query per project. Replaced them with a single aggregated query and cached the result for a minute, which brings large accounts under 400ms.'],
+        ],
+      }),
+    ],
+  },
+
+  7073: {
+    machineName: 'Linux Devbox',
+    platform: 'linux',
+    providers: ALL_PROVIDERS,
+    directories: ACME_DIRECTORIES,
+    sessions: [
+      session({
+        id: 'ld-copilot-ratelimit',
+        provider: 'copilot',
+        status: 'running',
+        projectPath: INFRA,
+        branch: 'feat/rate-limit',
+        sessionName: 'Add rate limiting to /ingest',
+        lastOutput: 'Wiring the token bucket into the gateway',
+        startedMinutesAgo: 6,
+        promptCount: 1,
+        conversationId: 'conv-ld-ratelimit',
+      }),
+    ],
+    terminal: {
+      'ld-copilot-ratelimit': [
+        '❯ Add rate limiting to the /ingest endpoint: 100 requests per minute per API key.',
+        '',
+        '⏺ The gateway has no per-key limiter yet. Adding a token bucket keyed on',
+        '  the API key, 100 tokens refilled per minute.',
+        '',
+        '  Read gateway/routes/ingest.ts',
+        '  Edit gateway/middleware/rate-limit.ts',
+        '  Wiring the token bucket into the gateway',
+      ],
+    },
+    conversations: [
+      conversation({
+        id: 'conv-ld-ratelimit',
+        title: 'Add rate limiting to /ingest',
+        projectPath: INFRA,
+        branch: 'feat/rate-limit',
+        provider: 'copilot',
+        endedMinutesAgo: 1,
+        turns: [
+          ['user', 'Add rate limiting to the /ingest endpoint: 100 requests per minute per API key.'],
+          ['assistant', 'The gateway has no per-key limiter yet. I am adding a token bucket keyed on the API key, refilled at 100 tokens per minute, and wiring it into the ingest route.'],
+        ],
+      }),
+      conversation({
+        id: 'conv-ld-tls',
+        title: 'Rotate the ingest TLS certificate',
+        projectPath: INFRA,
+        branch: 'chore/tls-rotation',
+        provider: 'claude-code',
+        endedMinutesAgo: 60 * 31,
+        turns: [
+          ['user', 'The ingest certificate expires next week. Automate the rotation.'],
+          ['assistant', 'Added a cert-manager Certificate resource with a 30-day renewal window and pointed the ingress at the managed secret. The next rotation happens without a deploy.'],
+        ],
+      }),
+    ],
+  },
+}
+
+module.exports = { MACHINES: process.env.DEMO_PROFILE === 'hero' ? HERO_MACHINES : MACHINES }
