@@ -1,18 +1,18 @@
 {
   "search": {
-    "placeholder": "ابحث في السيشنات والمحادثات…",
+    "placeholder": "ابحث في الجلسات والمحادثات…",
     "accessibilityLabel": "بحث"
   },
   "nameSession": {
-    "createTitle": "تسمية هذه السيشن؟",
-    "exitTitle": "تسمية هذه السيشن قبل المغادرة؟",
+    "createTitle": "تسمية هذه الجلسة؟",
+    "exitTitle": "تسمية هذه الجلسة قبل المغادرة؟",
     "start": "بدء",
     "placeholder": "مثلاً: إصلاح خلل المصادقة"
   },
   "slowLoading": {
-    "sessionsTitle": "يستغرق جلب السيشنات وقتاً أطول من المتوقع.",
+    "sessionsTitle": "يستغرق جلب الجلسات وقتاً أطول من المتوقع.",
     "sessionsMessage": "ستُملأ القائمة عندما يجيب الخادم.",
-    "detailTitle": "تفاصيل السيشن تستغرق بعض الوقت…",
+    "detailTitle": "تفاصيل الجلسة تستغرق بعض الوقت…",
     "detailMessage": "جارٍ جلب التفاصيل — لن يطول الأمر."
   },
   "provider": {
@@ -26,14 +26,14 @@
     "label": "تصفية وفرز"
   },
   "list": {
-    "empty": "لا توجد سيشنات",
-    "emptySubtitle": "ابدؤوا سيشن Claude Code أو Codex\nلرؤيته هنا",
+    "empty": "لا توجد جلسات",
+    "emptySubtitle": "ابدؤوا جلسة Claude Code أو Codex\nلرؤيتها هنا",
     "allServersOffline": "تعذّر الوصول إلى أي من خوادمك",
     "allServersOfflineSubtitle": "قد تكون الجلسات أدناه قديمة.",
     "noResults": "لا توجد نتائج",
     "noResultsSubtitle": "لا شيء يطابق \"{{query}}\"",
-    "serverEmpty": "لا توجد سيشنات على هذا الخادم",
-    "serverEmptySubtitle": "ابدأ سيشن هنا أو بدّل الخادم.",
+    "serverEmpty": "لا توجد جلسات على هذا الخادم",
+    "serverEmptySubtitle": "ابدأ جلسة هنا أو بدّل الخادم.",
     "serverOffline": "الخادم غير متاح",
     "serverWarming": "الخادم قيد التجهيز",
     "serverWarmingSubtitle": "سيظهر السجل عند انتهاء الفهرسة.",
@@ -41,7 +41,7 @@
     "serverNeedsUpgradeSubtitle": "يعمل {{server}} بإصدار لا يدعم سرد المشاريع. حدّث خادم Threadbase لتصفح سجله هنا."
   },
   "card": {
-    "copyId": "نسخ معرّف السيشن",
+    "copyId": "نسخ معرّف الجلسة",
     "messages_zero": "لا رسائل",
     "messages_one": "رسالة واحدة",
     "messages_two": "رسالتان",
@@ -79,7 +79,7 @@
     "hideOlder": "إخفاء"
   },
   "loading": {
-    "title": "جارٍ تحميل السيشنات",
+    "title": "جارٍ تحميل الجلسات",
     "progress": "{{loaded}} من {{total}}",
     "fetchingOne": "جارٍ الجلب",
     "fetchingN_zero": "لا خوادم لجلبها",
@@ -88,7 +88,7 @@
     "fetchingN_few": "جارٍ جلب {{count}} خوادم بالتوازي",
     "fetchingN_many": "جارٍ جلب {{count}} خادمًا بالتوازي",
     "fetchingN_other": "جارٍ جلب {{count}} خادم بالتوازي",
-    "sessionsLabel": "السيشنات",
+    "sessionsLabel": "الجلسات",
     "conversationsLabel": "المحادثات",
     "done": "تم"
   },
@@ -123,9 +123,9 @@
     "headerEarlier": "سابقًا"
   },
   "preview": {
-    "liveUnavailable": "معاينة السيشن المباشر غير متاحة — افتح السيشن لرؤية الطرفية المباشرة.",
+    "liveUnavailable": "معاينة الجلسة المباشرة غير متاحة — افتح الجلسة لرؤية الطرفية المباشرة.",
     "noMessages": "لا توجد رسائل بعد.",
-    "openSession": "فتح السيشن",
+    "openSession": "فتح الجلسة",
     "openConversation": "فتح المحادثة",
     "pin": "تثبيت",
     "unpin": "إلغاء التثبيت"
@@ -193,7 +193,7 @@
   "liveActivity": {
     "running": "قيد التشغيل",
     "finished": "انتهى",
-    "channelName": "السيشنات المباشرة"
+    "channelName": "الجلسات المباشرة"
   },
   "tree": {
     "unknownPath": "(غير معروف)",
@@ -237,31 +237,31 @@
   "leaveNotice": {
     "working": "لا يزال {{agent}} يعمل",
     "waiting": "{{agent}} بانتظارك",
-    "body": "يستمر في العمل على {{server}} حتى تُنهيه.",
-    "terminateHint": "لإنهاء السيشن، افتح القائمة <menu></menu> واضغط على «{{action}}».",
-    "leaveHint": "اضغط مرتين لمغادرة السيشن.",
+    "body": "تستمر في العمل على {{server}} حتى تُنهيها.",
+    "terminateHint": "لإنهاء الجلسة، افتح القائمة <menu></menu> واضغط على «{{action}}».",
+    "leaveHint": "اضغط مرتين لمغادرة الجلسة.",
     "skip": "تخطَّ هذا التحذير في المستقبل"
   },
   "endSession": {
-    "menu": "إجراءات السيشن",
-    "section": "إنهاء السيشن",
+    "menu": "إجراءات الجلسة",
+    "section": "إنهاء الجلسة",
     "open": "فتح",
     "whenDone": "إنهاء بعد انتهاء الدور",
-    "whenDoneHint": "يترك هذا الدور ينتهي، ثم يُنهيه",
+    "whenDoneHint": "يترك هذا الدور ينتهي، ثم يُنهيها",
     "terminate": "إنهاء",
-    "terminateHint": "يُنهيه الآن. يمكنك استئنافه لاحقًا.",
+    "terminateHint": "يُنهيها الآن. يمكنك استئنافها لاحقًا.",
     "force": "إنهاء قسري",
     "forceHint": "فقط إذا لم ينجح الإنهاء",
     "delete": "حذف…",
-    "deleteHint": "يزيله من Threadbase. يحتفظ {{agent}} بسجله.",
-    "armed": "ينتهي بعد هذا الدور",
+    "deleteHint": "يزيلها من Threadbase. يحتفظ {{agent}} بسجله.",
+    "armed": "تنتهي بعد هذا الدور",
     "terminating": "جارٍ الإنهاء…",
-    "stillRunning": "لا يزال يعمل بعد الإنهاء.",
-    "failed": "تعذّر إنهاء السيشن. تحقق من الاتصال وحاول مرة أخرى."
+    "stillRunning": "لا تزال تعمل بعد الإنهاء.",
+    "failed": "تعذّر إنهاء الجلسة. تحقق من الاتصال وحاول مرة أخرى."
   },
   "deleteDialog": {
-    "title": "حذف هذا السيشن؟",
-    "body": "لا يزال مباشرًا. سيُنهيه Threadbase، ثم يزيله من قائمة السيشنات على كل الأجهزة.",
+    "title": "حذف هذه الجلسة؟",
+    "body": "لا تزال مباشرة. سيُنهيها Threadbase، ثم يزيلها من قائمة الجلسات على كل الأجهزة.",
     "keepsTitle": "يحتفظ {{agent}} بسجله",
     "keepsClaude": "تبقى المحادثة على {{server}}. لا يزال الأمر claude --resume يجدها.",
     "keepsCodex": "تبقى المحادثة على {{server}}. لا يزال الأمر codex resume يجدها.",
@@ -271,8 +271,8 @@
     "confirm": "حذف"
   },
   "watchersDialog": {
-    "title": "مفتوح على جهاز آخر",
-    "body": "هذا السيشن مفتوح على جهاز آخر. الإنهاء بعد انتهاء الدور يُنهيه هناك أيضًا، وفتحه هناك لن يلغي ذلك."
+    "title": "مفتوحة على جهاز آخر",
+    "body": "هذه الجلسة مفتوحة على جهاز آخر. الإنهاء بعد انتهاء الدور يُنهيها هناك أيضًا، وفتحها هناك لن يلغي ذلك."
   },
   "subagents": {
     "title": "الوكلاء الفرعيون",

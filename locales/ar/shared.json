@@ -15,9 +15,9 @@
     "tabs": {
       "favorites": "المفضلة"
     },
-    "newSessionHere": "سيشن جديد هنا",
+    "newSessionHere": "جلسة جديدة هنا",
     "browseDirectory": "تصفّح المجلد",
-    "openSession": "فتح السيشن",
+    "openSession": "فتح الجلسة",
     "unpinFromFavorites": "إلغاء التثبيت من المفضلة",
     "pinToFavorites": "تثبيت في المفضلة",
     "cancel": "إلغاء",

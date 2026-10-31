@@ -90,10 +90,10 @@
     "thirtyDays": "30 يومًا"
   },
   "stateMessage": {
-    "buildingHistoryNamed": "يبني {{server}} سجل السيشنات…",
+    "buildingHistoryNamed": "يبني {{server}} سجل الجلسات…",
     "unreachableNamed": "يتعذر الوصول إلى {{server}}. تحققوا من الاتصال أو عنوان الخادم.",
-    "refreshFailedNamed": "تعذر تحديث السيشنات من {{server}}.",
-    "disconnectedNamed": "انقطع الاتصال بـ {{server}}. تُعرض السيشنات المحفوظة مؤقتًا.",
+    "refreshFailedNamed": "تعذر تحديث الجلسات من {{server}}.",
+    "disconnectedNamed": "انقطع الاتصال بـ {{server}}. تُعرض الجلسات المحفوظة مؤقتًا.",
     "e2eeProtocolMismatchNamed": "فتح {{server}} اتصالًا غير مشفّر بالطريقة التي يتطلبها هذا المتصفح. حدّث الخادم، أو أجرِ الاقتران من تطبيق Threadbase لنظام iOS أو Android.",
     "connectingNamed": "جارٍ الاتصال بـ {{server}}…",
     "retrying": "تجري إعادة محاولة الخوادم التي تعذّر الوصول إليها…"
@@ -104,7 +104,7 @@
     "none": "بلا"
   },
   "newSessionPicker": {
-    "title": "بدء سيشن على"
+    "title": "بدء جلسة على"
   },
   "statusModal": {
     "close": "✕",
