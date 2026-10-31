@@ -129,9 +129,11 @@ describe('session swipe actions', () => {
     expect(screen.queryByTestId('session-swipe-delete')).toBeNull()
   })
 
-  it('gives an external session no swipe actions', async () => {
+  it('lets an external session be favorited but never renamed or ended', async () => {
     await renderCard(session({ ownership: 'external' }))
-    expect(screen.queryByTestId('session-swipe-favorite')).toBeNull()
+    expect(screen.getByTestId('session-swipe-favorite')).toBeTruthy()
     expect(screen.queryByTestId('session-swipe-rename')).toBeNull()
+    expect(screen.queryByTestId('session-swipe-terminate')).toBeNull()
+    expect(screen.queryByTestId('session-swipe-delete')).toBeNull()
   })
 })

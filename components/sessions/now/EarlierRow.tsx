@@ -8,6 +8,7 @@ import { conversationHref } from '@/lib/conversationHref'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
+import { useConversationSwipe } from '@/hooks/useConversationSwipe'
 import { useNavLockStore } from '@/stores/navLock'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
@@ -76,6 +77,7 @@ function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, domin
   const router = useRouter()
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[conv.serverId]?.color)
+  const swipe = useConversationSwipe(conv, title)
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
     useNavLockStore.getState().lock()
@@ -83,6 +85,7 @@ function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, domin
   }, [conv, highlight, router])
 
   return (
+    <SwipeableRow leading={swipe.leading}>
     <ConversationListItem
       testID={`conversation-row-${conv.id}`}
       title={title}
@@ -106,6 +109,7 @@ function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, domin
       onPress={handlePress}
       onLongPress={onLongPress ? () => onLongPress(conv) : undefined}
     />
+    </SwipeableRow>
   )
 }
 
