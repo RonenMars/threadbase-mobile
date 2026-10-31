@@ -4,6 +4,7 @@ import { isAllSubagentsPageSupported } from '@/lib/subagents'
 import type { Conversation, ConversationPage } from '@/types/api'
 
 const LIMIT = 100
+const POLL_MS = 5000
 
 export interface BoardSubagent {
   serverId: string
@@ -20,6 +21,8 @@ export function useAllSubagents(serverIds: readonly string[], opts?: { enabled?:
     queries: serverIds.map((serverId) => ({
       queryKey: ['subagents-board', serverId] as const,
       enabled: opts?.enabled ?? true,
+      refetchInterval: (q: { state: { data?: { rows: Conversation[] } } }) =>
+        q.state.data?.rows.some((c) => c.subagentActive === true) ? POLL_MS : (false as const),
       queryFn: async ({ signal }: { signal?: AbortSignal }) => {
         const api = createApiForServer(serverId)
         const raw = await api.get<ConversationPage | Conversation[]>(
