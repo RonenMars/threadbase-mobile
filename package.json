@@ -55,6 +55,8 @@
     "lint:ci-shard": "node scripts/run-lint-shard.js",
     "lint:i18n": "eslint ./app ./components ./hooks ./services ./constants ./types --max-warnings=0",
     "typecheck": "tsc --noEmit",
+    "web:export": "expo export --platform web",
+    "test:e2e:web": "playwright test --config e2e/web/playwright.config.ts",
     "check:native-deps": "node scripts/check-native-deps.js",
     "test:scripts": "node_modules/.bin/jest --config jest.config.scripts.js --ci --forceExit",
     "test:scripts:ci-shard": "node scripts/run-script-test-shard.js",
@@ -150,6 +152,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
+    "@playwright/test": "1.64.1",
     "@react-native/jest-preset": "^0.86.3",
     "@storybook/react-native-web-vite": "10.5.9",
     "@tailwindcss/postcss": "^4.3.3",
@@ -203,6 +206,7 @@
       "/node_modules/",
       "/.claude/",
       "<rootDir>/.worktrees/",
+      "<rootDir>/e2e/web/",
       "/__tests__/unit/scripts/",
       "\\.stories\\.tsx$"
     ],
