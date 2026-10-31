@@ -5,6 +5,8 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
+import { useConversationSwipe } from '@/hooks/useConversationSwipe'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { conversationRowTitle } from '@/components/sessions/shared/rowTitle'
 import type { ConvRowProps } from './types'
@@ -17,6 +19,7 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false, trailing }
   const storedName = useSessionNamesStore((s) => s.getName(conv.serverId, conv.id))
   const storedOrigin = useSessionNamesStore((s) => s.getOrigin(conv.serverId, conv.id))
   const title = conversationRowTitle(conv, { name: storedName, origin: storedOrigin })
+  const swipe = useConversationSwipe(conv, title)
 
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
@@ -29,6 +32,7 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false, trailing }
   }, [conv, onLongPress])
 
   return (
+    <SwipeableRow leading={swipe.leading}>
     <ConversationListItem
       testID={`conversation-row-${conv.id}`}
       title={title}
@@ -50,5 +54,6 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false, trailing }
       onPress={handlePress}
       onLongPress={onLongPress ? handleLongPress : undefined}
     />
+    </SwipeableRow>
   )
 }
