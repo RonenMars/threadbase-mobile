@@ -7,6 +7,7 @@ import { makeStyles as makeCardStyles } from '@/components/sessions/base/Collaps
 import { CardBody, CardSpine, ChevronToggle, CountBadge } from '@/components/sessions/base/CollapsibleCardParts'
 import { ConvRow } from '@/components/sessions/hub/ConvRow'
 import type { NowEntry } from '@/components/sessions/now/nowEntries'
+import { MessagePreview } from '@/components/sessions/shared/MessagePreview'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
@@ -42,6 +43,8 @@ interface FrameProps extends Shared {
   onLongPress?: () => void
   /** A needs-you card: the line under the title, and what tapping it does. */
   needsYouLine?: { text: string; question: boolean; onPress: () => void }
+  /** The search hit on a conversation card; rendered under the title. */
+  snippet?: React.ReactNode
 }
 
 function BoardCardFrame({
@@ -58,6 +61,7 @@ function BoardCardFrame({
   onOpen,
   onLongPress,
   needsYouLine,
+  snippet,
 }: FrameProps) {
   const { t } = useTranslation('sessions')
   const { styles: card, theme } = useThemedStyles(makeCardStyles)
@@ -105,6 +109,7 @@ function BoardCardFrame({
               </Pressable>
             ) : null}
           </View>
+          {snippet ? <View style={styles.snippet}>{snippet}</View> : null}
           {needsYouLine ? (
             <Pressable
               style={styles.askRow}
@@ -160,12 +165,13 @@ function SessionCard({ session, onShowQuestion, ...shared }: Shared & { session:
   )
 }
 
-function ConversationCard({ conversation, ...shared }: Shared & { conversation: MultiConversation }) {
+function ConversationCard({ conversation, searchQuery, ...shared }: Shared & { conversation: MultiConversation; searchQuery: string }) {
   const router = useRouter()
   const onOpen = useCallback(() => {
     useNavLockStore.getState().lock()
     router.push(conversationHref(conversation.id, conversation.serverId))
   }, [conversation.id, conversation.serverId, router])
+  const showSnippet = searchQuery.trim().length > 0 && (conversation.matches?.length ?? 0) > 0
   return (
     <BoardCardFrame
       {...shared}
@@ -175,6 +181,7 @@ function ConversationCard({ conversation, ...shared }: Shared & { conversation: 
       tier={shared.entry.tier}
       ms={shared.entry.item.ms}
       onOpen={onOpen}
+      snippet={showSnippet ? <MessagePreview matches={conversation.matches} highlight={searchQuery} rowTitle={shared.entry.title.title} /> : undefined}
     />
   )
 }
@@ -184,11 +191,11 @@ function ConversationCard({ conversation, ...shared }: Shared & { conversation: 
  * counter and chevron fold them and the rest opens it. On Needs you the question
  * takes the activity line, so the card's height never depends on the wait.
  */
-export function BoardSessionCard({ onShowQuestion, ...shared }: Shared & { onShowQuestion: (session: MultiSession, title: string) => void }) {
+export function BoardSessionCard({ onShowQuestion, searchQuery, ...shared }: Shared & { onShowQuestion: (session: MultiSession, title: string) => void; searchQuery: string }) {
   const { item } = shared.entry
   return item.kind === 'session'
     ? <SessionCard {...shared} session={item.item} onShowQuestion={onShowQuestion} />
-    : <ConversationCard {...shared} conversation={item.item} />
+    : <ConversationCard {...shared} conversation={item.item} searchQuery={searchQuery} />
 }
 
 function makeStyles(theme: Theme) {
@@ -201,6 +208,7 @@ function makeStyles(theme: Theme) {
     toggle: { minWidth: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingStart: 4, paddingEnd: 12 },
     counter: { minWidth: 24, alignItems: 'center', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 999, backgroundColor: theme.bg.secondary },
     mirrored: { transform: [{ scaleX: -1 }] },
+    snippet: { paddingHorizontal: 12, paddingBottom: 9 },
     askRow: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 27, paddingHorizontal: 12, paddingBottom: 9 },
     ask: { flex: 1, color: theme.status.waiting, fontSize: 12, lineHeight: 16, fontWeight: '600' },
     tail: { flex: 1, color: theme.text.secondary, fontSize: 12, lineHeight: 16 },

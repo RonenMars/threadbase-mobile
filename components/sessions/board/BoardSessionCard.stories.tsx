@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite'
 import { View } from 'react-native'
-import type { MultiSession } from '@/types/api'
+import type { MultiConversation, MultiSession } from '@/types/api'
 import { BoardSessionCard } from './BoardSessionCard'
 
 const running = {
@@ -27,6 +27,7 @@ const card = (tier: 'working' | 'needsYou', item: MultiSession) => ({
   onToggle: () => {},
   onShowQuestion: () => {},
   serverIdFor: () => 'server-1',
+  searchQuery: '',
 })
 
 const meta: Meta<typeof BoardSessionCard> = {
@@ -40,3 +41,21 @@ type Story = StoryObj<typeof BoardSessionCard>
 
 export const Working: Story = { args: card('working', running) }
 export const NeedsYouOlderServer: Story = { args: card('needsYou', running) }
+
+const found = {
+  id: 'c',
+  serverId: 'server-1',
+  title: 'Add the board',
+  projectPath: '/Users/me/dev/ai-tools/tb-mobile',
+  messageCount: 12,
+  lastActivity: new Date(Date.now() - 3_600_000).toISOString(),
+  matches: [{ field: 'content', snippet: 'we fixed the zebra crossing bug in the parser', highlights: [{ start: 13, end: 18 }] }],
+} as MultiConversation
+
+export const FoundByMessageBody: Story = {
+  args: {
+    ...card('working', running),
+    entry: { item: { kind: 'conversation' as const, ms: Date.now() - 3_600_000, item: found }, tier: null, title: { title: 'Add the board', rung: 'intent' as const }, statusLabel: null },
+    searchQuery: 'zebra',
+  },
+}
