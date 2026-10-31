@@ -203,6 +203,8 @@ export interface Conversation {
   parentConversationId?: string | null
   /** Subagent rows only (`?parent=` / `?include=subagents`). Absent on older streamers. */
   isSubagent?: boolean
+  /** Subagent rows only: the parent's list title. Absent on older streamers or when the parent is not cached. */
+  parentTitle?: string
   /** True when the transcript was written in the last 60 s: a guess, not a process state. */
   subagentActive?: boolean
   subagentType?: string

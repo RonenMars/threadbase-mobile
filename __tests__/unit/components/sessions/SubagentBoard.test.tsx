@@ -52,6 +52,13 @@ describe('SubagentBoard', () => {
     expect(labels).toEqual(['subagent-filter-all', 'subagent-filter-active'])
   })
 
+  it('names a group from the row parentTitle when the parent is not a loaded session', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p9', { parentTitle: 'Runner session' }), sub('b', 'p8')]))
+    const r = await renderBoard()
+    await waitFor(() => expect(r.getByText('Runner session')).toBeTruthy())
+    expect(r.getByTestId('subagent-parent-p8')).toBeTruthy()
+  })
+
   it('opens the transcript from a row and the parent from the group header', async () => {
     const push = jest.fn()
     ;(useRouter as jest.Mock).mockReturnValue({ push, back: jest.fn(), replace: jest.fn() })
