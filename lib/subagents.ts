@@ -30,9 +30,10 @@ export function resolveSubagentType(c: Conversation): string | undefined {
 /**
  * An older streamer ignores `?include=subagents` and returns its normal list,
  * which holds top-level rows. One such row means the flag was not applied.
+ * A sub-agent with no known parent (e.g. a Codex rollout) still counts.
  */
 export function isAllSubagentsPageSupported(rows: readonly Conversation[]): boolean {
-  return rows.every((r) => r != null && r.isSubagent === true && Boolean(r.parentConversationId))
+  return rows.every((r) => r != null && r.isSubagent === true)
 }
 
 export interface SubagentGroup {

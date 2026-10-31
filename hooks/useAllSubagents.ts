@@ -33,7 +33,7 @@ export function useAllSubagents(serverIds: readonly string[], opts?: { enabled?:
           (r): r is Conversation => r != null,
         )
         return isAllSubagentsPageSupported(rows)
-          ? { rows, unsupported: false }
+          ? { rows: rows.filter((r) => Boolean(r.parentConversationId)), unsupported: false }
           : { rows: [] as Conversation[], unsupported: true }
       },
     })),
