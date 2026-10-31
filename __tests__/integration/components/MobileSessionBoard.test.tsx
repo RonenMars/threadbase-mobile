@@ -123,10 +123,11 @@ const items: MergedItem[] = [
 ]
 const row = (item: MultiSession): MergedItem => ({ kind: 'session', ms: NOW - 1000, item })
 
-const board = (list: MergedItem[], onPromptsChanged: () => void = jest.fn(), searchQuery = '') => (
-  <SessionBoard items={list} searchQuery={searchQuery} conversationsFromServer={false} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={onPromptsChanged} />
+const board = (list: MergedItem[], onPromptsChanged: () => void = jest.fn(), searchQuery = '', conversationsFromServer = false) => (
+  <SessionBoard items={list} searchQuery={searchQuery} conversationsFromServer={conversationsFromServer} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={onPromptsChanged} />
 )
-const renderBoard = (list: MergedItem[] = items, onPromptsChanged?: () => void, searchQuery?: string) => render(board(list, onPromptsChanged, searchQuery), { wrapper: createWrapper() })
+const renderBoard = (list: MergedItem[] = items, onPromptsChanged?: () => void, searchQuery?: string, conversationsFromServer?: boolean) =>
+  render(board(list, onPromptsChanged, searchQuery, conversationsFromServer), { wrapper: createWrapper() })
 
 const selected = (r: Awaited<ReturnType<typeof renderBoard>>, id: BoardColumnId) => r.getByTestId(`board-column-${id}`).props.accessibilityState.selected
 
@@ -228,6 +229,28 @@ describe('SessionBoard cards', () => {
     const r = await renderBoard()
     await waitFor(() => expect(r.getAllByText("Couldn't load sub-agents.")).toHaveLength(2))
     expect(r.getByText('Scan the worktrees')).toBeTruthy()
+  })
+})
+
+describe('SessionBoard search', () => {
+  const bodyOnly = conversation({ id: 'body', title: 'Quarterly planning', preview: 'agenda and budget' })
+  const bodyRows: MergedItem[] = [{ kind: 'conversation', ms: NOW - 120_000, item: bodyOnly }]
+
+  it('shows a conversation that matches only on its message body when the rows came from the server', async () => {
+    const r = await renderBoard(bodyRows, undefined, 'wombat', true)
+    expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1')
+    expect(r.getByTestId('board-open-body')).toBeTruthy()
+  })
+
+  it('hides that same conversation when the rows came from the paged history', async () => {
+    const r = await renderBoard(bodyRows, undefined, 'wombat', false)
+    expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier0')
+    expect(r.queryByTestId('board-open-body')).toBeNull()
+  })
+
+  it('still matches a paged conversation on its title', async () => {
+    const r = await renderBoard(bodyRows, undefined, 'planning', false)
+    expect(r.getByTestId('board-open-body')).toBeTruthy()
   })
 })
 
