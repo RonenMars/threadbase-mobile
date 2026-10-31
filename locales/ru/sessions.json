@@ -1,7 +1,15 @@
 {
   "search": {
     "placeholder": "Поиск сессий и бесед…",
-    "accessibilityLabel": "Поиск"
+    "accessibilityLabel": "Поиск",
+    "conversationsResults_one": "Беседы · {{count}} результат",
+    "conversationsResults_few": "Беседы · {{count}} результата",
+    "conversationsResults_many": "Беседы · {{count}} результатов",
+    "conversationsResults_other": "Беседы · {{count}} результата",
+    "sessionsResults_one": "Сессии · {{count}} результат",
+    "sessionsResults_few": "Сессии · {{count}} результата",
+    "sessionsResults_many": "Сессии · {{count}} результатов",
+    "sessionsResults_other": "Сессии · {{count}} результата"
   },
   "nameSession": {
     "createTitle": "Назвать эту сессию?",

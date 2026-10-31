@@ -1,7 +1,19 @@
 {
   "search": {
     "placeholder": "ابحث في الجلسات والمحادثات…",
-    "accessibilityLabel": "بحث"
+    "accessibilityLabel": "بحث",
+    "conversationsResults_zero": "المحادثات · لا نتائج",
+    "conversationsResults_one": "المحادثات · نتيجة واحدة",
+    "conversationsResults_two": "المحادثات · نتيجتان",
+    "conversationsResults_few": "المحادثات · {{count}} نتائج",
+    "conversationsResults_many": "المحادثات · {{count}} نتيجة",
+    "conversationsResults_other": "المحادثات · {{count}} نتيجة",
+    "sessionsResults_zero": "الجلسات · لا نتائج",
+    "sessionsResults_one": "الجلسات · نتيجة واحدة",
+    "sessionsResults_two": "الجلسات · نتيجتان",
+    "sessionsResults_few": "الجلسات · {{count}} نتائج",
+    "sessionsResults_many": "الجلسات · {{count}} نتيجة",
+    "sessionsResults_other": "الجلسات · {{count}} نتيجة"
   },
   "nameSession": {
     "createTitle": "تسمية هذه الجلسة؟",
