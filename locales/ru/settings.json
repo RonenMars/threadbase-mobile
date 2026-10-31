@@ -249,7 +249,7 @@
     "manifestTitle": "Сводка экспорта",
     "manifestHost": "Хост: {{host}}",
     "manifestVersion": "Стример: {{version}}",
-    "manifestProjects": "Проекты: {{count}}",
+    "manifestProjects": "Проекты: {{total}}",
     "manifestCreated": "Создано: {{at}}",
     "pasteHint": "Вставьте JSON архива ниже, затем выполните пробный запуск перед применением.",
     "pastePlaceholder": "{ \"manifest\": …, \"projects\": […] }",
