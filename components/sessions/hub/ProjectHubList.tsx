@@ -89,16 +89,16 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   // to filter — search goes to the server's /api/search, as classic does.
   const { data: convSearchData } = useConversationSearch(debouncedQuery)
 
-  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const dismissedFailureAt = useServerFetchStatusStore((s) => s.dismissedFailureAt)
   const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
   const serverLabels = useMemo(
-    () => Object.fromEntries(activeServerIds.map((id) => [id, servers[id]?.label ?? id])),
-    [activeServerIds, servers],
+    () => Object.fromEntries(displayedServerIds.map((id) => [id, servers[id]?.label ?? id])),
+    [displayedServerIds, servers],
   )
-  const serverGroups = useServerGroups(groups, activeServerIds, serverLabels)
+  const serverGroups = useServerGroups(groups, displayedServerIds, serverLabels)
   const showServerHeaders = serverGroups.length > 0
   const collidingPaths = useMemo(
     () =>
@@ -163,7 +163,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     return result
   }, [debouncedQuery, convSearchData, sessions])
 
-  const activeServerCount = activeServerIds.length
+  const activeServerCount = displayedServerIds.length
   const names = useSessionNamesStore((s) => s.names)
   const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
 
@@ -287,8 +287,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     const collapseApplies = serverGroups.length > 1
     const visibleError = (id: string) =>
       isServerFetchErrorVisible(fetchStatuses[id], dismissedFailureAt[id])
-    const allFailed = activeServerIds.length > 0
-      && activeServerIds.every((id) => visibleError(id))
+    const allFailed = displayedServerIds.length > 0
+      && displayedServerIds.every((id) => visibleError(id))
     // A server too old for /api/projects/summary gets its own row — omitting it
     // would read as "this server has no projects", which is not what happened.
     const unsupportedRows: HubFlatItem[] = unsupportedServerIds.map((serverId) => ({
@@ -312,7 +312,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           ]
         }), ...unsupportedRows]
       : [...tiered(groups, 'all'), ...unsupportedRows]
-  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, olderOpen, toggleOlder, t, activeServerIds, fetchStatuses, dismissedFailureAt])
+  }, [showServerHeaders, serverGroups, groups, collapsedServers, unsupportedServerIds, servers, olderOpen, toggleOlder, t, displayedServerIds, fetchStatuses, dismissedFailureAt])
 
   return (
     <View style={styles.container}>
