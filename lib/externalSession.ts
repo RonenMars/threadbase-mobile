@@ -1,4 +1,5 @@
-import type { Session } from '@/types/api'
+import type { Conversation, Session } from '@/types/api'
+import type { SessionTier } from '@/lib/sessionPresentation'
 
 /**
  * A session whose underlying process the streamer does NOT own — a CLI it
@@ -28,4 +29,34 @@ export function isExternalAlive(
   // Older-server fallback: a bare pid with none of the new liveness fields.
   if (s.processLiveness == null && s.activity == null && s.pid != null) return true
   return false
+}
+
+/**
+ * Narrow the streamer's liveness fields on a conversation row or detail meta.
+ * Only the two values this build knows survive; anything else reads as absent.
+ */
+export function narrowConversationLiveness(raw: {
+  ownership?: string
+  processLiveness?: string
+}): Pick<Conversation, 'ownership' | 'processLiveness'> {
+  return {
+    ...(raw.ownership === 'external' ? { ownership: 'external' as const } : {}),
+    ...(raw.processLiveness === 'alive' ? { processLiveness: 'alive' as const } : {}),
+  }
+}
+
+/**
+ * Tier for a conversation row: `observed` (the existing external-live styling)
+ * while its CLI runs outside Threadbase, otherwise none so the row is untouched.
+ */
+export function conversationTier(
+  c: Pick<Conversation, 'ownership' | 'processLiveness'>,
+): SessionTier | undefined {
+  return c.processLiveness === 'alive' ? 'observed' : undefined
+}
+
+/** A summary's live-outside count; a missing or malformed value is 0. */
+export function liveExternalCountOf(summary: { liveExternalCount?: number }): number {
+  const n = summary.liveExternalCount
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 0
 }

@@ -29,6 +29,7 @@ function group(name: string, overrides: Partial<ProjectGroup> = {}): ProjectGrou
     serverId: 'srv-1',
     sessions: [],
     conversationCount: 3,
+    liveExternalCount: 0,
     latestActivityMs: NOW - 60_000,
     earliestStartMs: 0,
     ...overrides,
@@ -36,6 +37,10 @@ function group(name: string, overrides: Partial<ProjectGroup> = {}): ProjectGrou
 }
 
 describe('projectTier', () => {
+  it('is active when a conversation runs outside Threadbase, with no session', () => {
+    expect(projectTier(group('a', { liveExternalCount: 1, latestActivityMs: NOW - 30 * RECENT_WINDOW_MS }), NOW)).toBe('active')
+  })
+
   it('is active with any live session, whatever its age', () => {
     const live = session({ status: 'running', ptyAttached: true, lifecycle: 'attached' })
     expect(projectTier(group('a', { sessions: [live], latestActivityMs: NOW - 30 * RECENT_WINDOW_MS }), NOW)).toBe('active')
@@ -65,5 +70,11 @@ describe('projectRailToken', () => {
     expect(projectRailToken(group('a', { sessions: [running, waiting] }))).toBe('waiting')
     expect(projectRailToken(group('a', { sessions: [running] }))).toBe('running')
     expect(projectRailToken(group('a', { sessions: [held] }))).toBeNull()
+  })
+
+  it('falls back to the observed colour for external conversations only', () => {
+    expect(projectRailToken(group('a', { liveExternalCount: 2 }))).toBe('completed')
+    const running = session({ id: 'r', status: 'running', ptyAttached: true, lifecycle: 'attached' })
+    expect(projectRailToken(group('a', { sessions: [running], liveExternalCount: 2 }))).toBe('running')
   })
 })

@@ -28,6 +28,7 @@ import type { MultiSession, MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
+import { conversationTier } from '@/lib/externalSession'
 import { conversationHref } from '@/lib/conversationHref'
 
 // Memoized: the Hub root re-renders on every fetch-progress tick; with stable
@@ -141,6 +142,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
           lastMessage={c.lastMessage}
           preview={c.preview}
           matches={c.matches}
+          tier={conversationTier(c)}
           serverLabel={c.serverLabel}
           serverColor={serverColor}
           activeServerCount={activeServerCount}

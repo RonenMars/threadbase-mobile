@@ -869,6 +869,61 @@ describe('useConversationSearch — partial failure (Bug 32)', () => {
   })
 })
 
+describe('external liveness fields (search rows and detail meta)', () => {
+  it('search: carries ownership + processLiveness when the server sends them', async () => {
+    setActiveServers(['srv-L'])
+    handlers['srv-L'] = () =>
+      Promise.resolve([{ ...rawSession('l1'), ownership: 'external', processLiveness: 'alive' }])
+    const { result } = await renderHook(() => useConversationSearch('l1'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined(), { timeout: 6000 })
+    const row = result.current.data!.conversations[0]
+    expect(row.ownership).toBe('external')
+    expect(row.processLiveness).toBe('alive')
+  })
+
+  it('search: a streamer without the fields yields rows without them', async () => {
+    setActiveServers(['srv-N'])
+    handlers['srv-N'] = () => Promise.resolve([rawSession('n1')])
+    const { result } = await renderHook(() => useConversationSearch('n1'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined(), { timeout: 6000 })
+    const row = result.current.data!.conversations[0]
+    expect(row.ownership).toBeUndefined()
+    expect(row.processLiveness).toBeUndefined()
+  })
+
+  it('search: drops values this build does not know instead of passing them through', async () => {
+    setActiveServers(['srv-U'])
+    handlers['srv-U'] = () =>
+      Promise.resolve([{ ...rawSession('u1'), ownership: 'quantum', processLiveness: 'gone' }])
+    const { result } = await renderHook(() => useConversationSearch('u1'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined(), { timeout: 6000 })
+    const row = result.current.data!.conversations[0]
+    expect(row.ownership).toBeUndefined()
+    expect(row.processLiveness).toBeUndefined()
+  })
+
+  it('detail: carries the fields from meta', async () => {
+    setActiveServers(['srv_ext'])
+    const page = rawConversationPage('c_ext', ['hi'])
+    page.meta = { ...page.meta, ownership: 'external', processLiveness: 'alive' } as any
+    metaHandlers.srv_ext = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+    const { result } = await renderHook(() => useConversation('srv_ext', 'c_ext'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    expect(result.current.data?.ownership).toBe('external')
+    expect(result.current.data?.processLiveness).toBe('alive')
+  })
+
+  it('detail: absent on an older streamer', async () => {
+    setActiveServers(['srv_old'])
+    metaHandlers.srv_old = () =>
+      Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_old', ['hi']) })
+    const { result } = await renderHook(() => useConversation('srv_old', 'c_old'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+    expect(result.current.data?.ownership).toBeUndefined()
+    expect(result.current.data?.processLiveness).toBeUndefined()
+  })
+})
+
 describe('useConversation — retention gcTime', () => {
   it('gives the plain tail query a 7-day gcTime', async () => {
     setActiveServers(['srv_gc_tail'])

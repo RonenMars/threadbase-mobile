@@ -5,6 +5,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { useSessionNamesStore } from '@/stores/sessionNames'
+import { conversationTier } from '@/lib/externalSession'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { conversationRowTitle } from '@/components/sessions/shared/rowTitle'
 import type { ConvRowProps } from './types'
@@ -38,6 +39,7 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false }: ConvRowP
       firstMessage={conv.firstMessage}
       lastMessage={conv.lastMessage}
       preview={conv.preview}
+      tier={conversationTier(conv)}
       serverLabel={conv.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}

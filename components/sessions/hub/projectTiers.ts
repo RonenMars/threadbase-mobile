@@ -1,4 +1,4 @@
-import { deriveSessionPresentation, isPresentationLive, type SessionColorToken } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, isPresentationLive, tierColorToken, type SessionColorToken } from '@/lib/sessionPresentation'
 import type { ProjectGroup } from './useProjectGroups'
 
 export type ProjectTier = 'active' | 'recent' | 'older'
@@ -7,7 +7,7 @@ export type ProjectTier = 'active' | 'recent' | 'older'
 export const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
 
 export function projectTier(group: ProjectGroup, now: number = Date.now()): ProjectTier {
-  if (group.sessions.some(isPresentationLive)) return 'active'
+  if (group.liveExternalCount > 0 || group.sessions.some(isPresentationLive)) return 'active'
   return now - group.latestActivityMs <= RECENT_WINDOW_MS ? 'recent' : 'older'
 }
 
@@ -34,5 +34,6 @@ export function projectRailToken(group: ProjectGroup): SessionColorToken | null 
     if (presentation.tier === 'working') token = 'running'
     else if (token == null) token = presentation.colorToken
   }
+  if (token == null && group.liveExternalCount > 0) token = tierColorToken('observed')
   return token
 }

@@ -19,6 +19,8 @@ export interface ProjectSummary {
   name: string
   conversationCount: number
   lastActivity: string
+  /** Conversations in this project running outside Threadbase right now. Additive; older streamers omit it. */
+  liveExternalCount?: number
 }
 
 export interface ProjectSummaryPage {

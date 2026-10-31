@@ -25,6 +25,7 @@ import {
   stampTrigger,
   etagOf,
 } from '@/hooks/conversationCursor'
+import { narrowConversationLiveness } from '@/lib/externalSession'
 import { cliPromptText } from '@/lib/cliPromptText'
 import { isCodexInjectedContext } from '@/lib/codexInjectedContext'
 import { isTaskNotification } from '@/lib/taskNotificationContext'
@@ -45,6 +46,8 @@ interface RawSessionMeta {
   preview?: string
   git_branch?: string
   tool_names?: string[]
+  ownership?: string
+  processLiveness?: string
 }
 
 function toEpochMs(iso: string | undefined): number {
@@ -87,6 +90,7 @@ function adaptPage(raw: RawSessionMeta[] | ConversationPage, offset: number, lim
     branch: s.git_branch,
     messageCount: s.message_count ?? 0,
     lastActivity: s.last_updated_at ?? '',
+    ...narrowConversationLiveness(s),
   }))
   return {
     conversations,
@@ -441,6 +445,7 @@ function mergeConversationPages(pages: RawConversationDetail[]): ConversationDet
     branch: first.meta.git_branch,
     messageCount: first.meta.message_count ?? messages.length,
     lastActivity: first.meta.last_updated_at ?? '',
+    ...narrowConversationLiveness(first.meta),
     messages,
     lastPrompt: first.meta.last_prompt,
     turn_durations: first.turn_durations,

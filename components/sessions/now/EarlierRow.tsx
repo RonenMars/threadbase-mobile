@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
+import { conversationTier } from '@/lib/externalSession'
 import { conversationHref } from '@/lib/conversationHref'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
@@ -89,6 +90,7 @@ function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, domin
       lastMessage={conv.lastMessage}
       preview={conv.preview}
       matches={conv.matches}
+      tier={conversationTier(conv)}
       serverLabel={conv.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}
