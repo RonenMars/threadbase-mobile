@@ -43,6 +43,7 @@ export interface BoardColumnListProps {
   openIds: ReadonlySet<string>
   onToggle: (id: string) => void
   onShowQuestion: (session: MultiSession, title: string) => void
+  searchQuery: string
   serverIdFor: (rowId: string, fallback: string) => string
   /** Sub-agents could not load: one line where their cards would be. */
   subagentsFailed: boolean
@@ -59,6 +60,7 @@ export function BoardColumnList({
   openIds,
   onToggle,
   onShowQuestion,
+  searchQuery,
   serverIdFor,
   subagentsFailed,
   refreshing,
@@ -105,12 +107,13 @@ export function BoardColumnList({
             isOpen={openIds.has(row.key)}
             onToggle={onToggle}
             onShowQuestion={onShowQuestion}
+            searchQuery={searchQuery}
             serverIdFor={(id) => serverIdFor(id, serverId)}
           />
         </View>
       )
     },
-    [fetchStatuses, onShowQuestion, onToggle, openIds, router, serverIdFor, styles, t],
+    [fetchStatuses, onShowQuestion, onToggle, openIds, router, searchQuery, serverIdFor, styles, t],
   )
 
   const showFailure = subagentsFailed && (column === 'working' || column === 'earlier')
