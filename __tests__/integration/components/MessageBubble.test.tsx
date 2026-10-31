@@ -1,6 +1,6 @@
 import React from "react";
-import { StyleSheet } from "react-native";
-import { render } from "@testing-library/react-native";
+import { Linking, StyleSheet } from "react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 import { MessageBubble } from "@/components/conversation/MessageBubble";
 import { dark } from "@/constants/theme";
 import type { Message } from "@/types/api";
@@ -258,5 +258,26 @@ describe("MessageBubble – search highlight", () => {
     expect(style.backgroundColor).not.toBe(dark.text.highlight);
     expect(style.backgroundColor).toContain(dark.text.highlight);
     expect(style.color).not.toBe(dark.text.onHighlight);
+  });
+});
+
+describe("MessageBubble – markdown links", () => {
+  it("opens http(s) links and ignores other schemes", async () => {
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const { getByText } = await render(
+      <MessageBubble
+        message={makeMessage({
+          role: "assistant",
+          content: [{ type: "text", text: "[web](https://example.com) [call](tel:+15551234567) [pair](threadbase://pair?x=1)" }],
+        })}
+      />,
+    );
+    await fireEvent.press(getByText("call"));
+    await fireEvent.press(getByText("pair"));
+    expect(openURL).not.toHaveBeenCalled();
+    await fireEvent.press(getByText("web"));
+    expect(openURL).toHaveBeenCalledTimes(1);
+    expect(openURL).toHaveBeenCalledWith("https://example.com");
+    openURL.mockRestore();
   });
 });
