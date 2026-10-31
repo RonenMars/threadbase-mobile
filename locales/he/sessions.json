@@ -260,7 +260,7 @@
       "summaryParents": "הורים",
       "summaryTotal": "סה״כ",
       "parentFallback": "שיחה {{id}}",
-      "parentActive": "{{n}} פעילים",
+      "parentActive": "פעילים: {{n}}",
       "unsupported": "השרת הזה עדיין לא מציג סוכני משנה.",
       "emptyActive": "אין סוכני משנה פעילים.",
       "empty": "אין עדיין סוכני משנה.",

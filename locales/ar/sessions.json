@@ -120,7 +120,7 @@
     "headerLast7Days": "آخر 7 أيام",
     "headerLast14Days": "آخر 14 يومًا",
     "headerLastMonth": "الشهر الماضي",
-    "headerEarlier": "في وقت سابق"
+    "headerEarlier": "سابقًا"
   },
   "preview": {
     "liveUnavailable": "معاينة السيشن المباشر غير متاحة — افتح السيشن لرؤية الطرفية المباشرة.",
@@ -287,10 +287,10 @@
       "active": "النشطة",
       "all": "الكل",
       "summaryActive": "نشطة الآن",
-      "summaryParents": "الأصل",
+      "summaryParents": "الجلسات الأصلية",
       "summaryTotal": "الإجمالي",
       "parentFallback": "جلسة {{id}}",
-      "parentActive": "{{n}} نشطة",
+      "parentActive": "النشطة: {{n}}",
       "unsupported": "هذا الخادم لا يعرض الوكلاء الفرعيين بعد.",
       "emptyActive": "لا يوجد وكلاء فرعيون قيد التشغيل.",
       "empty": "لا يوجد وكلاء فرعيون بعد.",
@@ -305,7 +305,7 @@
     "loadMore": "تحميل المزيد"
   },
   "boardTab": {
-    "earlier": "في وقت سابق",
+    "earlier": "سابقًا",
     "emptyColumn": "لا شيء هنا",
     "columns": "حالات الجلسات",
     "showBoard": "عرض اللوحة",

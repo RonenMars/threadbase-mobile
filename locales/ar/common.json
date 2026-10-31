@@ -20,7 +20,7 @@
       "info": "معلومات"
     },
     "pill": {
-      "degraded": "تدهور",
+      "degraded": "متراجع",
       "issues_zero": "لا توجد مشكلات",
       "issues_one": "مشكلة واحدة",
       "issues_two": "مشكلتان",
@@ -33,7 +33,7 @@
       "summaryBoth": "{{errors}} · {{warnings}}",
       "errorCount_zero": "لا توجد أخطاء",
       "errorCount_one": "خطأ واحد",
-      "errorCount_two": "خطأان",
+      "errorCount_two": "خطآن",
       "errorCount_few": "{{count}} أخطاء",
       "errorCount_many": "{{count}} خطأً",
       "errorCount_other": "{{count}} خطأ",
