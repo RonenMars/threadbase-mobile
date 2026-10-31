@@ -59,6 +59,15 @@
     "suggestionLabel": "שלח הצעה: {{text}}",
     "suggestionHint": "לחץ והחזק כדי לערוך לפני השליחה"
   },
+  "mentions": {
+    "close": "סגירת הצעות קבצים",
+    "unsupported": "הצעות קבצים אינן זמינות עבור התיקייה של הסשן הזה.",
+    "error": "לא ניתן לטעון קבצים. בדקו את החיבור.",
+    "empty": "אין קבצים התואמים ל־„{{query}}”",
+    "emptyFolder": "התיקייה הזו ריקה.",
+    "folderLabel": "תיקייה {{name}}",
+    "fileLabel": "קובץ {{name}}"
+  },
   "preview": {
     "openLabel": "תצוגה מקדימה של {{name}}",
     "close": "סגירת התצוגה המקדימה",
