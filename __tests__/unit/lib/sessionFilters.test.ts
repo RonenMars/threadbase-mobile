@@ -125,7 +125,7 @@ describe('counts and presets', () => {
     )
 
     expect(displayed.map((item) => item.item.id)).toEqual(['live', 'older'])
-    expect(countByProvider(displayed)).toEqual({ 'claude-code': 0, 'codex-cli': 2, cursor: 0 })
+    expect(countByProvider(displayed)).toEqual({ 'claude-code': 0, 'codex-cli': 2, copilot: 0, cursor: 0 })
     expect(countByTier(displayed)).toEqual({ needsYou: 1, working: 0, resumable: 1, cantResume: 0, observed: 0 })
   })
 
