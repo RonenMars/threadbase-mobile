@@ -1,0 +1,168 @@
+# Hero video captures — one agent per machine, one gate to answer, one prompt
+# to send, one session to start, one encrypted pairing to confirm.
+#
+# Requires: DEMO_PROFILE=hero node e2e/marketing/demo-streamer.js
+# Run through e2e/marketing/run.sh with MARKETING_FLOWS=e2e/marketing/hero.yaml
+# and DEMO_PROFILE=hero. Not a regression test.
+appId: com.ronenmars.threadbase
+---
+- runScript: scripts/reset-demo.js
+
+# Notifications granted up front so the push banner shot can be taken after
+# the run (`xcrun simctl push`) without the OS prompt in the way.
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    permissions:
+      notifications: allow
+
+- runFlow:
+    file: pair-machine.yaml
+    env:
+      PAIR_PORT: "7071"
+
+- runFlow:
+    file: pair-machine.yaml
+    env:
+      PAIR_PORT: "7072"
+
+# --- F: encrypted pairing --------------------------------------------------
+# The link carries the streamer's key, so the exchange runs the Noise
+# handshake and the confirm screen shows the encrypted line. Cancelled after
+# the shot: the demo streamer speaks no sealed transport, so the machine is
+# paired again below through the plain link.
+- runScript:
+    file: scripts/pair-spk.js
+    env:
+      PORT: "7073"
+- stopApp
+- openLink: "threadbase:///pair?url=http%3A%2F%2F${PAIR_HOST}%3A7073&token=pt_demo&spk=${output.spk}"
+- extendedWaitUntil:
+    visible: "Open"
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible: "Open"
+    commands:
+      - tapOn:
+          text: "Open"
+          retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "pair-confirm-icon-e2ee"
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: hero/F-encrypted
+- tapOn:
+    id: "pair-confirm-cancel-btn"
+
+- runFlow:
+    file: pair-machine.yaml
+    env:
+      PAIR_PORT: "7073"
+
+# --- A: the hub ------------------------------------------------------------
+- tapOn:
+    id: "preset-everything"
+- extendedWaitUntil:
+    visible: ".*Fix authentication callback.*"
+    timeout: 15000
+- assertVisible: ".*Migrate billing webhooks.*"
+- assertVisible: ".*Add rate limiting to /ingest.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- assertNotVisible:
+    id: "status-pill"
+- takeScreenshot: hero/A-hub
+
+# --- C: the permission gate ------------------------------------------------
+- tapOn: ".*Fix authentication callback.*"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "question-card"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: hero/C-permission-card
+
+- tapOn:
+    text: "Yes"
+- extendedWaitUntil:
+    visible: "Working"
+    timeout: 10000
+- assertNotVisible:
+    id: "question-card"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: hero/C-resumed
+
+# --- D: a prompt from the phone --------------------------------------------
+# The turn finishes before the next prompt goes in.
+- runScript:
+    file: scripts/set-status.js
+    env:
+      PORT: "7071"
+      SESSION_ID: "wm-claude-auth"
+      STATUS: "waiting_input"
+      LAST_OUTPUT: "42 tests pass. What next?"
+- extendedWaitUntil:
+    visible: "Needs you"
+    timeout: 10000
+- tapOn:
+    id: "chat-message-input"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: hero/D-compose
+
+- inputText: "Now add tests for the callback"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: hero/D-typing
+
+- tapOn:
+    id: "chat-send-button"
+- extendedWaitUntil:
+    visible: ".*Now add tests for the callback.*"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Working"
+    timeout: 10000
+- tapOn:
+    point: "50%, 35%"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: hero/D-working
+
+# --- E: a new session on another machine -----------------------------------
+- runFlow: back-to-hub.yaml
+- tapOn:
+    id: "fab-new-session"
+- extendedWaitUntil:
+    visible:
+      id: "new-session-server-1"
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: hero/E-new-session
+
+- tapOn:
+    id: "new-session-server-1"
+- extendedWaitUntil:
+    visible:
+      id: "browse-first-directory"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: hero/E-pick-folder
+
+- tapOn:
+    id: "start-provider-codex-cli"
+- waitForAnimationToEnd:
+    timeout: 1000
+- takeScreenshot: hero/E-pick-agent
