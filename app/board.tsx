@@ -104,7 +104,7 @@ export default function SessionBoard() {
 
   if (Platform.OS !== 'web') return <Redirect href="/" />
 
-  const multiServer = activeServerIds.length > 1
+  const multiServer = displayedServerIds.length > 1
   const entryKey = (entry: BoardEntry) =>
     entry.kind === 'session'
       ? `${entry.session.serverId}::${entry.session.id}`
