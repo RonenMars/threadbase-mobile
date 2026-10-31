@@ -64,7 +64,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
 
   const activitySummary = useMemo(() => {
     const needsYouCount = group.sessions.filter((s) => deriveSessionPresentation(s).tier === 'needsYou').length
-    const liveCount = group.sessions.filter(isPresentationLive).length
+    const liveCount = group.sessions.filter(isPresentationLive).length + group.liveExternalCount
     const lastActivity = group.latestActivityMs > 0
       ? formatListTime(group.latestActivityMs, {
           locale: i18n.language,
@@ -80,7 +80,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     if (todaySessionCount > 0) pieces.push(t('hub.activityToday', { total: todaySessionCount }))
     if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')
-  }, [group.sessions, group.latestActivityMs, todaySessionCount, i18n.language, t])
+  }, [group.sessions, group.liveExternalCount, group.latestActivityMs, todaySessionCount, i18n.language, t])
 
   const renderSheet = (activeConv: MultiConversation) => {
         const favId = buildFavoriteId(activeConv.serverId, 'conversation', activeConv.id)

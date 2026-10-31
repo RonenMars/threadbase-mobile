@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react-native'
 import { basename } from '@/components/sessions/shared/pathTail'
-import { buildTree, compactTree } from '@/components/sessions/tree/treeUtils'
+import { buildTree, compactTree, hasLiveSession, activeSessionColor } from '@/components/sessions/tree/treeUtils'
 import { useProjectGroups } from '@/components/sessions/hub/useProjectGroups'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { MultiSession } from '@/types/api'
@@ -99,5 +99,43 @@ describe('useProjectGroups with summaries', () => {
       ['srv-1', 171],
       ['srv-2', 4],
     ])
+  })
+})
+
+describe('liveExternalCount from project summaries', () => {
+  const withLive = (path: string, n: number | undefined): MultiProjectSummary => ({
+    ...summary(path, 3, '2026-08-09T03:45:12.289Z'),
+    ...(n === undefined ? {} : { liveExternalCount: n }),
+  })
+
+  it('lands on the tree node and the hub group', async () => {
+    const tree = (buildTree([], [withLive('/dev/a', 2)]))
+    expect(tree.children.get('dev')!.children.get('a')!.liveExternalCount).toBe(2)
+
+    const { result } = await renderHook(() => useProjectGroups([], [withLive('/dev/a', 2)], 'lastActivity', 'desc'))
+    expect(result.current[0].liveExternalCount).toBe(2)
+  })
+
+  it('is 0 for a streamer that predates the field', async () => {
+    const tree = (buildTree([], [withLive('/dev/a', undefined)]))
+    expect(tree.children.get('dev')!.children.get('a')!.liveExternalCount).toBe(0)
+
+    const { result } = await renderHook(() => useProjectGroups([], [withLive('/dev/a', undefined)], 'lastActivity', 'desc'))
+    expect(result.current[0].liveExternalCount).toBe(0)
+  })
+
+  it('treats a non-numeric value as 0', () => {
+    const bad = { ...withLive('/dev/a', 1), liveExternalCount: 'lots' } as unknown as MultiProjectSummary
+    const tree = (buildTree([], [bad]))
+    expect(tree.children.get('dev')!.children.get('a')!.liveExternalCount).toBe(0)
+  })
+
+  it('marks a node with only external conversations live', () => {
+    const live = buildTree([], [withLive('/dev/a', 2)]).children.get('dev')!.children.get('a')!
+    const quiet = buildTree([], [withLive('/dev/a', undefined)]).children.get('dev')!.children.get('a')!
+    expect(hasLiveSession(live)).toBe(true)
+    expect(activeSessionColor(live)).not.toBeNull()
+    expect(hasLiveSession(quiet)).toBe(false)
+    expect(activeSessionColor(quiet)).toBeNull()
   })
 })

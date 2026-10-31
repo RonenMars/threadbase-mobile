@@ -69,6 +69,7 @@ const group: ProjectGroup = {
   serverId: 'srv-1',
   sessions: [session],
   conversationCount: 1,
+  liveExternalCount: 0,
   latestActivityMs: Date.parse(conversation.lastActivity),
   earliestStartMs: Date.parse(session.startedAt),
 }
@@ -156,5 +157,17 @@ describe('ProjectHubCard', () => {
     const { getByTestId } = await renderCard(true, more)
     fireEvent.press(getByTestId('hub-see-all-/tmp/project'))
     expect(push).toHaveBeenCalledWith('/project/project-1?path=%2Ftmp%2Fproject&server=srv-2')
+  })
+
+  it('shows live outside conversations on the project header', async () => {
+    const live: ProjectGroup = { ...group, sessions: [], liveExternalCount: 2 }
+    const { getByText } = await renderCard(false, live)
+    expect(getByText(/2 live/)).toBeTruthy()
+  })
+
+  it('shows no live count when the project has none outside', async () => {
+    const quiet: ProjectGroup = { ...group, sessions: [], liveExternalCount: 0 }
+    const { queryByText } = await renderCard(false, quiet)
+    expect(queryByText(/live/)).toBeNull()
   })
 })

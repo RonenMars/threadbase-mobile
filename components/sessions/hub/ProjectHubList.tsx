@@ -29,7 +29,7 @@ import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessAct
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { conversationHref } from '@/lib/conversationHref'
-import { isExternalSession } from '@/lib/externalSession'
+import { conversationTier, isExternalSession } from '@/lib/externalSession'
 import { deriveSessionPresentation, sessionMessageCount } from '@/lib/sessionPresentation'
 import {
   collidingProjectPaths,
@@ -207,6 +207,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           lastMessage={item.lastMessage}
           preview={item.preview}
           matches={item.matches}
+          tier={conversationTier(item)}
           serverLabel={item.serverLabel}
           serverColor={serverColor}
           activeServerCount={activeServerCount}
