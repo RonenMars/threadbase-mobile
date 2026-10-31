@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
+import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
 import { font, spacing, type Theme } from '@/constants/theme'
 import type { ProviderName } from '@/constants/providers'
@@ -114,6 +115,7 @@ function shouldShowServer(
 
 export function ConversationListItem(props: ConversationListItemProps) {
   const theme = useTheme()
+  const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const {
     title,
@@ -208,7 +210,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
   const showMeta = !isChip && (showBranch || showCount)
   const metaPieces: string[] = []
   if (showBranch && branch) metaPieces.push(branch)
-  if (showCount && typeof messageCount === 'number') metaPieces.push(`${messageCount} msgs`)
+  if (showCount && typeof messageCount === 'number') metaPieces.push(t('card.messages', { count: messageCount }))
   const metaText = showMeta && metaPieces.length > 0 ? metaPieces.join(' · ') : null
 
   const Wrapper = onPress || onLongPress ? Pressable : View

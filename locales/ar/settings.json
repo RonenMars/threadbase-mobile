@@ -12,20 +12,20 @@
     "history": "السجل",
     "help": "المساعدة",
     "language": "اللغة",
-    "session": "السيشن",
+    "session": "الجلسة",
     "privacy": "الخصوصية",
     "anonymousDiagnostics": "التشخيصات المجهولة"
   },
   "session": {
     "chatView": "عرض الدردشة",
-    "chatViewNote": "أظهر السيشنات المباشرة كفقاعات دردشة بدلًا من مخرجات طرفية RAW. بيتا — قد تحتوي على أخطاء ولا تعمل دائمًا.",
+    "chatViewNote": "أظهر الجلسات المباشرة كفقاعات دردشة بدلًا من مخرجات طرفية RAW. بيتا — قد تحتوي على أخطاء ولا تعمل دائمًا.",
     "betaBadge": "بيتا",
-    "leaveAction": "عند مغادرة سيشن مباشر",
+    "leaveAction": "عند مغادرة جلسة مباشرة",
     "leaveActionAsk": "اسألني",
     "leaveActionKill": "إنهاء فورًا",
     "leaveActionLeave": "اتركها تعمل (افتراضي)",
     "leaveActionKillOnIdle": "إنهاء بعد انتهاء الدور",
-    "leaveActionNote": "يُطبَّق عند مغادرة شاشة السيشن المباشرة. وضع التطبيق في الخلفية لا يتغير.",
+    "leaveActionNote": "يُطبَّق عند مغادرة شاشة الجلسة المباشرة. وضع التطبيق في الخلفية لا يتغير.",
     "leaveNotice": "إظهار تنبيه «اتركها تعمل»",
     "showProviderVersionWarning": "إظهار تحذير إصدار المزوّد غير الموثَّق",
     "showProviderVersionWarningNote": "عندما يكون CLI المثبّت خارج النطاق الذي وثّقه الستريمر، أظهر ملاحظة صفراء في Browse."
@@ -38,7 +38,7 @@
     "photos": "الصور",
     "photosDesc": "إرفاق صور من مكتبتك",
     "notifications": "الإشعارات",
-    "notificationsDesc": "تنبيهات لأحداث السيشن",
+    "notificationsDesc": "تنبيهات لأحداث الجلسة",
     "statusGranted": "مسموح",
     "statusDenied": "مرفوض",
     "statusUndetermined": "لم يُطلب بعد",
@@ -53,7 +53,7 @@
   "notifications": {
     "whenAddingServer": "عند إضافة خادم جديد",
     "waitingForInput": "في انتظار الإدخال",
-    "sessionFailed": "فشل السيشن",
+    "sessionFailed": "فشلت الجلسة",
     "quietHours": "ساعات الهدوء",
     "sendTest": "إرسال إشعار تجريبي",
     "quietEveryDay": "كل يوم",
@@ -119,9 +119,9 @@
     "scanQr": "امسح QR لإضافة خادم"
   },
   "sessionNaming": {
-    "title": "تسمية السيشن",
+    "title": "تسمية الجلسة",
     "autoNameFromMessage": "تسمية تلقائية من أول رسالة",
-    "autoNameNote": "عيّن اسم السيشن من أول كلمات رسالتك الأولى. بلا ذكاء اصطناعي، وبلا توكنات."
+    "autoNameNote": "عيّن اسم الجلسة من أول كلمات رسالتك الأولى. بلا ذكاء اصطناعي، وبلا توكنات."
   },
   "language": {
     "english": "English",
