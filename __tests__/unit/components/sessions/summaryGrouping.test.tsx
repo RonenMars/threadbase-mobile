@@ -125,7 +125,7 @@ describe('liveExternalCount from project summaries', () => {
   })
 
   it('treats a non-numeric value as 0', () => {
-    const bad = { ...withLive('/dev/a', 1), liveExternalCount: 'lots' } as unknown as MultiProjectSummary
+    const bad = Object.assign(withLive('/dev/a', 1), { liveExternalCount: 'lots' })
     const tree = (buildTree([], [bad]))
     expect(tree.children.get('dev')!.children.get('a')!.liveExternalCount).toBe(0)
   })
