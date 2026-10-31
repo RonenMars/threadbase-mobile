@@ -8,8 +8,10 @@
 #
 # The mock (e2e/mock-server.js, "terminal-scrollback scenario") answers the
 # subscribe with a replay that still holds the prompt row, then ~2.5 s later
-# sends the clear plus a repainted frame without it. Three assertions:
-#   1. before the clear: transcript rows + the replayed live rows
+# sends the clear plus a repainted frame without it. The hub subscribes at app
+# start, so the clear can land before this screen opens and the replayed frame
+# is not reliably observable; the flow asserts only what survives that race:
+#   1. transcript rows are present
 #   2. the clear landed: the repainted frame's own line is visible
 #   3. after the clear: the transcript rows are still there
 #
@@ -41,7 +43,6 @@ appId: com.ronenmars.threadbase
       id: "terminal-transcript-row"
     timeout: 8000
 - assertVisible: ".*Test added, 1 passing.*"
-- assertVisible: ".*Ran 1 shell command.*"
 - takeScreenshot: e2e/_artifacts/screenshots/terminal-scrollback-01-before-clear
 
 # 2. The clear and repaint landed.

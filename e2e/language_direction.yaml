@@ -20,10 +20,10 @@ appId: com.ronenmars.threadbase
 # 2. Navigate to language settings.
 - tapOn:
     id: "hub-settings-btn"
-- extendedWaitUntil:
-    visible:
+# Appearance sits below the fold since Displayed servers joined the screen.
+- scrollUntilVisible:
+    element:
       id: "settings-language-he"
-    timeout: 4000
 - takeScreenshot: e2e/_artifacts/screenshots/language-direction-ltr
 
 # 3. Switch to Hebrew.
