@@ -43,7 +43,14 @@ describe('ConversationListItem', () => {
     expect(text).toContain('Fix metro bundler crash')
     expect(text).toContain('14:30')
     expect(text).toContain('main')
-    expect(text).toContain('42 msgs')
+    expect(text).toContain('main · 42 messages')
+  })
+
+  it('counts a conversation with no messages', async () => {
+    const tree = await render(
+      <ConversationListItem title="Empty" timestamp={NOW.getTime()} messageCount={0} />,
+    )
+    expect(collectText(tree.toJSON() as unknown as Json)).toContain('0 messages')
   })
 
   it('falls back to path suffix when no title', async () => {
