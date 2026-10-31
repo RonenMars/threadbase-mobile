@@ -53,6 +53,7 @@ EXTRA_ICONS["ShieldWarning-fill"] = "M208 40H48a16 16 0 0 0-16 16v56c0 52.72 25.
 EXTRA_ICONS["ShieldCheck-fill"] = "M208 40H48a16 16 0 0 0-16 16v56c0 52.72 25.52 84.67 46.93 102.19 23.06 18.86 46 25.26 47 25.53a8 8 0 0 0 4.2 0c1-.27 23.91-6.67 47-25.53C198.48 196.67 224 164.72 224 112V56a16 16 0 0 0-16-16m-34.32 69.66-56 56a8 8 0 0 1-11.32 0l-24-24a8 8 0 0 1 11.32-11.32L112 148.69l50.34-50.35a8 8 0 0 1 11.32 11.32Z";
 EXTRA_ICONS["ShieldSlash-fill"] = "M224 56v56c0 25.24-5.85 45.72-14.3 62.14a4 4 0 0 1-6.53.87L86.52 46.69a4 4 0 0 1 3-6.69H208a16 16 0 0 1 16 16M53.92 34.62A8 8 0 0 0 40.26 42 16 16 0 0 0 32 56v56c0 52.72 25.52 84.67 46.93 102.19 23.06 18.86 46 25.27 47 25.53a8 8 0 0 0 4.2 0c1-.26 23.91-6.67 47-25.53a132 132 0 0 0 10.05-9.19l14.9 16.38a8 8 0 1 0 11.84-10.76Z";
 EXTRA_ICONS["ClockCounterClockwise"] = "M136 80v43.47l36.12 21.67a8 8 0 0 1-8.24 13.72l-40-24A8 8 0 0 1 120 128V80a8 8 0 0 1 16 0m-8-48a95.44 95.44 0 0 0-67.92 28.15C52.81 67.51 46.35 74.59 40 82V64a8 8 0 0 0-16 0v40a8 8 0 0 0 8 8h40a8 8 0 0 0 0-16H49c7.15-8.42 14.27-16.35 22.39-24.57a80 80 0 1 1 1.66 114.75 8 8 0 1 0-11 11.64A96 96 0 1 0 128 32";
+EXTRA_ICONS["HourglassMedium"] = "M64 32a8 8 0 0 0 0 16h8v24a72 72 0 0 0 30.37 58.68A72 72 0 0 0 72 189.36V208h-8a8 8 0 0 0 0 16h128a8 8 0 0 0 0-16h-8v-18.64a72 72 0 0 0-30.37-58.68A72 72 0 0 0 184 72V48h8a8 8 0 0 0 0-16Zm24 16h80v24a56 56 0 0 1-28 48.5v15a56 56 0 0 1 28 48.5v24H88v-24a56 56 0 0 1 28-48.5v-15A56 56 0 0 1 88 72Zm40 96a40 40 0 0 0-40 40v8h80v-8a40 40 0 0 0-40-40Z";
 EXTRA_ICONS["RadioButton-fill"] = "M128 24a104 104 0 1 0 104 104A104.11 104.11 0 0 0 128 24m0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88m56-88a56 56 0 1 1-56-56 56.06 56.06 0 0 1 56 56";
 EXTRA_ICONS["CheckSquare-fill"] = "M208 32H48a16 16 0 0 0-16 16v160a16 16 0 0 0 16 16h160a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16m-34.34 77.66-56 56a8 8 0 0 1-11.32 0l-24-24a8 8 0 0 1 11.32-11.32L112 148.69l50.34-50.35a8 8 0 0 1 11.32 11.32";
 EXTRA_ICONS["Square"] = "M208 32H48a16 16 0 0 0-16 16v160a16 16 0 0 0 16 16h160a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16m0 176H48V48h160z";
@@ -3159,6 +3160,113 @@ async function buildOnboardingSteps() {
   simpleSet(comps, sec, 'Onboarding', 2200, 'components/onboarding/OnboardingNavigator.tsx: Language → Welcome → Connect → Notifications → Done. Connect also opens PairScannerModal, PairConfirmGate and PairCameraIdentityCard. "← Other options" really renders two arrows (icon + string).');
 }
 
+async function buildLeaveNotice() {
+  if (findComp('LeaveNotice')) return;
+  const sec = newSection('LeaveNotice', 'components/sessions/LeaveNotice.tsx — centered modal card over the shared 72% scrim. Card: bg-card, 1px border, radius lg, padding xl, gap lg, max width 420. Header pill uses LiveDot and working/waiting tone; close X at 20. Copy has title 17/600, two 13/20 messages, skip checkbox row, and five 4px countdown segments.');
+  const comps = [];
+  for (const [state, waiting, checked] of [['State=Working', false, false], ['State=Waiting', true, false], ['State=WaitingChecked', true, true]]) {
+    const c = comp(state, 'VERTICAL', { counterAxisAlignItems: 'STRETCH', cornerRadius: 12, strokeWeight: 1 });
+    c.counterAxisSizingMode = 'FIXED'; c.resize(420, 100); c.primaryAxisSizingMode = 'AUTO';
+    c.fills = P('bg/card'); c.strokes = P('border'); pad(c, 'xl', 'xl'); sp(c, 'itemSpacing', 'lg');
+    const top = AL('HORIZONTAL', 'top', { primaryAxisAlignItems: 'SPACE_BETWEEN', counterAxisAlignItems: 'CENTER' }); fill(c, top);
+    const pill = AL('HORIZONTAL', 'status pill', { counterAxisAlignItems: 'CENTER', itemSpacing: 6, cornerRadius: 999 });
+    pill.fills = P(waiting ? 'status/waiting' : 'status/running', 0.12); pad(pill, 'xs', 'sm');
+    pill.appendChild(inst('LiveDot', 'Tone=' + (waiting ? 'Waiting' : 'Running')));
+    pill.appendChild(await T(waiting ? 'NEEDS YOU' : 'WORKING', 'label/xs', waiting ? 'status/waiting' : 'status/running', { letterSpacing: { unit: 'PERCENT', value: 9 } }));
+    top.appendChild(pill); top.appendChild(icon('X-bold', 20, 'text/secondary'));
+    const copy = AL('VERTICAL', 'copy'); fill(c, copy); sp(copy, 'itemSpacing', 'xs');
+    wrapText(copy, await T(waiting ? 'Leave while the agent is waiting?' : 'Leave while the agent is working?', 'label/lg', 'text/primary'));
+    wrapText(copy, await T('The session will keep running on ' + (waiting ? 'your computer' : 'the server') + '.', 'body/sm', 'text/primary', lh(20)));
+    wrapText(copy, await T('Hold anywhere to pause the countdown. Tap × to leave now.', 'body/sm', 'text/primary', lh(20)));
+    const skip = AL('HORIZONTAL', 'skip row', { counterAxisAlignItems: 'CENTER', itemSpacing: 'sm', minHeight: 44 }); fill(c, skip);
+    skip.appendChild(icon(checked ? 'CheckSquare-fill' : 'Square', 22, checked ? 'text/accent' : 'text/secondary'));
+    skip.appendChild(await T('Skip this warning in the future', 'body/sm', 'text/primary'));
+    const segments = AL('HORIZONTAL', 'segments', { itemSpacing: 'xs' }); fill(c, segments);
+    for (let i = 0; i < 5; i++) {
+      const s = AL('HORIZONTAL', 'segment', { cornerRadius: 999, clipsContent: true }); s.counterAxisSizingMode = 'FIXED'; s.resize(68, 4); s.fills = P('border');
+      if (i < (checked ? 2 : 4)) { const f = figma.createRectangle(); f.name = 'fill'; f.resize(68, 4); f.fills = P('text/accent'); s.appendChild(f); }
+      segments.appendChild(s);
+    }
+    comps.push(c);
+  }
+  simpleSet(comps, sec, 'LeaveNotice', 1440, 'components/sessions/LeaveNotice.tsx. State=Working|Waiting|WaitingChecked; the animated hold-to-pause countdown is shown at a representative frame.');
+}
+
+async function buildSessionActionSheet() {
+  if (findComp('SessionActionSheet')) return;
+  const sec = newSection('SessionActionSheet', 'components/sessions/SessionActionSheet.tsx — bottom sheet over a 50% scrim. Sheet bg-card, top radius lg, 1px border, 8 top / 24 bottom padding. Grabber 36×4. Header has a two-line title/meta block and a hairline divider. Rows are min 48, 16 horizontal padding, 8 gap, 20px icon, label and optional hint; destructive labels use status.failed.');
+  const comps = [];
+  for (const kind of ['Kind=Actions', 'Kind=WithEndSection']) {
+    const c = comp(kind, 'VERTICAL', { counterAxisAlignItems: 'STRETCH', cornerRadius: 12, strokeWeight: 1 });
+    c.counterAxisSizingMode = 'FIXED'; c.resize(420, 100); c.primaryAxisSizingMode = 'AUTO'; c.fills = P('bg/card'); c.strokes = P('border');
+    c.paddingLeft = c.paddingRight = 0; c.paddingTop = 8; c.paddingBottom = 24;
+    const grab = figma.createRectangle(); grab.name = 'grabber'; grab.resize(36, 4); grab.cornerRadius = 2; grab.fills = P('border'); c.appendChild(grab); grab.layoutAlign = 'INHERIT';
+    const head = AL('VERTICAL', 'header', { itemSpacing: 2, strokeBottomWeight: 1 }); head.paddingLeft = head.paddingRight = 16; head.paddingBottom = 12; head.strokes = P('border'); fill(c, head);
+    wrapText(head, await T('Claude · Working', 'label/base', 'text/primary'));
+    wrapText(head, await T('Agent · status · server', 'body/xs', 'text/secondary'));
+    if (kind === 'Kind=WithEndSection') { c.appendChild(await T('END SESSION', 'label/xs', 'text/secondary', { letterSpacing: { unit: 'PERCENT', value: 6 } })); }
+    for (const [label, hint, iconName, destructive] of kind === 'Kind=WithEndSection'
+      ? [['Take over session', 'Stop the other device first', 'Eye', false], ['End session', 'Terminate the agent run', 'Warning', true]]
+      : [['Resume conversation', 'Continue where you left off', 'ArrowRight', false], ['Share session', null, 'ShareNetwork', false]]) {
+      const row = AL('HORIZONTAL', 'item', { counterAxisAlignItems: 'CENTER', itemSpacing: 'md', minHeight: 48 }); pad(row, 'sm', 'lg'); fill(c, row);
+      row.appendChild(icon(iconName, 20, destructive ? 'status/failed' : 'text/secondary'));
+      const copy = AL('VERTICAL', 'item copy', { itemSpacing: 1 }); fill(row, copy);
+      wrapText(copy, await T(label, 'body/base', destructive ? 'status/failed' : 'text/primary'));
+      if (hint) wrapText(copy, await T(hint, 'body/xs', 'text/secondary'));
+    }
+    comps.push(c);
+  }
+  simpleSet(comps, sec, 'SessionActionSheet', 920, 'components/sessions/SessionActionSheet.tsx. Kind=Actions|WithEndSection; row icons are representative INSTANCE_SWAP choices.');
+}
+
+async function buildEndSessionStatus() {
+  if (findComp('EndSessionStatus')) return;
+  const sec = newSection('EndSessionStatus', 'components/sessions/EndSessionStatus.tsx — inline status only. Armed is a warning hourglass chip with full radius. Terminating is a compact row with a spinner and muted copy. Still running is a warning strip with 1px warning border, warning icon, explanatory copy, and an optional failed Force button.');
+  const comps = [];
+  {
+    const c = comp('State=Armed', 'HORIZONTAL', { counterAxisAlignItems: 'CENTER', cornerRadius: 999, strokeWeight: 1 }); pad(c, 'xs', 'sm'); c.fills = []; c.strokes = P('text/warning');
+    c.appendChild(icon('HourglassMedium', 14, 'text/warning')); c.appendChild(await T('End requested', 'label/xs', 'text/warning')); comps.push(c);
+  }
+  {
+    const c = comp('State=Terminating', 'HORIZONTAL', { counterAxisAlignItems: 'CENTER' }); sp(c, 'itemSpacing', 'sm'); c.appendChild(icon('CircleNotch', 16, 'text/secondary')); c.appendChild(await T('Ending session…', 'body/xs', 'text/secondary')); comps.push(c);
+  }
+  for (const force of [true, false]) {
+    const c = comp('State=StillRunning' + (force ? 'WithForce' : 'NoForce'), 'HORIZONTAL', { counterAxisAlignItems: 'CENTER', cornerRadius: 6, strokeWeight: 1 });
+    pad(c, 'xs', 'sm'); sp(c, 'itemSpacing', 'sm'); c.fills = P('status/waiting', 0.08); c.strokes = P('text/warning');
+    c.appendChild(icon('Warning', 16, 'text/warning')); const t = await T('Still running', 'body/xs', 'text/primary'); t.layoutGrow = 1; c.appendChild(t);
+    if (force) c.appendChild(await button('force', 'Force', 'label/xs', 'text/onAccent', { fill: ['status/failed'], radius: 6 }));
+    comps.push(c);
+  }
+  simpleSet(comps, sec, 'EndSessionStatus', 920, 'components/sessions/EndSessionStatus.tsx. State=Armed|Terminating|StillRunningWithForce|StillRunningNoForce.');
+}
+
+async function buildEndSessionDialogs() {
+  if (findComp('EndSessionDialogs')) return;
+  const sec = newSection('EndSessionDialogs', 'components/sessions/EndSessionDialogs.tsx — two CriticalDialog wrappers. Delete adds a success ClockCounterClockwise keeps-history callout and a no-undo note; watchers uses the shared warning dialog with Cancel and When done actions.');
+  const comps = [];
+  {
+    const c = comp('Dialog=Delete', 'VERTICAL', { counterAxisAlignItems: 'STRETCH' });
+    const d = inst('CriticalDialog', 'Kind=TwoActions'); fill(c, d); setInstanceText(d, 'title', 'Delete this session?'); setInstanceText(d, 'message', 'The session history will remain available on your server.');
+    const keeps = AL('HORIZONTAL', 'keeps history', { counterAxisAlignItems: 'MIN', itemSpacing: 'sm', cornerRadius: 8, strokeWeight: 1 }); pad(keeps, 'md', 'md'); keeps.fills = P('bg/secondary'); keeps.strokes = P('border');
+    keeps.appendChild(icon('ClockCounterClockwise', 18, 'status/success')); const copy = AL('VERTICAL', 'copy', { itemSpacing: 2 }); fill(keeps, copy); wrapText(copy, await T('History is kept', 'body/sm', 'text/primary')); wrapText(copy, await T('You can still find this conversation later.', 'body/sm', 'text/secondary', lh(19))); c.insertChild(1, keeps);
+    c.appendChild(await T('This cannot be undone.', 'body/xs', 'text/secondary')); comps.push(c);
+  }
+  {
+    const c = comp('Dialog=Watchers', 'VERTICAL', { counterAxisAlignItems: 'STRETCH' });
+    const d = inst('CriticalDialog', 'Kind=ThreeActions'); fill(c, d); setInstanceText(d, 'title', 'Other devices are watching'); setInstanceText(d, 'message', 'Ending here will ask the other devices to stop watching this session.'); comps.push(c);
+  }
+  simpleSet(comps, sec, 'EndSessionDialogs', 1500, 'components/sessions/EndSessionDialogs.tsx. Dialog=Delete|Watchers; wraps the shared CriticalDialog component.');
+}
+
+async function buildSlowQueryBanner() {
+  if (findComp('SlowQueryBanner')) return;
+  const sec = newSection('SlowQueryBanner', 'components/SlowQueryBanner.tsx — no direct JSX; useAlertSync publishes this sessions slow-query AlertSpec to AlertHost. The representative rendered state is a warning StatusRow with no close button and a persistent timeout.');
+  const c = comp('State=SlowSessions', 'VERTICAL', { counterAxisAlignItems: 'STRETCH', cornerRadius: 10, strokeWeight: 1 }); c.counterAxisSizingMode = 'FIXED'; c.resize(420, 100); c.fills = P('bg/primary'); c.strokes = P('status/waiting'); pad(c, 'md', 'md'); sp(c, 'itemSpacing', 'sm');
+  const h = AL('HORIZONTAL', 'header', { counterAxisAlignItems: 'CENTER', itemSpacing: 'sm' }); fill(c, h); h.appendChild(icon('Warning', 16, 'status/waiting')); h.appendChild(await T('Loading is taking longer than usual', 'label/base', 'text/primary'));
+  wrapText(c, await T('Sessions are still loading. They will appear when the server responds.', 'body/sm', 'text/secondary', lh(18)));
+  single(c, sec, 'components/SlowQueryBanner.tsx. State=SlowSessions; the visual is emitted by AlertHost through useAlertSync.');
+}
+
 async function statusBar() {
   const bar = AL('HORIZONTAL', 'status bar', { counterAxisAlignItems: 'CENTER' });
   bar.paddingLeft = 32; bar.paddingRight = 32; bar.paddingTop = 18; bar.paddingBottom = 10;
@@ -3589,6 +3697,11 @@ const CATALOG = [
   job('ModelEffortSheet', buildModelEffortSheet, CATALOG_PAGES.sessions, 'Sheets'),
   job('ConversationPreviewSheet', buildConversationPreviewSheet, CATALOG_PAGES.sessions, 'Sheets'),
   job('RemoteKeyboardControls', buildRemoteKeyboardControls, CATALOG_PAGES.sessions, 'Controls'),
+  job('LeaveNotice', buildLeaveNotice, CATALOG_PAGES.sessions, 'Dialogs'),
+  job('SessionActionSheet', buildSessionActionSheet, CATALOG_PAGES.sessions, 'Sheets'),
+  job('EndSessionStatus', buildEndSessionStatus, CATALOG_PAGES.sessions, 'Status'),
+  job('EndSessionDialogs', buildEndSessionDialogs, CATALOG_PAGES.sessions, 'Dialogs'),
+  job('SlowQueryBanner', buildSlowQueryBanner, CATALOG_PAGES.core, 'Feedback'),
   job('DiagnosticsPreview', buildDiagnosticsPreview, CATALOG_PAGES.experience, 'Diagnostics'),
   job('ReviewSheet', buildReviewSheet, CATALOG_PAGES.conversation, 'Review'),
   job('QuietHoursEditor', buildQuietHoursEditor, CATALOG_PAGES.experience, 'Settings'),
@@ -3704,6 +3817,11 @@ const CATALOG = [
   asset('ModelEffortSheet', 'components/sessions/ModelEffortSheet.tsx'),
   asset('ConversationPreviewSheet', 'components/sessions/shared/ConversationPreviewSheet.tsx'),
   asset('RemoteKeyboardControls', 'components/sessions/RemoteKeyboardControls.tsx'),
+  asset('LeaveNotice', 'components/sessions/LeaveNotice.tsx'),
+  asset('SessionActionSheet', 'components/sessions/SessionActionSheet.tsx'),
+  asset('EndSessionStatus', 'components/sessions/EndSessionStatus.tsx'),
+  asset('EndSessionDialogs', 'components/sessions/EndSessionDialogs.tsx'),
+  asset('SlowQueryBanner', 'components/SlowQueryBanner.tsx'),
   asset('DiagnosticsPreview', 'components/feedback/DiagnosticsPreview.tsx'),
   asset('ReviewSheet', 'components/review/ReviewSheet.tsx'),
   asset('QuietHoursEditor', 'components/settings/QuietHoursEditor.tsx'),
