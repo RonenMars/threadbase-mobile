@@ -36,8 +36,8 @@ export function isExternalAlive(
  * Only the two values this build knows survive; anything else reads as absent.
  */
 export function narrowConversationLiveness(raw: {
-  ownership?: unknown
-  processLiveness?: unknown
+  ownership?: string
+  processLiveness?: string
 }): Pick<Conversation, 'ownership' | 'processLiveness'> {
   return {
     ...(raw.ownership === 'external' ? { ownership: 'external' as const } : {}),
@@ -56,7 +56,7 @@ export function conversationTier(
 }
 
 /** A summary's live-outside count; a missing or malformed value is 0. */
-export function liveExternalCountOf(summary: { liveExternalCount?: unknown }): number {
+export function liveExternalCountOf(summary: { liveExternalCount?: number }): number {
   const n = summary.liveExternalCount
   return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : 0
 }
