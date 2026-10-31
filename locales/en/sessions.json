@@ -256,5 +256,13 @@
       "empty": "No sub-agents yet.",
       "openParent": "Open parent session"
     }
+  },
+  "board": {
+    "title": "Board",
+    "open": "Open board",
+    "earlier": "Earlier",
+    "emptyColumn": "Nothing here",
+    "searchPlaceholder": "Search sessions…",
+    "loadMore": "Load more"
   }
 }

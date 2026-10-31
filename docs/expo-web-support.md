@@ -177,6 +177,42 @@ A browser is a stricter client than the native app, and each of these fails with
 - **The streamer must be new enough.** Streamers that do not list `X-Client-Id` in `Access-Control-Allow-Headers` fail every list call with `Failed to fetch`, and ones whose CORS middleware assumed a Node response object refuse the browser's WebSocket upgrade with `500`, which shows as a red server dot and "Disconnected … Showing cached sessions" while REST still works. Both are fixed in tb-streamer's `cors.middleware.ts`; its `docs/troubleshooting.md` → "Browser clients (Expo web)" has the `curl` checks.
 - **An `https://` page can only reach `https://` / `wss://` servers.** A LAN URL like `http://192.168.1.5:8766` is blocked as mixed content before it leaves the browser, so the hosted build needs the streamer behind a tunnel or TLS proxy. `npx expo start --web` serves `http://localhost:8081`, which can reach a plain-HTTP streamer.
 
+## Session board (`/board`)
+
+A web-only kanban view of every session on every displayed server. It is the one route
+that leaves the 768px `WebFrame`: `app/_layout.tsx` skips the frame when the first route
+segment is `board`. On native the route redirects to the hub.
+
+- Columns are derived, not stored: `lib/sessionBoard.ts` maps the tier from
+  `deriveSessionPresentation` to Needs you / Working / Observed / Earlier. Status is
+  server-owned, so there is no drag between columns; actions live on the card's menu.
+- A session that cannot be resumed is a card in Earlier, not a column of its own.
+- Earlier also holds history conversations, minus any a listed session already stands
+  for. History is paged, so a bounded window fetches pages until a loaded conversation
+  falls outside it. A "Load more" control under the cards widens the window one step,
+  and on Any time loads one more page instead of draining everything. Each column is a virtualised list, so only the cards near the viewport are mounted:
+  against a real streamer the 30-day window held 641 cards with about 16 in the DOM.
+- Earlier is bounded by a window (Today by default); a column count reads
+  `visible/total` whenever search or the window hides cards.
+- Entry points: the board button in the hub header (web only) and the URL itself.
+- `BoardColumn` and `BoardCard` use React Native primitives only, so they can be mounted
+  in a native screen later. That has not been tried on a device.
+
+Verified in Chrome against `e2e/mock-server.js` on 2026-10-10: pairing by manual entry,
+four columns filling a 1440px window, horizontal scroll below about 1280px, the header
+wrapping at 570px, a card moving columns on a `session_update` frame without a reload,
+search, the Earlier window, the card menu, opening a session, light theme, and Hebrew
+(columns mirror), with no console errors. Not verified: a real streamer, Safari and
+Firefox, and keyboard-only navigation.
+
+To reproduce:
+
+```bash
+MOCK_PORTS=7071,7072 node e2e/mock-server.js
+npm run web
+# pair http://127.0.0.1:7071 by manual entry, then open http://localhost:8081/board
+```
+
 ## Recommended next step
 
 Session lists and conversation detail now work in a browser (see above).
