@@ -1,6 +1,5 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import tailwindcss from 'tailwindcss'
 import type { StorybookConfig } from '@storybook/react-native-web-vite'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -18,7 +17,6 @@ const config: StorybookConfig = {
         'react-native-css-interop',
       ],
       pluginReactOptions: {
-        jsxImportSource: 'nativewind',
         babel: {
           plugins: ['react-native-worklets/plugin'],
         },
@@ -30,12 +28,6 @@ const config: StorybookConfig = {
     viteConfig.resolve.alias = {
       ...(viteConfig.resolve.alias ?? {}),
       '@': path.resolve(dirname, '..'),
-    }
-    viteConfig.css = {
-      ...(viteConfig.css ?? {}),
-      postcss: {
-        plugins: [tailwindcss(path.resolve(dirname, '../tailwind.config.js'))],
-      },
     }
     return viteConfig
   },
