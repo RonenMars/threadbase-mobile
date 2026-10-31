@@ -62,6 +62,8 @@ const COUNTS = [0, 1, 2, 3, 11, 21, 100] as const;
 type PluralKey =
   | 'conversation:message.tokens'
   | 'conversation:action.showAllLines'
+  | 'conversation:review.summary'
+  | 'sessions:card.messages'
   | 'sessions:hub.activityLive'
   | 'sessions:loading.fetchingN'
   | 'shared:quickAccess.loadMore'
@@ -76,6 +78,7 @@ type PluralKey =
 interface PluralCase {
   key: PluralKey;
   server?: string;
+  diff?: { added: number; removed: number };
   expected: Record<Locale, Record<number, string>>;
 }
 
@@ -573,6 +576,89 @@ const CASES: PluralCase[] = [
       },
     },
   },
+  {
+    key: 'conversation:review.summary',
+    diff: { added: 5, removed: 2 },
+    expected: {
+      en: {
+        0: "0 files · +5 / −2",
+        1: "1 file · +5 / −2",
+        2: "2 files · +5 / −2",
+        3: "3 files · +5 / −2",
+        11: "11 files · +5 / −2",
+        21: "21 files · +5 / −2",
+        100: "100 files · +5 / −2",
+      },
+      he: {
+        0: "0 קבצים · +5 / −2",
+        1: "קובץ אחד · +5 / −2",
+        2: "שני קבצים · +5 / −2",
+        3: "3 קבצים · +5 / −2",
+        11: "11 קבצים · +5 / −2",
+        21: "21 קבצים · +5 / −2",
+        100: "100 קבצים · +5 / −2",
+      },
+      ar: {
+        0: "لا ملفات · +5 / −2",
+        1: "ملف واحد · +5 / −2",
+        2: "ملفان · +5 / −2",
+        3: "3 ملفات · +5 / −2",
+        11: "11 ملفًا · +5 / −2",
+        21: "21 ملفًا · +5 / −2",
+        100: "100 ملف · +5 / −2",
+      },
+      ru: {
+        0: "0 файлов · +5 / −2",
+        1: "1 файл · +5 / −2",
+        2: "2 файла · +5 / −2",
+        3: "3 файла · +5 / −2",
+        11: "11 файлов · +5 / −2",
+        21: "21 файл · +5 / −2",
+        100: "100 файлов · +5 / −2",
+      },
+    },
+  },
+  {
+    key: 'sessions:card.messages',
+    expected: {
+      en: {
+        0: "0 messages",
+        1: "1 message",
+        2: "2 messages",
+        3: "3 messages",
+        11: "11 messages",
+        21: "21 messages",
+        100: "100 messages",
+      },
+      he: {
+        0: "0 הודעות",
+        1: "הודעה אחת",
+        2: "שתי הודעות",
+        3: "3 הודעות",
+        11: "11 הודעות",
+        21: "21 הודעות",
+        100: "100 הודעות",
+      },
+      ar: {
+        0: "لا رسائل",
+        1: "رسالة واحدة",
+        2: "رسالتان",
+        3: "3 رسائل",
+        11: "11 رسالة",
+        21: "21 رسالة",
+        100: "100 رسالة",
+      },
+      ru: {
+        0: "0 сообщений",
+        1: "1 сообщение",
+        2: "2 сообщения",
+        3: "3 сообщения",
+        11: "11 сообщений",
+        21: "21 сообщение",
+        100: "100 сообщений",
+      },
+    },
+  },
 ];
 
 describe('locale plural forms render the exact string at every category boundary', () => {
@@ -591,7 +677,7 @@ describe('locale plural forms render the exact string at every category boundary
       it.each(COUNTS)(testCase.key + ' at count %i', (count) => {
         const rendered = testCase.server
           ? i18n.t(testCase.key, { count, server: testCase.server })
-          : i18n.t(testCase.key, { count });
+          : i18n.t(testCase.key, { count, ...testCase.diff });
         expect(rendered).toBe(testCase.expected[locale][count]);
       });
     }

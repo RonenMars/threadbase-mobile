@@ -238,7 +238,6 @@
     "title": "Sub-agents",
     "titleCount": "Sub-agents ({{n}})",
     "active": "Active",
-    "messages": "{{n}} msgs",
     "empty": "No sub-agents.",
     "unsupported": "This server doesn't support sub-agents yet.",
     "loadFailed": "Couldn't load sub-agents.",

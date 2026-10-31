@@ -113,7 +113,12 @@
   "review": {
     "title": "مراجعة التغييرات",
     "open": "فتح المراجعة",
-    "summary": "{{files}} ملفات · +{{added}} / −{{removed}}",
+    "summary_zero": "لا ملفات · +{{added}} / −{{removed}}",
+    "summary_one": "ملف واحد · +{{added}} / −{{removed}}",
+    "summary_two": "ملفان · +{{added}} / −{{removed}}",
+    "summary_few": "{{count}} ملفات · +{{added}} / −{{removed}}",
+    "summary_many": "{{count}} ملفًا · +{{added}} / −{{removed}}",
+    "summary_other": "{{count}} ملف · +{{added}} / −{{removed}}",
     "incompleteWarning": "مبني من أدوات Edit/Write في المحادثة — قد يكون غير مكتمل مقارنة بـ git status.",
     "oversizedWarning": "تم اختصار بعض الفروقات للأداء. انسخ الحزمة للمراجعة على سطح المكتب.",
     "filterAll": "الكل",
