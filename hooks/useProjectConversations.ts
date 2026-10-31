@@ -58,7 +58,7 @@ export function useProjectConversations(
   return {
     conversations,
     total: query.data?.pages[0]?.total ?? 0,
-    isLoading: query.isPending,
+    isLoading: query.isLoading,
     isFetching: query.isFetching,
     isFetchingNextPage: query.isFetchingNextPage,
     fetchNextPage: query.fetchNextPage,
