@@ -83,6 +83,12 @@
     </array>
     <key>RCTNewArchEnabled</key>
     <true/>
+    <key>TBFirebaseAPIKey</key>
+    <string>$(TB_FIREBASE_API_KEY)</string>
+    <key>TBFirebaseAppID</key>
+    <string>$(TB_FIREBASE_APP_ID)</string>
+    <key>TBFirebaseProjectID</key>
+    <string>$(TB_FIREBASE_PROJECT_ID)</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

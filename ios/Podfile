@@ -23,6 +23,50 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '16.4'
 
 prepare_react_native_project!
 
+# QA builds only: scripts/ship-qa.sh sets TB_QA_APP_DISTRIBUTION for its pod
+# install, and this links Firebase App Distribution into the app as a Swift
+# package. Any other install removes it again, so store builds never carry it,
+# and AppDelegate gates its use on canImport. The version is exact and
+# ios/qa/Package.resolved pins the packages Firebase itself pulls in.
+QA_FIREBASE_PACKAGE_URL = 'https://github.com/firebase/firebase-ios-sdk'
+QA_FIREBASE_PACKAGE_VERSION = '12.19.0'
+QA_FIREBASE_PRODUCT = 'FirebaseAppDistribution-Beta'
+
+def configure_qa_firebase_package(installer)
+  project = installer.aggregate_targets.map(&:user_project).compact.uniq.first
+  target = project.targets.find { |t| t.name == 'Threadbase' }
+  packages = project.root_object.package_references.select do |p|
+    p.is_a?(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference) && p.repositoryURL == QA_FIREBASE_PACKAGE_URL
+  end
+  products = target.package_product_dependencies.select { |d| d.product_name == QA_FIREBASE_PRODUCT }
+  build_files = target.frameworks_build_phase.files.select { |f| products.include?(f.product_ref) }
+
+  if ENV['TB_QA_APP_DISTRIBUTION'] == '1'
+    return if packages.any? && products.any? && build_files.any?
+    package = packages.first || project.new(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference).tap do |p|
+      p.repositoryURL = QA_FIREBASE_PACKAGE_URL
+      p.requirement = { 'kind' => 'exactVersion', 'version' => QA_FIREBASE_PACKAGE_VERSION }
+      project.root_object.package_references << p
+    end
+    product = products.first || project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency).tap do |d|
+      d.package = package
+      d.product_name = QA_FIREBASE_PRODUCT
+      target.package_product_dependencies << d
+    end
+    if build_files.empty?
+      build_file = project.new(Xcodeproj::Project::Object::PBXBuildFile)
+      build_file.product_ref = product
+      target.frameworks_build_phase.files << build_file
+    end
+  else
+    return if packages.empty? && products.empty? && build_files.empty?
+    build_files.each(&:remove_from_project)
+    products.each { |d| target.package_product_dependencies.delete(d); d.remove_from_project }
+    packages.each { |p| project.root_object.package_references.delete(p); p.remove_from_project }
+  end
+  project.save
+end
+
 target 'Threadbase' do
   use_expo_modules!
 
@@ -57,6 +101,7 @@ target 'Threadbase' do
 
   post_install do |installer|
     expo_widgets_post_install(installer)
+    configure_qa_firebase_package(installer)
 
     react_native_post_install(
       installer,
