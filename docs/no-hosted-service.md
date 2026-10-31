@@ -1,25 +1,38 @@
-# There is no hosted Threadbase service
+# Hosted services and the app's claims
 
-**Status as of 2026-09-12: no hosted service exists.** The app talks only to streamers the user installs on their own machines. Nothing routes through a Threadbase-operated server, because there isn't one.
+**Status as of 2026-10-31: one optional hosted service exists, the Threadbase relay.** Otherwise the app talks only to streamers the user installs on their own machines.
 
-A hosted service is considered likely eventually. When it ships it falsifies claims this repo makes as fact, so they are listed here in advance.
+The landing repo's `docs/no-hosted-service.md` is the checklist for this topic, and the two files must change in the same pass or the app and the site will disagree.
+
+## What is true today
+
+| Part | Relay state |
+|---|---|
+| Streamer, stable releases | The `relay` feature flag defaults to off and is described as "in development". |
+| Streamer, `next` channel | On by default since [streamer #1067](https://github.com/RonenMars/threadbase-streamer/pull/1067), which has not reached the streamer's `main`. |
+| App, reaching a paired server | [#1265](https://github.com/RonenMars/threadbase-mobile/pull/1265) shipped it: a pinned server that reports a route in sealed `GET /api/info` gets the relay as its last address, after the user's own addresses. The per-server switch in the server's address section is on by default. |
+| App, pairing | Not shipped. [#1269](https://github.com/RonenMars/threadbase-mobile/pull/1269) is open and held until the default below is decided. |
+
+So a server with the flag off never touches the relay, and a server with it on uses the relay when its own addresses cannot be reached, unless the user turns the switch off.
+Traffic through the relay stays end-to-end encrypted, and the relay cannot read it. It can see connection metadata, and the landing doc lists which.
 
 ## What breaks in this repo
 
+These claims must change, together with the site's, before #1067 reaches the streamer's `main`:
+
 | Where | Claim |
 |---|---|
-| `docs/FEATURES.md` | "No hosted relay — session traffic goes directly to your own streamers; nothing routes through a Threadbase-run server." |
-| `README.md`, privacy section | "Threadbase is a thin client for self-hosted streamers, with no product analytics, tracking, or behavioral telemetry." |
-| `README.md`, privacy section | "Session content, prompts, provider metadata, and status events go only to the streamer URL you configure." |
-
-The landing repo carries more of this than we do — see `docs/no-hosted-service.md` there for the site copy, the privacy-policy sub-processor list, and the marketing seed. The two must change in the same pass or the app and the site will disagree.
+| `docs/FEATURES.md` | "Self-hosted daemon", and the `[operator-enabled]` tag on "Threadbase relay". |
+| `README.md`, privacy section | "Session content, prompts, provider metadata, and status events go only to the streamer you configure", and the relay clause after it. |
+| `CLAUDE.md` and `AGENTS.md`, "Product claims" | "stays off in stable streamer releases". |
+| `docs/privacy-and-verifiable-builds.md` | "no Threadbase-run server in the path unless that streamer has the optional relay on". |
 
 ## Adjacent consequences
 
 - **A new Sentry project starts unprotected.** The `threadbase` project has "Prevent Storing of IP Addresses" on. That setting is per-project and only affects events ingested after it is enabled, so a hosted backend reporting into a new project needs it turned on at creation.
-- **Anonymous Diagnostics §17 becomes live.** The spec's web/IP clause — that Sentry must not use a visitor's IP as a substitute identity where there is no per-install ID — is currently theoretical because there is no web deployment. A hosted service likely produces one, and §17 then needs actual verification rather than a note.
-- **The privacy model gains a party.** Today the only things that receive data are the user's own streamers, Expo, Apple, and Sentry. A hosted backend is a new recipient and belongs in the sub-processor list on the site before it serves a single request.
+- **Anonymous Diagnostics §17 applies to any web deployment.** The spec's web/IP clause says Sentry must not use a visitor's IP as a substitute identity where there is no per-install ID, and it needs actual verification once a web deployment exists.
+- **The privacy model has a new party.** The relay is hosted on Fly.io, which is on the site's sub-processor list. Any further hosted backend belongs on that list before it serves a single request.
 
 ## The rule
 
-Do not hedge these claims ahead of time. They are true now, and pre-emptive softening ("we don't currently…") costs more credibility than it saves. Change them when the thing exists, together, in one deliberate pass.
+State what is true for both kinds of user, the one whose server has the relay off and the one whose server has it on. Change these claims when the facts change, together, in one deliberate pass.

@@ -8,6 +8,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [shipped] Live working indicator — the chat view shows a working scanner for every live turn, on Claude Code as well as Codex.
 - [shipped] Real-viewport terminal — the terminal decodes at the session's actual viewport height, so a session resized from an attached terminal still renders correctly.
 - [shipped] Remote prompt input — send prompts, slash commands, and interrupts to a live session from the phone.
+- [shipped] Session board — switch the Home list to columns of session states, answer a session's pending question from its card, and open its sub-agents.
 - [shipped] Remote keyboard controls — send Esc, Tab, Shift+Tab, and arrow-key navigation to a live session, with a hold-to-confirm Enter.
 - [shipped] Resume a conversation into a live session — continue a past conversation live, with take-over/fork/force handling if it's already busy elsewhere.
 - [partial] Fork a session — clone a conversation into a new session; Codex only, not available for Claude Code.
@@ -46,7 +47,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 
 ## Streamer
 
-- [shipped] Self-hosted daemon — runs on your own machine and streams sessions to the phone; no Threadbase-hosted relay in between.
+- [shipped] Self-hosted daemon — runs on your own machine and streams sessions to the phone, with no Threadbase-run server in between unless the optional relay is on.
 - [shipped] Automatic session discovery — finds Claude Code and Codex sessions on the machine, including ones started outside the app.
 - [shipped] Named CLI (`tb-streamer`) — serve, pair, identity, device management, cache maintenance, and update commands.
 - [shipped] Install via npm or Homebrew — runs as a background service on macOS, Linux, or Windows.
@@ -63,7 +64,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 ## Security & privacy
 
 - [shipped] End-to-end encryption — a Noise-protocol handshake (X25519 + ChaCha20-Poly1305) secures phone-to-streamer traffic by default, with a downgrade lock once paired.
-- [shipped] No hosted relay — session traffic goes directly to your own streamers; nothing routes through a Threadbase-run server.
+- [operator-enabled] Threadbase relay — stable streamer releases keep it off, and session traffic then goes directly to your own streamers. With the streamer's `relay` flag on, the app uses the relay when your own addresses cannot be reached, end-to-end encrypted, and a per-server switch turns it off.
 - [shipped] Per-device credentials and capability scopes — each paired device gets its own token limited to specific permissions, viewable and revocable from the phone.
 - [shipped] Out-of-band identity verification — compare a server's key fingerprint to confirm you're pairing with the right machine.
 - [shipped] Secure credential storage — API keys and encryption keys are stored in the iOS Keychain or Android Keystore.
