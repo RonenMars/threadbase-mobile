@@ -16,8 +16,8 @@ Commit that introduced this document: [`6f82eb3b`](https://github.com/RonenMars/
 - **What is sent is scrubbed.**
   Every event passes through an allowlist sanitizer (`services/sanitize.ts`), and prompts, terminal output, source code, credentials, server URLs, hostnames and file paths are never sent.
   The full list is in [`sentry-setup.md`](./sentry-setup.md#what-is-and-isnt-sent).
-- **Session content never leaves the user's own machines.**
-  There is no Threadbase-run server in the path (see [`no-hosted-service.md`](./no-hosted-service.md)).
+- **Threadbase cannot read session content.**
+  There is no Threadbase-run server in the path unless that streamer has the optional relay on (see [`no-hosted-service.md`](./no-hosted-service.md)).
 
 ## The one switch that removes the choice, and why it cannot ship
 
