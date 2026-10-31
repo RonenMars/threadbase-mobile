@@ -44,6 +44,39 @@ npx serve dist -p 4173           # serves ./dist at http://localhost:4173
 
 `npx serve` is a one-off dev dependency install on first run; nothing to configure.
 
+## Smoke tests (Playwright)
+
+A six-test chromium suite in `e2e/web/` runs against the static export and `e2e/mock-server.js`:
+
+```bash
+npm run web:export     # bundles into ./dist; the tests read it, so re-run after app changes
+npm run test:e2e:web   # starts the mock server (7071) and `expo serve dist` (4173), then runs the tests
+```
+
+First run needs `npm run web:e2e:install`.
+
+Options, all Windows-safe (extra Playwright flags go after `--`, e.g. `npm run test:e2e:web -- -g "rejected key"`):
+
+| Script | Does |
+|---|---|
+| `test:e2e:web:headed` | visible browser window |
+| `test:e2e:web:ui` | Playwright UI mode |
+| `test:e2e:web:debug` | inspector, step through |
+| `test:e2e:web:trace` | trace on for every test |
+| `test:e2e:web:repeat` | each test 5 times (flake hunt) |
+| `test:e2e:web:report` | open the last HTML report (CI-style runs only) |
+
+Env vars, set in your own shell: `PW_SLOWMO=500` slows each action by that many ms; `CI=1` switches to CI behaviour (retry once, HTML report, no server reuse).
+
+It covers: boot to onboarding, manual pairing through the UI and a reload, a rejected key, and (with a seeded server) the hub, a conversation and a session.
+Tests that need a paired server seed `threadbase_servers` and `threadbase_api_key_srv_smoke` through `storageState`, because `secure-store.web.ts` maps straight to `localStorage`.
+
+Limits:
+- `expo serve` has no SPA fallback, so a deep route 404s on a direct load. Tests enter at `/` and reach routes by clicking.
+- The mock server speaks no Noise, so only an unpinned server (no `serverPublicKey`) is covered. Sealed pairing is still unverified in a browser.
+- QR pairing, biometrics, dictation, push, bottom sheets, the terminal and `/board` are not covered.
+- CI runs it as the non-required `Web E2E` workflow.
+
 ## Hosted build (Vercel)
 
 The same static export is served at https://app.threadbase.sh (and still at https://threadbase.rbv1000.win) from the Vercel project `threadbase-web` (team `ronen-mars-projects`), which is linked to this repo.

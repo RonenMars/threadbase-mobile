@@ -113,6 +113,18 @@ This:
 3. Runs the configured flows through `node e2e/run-maestro.js test ...`
 4. Kills the mock server on exit
 
+## Web smoke tests (Playwright)
+
+Separate from the Maestro suite: `e2e/web/` tests the Expo Web app in chromium.
+
+```bash
+npm run web:export
+npm run test:e2e:web
+npm run test:e2e:web:headed   # also :ui, :debug, :trace, :repeat, :report
+```
+
+See [`docs/expo-web-support.md`](../docs/expo-web-support.md) → "Smoke tests (Playwright)".
+
 ## XCTest teardown crash guard
 
 iOS 26 simulator runs can crash SpringBoard, SafariViewService, Threadbase, or another
