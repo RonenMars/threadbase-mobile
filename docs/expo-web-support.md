@@ -48,9 +48,7 @@ npx serve dist -p 4173           # serves ./dist at http://localhost:4173
 
 The same static export is served at https://app.threadbase.sh (and still at https://threadbase.rbv1000.win) from the Vercel project `threadbase-web` (team `ronen-mars-projects`), which is linked to this repo.
 Build settings live in `vercel.json`: `npx expo export --platform web` into `dist/`, with every path rewritten to `index.html` so Expo Router deep links survive a reload.
-Every deployment, the custom domain included, sits behind HTTP Basic Auth from `middleware.js` (Vercel Routing Middleware, never bundled by Metro).
-The credentials are the `BASIC_AUTH_USER` and `BASIC_AUTH_PASSWORD` project environment variables; if either is unset the site answers 401, never open.
-Vercel's own password protection is a Pro feature, which is why this is middleware.
+The static web client is publicly accessible without a browser username/password prompt.
 `app.threadbase.sh` needs no DNS record of its own: the `threadbase.sh` zone uses Vercel nameservers and its wildcard record already points at Vercel.
 `threadbase.rbv1000.win` is an unproxied `A threadbase → 76.76.21.21` record in the Cloudflare `rbv1000.win` zone.
 Vercel builds from git, so the gitignored `.env*` files never reach it; any `EXPO_PUBLIC_*` value the hosted bundle needs must be set in the project's environment variables — and it is public, since it is inlined into the bundle.
@@ -65,7 +63,7 @@ vercel link --yes --project threadbase-web --scope ronen-mars-projects   # write
 vercel deploy --prod --yes --scope ronen-mars-projects
 ```
 
-Then check that `https://app.threadbase.sh` answers `401` with `WWW-Authenticate: Basic realm="Threadbase"`.
+Then check that `https://app.threadbase.sh` answers `200` without a `WWW-Authenticate` header.
 
 ## Status: early spike, not full parity
 
