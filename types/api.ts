@@ -244,6 +244,10 @@ export interface Conversation {
   unavailableReason?: UnavailableReason
   /** Only populated by `/api/search`; absent on list and detail responses. */
   matches?: SearchMatch[]
+  /** `external` when a CLI outside Threadbase owns this conversation's process. Additive; older streamers omit it. */
+  ownership?: 'external'
+  /** `alive` when that outside process is running now. Absent means "not running outside" — there is no "gone". */
+  processLiveness?: 'alive'
   isImportedFromClaude?: boolean
   isImportedFromCodex?: boolean
   isImportedFromCursor?: boolean

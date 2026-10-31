@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { MultiSession } from '../../../types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
+import { liveExternalCountOf } from '@/lib/externalSession'
 import type { SortBy, SortOrder } from '../../../types/ui'
 
 export interface ProjectGroup {
@@ -16,6 +17,8 @@ export interface ProjectGroup {
   /** Conversation count from /api/projects/summary. The rows themselves are
    *  fetched by the card when it opens, so a collapsed group costs nothing. */
   conversationCount: number
+  /** Conversations in this project running outside Threadbase, from the summary. */
+  liveExternalCount: number
   latestActivityMs: number
   earliestStartMs: number
 }
@@ -50,6 +53,7 @@ export function useProjectGroups(
           serverId: session.serverId,
           sessions: [],
           conversationCount: 0,
+          liveExternalCount: 0,
           latestActivityMs: 0,
           earliestStartMs: Infinity,
         })
@@ -90,6 +94,7 @@ export function useProjectGroups(
             serverId: summary.serverId,
             sessions: [],
             conversationCount: 0,
+            liveExternalCount: 0,
             latestActivityMs: 0,
             earliestStartMs: Infinity,
           }
@@ -99,6 +104,7 @@ export function useProjectGroups(
         })()
 
       group.conversationCount += summary.conversationCount
+      group.liveExternalCount += liveExternalCountOf(summary)
       const lastActivityMs = toMs(summary.lastActivity)
       if (lastActivityMs > group.latestActivityMs) {
         group.latestActivityMs = lastActivityMs
