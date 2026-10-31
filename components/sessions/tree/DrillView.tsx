@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { pathSegments } from '@/components/sessions/shared/pathTail'
+import { conversationTier } from '@/lib/externalSession'
 import { conversationRowTitle, sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { SectionEyebrow } from '@/components/sessions/now/SectionEyebrow'
 import { DrillFolderRow } from './DrillFolderRow'
@@ -115,6 +116,7 @@ export function DrillView({ node, serverId, onBack, topInset = 0, onScroll }: Pr
         serverId: c.serverId,
         serverLabel: c.serverLabel,
         provider: c.provider,
+        tier: conversationTier(c),
         onPress: () => {
           useNavLockStore.getState().lock()
           router.push(`/conversation/${c.id}?server=${c.serverId}`)

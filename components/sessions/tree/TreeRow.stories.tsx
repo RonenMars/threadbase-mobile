@@ -9,6 +9,7 @@ const node: TreeNode = {
   children: new Map(),
   sessions: [],
   conversationCount: 4,
+  liveExternalCount: 0,
   conversationActivityMs: Date.now(),
   totalCount: 4,
   directCount: 4,
