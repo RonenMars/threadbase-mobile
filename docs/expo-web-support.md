@@ -53,7 +53,20 @@ npm run web:export     # bundles into ./dist; the tests read it, so re-run after
 npm run test:e2e:web   # starts the mock server (7071) and `expo serve dist` (4173), then runs the tests
 ```
 
-First run needs `npx playwright install chromium`.
+First run needs `npm run web:e2e:install`.
+
+Options, all Windows-safe (extra Playwright flags go after `--`, e.g. `npm run test:e2e:web -- -g "rejected key"`):
+
+| Script | Does |
+|---|---|
+| `test:e2e:web:headed` | visible browser window |
+| `test:e2e:web:ui` | Playwright UI mode |
+| `test:e2e:web:debug` | inspector, step through |
+| `test:e2e:web:trace` | trace on for every test |
+| `test:e2e:web:repeat` | each test 5 times (flake hunt) |
+| `test:e2e:web:report` | open the last HTML report (CI-style runs only) |
+
+Env vars, set in your own shell: `PW_SLOWMO=500` slows each action by that many ms; `CI=1` switches to CI behaviour (retry once, HTML report, no server reuse).
 
 It covers: boot to onboarding, manual pairing through the UI and a reload, a rejected key, and (with a seeded server) the hub, a conversation and a session.
 Tests that need a paired server seed `threadbase_servers` and `threadbase_api_key_srv_smoke` through `storageState`, because `secure-store.web.ts` maps straight to `localStorage`.

@@ -120,6 +120,7 @@ Separate from the Maestro suite: `e2e/web/` tests the Expo Web app in chromium.
 ```bash
 npm run web:export
 npm run test:e2e:web
+npm run test:e2e:web:headed   # also :ui, :debug, :trace, :repeat, :report
 ```
 
 See [`docs/expo-web-support.md`](../docs/expo-web-support.md) → "Smoke tests (Playwright)".

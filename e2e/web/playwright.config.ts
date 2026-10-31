@@ -15,6 +15,7 @@ export default defineConfig({
     locale: 'en-US',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    launchOptions: { slowMo: Number(process.env.PW_SLOWMO) || 0 },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
