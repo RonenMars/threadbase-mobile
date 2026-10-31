@@ -136,4 +136,15 @@ describe('SubagentBoard', () => {
     expect(r.queryByTestId('subagent-board-active-b')).toBeNull()
     expect(r.getByText('Explore')).toBeTruthy()
   })
+
+  it('opens the sub-agent when its type tag is tapped', async () => {
+    const push = jest.fn()
+    ;(useRouter as jest.Mock).mockReturnValue({ push, back: jest.fn(), replace: jest.fn() })
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentType: 'Explore' })]))
+    const r = await renderBoard()
+    await expand(r, 'p1')
+    await waitFor(() => expect(r.getByText('Explore')).toBeTruthy())
+    await fireEvent.press(r.getByText('Explore'))
+    expect(push).toHaveBeenLastCalledWith('/conversation/a?server=s1')
+  })
 })
