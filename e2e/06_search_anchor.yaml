@@ -37,6 +37,16 @@ appId: com.ronenmars.threadbase
 
 - inputText: "idempotency"
 
+# The fixture conversation is old, so the Now list files it under the
+# EARLIER day bucket, which starts collapsed.
+- runFlow:
+    when:
+      notVisible:
+        id: "conversation-row-conv-search-anchor"
+    commands:
+      - tapOn:
+          id: "day-bucket-earlier"
+
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-search-anchor"
