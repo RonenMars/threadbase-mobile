@@ -1,7 +1,13 @@
 {
   "search": {
     "placeholder": "חפש סשנים ושיחות…",
-    "accessibilityLabel": "חיפוש"
+    "accessibilityLabel": "חיפוש",
+    "conversationsResults_one": "שיחות · תוצאה אחת",
+    "conversationsResults_two": "שיחות · שתי תוצאות",
+    "conversationsResults_other": "שיחות · {{count}} תוצאות",
+    "sessionsResults_one": "סשנים · תוצאה אחת",
+    "sessionsResults_two": "סשנים · שתי תוצאות",
+    "sessionsResults_other": "סשנים · {{count}} תוצאות"
   },
   "nameSession": {
     "createTitle": "לתת שם לסשן?",
