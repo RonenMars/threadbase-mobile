@@ -1,15 +1,18 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
+import { SubagentRow } from '@/components/sessions/hub/SubagentRow'
+import { useOpenIds } from '@/components/sessions/base/useOpenIds'
+import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
+import { makeStyles as makeCardStyles } from '@/components/sessions/base/CollapsibleCard.styles'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useAllSubagents, type BoardSubagent } from '@/hooks/useAllSubagents'
 import { conversationHref } from '@/lib/conversationHref'
-import { groupSubagentsByParent, resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
-import { getProviderLabel } from '@/components/sessions/providerLabel'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel } from '@/lib/subagents'
 
 interface Props {
   serverIds: readonly string[]
@@ -28,6 +31,7 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
   const [onlyActive, setOnlyActive] = useState(false)
+  const { openIds, toggleOpen } = useOpenIds()
   const [refreshing, setRefreshing] = useState(false)
   const { items, unsupportedServerIds, isLoading, isError, refetch } = useAllSubagents(serverIds)
 
@@ -74,47 +78,15 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
         g.items.find((i) => i.parentTitle)?.parentTitle ??
         t('subagents.board.parentFallback', { id: g.parentId.slice(0, 8) })
       return (
-        <View key={g.parentId} style={styles.group} testID={`subagent-group-${g.parentId}`}>
-          <Pressable
-            style={styles.groupHeader}
-            onPress={() => router.push(conversationHref(g.parentId, serverId))}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
-            testID={`subagent-parent-${g.parentId}`}
-          >
-            <View style={styles.groupTitleCol}>
-              <Text style={styles.groupTitle} numberOfLines={1}>{title}</Text>
-              {g.activeCount > 0 ? (
-                <Text style={styles.meta}>{t('subagents.board.parentActive', { n: g.activeCount })}</Text>
-              ) : null}
-            </View>
-            <CaretRight size={16} color={theme.text.accent} />
-          </Pressable>
-          {g.items.map((c) => {
-            const type = resolveSubagentType(c)
-            return (
-              <Pressable
-                key={c.id}
-                style={styles.row}
-                onPress={() => router.push(conversationHref(c.id, serverByRowId.get(c.id) ?? serverId))}
-                testID={`subagent-board-row-${c.id}`}
-              >
-                <View style={styles.rowTop}>
-                  {c.subagentActive === true ? (
-                    <View style={styles.activeDot} accessibilityLabel={t('subagents.active')} testID={`subagent-board-active-${c.id}`} />
-                  ) : null}
-                  <Text style={styles.label} numberOfLines={1}>{resolveSubagentLabel(c)}</Text>
-                  {type ? <Text style={styles.tag}>{type}</Text> : null}
-                </View>
-                <Text style={styles.meta} numberOfLines={1}>
-                  {[getProviderLabel(c.provider, t), t('subagents.messages', { n: c.messageCount }), formatListTime(c.lastActivity)]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Text>
-              </Pressable>
-            )
-          })}
-        </View>
+        <SubagentGroupCard
+          key={g.parentId}
+          group={g}
+          title={title}
+          isOpen={openIds.has(g.parentId)}
+          onToggle={toggleOpen}
+          onOpenParent={() => router.push(conversationHref(g.parentId, serverId))}
+          serverIdFor={(id) => serverByRowId.get(id) ?? serverId}
+        />
       )
     })
 
@@ -136,6 +108,52 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
       </View>
       {body}
     </ScrollView>
+  )
+}
+
+interface GroupCardProps {
+  group: SubagentGroup
+  title: string
+  isOpen: boolean
+  onToggle: (parentId: string) => void
+  onOpenParent: () => void
+  serverIdFor: (rowId: string) => string
+}
+
+/** One parent session as a collapsible card, laid out like a project card on the Projects tab. */
+function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, serverIdFor }: GroupCardProps) {
+  const { t } = useTranslation('sessions')
+  const { styles: card, theme } = useThemedStyles(makeCardStyles)
+  const styles = useMemo(() => makeStyles(theme), [theme])
+  return (
+    <View style={styles.cardWrap} testID={`subagent-group-${g.parentId}`}>
+      <CollapsibleCard
+        id={g.parentId}
+        title={title}
+        activityLine={g.activeCount > 0 ? t('subagents.board.parentActive', { n: g.activeCount }) : undefined}
+        count={g.items.length}
+        railColor={g.activeCount > 0 ? theme.text.accent : null}
+        isOpen={isOpen}
+        onToggle={onToggle}
+        accessibilityLabel={title}
+        headerTestID={`subagent-group-toggle-${g.parentId}`}
+      >
+        {g.items.map((c) => (
+          <SubagentRow key={c.id} conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }} />
+        ))}
+        <TouchableOpacity
+          onPress={onOpenParent}
+          activeOpacity={0.6}
+          style={card.seeAllRow}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
+          testID={`subagent-parent-${g.parentId}`}
+        >
+          <Text style={card.seeAllText}>{t('subagents.board.openParent')}</Text>
+          <CaretRight size={16} color={theme.text.accent} />
+        </TouchableOpacity>
+      </CollapsibleCard>
+    </View>
   )
 }
 
@@ -179,11 +197,8 @@ function makeStyles(theme: Theme) {
     chipSelected: { backgroundColor: `${theme.text.accent}24` },
     chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     chipTextSelected: { color: theme.text.accent },
-    group: { marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: 12, backgroundColor: theme.bg.card, overflow: 'hidden' },
-    groupHeader: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingStart: spacing.md, paddingEnd: spacing.sm },
-    groupTitleCol: { flex: 1 },
-    groupTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
-    row: { paddingVertical: spacing.sm, paddingStart: spacing.md, paddingEnd: spacing.md, gap: 2 },
+    cardWrap: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
+    row: { paddingVertical: spacing.sm, gap: 2 },
     rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
     label: { flexShrink: 1, color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
     tag: { color: theme.text.secondary, fontSize: font.xs - 1, backgroundColor: theme.bg.primary, borderRadius: 4, paddingHorizontal: 5, overflow: 'hidden' },
