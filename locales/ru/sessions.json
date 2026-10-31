@@ -279,7 +279,6 @@
   },
   "board": {
     "title": "Доска",
-    "open": "Открыть доску",
     "earlier": "Ранее",
     "emptyColumn": "Здесь пусто",
     "searchPlaceholder": "Поиск сессий…",

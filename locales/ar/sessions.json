@@ -299,7 +299,6 @@
   },
   "board": {
     "title": "اللوحة",
-    "open": "فتح اللوحة",
     "earlier": "سابقًا",
     "emptyColumn": "لا شيء هنا",
     "searchPlaceholder": "البحث في الجلسات…",

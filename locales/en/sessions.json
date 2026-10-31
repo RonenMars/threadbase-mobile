@@ -259,7 +259,6 @@
   },
   "board": {
     "title": "Board",
-    "open": "Open board",
     "earlier": "Earlier",
     "emptyColumn": "Nothing here",
     "searchPlaceholder": "Search sessions…",
