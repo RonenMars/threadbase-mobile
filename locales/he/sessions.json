@@ -266,13 +266,6 @@
       "openParent": "פתיחת השיחה הראשית"
     }
   },
-  "board": {
-    "title": "לוח",
-    "earlier": "מוקדם יותר",
-    "emptyColumn": "אין כאן כלום",
-    "searchPlaceholder": "חיפוש סשנים…",
-    "loadMore": "טעינת עוד"
-  },
   "boardTab": {
     "earlier": "מוקדם יותר",
     "emptyColumn": "אין כאן כלום",
