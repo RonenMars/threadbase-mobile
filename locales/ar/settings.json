@@ -251,7 +251,7 @@
     "manifestTitle": "ملخص التصدير",
     "manifestHost": "المضيف: {{host}}",
     "manifestVersion": "الستريمر: {{version}}",
-    "manifestProjects": "المشاريع: {{count}}",
+    "manifestProjects": "المشاريع: {{total}}",
     "manifestCreated": "أُنشئ: {{at}}",
     "pasteHint": "الصق أرشيف JSON أدناه، ثم شغّله تجريبيًا قبل التطبيق.",
     "pastePlaceholder": "{ \"manifest\": …, \"projects\": […] }",

@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
-  Platform,
+  useWindowDimensions,
   } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -42,7 +42,7 @@ import { ListBottomScrim } from '@/components/sessions/shared/ListBottomScrim'
 import { useHideOnScrollDown } from '@/hooks/useHideOnScrollDown'
 import { NoServersWelcome } from '@/components/servers/NoServersWelcome'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
-import { MagnifyingGlass, SlidersHorizontal, Gear, Kanban } from 'phosphor-react-native'
+import { MagnifyingGlass, SlidersHorizontal, Gear, Kanban, ListBullets } from 'phosphor-react-native'
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
@@ -61,6 +61,7 @@ import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
 import { InlineError } from '@/components/alerts/InlineError'
 import { useClaimInline } from '@/hooks/useClaimInline'
 import { SubagentBoard } from '@/components/sessions/SubagentBoard'
+import { SessionBoard } from '@/components/sessions/board/SessionBoard'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { serverCause } from '@/types/alerts'
 import { PROVIDER_COLOR } from '@/constants/providers'
@@ -68,7 +69,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
-import { DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
+import { ALL_TIERS, DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
 
 
 // Stable empty reference so a memo/child does not see a fresh [] each render
@@ -78,6 +79,8 @@ const EMPTY_CONVERSATIONS: MultiConversation[] = []
 // First-frame guess for the chrome height below the status bar (brand row plus
 // the segmented control); onLayout replaces it before anything scrolls.
 const CHROME_ESTIMATE = 120
+/** Below this the five header controls need the title's room; the app icon stays. */
+const HEADER_TITLE_MIN_WIDTH = 330
 
 
 export default function ProjectsHub() {
@@ -89,7 +92,12 @@ export default function ProjectsHub() {
   const { direction } = useAppDirection()
   const searchStyles = makeSearchStyles(theme, direction)
   const [chromeHeight, setChromeHeight] = useState(insets.top + CHROME_ESTIMATE)
-  const [showSubagents, setShowSubagents] = useState(false)
+  const [hubTab, setHubTab] = useState<'layout' | 'subagents'>('layout')
+  const showSubagents = hubTab === 'subagents'
+  const showBoard = useSettingsStore((s) => s.boardOpen)
+  const setBoardOpen = useSettingsStore((s) => s.setBoardOpen)
+  const { width: screenWidth } = useWindowDimensions()
+  const onLayoutTab = hubTab === 'layout'
   const router = useRouter()
   const sessionsLayout = useSettingsStore((s) => s.sessionsLayout)
   const setSessionsLayout = useSettingsStore((s) => s.setSessionsLayout)
@@ -159,10 +167,12 @@ export default function ProjectsHub() {
   const [filters, setFilters] = useState<ListFilters>(DEFAULT_FILTERS)
   // The grouped views sort by recency when the Now list is in state order.
   const groupedSortBy: SortBy = sortBy === 'state' ? 'lastActivity' : sortBy
+  // The board always shows every state, so a tier filter left by the list does not count there.
+  const sheetFilters = useMemo(() => (showBoard ? { ...filters, tiers: ALL_TIERS } : filters), [showBoard, filters])
   const isSheetActive =
     sortBy !== 'state' ||
     sortOrder !== 'desc' ||
-    !isDefaultFilters(filters) ||
+    !isDefaultFilters(sheetFilters) ||
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
   const [classicConvSearch, setClassicConvSearch] = useState('')
@@ -236,7 +246,7 @@ export default function ProjectsHub() {
   // ADR 0001 step 2 complete: every classic surface that shows conversations now
   // reads the infinite `useConversations`, so the eager full-drain is gone.
   // See docs/adr/0001-hub-data-layer-lazy-pagination.md.
-  const needsClassicConversations = !isGroupedLayout
+  const needsClassicConversations = !isGroupedLayout || showBoard
   // One agent selected narrows the paged query server-side; any other mix is
   // filtered here, where the rows already are.
   const convPages = useConversations(
@@ -333,7 +343,7 @@ export default function ProjectsHub() {
     return [...liveSessions, ...idleSessions, ...convs]
   }, [visibleSessions, paginatedConversations, debouncedConvSearch, convSearchData])
 
-  const filteredItems = useMemo(() => applyListFilters(mergedClassicItems, filters), [mergedClassicItems, filters])
+  const filteredItems = useMemo(() => applyListFilters(mergedClassicItems, sheetFilters), [mergedClassicItems, sheetFilters])
   const tierCounts = useMemo(() => countByTier(mergedClassicItems), [mergedClassicItems])
   const providerCounts = useMemo(() => countByProvider(mergedClassicItems), [mergedClassicItems])
   const resultCount = filteredItems.length
@@ -416,6 +426,7 @@ export default function ProjectsHub() {
   // Floating chrome: brand row, Now | Projects, and the search field. Rows
   // scroll under it. The banners below may scroll away only because this block
   // will also carry the persistent status pill from the alert redesign.
+  const boardToggleLabel = showBoard ? t('boardTab.showList') : t('boardTab.showBoard')
   const chrome = (
     <View
       style={[styles.chrome, { paddingTop: insets.top }]}
@@ -426,7 +437,7 @@ export default function ProjectsHub() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
-          <Text style={styles.headerTitle}>{t('shared:app.title')}</Text>
+          {screenWidth >= HEADER_TITLE_MIN_WIDTH ? <Text style={styles.headerTitle}>{t('shared:app.title')}</Text> : null}
         </View>
 
         {/* Right: search, filter, settings */}
@@ -457,17 +468,17 @@ export default function ProjectsHub() {
             <SlidersHorizontal size={20} color={isSheetActive ? theme.text.accent : theme.text.secondary} />
             {isSheetActive ? <View style={styles.activeDot} /> : null}
           </Pressable>
-          {Platform.OS === 'web' ? (
-            <Pressable
-              testID="hub-board-btn"
-              onPress={() => router.push('/board')}
-              hitSlop={8}
-              style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
-              accessibilityLabel={t('board.open')}
-            >
-              <Kanban size={20} color={theme.text.secondary} />
-            </Pressable>
-          ) : null}
+          <Pressable
+            onPress={() => { revealFab(); setBoardOpen(!showBoard) }}
+            hitSlop={8}
+            style={({ pressed }) => [styles.headerButton, { opacity: pressed ? 0.5 : 1 }]}
+            accessibilityLabel={boardToggleLabel}
+            testID="header-board-btn"
+          >
+            {showBoard
+              ? <ListBullets size={20} color={theme.text.secondary} />
+              : <Kanban size={20} color={theme.text.secondary} />}
+          </Pressable>
           <Pressable
             testID="hub-settings-btn"
             onPress={() => router.push('/settings')}
@@ -481,35 +492,37 @@ export default function ProjectsHub() {
       </View>
 
       {/* Now | Projects | Sub-agents */}
-      <View style={styles.segmentRow} accessibilityRole="tablist">
-        <TouchableOpacity
-          style={[styles.segmentTab, !showSubagents && sessionsLayout === 'now' && styles.segmentTabActive]}
-          onPress={() => { revealFab(); setShowSubagents(false); setSessionsLayout('now') }}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: !showSubagents && sessionsLayout === 'now' }}
-          testID="layout-now"
-        >
-          <Text style={[styles.segmentText, !showSubagents && sessionsLayout === 'now' && styles.segmentTextActive]}>{t('layout.now')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segmentTab, !showSubagents && sessionsLayout === 'projects' && styles.segmentTabActive]}
-          onPress={() => { revealFab(); setShowSubagents(false); setSessionsLayout('projects') }}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: !showSubagents && sessionsLayout === 'projects' }}
-          testID="layout-projects"
-        >
-          <Text style={[styles.segmentText, !showSubagents && sessionsLayout === 'projects' && styles.segmentTextActive]}>{t('layout.projects')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.segmentTab, showSubagents && styles.segmentTabActive]}
-          onPress={() => { revealFab(); setShowSubagents(true) }}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: showSubagents }}
-          testID="layout-subagents"
-        >
-          <Text style={[styles.segmentText, showSubagents && styles.segmentTextActive]}>{t('layout.subagents')}</Text>
-        </TouchableOpacity>
-      </View>
+      {showBoard ? null : (
+        <View style={styles.segmentRow} accessibilityRole="tablist">
+          <TouchableOpacity
+            style={[styles.segmentTab, onLayoutTab && sessionsLayout === 'now' && styles.segmentTabActive]}
+            onPress={() => { revealFab(); setHubTab('layout'); setSessionsLayout('now') }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: onLayoutTab && sessionsLayout === 'now' }}
+            testID="layout-now"
+          >
+            <Text style={[styles.segmentText, onLayoutTab && sessionsLayout === 'now' && styles.segmentTextActive]}>{t('layout.now')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segmentTab, onLayoutTab && sessionsLayout === 'projects' && styles.segmentTabActive]}
+            onPress={() => { revealFab(); setHubTab('layout'); setSessionsLayout('projects') }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: onLayoutTab && sessionsLayout === 'projects' }}
+            testID="layout-projects"
+          >
+            <Text style={[styles.segmentText, onLayoutTab && sessionsLayout === 'projects' && styles.segmentTextActive]}>{t('layout.projects')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.segmentTab, showSubagents && styles.segmentTabActive]}
+            onPress={() => { revealFab(); setHubTab('subagents') }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: showSubagents }}
+            testID="layout-subagents"
+          >
+            <Text style={[styles.segmentText, showSubagents && styles.segmentTextActive]}>{t('layout.subagents')}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {searchOpen ? (
         <View style={searchStyles.searchBar}>
@@ -571,7 +584,7 @@ export default function ProjectsHub() {
       {serverBanners}
 
       {/* Nothing needs you → the presets have nothing to offer; keep them while the preset is on so it can be undone. */}
-      {sessionsLayout === 'now' && (tierCounts.needsYou > 0 || isNeedsMePreset(filters)) ? (
+      {!showBoard && sessionsLayout === 'now' && (tierCounts.needsYou > 0 || isNeedsMePreset(filters)) ? (
         <View style={styles.presets}>
           <FilterPresets filters={filters} onChange={setFilters} />
         </View>
@@ -589,6 +602,20 @@ export default function ProjectsHub() {
         <View style={[styles.contentArea, { paddingTop: chromeHeight }]}>
           <NoServersWelcome />
         </View>
+      ) : showBoard ? (
+        <SessionBoard
+          items={filteredItems}
+          searchQuery={classicConvSearch}
+          conversationsFromServer={Boolean(debouncedConvSearch)}
+          order={sortBy}
+          direction={sortOrder}
+          refreshing={manualRefreshing}
+          onRefresh={handleRefresh}
+          onPromptsChanged={refetchSessions}
+          onEndReached={loadMoreConversations}
+          topInset={chromeHeight}
+          onScroll={onScroll}
+        />
       ) : showSubagents ? (
         <SubagentBoard serverIds={activeServerIds} parentTitles={subagentParentTitles} topInset={chromeHeight} />
       ) : sessionsLayout === 'projects' && sessionsTreeView ? (
@@ -689,6 +716,7 @@ export default function ProjectsHub() {
         resultCount={resultCount}
         treeView={sessionsTreeView}
         onChangeTreeView={setSessionsTreeView}
+        boardMode={showBoard}
       />
       <NewSessionServerPicker
         visible={pickerVisible}

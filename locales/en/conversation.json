@@ -105,7 +105,8 @@
   "review": {
     "title": "Review changes",
     "open": "Open review",
-    "summary": "{{files}} files · +{{added}} / −{{removed}}",
+    "summary_one": "{{count}} file · +{{added}} / −{{removed}}",
+    "summary_other": "{{count}} files · +{{added}} / −{{removed}}",
     "incompleteWarning": "Built from conversation Edit/Write tools — may be incomplete vs real git status.",
     "oversizedWarning": "Some diffs are truncated for performance. Copy the handoff packet for desktop review.",
     "filterAll": "All",

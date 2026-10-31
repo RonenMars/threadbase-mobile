@@ -166,6 +166,12 @@ export interface Session {
    * absent as unknown, never as `false`.
    */
   hasOpenPrompt?: boolean
+  /**
+   * The open prompts themselves, on list rows only and only while non-empty.
+   * Additive: older servers omit it, and a `session_update` frame does not
+   * carry it, so a change of `hasOpenPrompt` is the cue to refetch the list.
+   */
+  pendingPrompts?: Prompt[]
 }
 
 export interface MessageSnapshot {

@@ -238,7 +238,6 @@
     "title": "Sub-agents",
     "titleCount": "Sub-agents ({{n}})",
     "active": "Active",
-    "messages": "{{n}} msgs",
     "empty": "No sub-agents.",
     "unsupported": "This server doesn't support sub-agents yet.",
     "loadFailed": "Couldn't load sub-agents.",
@@ -259,10 +258,31 @@
   },
   "board": {
     "title": "Board",
-    "open": "Open board",
     "earlier": "Earlier",
     "emptyColumn": "Nothing here",
     "searchPlaceholder": "Search sessions…",
     "loadMore": "Load more"
+  },
+  "boardTab": {
+    "earlier": "Earlier",
+    "emptyColumn": "Nothing here",
+    "columns": "Session states",
+    "showBoard": "Show board",
+    "showList": "Show list",
+    "openSession": "Open session {{title}}",
+    "showQuestion": "Show the question for {{title}}",
+    "showSubagents_one": "Show {{count}} sub-agent",
+    "showSubagents_other": "Show {{count}} sub-agents",
+    "closeQuestion": "Close without answering",
+    "questionCount": "Question {{current}} of {{total}}",
+    "answerInSession": "Answer this one in the session.",
+    "previousColumn": "Previous column",
+    "nextColumn": "Next column",
+    "orphanHeading": "Sub-agents of other sessions",
+    "subagentsFailed": "Couldn't load sub-agents.",
+    "emptyNeedsYou": "Sessions waiting for your answer show in this column.",
+    "emptyWorking": "Sessions running now show in this column.",
+    "emptyObserved": "Sessions you watch but did not start show in this column.",
+    "emptyEarlier": "Finished sessions show in this column."
   }
 }

@@ -54,6 +54,7 @@ describe('SubagentSection', () => {
     expect(r.getByTestId('subagent-active-a')).toBeTruthy()
     expect(r.queryByTestId('subagent-active-b')).toBeNull()
     expect(r.getByText('Sub-agents (2)')).toBeTruthy()
+    expect(r.getAllByText(/ · 4 messages · /)).toHaveLength(2)
 
     fireEvent.press(r.getByTestId('subagent-row-a'))
     expect(push).toHaveBeenCalledWith('/conversation/a?server=s1')

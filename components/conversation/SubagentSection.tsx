@@ -78,7 +78,7 @@ export function SubagentSection({ serverId, parentId }: Props) {
                 <Text style={styles.meta} numberOfLines={1}>
                   {[
                     getProviderLabel(c.provider, t),
-                    t('subagents.messages', { n: c.messageCount }),
+                    t('card.messages', { count: c.messageCount }),
                     formatListTime(c.lastActivity),
                   ]
                     .filter(Boolean)

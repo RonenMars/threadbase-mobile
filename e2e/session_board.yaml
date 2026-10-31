@@ -1,0 +1,77 @@
+# Maestro E2E — phone session board
+# The header button swaps the hub for the board, the chips page its columns, the
+# open board survives a relaunch, and a card opens its session.
+# Tablets get DesktopBoard instead, so this flow needs a phone-width device.
+#
+# Requires: mock server on localhost:7071
+# Usage: node e2e/run-maestro.js test e2e/session_board.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- tapOn:
+    id: "header-board-btn"
+    retryTapIfNoChange: true
+
+- extendedWaitUntil:
+    visible:
+      id: "phone-board"
+    timeout: 8000
+
+- assertVisible:
+    id: "board-column-needsYou"
+- assertVisible:
+    id: "board-column-working"
+
+- tapOn:
+    id: "board-column-working"
+- extendedWaitUntil:
+    visible:
+      id: "board-card-session-abc123"
+    timeout: 8000
+
+- tapOn:
+    id: "board-column-needsYou"
+- extendedWaitUntil:
+    visible:
+      id: "board-card-session-def456"
+    timeout: 8000
+
+# The hub tabs hide while the board shows and come back with the list.
+- assertNotVisible:
+    id: "layout-now"
+- tapOn:
+    id: "header-board-btn"
+- extendedWaitUntil:
+    visible:
+      id: "layout-now"
+    timeout: 4000
+- assertNotVisible:
+    id: "phone-board"
+
+# boardOpen persists: a relaunch without clearState lands back on the board.
+- tapOn:
+    id: "header-board-btn"
+- extendedWaitUntil:
+    visible:
+      id: "phone-board"
+    timeout: 4000
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible:
+      id: "phone-board"
+    timeout: 15000
+
+- tapOn:
+    id: "board-column-needsYou"
+- tapOn:
+    id: "board-open-session-def456"
+- extendedWaitUntil:
+    visible:
+      id: "session-overflow-menu"
+    timeout: 8000

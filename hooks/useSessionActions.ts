@@ -131,11 +131,16 @@ export function useSessionActions(serverId: string, sessionId: string) {
     ...retryOnNetwork,
     retry: (count: number, err: Error) =>
       err instanceof NetworkError && !isPromptClosedError(err) && !isPromptStaleError(err) && count < 2,
-    mutationFn: (vars: { promptId: string; revision: number; questionId: string; optionId: string; idempotencyKey: string }) =>
+    mutationFn: (
+      vars: { promptId: string; revision: number; idempotencyKey: string } & (
+        | { questionId: string; optionId: string }
+        | { responses: { questionId: string; optionIds: string[] }[] }
+      ),
+    ) =>
       api.post(`/api/sessions/${sessionId}/prompt/answer`, {
         promptId: vars.promptId,
         revision: vars.revision,
-        responses: [{ questionId: vars.questionId, optionIds: [vars.optionId] }],
+        responses: 'responses' in vars ? vars.responses : [{ questionId: vars.questionId, optionIds: [vars.optionId] }],
         idempotencyKey: vars.idempotencyKey,
       }),
   })

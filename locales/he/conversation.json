@@ -107,7 +107,9 @@
   "review": {
     "title": "סקירת שינויים",
     "open": "פתח סקירה",
-    "summary": "{{files}} קבצים · +{{added}} / −{{removed}}",
+    "summary_one": "קובץ אחד · +{{added}} / −{{removed}}",
+    "summary_two": "שני קבצים · +{{added}} / −{{removed}}",
+    "summary_other": "{{count}} קבצים · +{{added}} / −{{removed}}",
     "incompleteWarning": "נבנה מכלי Edit/Write בשיחה — ייתכן שאינו מלא מול git status.",
     "oversizedWarning": "חלק מה-diff קוצצו לביצועים. העתיקו את החבילה לסקירה בשולחן העבודה.",
     "filterAll": "הכל",

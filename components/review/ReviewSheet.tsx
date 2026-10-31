@@ -110,7 +110,7 @@ export function ReviewSheet({
 
         <Text style={[styles.summary]}>
           {t('review.summary', {
-            files: summary.files.length,
+            count: summary.files.length,
             added: summary.totalAdded,
             removed: summary.totalRemoved,
           })}

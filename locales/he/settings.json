@@ -248,7 +248,7 @@
     "manifestTitle": "סיכום ייצוא",
     "manifestHost": "מארח: {{host}}",
     "manifestVersion": "סטרימר: {{version}}",
-    "manifestProjects": "פרויקטים: {{count}}",
+    "manifestProjects": "פרויקטים: {{total}}",
     "manifestCreated": "נוצר: {{at}}",
     "pasteHint": "הדביקו JSON של ארכיון למטה, ואז הריצו בדיקה לפני היישום.",
     "pastePlaceholder": "{ \"manifest\": …, \"projects\": […] }",

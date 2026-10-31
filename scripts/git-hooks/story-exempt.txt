@@ -23,3 +23,9 @@ components/SlowQueryBanner.tsx
 components/shelf/ChatShelf.tsx
 # Screen-sized list composition over stores, router and the quick-access sheet — the pieces (rows, TreeRow, ServerRootRow, LiveSessionsHeader) have stories.
 components/sessions/tree/TreeSessionsList.tsx
+# Parts of SessionBoard, which needs the query client and stores to lay them out: storied through SessionBoard.stories.tsx.
+components/sessions/board/PhoneBoard.tsx
+components/sessions/board/DesktopBoard.tsx
+components/sessions/board/BoardColumnList.tsx
+components/sessions/board/ColumnPager.tsx
+components/sessions/board/ColumnPager.web.tsx

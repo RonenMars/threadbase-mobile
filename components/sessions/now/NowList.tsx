@@ -14,21 +14,10 @@ import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
 import { earlierBucketFor, type EarlierBucket } from '@/components/sessions/hub/hubUtils'
 import { basename } from '@/components/sessions/shared/pathTail'
-import {
-  resolveConversationRowTitle,
-  resolveSessionRowTitle,
-  type RowTitle,
-  storedNameFor,
-} from '@/components/sessions/shared/rowTitle'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { conversationHref } from '@/lib/conversationHref'
-import {
-  deriveConversationPresentation,
-  deriveSessionPresentation,
-  type SessionStatusLabel,
-  type SessionTier,
-} from '@/lib/sessionPresentation'
+import type { SessionStatusLabel } from '@/lib/sessionPresentation'
 import { useNavLockStore } from '@/stores/navLock'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useServersStore } from '@/stores/servers'
@@ -45,7 +34,8 @@ import { dominantProvider as findDominantProvider } from '@/lib/providerDominanc
 import { NeedsYouCard } from './NeedsYouCard'
 import { SectionEyebrow, type SectionTone } from './SectionEyebrow'
 import { WorkingCard } from './WorkingCard'
-import { mergedItemMatchesQuery, omitConversationsCoveredByLiveSessions, type MergedItem } from './mergedItems'
+import type { MergedItem } from './mergedItems'
+import { buildNowEntries, type NowEntry } from './nowEntries'
 
 interface Props {
   items: MergedItem[]
@@ -70,12 +60,7 @@ interface Props {
   onOpenStatus?: () => void
 }
 
-interface Entry {
-  item: MergedItem
-  title: RowTitle
-  tier: SessionTier | null
-  statusLabel: SessionStatusLabel | null
-}
+type Entry = NowEntry
 
 type FlatItem =
   | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number; bucketKey?: string }
@@ -233,24 +218,10 @@ export const NowList = React.memo(function NowList({
   const multiServer = activeServerIds.length > 1
   const warming = useMemo(() => new Set(warmingServerIds), [warmingServerIds])
 
-  const entries = useMemo((): Entry[] => {
-    const q = searchQuery.trim().toLowerCase()
-    const visible = q ? items.filter((it) => mergedItemMatchesQuery(it, q, conversationsFromServer)) : items
-    return omitConversationsCoveredByLiveSessions(visible).map((item) => {
-      const stored = storedNameFor(names, nameOrigins, item.item.serverId, item.item.id)
-      if (item.kind === 'session') {
-        const presentation = deriveSessionPresentation(item.item)
-        return { item, title: resolveSessionRowTitle(item.item, stored), tier: presentation.tier, statusLabel: presentation.statusLabel }
-      }
-      const presentation = deriveConversationPresentation(item.item)
-      return {
-        item,
-        title: resolveConversationRowTitle(item.item, stored),
-        tier: presentation?.tier ?? null,
-        statusLabel: presentation?.statusLabel ?? null,
-      }
-    })
-  }, [items, searchQuery, conversationsFromServer, names, nameOrigins])
+  const entries = useMemo(
+    () => buildNowEntries(items, searchQuery, conversationsFromServer, names, nameOrigins),
+    [items, searchQuery, conversationsFromServer, names, nameOrigins],
+  )
 
   const dominantProvider = useMemo(() => findDominantProvider(entries.map((e) => e.item.item.provider)), [entries])
 

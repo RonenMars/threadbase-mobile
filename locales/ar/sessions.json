@@ -120,7 +120,7 @@
     "headerLast7Days": "آخر 7 أيام",
     "headerLast14Days": "آخر 14 يومًا",
     "headerLastMonth": "الشهر الماضي",
-    "headerEarlier": "في وقت سابق"
+    "headerEarlier": "سابقًا"
   },
   "preview": {
     "liveUnavailable": "معاينة السيشن المباشر غير متاحة — افتح السيشن لرؤية الطرفية المباشرة.",
@@ -278,7 +278,6 @@
     "title": "الوكلاء الفرعيون",
     "titleCount": "الوكلاء الفرعيون ({{n}})",
     "active": "نشط",
-    "messages": "{{n}} رسائل",
     "empty": "لا يوجد وكلاء فرعيون.",
     "unsupported": "هذا الخادم لا يدعم الوكلاء الفرعيين بعد.",
     "loadFailed": "تعذّر تحميل الوكلاء الفرعيين.",
@@ -287,10 +286,10 @@
       "active": "النشطة",
       "all": "الكل",
       "summaryActive": "نشطة الآن",
-      "summaryParents": "الأصل",
+      "summaryParents": "الجلسات الأصلية",
       "summaryTotal": "الإجمالي",
       "parentFallback": "جلسة {{id}}",
-      "parentActive": "{{n}} نشطة",
+      "parentActive": "النشطة: {{n}}",
       "unsupported": "هذا الخادم لا يعرض الوكلاء الفرعيين بعد.",
       "emptyActive": "لا يوجد وكلاء فرعيون قيد التشغيل.",
       "empty": "لا يوجد وكلاء فرعيون بعد.",
@@ -299,10 +298,35 @@
   },
   "board": {
     "title": "اللوحة",
-    "open": "فتح اللوحة",
     "earlier": "سابقًا",
     "emptyColumn": "لا شيء هنا",
     "searchPlaceholder": "البحث في الجلسات…",
     "loadMore": "تحميل المزيد"
+  },
+  "boardTab": {
+    "earlier": "سابقًا",
+    "emptyColumn": "لا شيء هنا",
+    "columns": "حالات الجلسات",
+    "showBoard": "عرض اللوحة",
+    "showList": "عرض القائمة",
+    "openSession": "فتح الجلسة {{title}}",
+    "showQuestion": "عرض سؤال {{title}}",
+    "showSubagents_zero": "عرض {{count}} وكيل فرعي",
+    "showSubagents_one": "عرض وكيل فرعي واحد",
+    "showSubagents_two": "عرض وكيلين فرعيين",
+    "showSubagents_few": "عرض {{count}} وكلاء فرعيين",
+    "showSubagents_many": "عرض {{count}} وكيلًا فرعيًا",
+    "showSubagents_other": "عرض {{count}} وكيل فرعي",
+    "closeQuestion": "إغلاق دون إجابة",
+    "questionCount": "السؤال {{current}} من {{total}}",
+    "answerInSession": "أجب عن هذا السؤال داخل الجلسة.",
+    "previousColumn": "العمود السابق",
+    "nextColumn": "العمود التالي",
+    "orphanHeading": "الوكلاء الفرعيون لجلسات أخرى",
+    "subagentsFailed": "تعذّر تحميل الوكلاء الفرعيين.",
+    "emptyNeedsYou": "تظهر هنا الجلسات التي تنتظر إجابتك.",
+    "emptyWorking": "تظهر هنا الجلسات الجارية الآن.",
+    "emptyObserved": "تظهر هنا الجلسات التي تتابعها ولم تبدأها.",
+    "emptyEarlier": "تظهر هنا الجلسات المنتهية."
   }
 }

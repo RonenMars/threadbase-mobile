@@ -258,7 +258,6 @@
     "title": "Субагенты",
     "titleCount": "Субагенты ({{n}})",
     "active": "Активен",
-    "messages": "{{n}} сообщ.",
     "empty": "Нет субагентов.",
     "unsupported": "Этот сервер пока не поддерживает субагентов.",
     "loadFailed": "Не удалось загрузить субагентов.",
@@ -279,10 +278,33 @@
   },
   "board": {
     "title": "Доска",
-    "open": "Открыть доску",
     "earlier": "Ранее",
     "emptyColumn": "Здесь пусто",
     "searchPlaceholder": "Поиск сессий…",
     "loadMore": "Загрузить ещё"
+  },
+  "boardTab": {
+    "earlier": "Ранее",
+    "emptyColumn": "Здесь пусто",
+    "columns": "Состояния сессий",
+    "showBoard": "Показать доску",
+    "showList": "Показать список",
+    "openSession": "Открыть сессию {{title}}",
+    "showQuestion": "Показать вопрос сессии {{title}}",
+    "showSubagents_one": "Показать {{count}} субагента",
+    "showSubagents_few": "Показать {{count}} субагента",
+    "showSubagents_many": "Показать {{count}} субагентов",
+    "showSubagents_other": "Показать {{count}} субагента",
+    "closeQuestion": "Закрыть без ответа",
+    "questionCount": "Вопрос {{current}} из {{total}}",
+    "answerInSession": "На этот вопрос нужно ответить в сессии.",
+    "previousColumn": "Предыдущая колонка",
+    "nextColumn": "Следующая колонка",
+    "orphanHeading": "Субагенты других сессий",
+    "subagentsFailed": "Не удалось загрузить субагентов.",
+    "emptyNeedsYou": "Здесь появятся сессии, которые ждут вашего ответа.",
+    "emptyWorking": "Здесь появятся сессии, которые работают сейчас.",
+    "emptyObserved": "Здесь появятся сессии, за которыми вы наблюдаете, но которые не запускали.",
+    "emptyEarlier": "Здесь появятся завершённые сессии."
   }
 }

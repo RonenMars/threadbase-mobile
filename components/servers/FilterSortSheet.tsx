@@ -51,6 +51,8 @@ interface Props {
   /** Renders Projects as the flat multi-server tree instead of project cards. */
   treeView: boolean
   onChangeTreeView: (v: boolean) => void
+  /** The board shows every state in columns, so Show, the presets and Tree view have nothing to act on. */
+  boardMode?: boolean
 }
 
 const ORDER_OPTIONS: readonly SortBy[] = ['state', 'lastActivity', 'projectName']
@@ -96,6 +98,7 @@ export function FilterSortSheet({
   resultCount,
   treeView,
   onChangeTreeView,
+  boardMode = false,
 }: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -126,14 +129,15 @@ export function FilterSortSheet({
   const atDefault =
     order === DEFAULT_ORDER &&
     direction === DEFAULT_DIRECTION &&
-    isDefaultFilters(filters) &&
+    isDefaultFilters(boardMode ? { ...filters, tiers: DEFAULT_FILTERS.tiers } : filters) &&
     displayedServerIds.length === activeServerIds.length
   const noResults = resultCount === 0
 
   const handleReset = () => {
     onChangeOrder(DEFAULT_ORDER)
     onChangeDirection(DEFAULT_DIRECTION)
-    onChangeFilters(DEFAULT_FILTERS)
+    // On the board the Show section is hidden, so its choice waits for the list untouched.
+    onChangeFilters(boardMode ? { ...DEFAULT_FILTERS, tiers: filters.tiers } : DEFAULT_FILTERS)
     if (showServerFilter) setDisplayedServerIds(activeServerIds)
   }
 
@@ -203,33 +207,37 @@ export function FilterSortSheet({
         </View>
       </View>
 
-      <FilterPresets filters={filters} onChange={onChangeFilters} />
+      {boardMode ? null : (
+        <>
+          <FilterPresets filters={filters} onChange={onChangeFilters} />
 
-      {/* Show — the five tiers, multi-select with live counts */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{eyebrow(t('servers:filter.show'))}</Text>
-        <View style={styles.chipRow}>
-          {ALL_TIERS.map((tier) => {
-            const selected = filters.tiers.includes(tier)
-            const color = colorForToken(theme, tierColorToken(tier))
-            return (
-              <TouchableOpacity
-                key={tier}
-                onPress={() => onChangeFilters({ ...filters, tiers: toggle(filters.tiers, tier) })}
-                style={[styles.chip, selected && styles.chipSelected]}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-                testID={`tier-toggle-${tier}`}
-              >
-                {selected ? <Check size={12} color={theme.text.accent} weight="bold" /> : null}
-                <View style={[styles.chipDot, { backgroundColor: color }]} />
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{getSessionTierLabel(tier, tSessions)}</Text>
-                <Text style={styles.chipCount}>{tierCounts[tier]}</Text>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
-      </View>
+          {/* Show — the five tiers, multi-select with live counts */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, styles.standaloneSectionTitle]}>{eyebrow(t('servers:filter.show'))}</Text>
+            <View style={styles.chipRow}>
+              {ALL_TIERS.map((tier) => {
+                const selected = filters.tiers.includes(tier)
+                const color = colorForToken(theme, tierColorToken(tier))
+                return (
+                  <TouchableOpacity
+                    key={tier}
+                    onPress={() => onChangeFilters({ ...filters, tiers: toggle(filters.tiers, tier) })}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                    testID={`tier-toggle-${tier}`}
+                  >
+                    {selected ? <Check size={12} color={theme.text.accent} weight="bold" /> : null}
+                    <View style={[styles.chipDot, { backgroundColor: color }]} />
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{getSessionTierLabel(tier, tSessions)}</Text>
+                    <Text style={styles.chipCount}>{tierCounts[tier]}</Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+        </>
+      )}
 
       {/* Agent — same chip mechanics */}
       <View style={styles.section}>
@@ -354,18 +362,20 @@ export function FilterSortSheet({
       ) : null}
 
       {/* Tree view toggle */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{eyebrow(t('servers:filter.treeView'))}</Text>
-          <Switch
-            value={treeView}
-            onValueChange={onChangeTreeView}
-            trackColor={{ false: theme.border, true: theme.text.accent }}
-            thumbColor="#fff"
-            testID="filter-sort-tree-view-toggle"
-          />
+      {boardMode ? null : (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{eyebrow(t('servers:filter.treeView'))}</Text>
+            <Switch
+              value={treeView}
+              onValueChange={onChangeTreeView}
+              trackColor={{ false: theme.border, true: theme.text.accent }}
+              thumbColor="#fff"
+              testID="filter-sort-tree-view-toggle"
+            />
+          </View>
         </View>
-      </View>
+      )}
     </>
   )
 
