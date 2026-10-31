@@ -7,6 +7,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
+import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { conversationHref } from '@/lib/conversationHref'
@@ -50,6 +51,7 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
 
   return (
     <>
+      <SwipeableRow leading={rowActions.swipe.leading} trailing={rowActions.swipe.trailing}>
       <ConversationListItem
         title={title}
         timestamp={activityTimestamp}
@@ -70,6 +72,7 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
         onLongPress={handleLongPress}
         testID={`session-row-${session.id}`}
       />
+      </SwipeableRow>
       {rowActions.overlays}
     </>
   )

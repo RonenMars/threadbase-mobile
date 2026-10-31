@@ -185,8 +185,8 @@ export function useSessionRowActions(session: MultiSession, title: string) {
       trailing.push({ key: 'delete', label: t('swipe.delete'), icon: Trash, color: theme.status.failed, onPress: end.requestDelete, testID: 'session-swipe-delete' })
     }
   }
-  // External sessions are read-only — no swipe actions either.
-  const swipe = isExternal ? { leading: [], trailing: [] } : { leading, trailing }
+  // External sessions are read-only: favoriting stays local, so it is the only swipe action.
+  const swipe = isExternal ? { leading, trailing: [] } : { leading, trailing }
 
   const overlays = isExternal ? null : (
     <>
