@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react'
-import { Text, View, TextInput, FlatList, SectionList, RefreshControl } from 'react-native'
+import React, { useMemo, useState, useCallback } from 'react'
+import { Text, View, FlatList, SectionList, RefreshControl } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useDebounce } from 'use-debounce'
@@ -38,6 +38,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
   refreshing,
   onRefresh,
   searchOpen,
+  searchQuery = '',
   isBackgroundRefreshing,
   unsupportedServerIds = [],
   topInset = 0,
@@ -53,15 +54,9 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
   const searchStyles = makeSearchStyles(theme, direction)
   const router = useRouter()
   const { t } = useTranslation('sessions')
-  const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery] = useDebounce(searchQuery, 300)
-  const inputRef = useRef<TextInput>(null)
   const [activeConvItem, setActiveConvItem] = useState<MultiConversation | null>(null)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
-
-  useEffect(() => {
-    if (!searchOpen) queueMicrotask(() => setSearchQuery(''))
-  }, [searchOpen])
 
   // Conversations are no longer held in memory, so search goes to the server's
   // own /api/search instead of filtering a local array. Sessions stay eager and
@@ -347,22 +342,6 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
 
   return (
     <View style={{ flex: 1 }}>
-      {searchOpen ? (
-        <View style={searchStyles.searchBar}>
-          <TextInput
-            ref={inputRef}
-            style={searchStyles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={t('search.placeholder')}
-            placeholderTextColor="#7d8590"
-            autoFocus
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-        </View>
-      ) : null}
-
       {showSearch ? (
         searchSections.length === 0 ? (
           <View style={{ flex: 1 }}>
