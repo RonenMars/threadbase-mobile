@@ -431,6 +431,7 @@ await refreshServerInfo(serverId)
       deviceToken: result.deviceToken ?? undefined,
       capabilities: result.capabilities ?? undefined,
       publicUrl: result.publicUrl ?? undefined,
+      relayUrl: result.relayUrl ?? undefined,
       serverPublicKey: result.serverPublicKey ?? undefined,
       requireEncryption: result.e2eeRequired,
     })
@@ -440,6 +441,8 @@ await refreshServerInfo(serverId)
         serverPublicKey: server?.serverPublicKey,
         requireEncryption: server?.requireEncryption,
         publicUrl: server?.publicUrl,
+        relayUrl: server?.relayUrl,
+        relayDisabled: server?.relayDisabled,
       })
     } else {
       Alert.alert(

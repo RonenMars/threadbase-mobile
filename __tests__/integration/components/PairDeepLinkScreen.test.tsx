@@ -50,6 +50,7 @@ function setParams(params: {
   token?: string
   exp?: string
   spk?: string
+  relay?: string
   v?: string
 }) {
   ;(useLocalSearchParams as jest.Mock).mockReturnValue(params)
@@ -83,6 +84,7 @@ describe('PairDeepLinkScreen', () => {
       url: 'https://example.test',
       apiKey: 'tb_sealed',
       publicUrl: 'https://example.test',
+      relayUrl: null,
       machineName: 'ronen-mac.local',
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
@@ -110,13 +112,16 @@ describe('PairDeepLinkScreen', () => {
   // dropped here and nowhere else, silently — the scanner and paste paths hand
   // parsePairUri the original string. Asserting on the parser's own return value
   // covers both halves at once: the rebuild kept `spk`, and the parse surfaced it.
-  it('carries the server public key through the deep-link rebuild', async () => {
+  // The same holds for `relay`.
+  it('carries the server public key and relay route through the deep-link rebuild', async () => {
     const spk = 'B'.repeat(43)
-    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP, spk, v: '1' })
+    const relay = 'https://relay.example.com/r/7iqUq3r3htIlhM0e0bMJHSNDnRviMBNF'
+    setParams({ url: 'https://example.test', token: 'pt_abc', exp: FUTURE_EXP, spk, v: '1', relay })
     exchangeToken.mockResolvedValue({
       url: 'https://example.test',
       apiKey: 'tb_sealed',
       publicUrl: 'https://example.test',
+      relayUrl: null,
       machineName: 'ronen-mac.local',
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
@@ -133,12 +138,13 @@ describe('PairDeepLinkScreen', () => {
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'))
 
     expect(parsePairUri).toHaveBeenCalled()
-    expect(parsePairUri.mock.results[0].value).toMatchObject({ spk, v: 1 })
+    expect(parsePairUri.mock.results[0].value).toMatchObject({ spk, v: 1, relay })
     expect(exchangeToken).toHaveBeenCalledWith({
       url: 'https://example.test',
       token: 'pt_abc',
       deviceName: 'Test Phone',
       serverPublicKey: spk,
+      relayUrl: relay,
     })
   })
 
@@ -149,6 +155,7 @@ describe('PairDeepLinkScreen', () => {
       url: 'https://example.test',
       apiKey: 'tb_sealed',
       publicUrl: 'https://example.test',
+      relayUrl: null,
       machineName: 'ronen-mac.local',
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
@@ -170,6 +177,7 @@ describe('PairDeepLinkScreen', () => {
       url: 'https://example.test',
       apiKey: 'tb_sealed',
       publicUrl: 'https://example.test',
+      relayUrl: null,
       machineName: 'ronen-mac.local',
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
@@ -259,6 +267,7 @@ describe('PairDeepLinkScreen', () => {
       url: 'https://example.test',
       apiKey: 'tb_sealed',
       publicUrl: null,
+      relayUrl: null,
       machineName: 'ronen-mac.local',
       deviceId: 'dev-1',
       deviceToken: 'dt_1',
@@ -297,6 +306,7 @@ describe('PairDeepLinkScreen', () => {
       url: 'https://example.test',
       apiKey: 'tb_sealed_2',
       publicUrl: null,
+      relayUrl: null,
       machineName: null,
       deviceId: null,
       deviceToken: null,

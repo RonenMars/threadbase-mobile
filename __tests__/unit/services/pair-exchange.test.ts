@@ -192,6 +192,26 @@ describe('parsePairUri', () => {
     expect(out.spk).toBe(SPK)
   })
 
+  const RELAY = 'https://relay.example.com/r/7iqUq3r3htIlhM0e0bMJHSNDnRviMBNF'
+
+  it('keeps the relay route of a QR that carries a server key', () => {
+    const out = parsePairUri(
+      `threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&spk=${SPK}&relay=${encodeURIComponent(RELAY)}`,
+    )
+    expect(out.relay).toBe(RELAY)
+  })
+
+  it('drops a relay route with no server key beside it, or one that is not a bare route', () => {
+    const noKey = parsePairUri(
+      `threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&relay=${encodeURIComponent(RELAY)}`,
+    )
+    expect(noKey.relay).toBeUndefined()
+    const wrongShape = parsePairUri(
+      `threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&spk=${SPK}&relay=${encodeURIComponent('https://relay.example.com/api/elsewhere')}`,
+    )
+    expect(wrongShape.relay).toBeUndefined()
+  })
+
   it('drops a non-numeric v', () => {
     const out = parsePairUri('threadbase://pair?url=https%3A%2F%2Fa.test&token=pt_x&v=abc')
     expect(out.v).toBeUndefined()
@@ -783,6 +803,102 @@ describe('exchangeToken — the pairing handshake', () => {
   })
 
   // ── GATE 5: once message 1 is out, nothing degrades to plaintext ───────────
+
+  // ── Pairing through the relay ─────────────────────────────────────────────
+  const RELAY = 'https://relay.example.com/r/7iqUq3r3htIlhM0e0bMJHSNDnRviMBNF'
+  const RELAY_EXCHANGE = `${RELAY}/api/pair/exchange`
+
+  /** The QR's own address fails as `first` says; the relay reaches the real streamer. */
+  function offLan(first: () => Promise<Response>, options: StreamerOptions = {}) {
+    const streamer = fakeStreamer(options)
+    const urls: string[] = []
+    global.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      urls.push(String(input))
+      return String(input) === RELAY_EXCHANGE ? streamer.fetch(input, init) : first()
+    }) as unknown as typeof fetch
+    return { streamer, urls }
+  }
+
+  it('pairs through the relay when the QR address cannot be reached', async () => {
+    const { urls, streamer } = offLan(async () => {
+      throw new TypeError('Network request failed')
+    })
+
+    const result = await exchangeToken({
+      url: SERVER_URL,
+      token: PAIR_TOKEN,
+      serverPublicKey: SERVER_SPK,
+      relayUrl: RELAY,
+    })
+
+    expect(urls).toEqual([`${SERVER_URL}/api/pair/exchange`, RELAY_EXCHANGE])
+    // The relay can read this body, so the handshake's secret is not in it.
+    expect(streamer.seen.body).not.toHaveProperty('token')
+    expect(JSON.stringify(streamer.seen.body)).not.toContain(PAIR_TOKEN)
+    expect(streamer.seen.body?.e2ee?.v).toBe(1)
+    expect(result.deviceToken).toBe(MSG2.deviceToken)
+    // The server is still recorded under the address in the QR.
+    expect(result.url).toBe(SERVER_URL)
+  })
+
+  it('pairs through the relay when something else answers on the QR address', async () => {
+    const { urls } = offLan(async () => new Response('not found', { status: 404 }))
+
+    const result = await exchangeToken({
+      url: SERVER_URL,
+      token: PAIR_TOKEN,
+      serverPublicKey: SERVER_SPK,
+      relayUrl: RELAY,
+    })
+
+    expect(urls).toHaveLength(2)
+    expect(result.deviceToken).toBe(MSG2.deviceToken)
+  })
+
+  it('never sends a plaintext pairing to the relay', async () => {
+    const { urls } = offLan(async () => {
+      throw new TypeError('Network request failed')
+    })
+
+    await expect(
+      exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, relayUrl: RELAY }),
+    ).rejects.toMatchObject({ kind: 'network' })
+    expect(urls).toEqual([`${SERVER_URL}/api/pair/exchange`])
+  })
+
+  it('reports an answer the relay wrote itself as a network failure', async () => {
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      if (String(input) !== RELAY_EXCHANGE) throw new TypeError('Network request failed')
+      return new Response(JSON.stringify({ error: 'offline', code: 'RELAY_STREAMER_OFFLINE' }), {
+        status: 503,
+        headers: { 'X-TB-Relay-Error': 'RELAY_STREAMER_OFFLINE' },
+      })
+    }) as unknown as typeof fetch
+
+    await expect(
+      exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, serverPublicKey: SERVER_SPK, relayUrl: RELAY }),
+    ).rejects.toMatchObject({ kind: 'network' })
+  })
+
+  it('keeps the first address refusal when the relay has nothing better', async () => {
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === RELAY_EXCHANGE) throw new TypeError('Network request failed')
+      return new Response(JSON.stringify({ error: 'expired' }), { status: 401 })
+    }) as unknown as typeof fetch
+
+    await expect(
+      exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, serverPublicKey: SERVER_SPK, relayUrl: RELAY }),
+    ).rejects.toMatchObject({ kind: 'token' })
+  })
+
+  it('records the relay route from the authenticated reply, and only a bare route', async () => {
+    const paired = async (relayUrl: string) => {
+      global.fetch = fakeStreamer({ payload2: { ...MSG2, relayUrl } }).fetch
+      return exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, serverPublicKey: SERVER_SPK })
+    }
+    expect((await paired(RELAY)).relayUrl).toBe(RELAY)
+    expect((await paired('https://relay.example.com/api/elsewhere')).relayUrl).toBeNull()
+  })
 
   it('fails hard when the reply carries no message 2 at all', async () => {
     // Message 1 went out, so this is a refusal and not an older server: a
