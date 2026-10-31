@@ -23,6 +23,7 @@ import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
+import { ProviderSelector } from '@/components/browse/ProviderSelector'
 import { RecentDirsModal, type RecentDir } from '@/components/browse/RecentDirsModal'
 import { SelectedDirsTray } from '@/components/browse/SelectedDirsTray'
 import {
@@ -101,9 +102,20 @@ export default function BrowseScreen() {
   const showProviderNotes =
     selectedUnavailable ||
     selectedWarnings.length > 0 ||
-    (selectedHealth?.capabilities.structuredQuestions === false &&
-      selectedHealth?.capabilities.permissionGates === false) ||
     selectedHealth?.capabilities.liveControl === false
+
+  const providerOptions = [
+    { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: PROVIDER_COLOR.claude },
+    { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: PROVIDER_COLOR.codex },
+    { value: CURSOR_PROVIDER, label: t('sessions:provider.cursor'), color: PROVIDER_COLOR.cursor },
+    { value: COPILOT_PROVIDER, label: t('sessions:provider.copilot'), color: PROVIDER_COLOR.copilot },
+  ].map((option) => ({
+    ...option,
+    unavailable:
+      findProviderHealth(providerHealth?.providers, option.value)?.available === false ||
+      (option.value === COPILOT_PROVIDER &&
+        findProviderHealth(providerHealth?.providers, option.value)?.available !== true),
+  }))
 
   const { data: allSessions = [] } = useSessions()
   // Newest → oldest by last session start; first hit wins for path dedupe.
@@ -455,6 +467,40 @@ export default function BrowseScreen() {
         disabled={isStarting || actionsDisabled}
       />
 
+      {!showNewFolder ? (
+        providerHealthLoading ? (
+          <View style={styles.providerSelector}>
+          {/*
+            Until the health answer arrives we do not know whether a provider
+            can start a session, and `available === false` cannot express that:
+            an undefined `health` reads as "not unavailable", so the buttons
+            used to paint fully enabled and then grey out once the answer
+            landed. They render outside the directory list's `isLoading`
+            branch, so they paint before either request resolves — folding this
+            into the browse payload would only re-time it to the slower of the
+            two. Skeleton them the same way the list beside them is skeletoned,
+            and assert nothing until there is something to assert.
+          */}
+            {PROVIDER_NAMES.map((provider) => (
+              <View
+                key={provider}
+                style={styles.providerOptionSkeleton}
+                testID={`start-provider-skeleton-${provider}`}
+              >
+                <SkeletonBox height={40} borderRadius={radius.md} />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <ProviderSelector
+            selected={selectedProvider}
+            onSelect={setSelectedProvider}
+            disabled={actionsDisabled}
+            options={providerOptions}
+          />
+        )
+      ) : null}
+
       {/* Directory list */}
       <View style={styles.listContainer}>
         {isLoading ? (
@@ -522,70 +568,6 @@ export default function BrowseScreen() {
         </View>
       ) : (
         <>
-        <View style={styles.providerSelector}>
-          {/*
-            Until the health answer arrives we do not know whether a provider
-            can start a session, and `available === false` cannot express that:
-            an undefined `health` reads as "not unavailable", so the buttons
-            used to paint fully enabled and then grey out once the answer
-            landed. They render outside the directory list's `isLoading`
-            branch, so they paint before either request resolves — folding this
-            into the browse payload would only re-time it to the slower of the
-            two. Skeleton them the same way the list beside them is skeletoned,
-            and assert nothing until there is something to assert.
-          */}
-          {providerHealthLoading
-            ? PROVIDER_NAMES.map((provider) => (
-                <View
-                  key={provider}
-                  style={styles.providerOptionSkeleton}
-                  testID={`start-provider-skeleton-${provider}`}
-                >
-                  <SkeletonBox height={40} borderRadius={radius.md} />
-                </View>
-              ))
-            : ([
-            { value: CLAUDE_CODE_PROVIDER, label: t('sessions:provider.claude'), color: PROVIDER_COLOR.claude },
-            { value: CODEX_CLI_PROVIDER, label: t('sessions:provider.codex'), color: PROVIDER_COLOR.codex },
-            { value: CURSOR_PROVIDER, label: t('sessions:provider.cursor'), color: PROVIDER_COLOR.cursor },
-            { value: COPILOT_PROVIDER, label: t('sessions:provider.copilot'), color: PROVIDER_COLOR.copilot },
-          ]).map((option) => {
-            const selected = selectedProvider === option.value
-            const health = findProviderHealth(providerHealth?.providers, option.value)
-            const unavailable = health?.available === false ||
-              (option.value === COPILOT_PROVIDER && health?.available !== true)
-            return (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.providerOption,
-                  selected && styles.providerOptionSelected,
-                  selected ? { borderColor: option.color } : null,
-                  (unavailable || actionsDisabled) && styles.providerOptionDisabled,
-                ]}
-                // Guarded in onPress, not via `disabled`: TouchableOpacity
-                // overwrites accessibilityState.disabled with its own prop,
-                // which would report an unavailable provider as enabled.
-                onPress={() => { if (!actionsDisabled) setSelectedProvider(option.value) }}
-                accessibilityRole="button"
-                accessibilityState={{ selected, disabled: unavailable || actionsDisabled }}
-                testID={`start-provider-${option.value}`}
-              >
-                <View style={[styles.providerDot, { backgroundColor: option.color }]} />
-                <Text
-                  style={[
-                    styles.providerOptionText,
-                    selected && styles.providerOptionTextSelected,
-                    selected ? { color: option.color } : null,
-                    (unavailable || actionsDisabled) && styles.providerOptionTextDisabled,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
         {showProviderNotes ? (
           <View style={styles.providerWarning} testID="browse-provider-warning">
             {selectedUnavailable ? (
@@ -603,11 +585,6 @@ export default function BrowseScreen() {
                 </Text>
               )
             })}
-            {selectedHealth &&
-            !selectedHealth.capabilities.structuredQuestions &&
-            !selectedHealth.capabilities.permissionGates ? (
-              <Text style={styles.providerWarningText}>{t('provider.noStructuredQuestions')}</Text>
-            ) : null}
             {selectedHealth && !selectedHealth.capabilities.liveControl ? (
               <Text style={styles.providerWarningText}>{t('provider.observeOnly')}</Text>
             ) : null}
@@ -751,7 +728,6 @@ function makeStyles(theme: Theme) {
   },
   providerSelector: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
@@ -759,30 +735,7 @@ function makeStyles(theme: Theme) {
     gap: spacing.sm,
   },
   providerOptionSkeleton: {
-    flexGrow: 1,
-    flexBasis: '40%',
-  },
-  providerOption: {
-    flexGrow: 1,
-    flexBasis: '40%',
-    minHeight: 40,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: theme.border,
-    backgroundColor: theme.bg.secondary,
-    gap: spacing.xs,
-  },
-  providerOptionSelected: {
-    backgroundColor: theme.bg.card,
-  },
-  providerOptionDisabled: {
-    opacity: 0.55,
-  },
-  providerOptionTextDisabled: {
-    color: theme.text.secondary,
+    flex: 1,
   },
   providerWarning: {
     marginHorizontal: spacing.xl,
@@ -798,19 +751,6 @@ function makeStyles(theme: Theme) {
     color: theme.text.warning,
     fontSize: font.xs,
     lineHeight: 16,
-  },
-  providerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  providerOptionText: {
-    color: theme.text.secondary,
-    fontSize: font.sm,
-    fontWeight: '600',
-  },
-  providerOptionTextSelected: {
-    color: theme.text.primary,
   },
   row: {
     flexDirection: 'row',
