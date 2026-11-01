@@ -149,7 +149,12 @@ export async function registerPushToken(serverId: string): Promise<RegisterPushR
   try {
     const result = await Notifications.getExpoPushTokenAsync()
     token = result.data
-  } catch {
+  } catch (err) {
+    // On Android a missing google-services.json surfaces only here, as a
+    // FirebaseApp error; without the message every cause looks like a simulator.
+    console.warn(
+      `[push] could not get an Expo push token: ${err instanceof Error ? err.message : String(err)}`
+    )
     return { ok: false, reason: 'token_unavailable' }
   }
 
