@@ -89,9 +89,13 @@ Vercel's own password protection is a Pro feature, which is why this is middlewa
 Vercel builds from git, so the gitignored `.env*` files never reach it; any `EXPO_PUBLIC_*` value the hosted bundle needs must be set in the project's environment variables — and it is public, since it is inlined into the bundle.
 It is a static client only: the browser still talks directly to the streamers the user runs.
 
-**A push to `main` does not deploy it.**
-The project's ignored-build step cancels every git-triggered build, so a merge leaves the live site on the previous deployment.
-Deploy from a checkout of the commit you want, with the Vercel CLI:
+**Vercel's git integration is off** (`git.deploymentEnabled: false` in `vercel.json`).
+It used to create a deployment per push on every branch and cancel it through the project's ignored-build step, but a cancelled deployment still counts toward the free plan's 100-deployments-per-day team cap, and hitting it fails every later deploy with `api-deployments-free-per-day`.
+
+**`.github/workflows/deploy-web.yml` deploys it** on a push to `main` that touches code feeding the web bundle (`app/`, `components/`, `services/`, `locales/`, `package.json` and the like; not docs, tests, `e2e/` or other workflows), or from a manual `workflow_dispatch`.
+It needs three repository secrets: `VERCEL_TOKEN` (a token from the `ronen-mars-projects` team), `VERCEL_ORG_ID` (the team id, `team_GePIjcctLQDSwgppGj6YmKRM`) and `VERCEL_PROJECT_ID` (`prj_uAIKfB1bEieFX1Mb9DGDknv0vMAi`).
+
+To deploy by hand from a checkout of the commit you want, with the Vercel CLI:
 
 ```bash
 vercel link --yes --project threadbase-web --scope ronen-mars-projects   # writes .vercel/ and a .env.local; delete the .env.local
