@@ -19,6 +19,8 @@ export interface ProjectSummary {
   name: string
   conversationCount: number
   lastActivity: string
+  /** Conversations in this project an outside process is running now. Absent on older streamers. */
+  liveExternalCount?: number
 }
 
 export interface ProjectSummaryPage {

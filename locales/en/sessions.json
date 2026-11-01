@@ -50,6 +50,8 @@
     "seeAll_other": "All {{count}} conversations",
     "activityLive_one": "{{count}} live",
     "activityLive_other": "{{count}} live",
+    "activityObserved_one": "{{count}} observed",
+    "activityObserved_other": "{{count}} observed",
     "activityNeedsYou_one": "{{count}} needs you",
     "activityNeedsYou_other": "{{count}} need you",
     "activityToday": "{{total}} today",

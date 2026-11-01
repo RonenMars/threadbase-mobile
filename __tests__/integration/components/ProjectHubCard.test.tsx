@@ -157,4 +157,18 @@ describe('ProjectHubCard', () => {
     fireEvent.press(getByTestId('hub-see-all-/tmp/project'))
     expect(push).toHaveBeenCalledWith('/project/project-1?path=%2Ftmp%2Fproject&server=srv-2')
   })
+  describe('observed (external) count', () => {
+    it.each([
+      ['0', 0],
+      ['undefined', undefined],
+    ])('shows nothing when liveExternalCount is %s', async (_label, liveExternalCount) => {
+      const { queryByText } = await renderCard(false, { ...group, liveExternalCount })
+      expect(queryByText(/observed/)).toBeNull()
+    })
+
+    it('shows the count when liveExternalCount is 2', async () => {
+      const { getByText } = await renderCard(false, { ...group, liveExternalCount: 2 })
+      expect(getByText(/2 observed/)).toBeTruthy()
+    })
+  })
 })

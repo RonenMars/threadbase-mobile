@@ -7,6 +7,7 @@ import { useNavLockStore } from '@/stores/navLock'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { conversationRowTitle } from '@/components/sessions/shared/rowTitle'
+import { isExternalLive } from '@/lib/externalSession'
 import type { ConvRowProps } from './types'
 
 export function ConvRow({ conv, onLongPress, forceServerChip = false }: ConvRowProps) {
@@ -45,6 +46,7 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false }: ConvRowP
       previewMode={previewPref === 'last' ? 'last' : 'first'}
       density="compact"
       leading="dot"
+      tier={isExternalLive(conv) ? 'observed' : undefined}
       provider={conv.provider}
       onPress={handlePress}
       onLongPress={onLongPress ? handleLongPress : undefined}

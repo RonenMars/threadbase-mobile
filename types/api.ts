@@ -232,6 +232,13 @@ export interface Conversation {
   totalTokens?: number
   provider?: ProviderName
   /**
+   * Set only while an outside process (a terminal CLI the streamer did not
+   * start) is running this conversation. Both fields are absent otherwise and
+   * on older streamers; absence means "not external", never "gone".
+   */
+  ownership?: 'managed' | 'external' | 'historical'
+  processLiveness?: 'alive' | 'gone' | 'unknown'
+  /**
    * Whether the conversation can be resumed. Absent on older servers — treat
    * `undefined` as resumable. False when the project dir the session ran in is
    * gone; history is still viewable but resume would fail. A resumable

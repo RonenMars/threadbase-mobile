@@ -18,6 +18,7 @@ import { splitProjectTiers } from './projectTiers'
 import { SectionEyebrow, type SectionTone } from '@/components/sessions/now/SectionEyebrow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { isExternalLive } from '@/lib/externalSession'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { isMultiSession } from './types'
@@ -207,6 +208,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
           lastMessage={item.lastMessage}
           preview={item.preview}
           matches={item.matches}
+          tier={isExternalLive(item) ? 'observed' : undefined}
           serverLabel={item.serverLabel}
           serverColor={serverColor}
           activeServerCount={activeServerCount}

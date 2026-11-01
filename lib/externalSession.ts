@@ -13,6 +13,15 @@ export function isExternalSession(s: Pick<Session, 'ownership'>): boolean {
 }
 
 /**
+ * A row (session or conversation) an outside process is running right now. The
+ * streamer sets both fields only in that case, so a row missing either is not
+ * external-live: absence never means "gone" or "external".
+ */
+export function isExternalLive(s: Pick<Session, 'ownership' | 'processLiveness'>): boolean {
+  return isExternalSession(s) && isExternalAlive(s)
+}
+
+/**
  * Whether an external session's process appears to be alive, for the distinct
  * "external — alive" indicator. Keyed on the additive liveness fields, with a
  * pid fallback for older servers that send `pid` for a discovered process but

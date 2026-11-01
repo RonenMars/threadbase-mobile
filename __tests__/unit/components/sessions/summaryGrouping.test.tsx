@@ -100,4 +100,19 @@ describe('useProjectGroups with summaries', () => {
       ['srv-2', 4],
     ])
   })
+  it('sums liveExternalCount and leaves it unset when no summary reports one', async () => {
+    const withExternal = (n?: number): MultiProjectSummary => ({
+      ...summary('/dev/tb-mobile', 3, '2026-08-09T03:45:12.289Z'),
+      liveExternalCount: n,
+    })
+    const { result } = await renderHook(() =>
+      useProjectGroups([], [withExternal(2), withExternal(1)], 'lastActivity', 'desc'),
+    )
+    expect(result.current[0].liveExternalCount).toBe(3)
+
+    const { result: none } = await renderHook(() =>
+      useProjectGroups([], [withExternal(undefined)], 'lastActivity', 'desc'),
+    )
+    expect(none.current[0].liveExternalCount ?? 0).toBe(0)
+  })
 })

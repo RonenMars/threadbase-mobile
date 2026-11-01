@@ -10,6 +10,7 @@ import { DrillView } from './DrillView'
 import { ServerRootRow } from './ServerRootRow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { isExternalLive } from '@/lib/externalSession'
 import { LiveSessionsHeader } from './LiveSessionsHeader'
 import { deriveSessionPresentation, isPresentationLive, sessionMessageCount } from '@/lib/sessionPresentation'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
@@ -141,6 +142,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
           lastMessage={c.lastMessage}
           preview={c.preview}
           matches={c.matches}
+          tier={isExternalLive(c) ? 'observed' : undefined}
           serverLabel={c.serverLabel}
           serverColor={serverColor}
           activeServerCount={activeServerCount}

@@ -77,10 +77,12 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     const pieces: string[] = []
     if (needsYouCount > 0) pieces.push(t('hub.activityNeedsYou', { count: needsYouCount }))
     else if (liveCount > 0) pieces.push(t('hub.activityLive', { count: liveCount }))
+    const observedCount = group.liveExternalCount ?? 0
+    if (observedCount > 0) pieces.push(t('hub.activityObserved', { count: observedCount }))
     if (todaySessionCount > 0) pieces.push(t('hub.activityToday', { total: todaySessionCount }))
     if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')
-  }, [group.sessions, group.latestActivityMs, todaySessionCount, i18n.language, t])
+  }, [group.sessions, group.latestActivityMs, group.liveExternalCount, todaySessionCount, i18n.language, t])
 
   const renderSheet = (activeConv: MultiConversation) => {
         const favId = buildFavoriteId(activeConv.serverId, 'conversation', activeConv.id)

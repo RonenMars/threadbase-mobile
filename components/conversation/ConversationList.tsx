@@ -25,6 +25,7 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { isExternalLive } from '@/lib/externalSession'
 import type { MultiConversation } from '@/types/api'
 import { conversationHref } from '@/lib/conversationHref'
 import { useTextDirectionStyle } from '@/lib/rtl'
@@ -76,6 +77,7 @@ const ConversationRow = React.memo(function ConversationRow({
       lastMessage={c.lastMessage}
       preview={c.preview}
       matches={c.matches}
+      tier={isExternalLive(c) ? 'observed' : undefined}
       serverLabel={c.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}

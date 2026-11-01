@@ -869,6 +869,46 @@ describe('useConversationSearch — partial failure (Bug 32)', () => {
   })
 })
 
+describe('useConversationSearch — external liveness', () => {
+  it('keeps ownership and processLiveness on a tagged result and adds none to an untagged one', async () => {
+    setActiveServers(['srv-ext'])
+    handlers['srv-ext'] = () =>
+      Promise.resolve({
+        conversations: [
+          {
+            id: 'tagged',
+            title: 'alpha one',
+            projectPath: '/p',
+            messageCount: 1,
+            lastActivity: '2026-10-31T10:00:00.000Z',
+            ownership: 'external',
+            processLiveness: 'alive',
+          },
+          {
+            id: 'plain',
+            title: 'alpha two',
+            projectPath: '/p',
+            messageCount: 1,
+            lastActivity: '2026-10-31T09:00:00.000Z',
+          },
+        ],
+        hasMore: false,
+        offset: 0,
+        total: 2,
+      })
+
+    const { result } = await renderHook(() => useConversationSearch('alpha'), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.data).toBeDefined(), { timeout: 6000 })
+
+    const byId = Object.fromEntries(result.current.data!.conversations.map((c) => [c.id, c]))
+    expect(byId.tagged).toMatchObject({ ownership: 'external', processLiveness: 'alive' })
+    expect(byId.plain.ownership).toBeUndefined()
+    expect(byId.plain.processLiveness).toBeUndefined()
+  })
+})
+
 describe('useConversation — retention gcTime', () => {
   it('gives the plain tail query a 7-day gcTime', async () => {
     setActiveServers(['srv_gc_tail'])

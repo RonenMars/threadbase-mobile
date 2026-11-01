@@ -16,6 +16,8 @@ export interface ProjectGroup {
   /** Conversation count from /api/projects/summary. The rows themselves are
    *  fetched by the card when it opens, so a collapsed group costs nothing. */
   conversationCount: number
+  /** Conversations an outside process is running now, summed from the summaries. */
+  liveExternalCount?: number
   latestActivityMs: number
   earliestStartMs: number
 }
@@ -99,6 +101,7 @@ export function useProjectGroups(
         })()
 
       group.conversationCount += summary.conversationCount
+      group.liveExternalCount = (group.liveExternalCount ?? 0) + (summary.liveExternalCount ?? 0)
       const lastActivityMs = toMs(summary.lastActivity)
       if (lastActivityMs > group.latestActivityMs) {
         group.latestActivityMs = lastActivityMs
