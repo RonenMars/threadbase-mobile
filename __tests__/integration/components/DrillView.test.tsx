@@ -1,5 +1,6 @@
 import React from 'react'
 import { fireEvent, waitFor } from '@testing-library/react-native'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { DrillView } from '@/components/sessions/tree/DrillView'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
@@ -109,7 +110,9 @@ describe('DrillView', () => {
 
   it('shows a machine breadcrumb, FOLDERS, and HERE', async () => {
     const { getByText, getByTestId } = await renderWithI18n(
-      <DrillView node={node} serverId="srv-1" onBack={() => {}} />,
+      <QueryClientProvider client={new QueryClient()}>
+        <DrillView node={node} serverId="srv-1" onBack={() => {}} />
+      </QueryClientProvider>,
     )
     expect(getByText('studio · ~/user')).toBeTruthy()
     expect(getByText('dev')).toBeTruthy()
@@ -121,7 +124,9 @@ describe('DrillView', () => {
 
   it('drills into a folder on tap', async () => {
     const { getByTestId, getByText, queryByText } = await renderWithI18n(
-      <DrillView node={node} serverId="srv-1" onBack={() => {}} />,
+      <QueryClientProvider client={new QueryClient()}>
+        <DrillView node={node} serverId="srv-1" onBack={() => {}} />
+      </QueryClientProvider>,
     )
     fireEvent.press(getByTestId('drill-folder-tb-mobile'))
     await waitFor(() => expect(getByTestId('drill-cwd-/home/user/dev/tb-mobile')).toBeTruthy())

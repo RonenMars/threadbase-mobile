@@ -98,6 +98,7 @@ export function DrillView({ node, serverId, onBack, topInset = 0, onScroll }: Pr
     tier: deriveSessionPresentation(s).tier,
     serverId: s.serverId,
     serverLabel: s.serverLabel,
+    session: s,
     onPress: () => {
       useNavLockStore.getState().lock()
       router.push(`/session/${s.id}?server=${s.serverId}`)
@@ -117,6 +118,7 @@ export function DrillView({ node, serverId, onBack, topInset = 0, onScroll }: Pr
         serverLabel: c.serverLabel,
         provider: c.provider,
         tier: conversationTier(c),
+        conversation: c,
         onPress: () => {
           useNavLockStore.getState().lock()
           router.push(`/conversation/${c.id}?server=${c.serverId}`)
