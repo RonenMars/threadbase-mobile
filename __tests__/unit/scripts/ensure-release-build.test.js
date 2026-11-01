@@ -170,6 +170,16 @@ test('an existing build with no stamp is treated as stale and fails loudly, with
   expect(result.stderr).toMatch(/stale/i);
   expect(result.stderr).toMatch(/no freshness stamp/i);
   expect(result.stderr).toMatch(/E2E_ALLOW_STALE_BUILD=1/);
+
+  // `npm run ios` writes no stamp, so prescribing it leaves this guard
+  // unsatisfiable (#660); the only rebuild path that stamps is E2E_REBUILD_STALE.
+  expect(result.stderr).not.toMatch(/npm run ios/);
+  expect(result.stderr).toMatch(/E2E_REBUILD_STALE=1/);
+
+  fs.mkdirSync(path.join(repo, 'ios/Threadbase.xcworkspace'), { recursive: true });
+  writeSyncedPods(repo);
+  const fixed = runScript(repo, { rebuildStale: true });
+  expect(fixed.status).toBe(0);
 });
 
 test('a build stamped for an old commit is treated as stale and fails loudly, without rebuilding', () => {

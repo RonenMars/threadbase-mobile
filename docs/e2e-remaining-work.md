@@ -126,8 +126,9 @@ XCUITest-driver infrastructure (see Environment gotchas), not a sheet open bug.
   `npx expo run:ios --configuration Release` builds *and then holds Metro open*, so
   the script never returns and Maestro never starts. Still true for a genuine
   first build (no `.app` found anywhere) — pre-build the Release `.app` once
-  (`npm run ios -- --configuration Release`) so the fast install path fires, or
-  make that build step non-blocking. As of #598's staleness guard, a build that
+  with `E2E_REBUILD_STALE=1 node e2e/ensure-release-build.js` (xcodebuild; writes the
+  freshness stamp, which `npm run ios -- --configuration Release` does not) so the
+  fast install path fires. As of #598's staleness guard, a build that
   merely went *stale* no longer risks this: the script fails fast with a
   "stale, rebuild it yourself" error instead of triggering the blocking rebuild.
 - **Onboarding pairing survives `clearState`** (SecureStore/Keychain persists), so a
