@@ -1,0 +1,61 @@
+name: Deploy Web
+
+# Deploys the Expo Web export to the Vercel project `threadbase-web`.
+# Vercel's own git integration is off (vercel.json `git.deploymentEnabled`): its ignored-build
+# step cancelled every push, and a cancelled deployment still counts toward the free plan's
+# 100-deployments-per-day cap. This workflow creates one deployment, and only when code that
+# ends up in the web bundle changed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'assets/**'
+      - 'components/**'
+      - 'constants/**'
+      - 'contexts/**'
+      - 'hooks/**'
+      - 'lib/**'
+      - 'locales/**'
+      - 'services/**'
+      - 'stores/**'
+      - 'types/**'
+      - 'utils/**'
+      - 'app.json'
+      - 'app.config.js'
+      - 'babel.config.js'
+      - 'global.css'
+      - 'metro.config.js'
+      - 'middleware.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'postcss.config.mjs'
+      - 'tailwind.config.js'
+      - 'tsconfig.json'
+      - 'vercel.json'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Deploy
+        run: npx --yes vercel@65.9.0 deploy --prod --yes --token "$VERCEL_TOKEN"
