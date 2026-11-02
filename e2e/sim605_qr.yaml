@@ -1,0 +1,30 @@
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-cta"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-language-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-welcome-cta"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding-connect-qr-card"
+- waitForAnimationToEnd
+- takeScreenshot: sim605x_05_qr_entry
+- tapOn: "Open camera.*"
+- waitForAnimationToEnd
+- takeScreenshot: sim605x_07_open_camera
+- tapOn:
+    point: "50%,59%"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: sim605x_08_after_camera_prompt

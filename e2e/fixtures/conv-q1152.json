@@ -1,0 +1,14 @@
+{
+  "meta": {
+    "id": "conv-q1152",
+    "project_name": "storefront",
+    "project_path": "/workspace/northstar-commerce/apps/storefront",
+    "git_branch": "feat/health-endpoint",
+    "message_count": 1,
+    "last_updated_at": "2026-09-25T10:00:00.000Z"
+  },
+  "messages": [
+    { "uuid": "q-1", "role": "user", "message_index": 0, "timestamp": "2026-09-25T10:00:00.000Z", "text": "tidy the checkout retry code" }
+  ],
+  "message_pagination": { "from_index": 0, "total": 1, "has_more_older": false, "next_before_index": null }
+}
