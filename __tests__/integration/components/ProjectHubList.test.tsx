@@ -144,4 +144,17 @@ describe('ProjectHubList server failure', () => {
     expect(queryByTestId('server-failure-srv-2')).toBeNull()
     expect(getByTestId('hub-project-fresh')).toBeTruthy()
   })
+
+  it('renders no section for a server the filter hides', async () => {
+    const server = (id: string, label: string) => ({ id, url: `http://${id}`, apiKey: 'k', label, isConnected: true, serverInfo: null, connectionError: null })
+    useServersStore.setState({
+      activeServerIds: ['srv-1', 'srv-2', 'srv-3'],
+      displayedServerIds: ['srv-1', 'srv-3'],
+      servers: { 'srv-1': server('srv-1', 'MacBook Pro'), 'srv-2': server('srv-2', 'Proda'), 'srv-3': server('srv-3', 'Home') },
+    })
+    const { getByTestId, queryByTestId } = await renderHub([liveSession], [summary('fresh', DAY)])
+    expect(getByTestId('server-header-srv-1')).toBeTruthy()
+    expect(getByTestId('server-header-srv-3')).toBeTruthy()
+    expect(queryByTestId('server-header-srv-2')).toBeNull()
+  })
 })
