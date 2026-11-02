@@ -5,6 +5,7 @@ import { ConversationListItem } from '@/components/sessions/shared/ConversationL
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import { conversationHref } from '@/lib/conversationHref'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { useNavLockStore } from '@/stores/navLock'
 import { useServersStore } from '@/stores/servers'
@@ -31,12 +32,12 @@ function SessionEarlierRow({ session, ms, title, isFirst, highlight, previewMode
   previewMode: MessagePreviewMode
   dominantProvider?: ProviderName
 }) {
-  const { handlePress, handleLongPress, overlays } = useSessionRowActions(session, title)
+  const { handlePress, handleLongPress, overlays, swipe } = useSessionRowActions(session, title)
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
   const { tier } = deriveSessionPresentation(session)
   return (
-    <>
+    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing}>
       <ConversationListItem
         testID={isFirst ? 'first-session-card' : `session-row-${session.id}`}
         title={title}
@@ -58,7 +59,7 @@ function SessionEarlierRow({ session, ms, title, isFirst, highlight, previewMode
         onLongPress={handleLongPress}
       />
       {overlays}
-    </>
+    </SwipeableRow>
   )
 }
 
