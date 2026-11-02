@@ -74,6 +74,20 @@ describe('pendingTargetFromPaste', () => {
     })
   })
 
+  it.each([
+    ['omitted', { url: 'https://a.test', label: 'studio' }],
+    ['null', { url: 'https://a.test', label: 'studio', serverPublicKey: null }],
+  ])('is no-spk, not e2ee, when a pair URI carries a valid spk but the result has no proved key (%s)', (_name, result) => {
+    expect(SPK).toHaveLength(43)
+    const token = `threadbase://pair?url=${encodeURIComponent('https://a.test')}&token=pt_x&spk=${SPK}`
+    expect(pendingTargetFromPaste(token, result)).toEqual({
+      kind: 'no-spk',
+      machineName: 'studio',
+      url: 'https://a.test',
+      fingerprint: null,
+    })
+  })
+
   it('is no-spk for a bare pair token with no server key', () => {
     expect(
       pendingTargetFromPaste('pt_abcdef0123456789', { url: 'https://a.test', label: 'studio' }),
