@@ -11,7 +11,7 @@
 #
 # Builds report to Sentry as `testing` (services/sentry.ts).
 #
-# The binary is TbDev (com.ronenmars.threadbase.dev, its own App Group and icon),
+# The binary is TbDev (com.ronenmars.threadbase.dev, its own icon),
 # so it installs beside the store app instead of replacing it.
 #
 # Usage:
@@ -24,7 +24,7 @@
 #                                                 Firebase App Distribution Admin permissions;
 #                                                 locally, gcloud ADC is used as a fallback
 #   EXPO_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN/ORG/PROJECT (shell, .env, or .env.signing*)
-#   iOS:     an installed Ad Hoc profile per target (app + widgets) granting App Groups
+#   iOS:     an installed Ad Hoc profile for the app
 #   Android: .env.signing.android (the Play upload key)
 #
 # Build numbers are used as-is (app.json on iOS, build.gradle on Android); nothing is bumped or committed.
@@ -148,12 +148,11 @@ if [[ "$PLATFORM" == ios ]]; then
   TEAM_ID="${ASC_TEAM_ID:-${APPLE_TEAM_ID:-}}"
   [[ -n "$TEAM_ID" ]] || { echo "ASC_TEAM_ID is not set (source .env.signing, or export it)" >&2; exit 1; }
 
-  # Same per-target signing problem dev-device.sh solves: both targets declare
-  # the App Group, so each needs its own profile. An Ad Hoc profile lists devices
+  # An Ad Hoc profile lists devices
   # but, unlike a development one, has get-task-allow false. Newest wins, so a
   # profile regenerated after registering a device is picked up. Xcode's
   # "Download Manual Profiles" saves to UserData, not MobileDevice, so scan both.
-  read -r ADHOC_APP_UUID ADHOC_WIDGET_UUID <<<"$(
+  read -r ADHOC_APP_UUID <<<"$(
     python3 - "$HOME/Library/MobileDevice/Provisioning Profiles" \
               "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" <<'PY'
 import datetime, glob, os, plistlib, subprocess, sys
@@ -174,23 +173,21 @@ def pick(plists, suffix):
         if p.get("Entitlements", {}).get("application-identifier", "").endswith("." + suffix)
         and p.get("ProvisionedDevices")
         and not p["Entitlements"].get("get-task-allow")
-        and p["Entitlements"].get("com.apple.security.application-groups")
         and p.get("ExpirationDate", now) > now
     ]
     matches.sort(key=lambda p: p.get("CreationDate"), reverse=True)
     return matches[0]["UUID"] if matches else "-"
 
 found = list(profiles(sys.argv[1:]))
-print(pick(found, "com.ronenmars.threadbase.dev"),
-      pick(found, "com.ronenmars.threadbase.dev.widgets"))
+print(pick(found, "com.ronenmars.threadbase.dev"))
 PY
   )"
-  if [[ "$ADHOC_APP_UUID" == - || "$ADHOC_WIDGET_UUID" == - ]]; then
-    echo "No Ad Hoc profile with App Groups installed for the app and/or the widget target." >&2
-    echo "Create both in the Developer portal (Distribution → Ad Hoc), register the QA devices, and install them." >&2
+  if [[ "$ADHOC_APP_UUID" == - ]]; then
+    echo "No Ad Hoc profile installed for the app." >&2
+    echo "Create it in the Developer portal (Distribution → Ad Hoc), register the QA devices, and install it." >&2
     exit 1
   fi
-  echo "  signing: ad hoc (app $ADHOC_APP_UUID, widget $ADHOC_WIDGET_UUID)"
+  echo "  signing: ad hoc (app $ADHOC_APP_UUID)"
 
   # The in-app update check needs the Firebase SDK, which only this build links:
   # the Podfile adds the package when asked, and AppDelegate compiles the check
@@ -260,7 +257,6 @@ PY
     CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="Apple Distribution" \
     IOS_PROVISION_PROFILE_UUID="$ADHOC_APP_UUID" \
-    IOS_WIDGET_PROVISION_PROFILE_UUID="$ADHOC_WIDGET_UUID" \
     CURRENT_PROJECT_VERSION="$QA_BUILD_VERSION" \
     TB_BUNDLE_ID_SUFFIX=.dev \
     TB_APPICON_SUFFIX=Dev \
@@ -288,7 +284,6 @@ PY
   <key>provisioningProfiles</key>
   <dict>
     <key>com.ronenmars.threadbase.dev</key><string>$ADHOC_APP_UUID</string>
-    <key>com.ronenmars.threadbase.dev.widgets</key><string>$ADHOC_WIDGET_UUID</string>
   </dict>
 </dict>
 </plist>
