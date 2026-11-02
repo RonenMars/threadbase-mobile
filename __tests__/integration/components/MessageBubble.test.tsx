@@ -108,8 +108,8 @@ describe("MessageBubble – code blocks", () => {
 });
 
 describe("MessageBubble – tool_use", () => {
-  it("renders tool use tag with emoji", async () => {
-    const { getByText } = await render(
+  it("renders the tool name beside a Phosphor wrench, with no emoji glyph", async () => {
+    const { getByText, getByTestId } = await render(
       <MessageBubble
         message={makeMessage({
           content: [
@@ -118,7 +118,9 @@ describe("MessageBubble – tool_use", () => {
         })}
       />,
     );
-    expect(getByText("🔧 Bash")).toBeTruthy();
+    expect(getByText("Bash")).toBeTruthy();
+    expect(getByTestId("phosphor-react-native-wrench-bold")).toBeTruthy();
+    expect(JSON.stringify(getByText("Bash").props.children)).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 });
 
