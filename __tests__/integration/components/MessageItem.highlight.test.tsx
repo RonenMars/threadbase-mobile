@@ -96,3 +96,13 @@ describe('ConversationHistoryList – in-chat search tinting', () => {
     expect(queryAllByText('tmux')).toHaveLength(0)
   })
 })
+
+describe('MessageItem – queued send', () => {
+  it('hands the queued flag to the bubble', async () => {
+    const queued = await render(<MessageItem message={textMessage(7, 'wait for me')} queued />)
+    expect(queued.queryAllByText('Queued')).toHaveLength(1)
+
+    const plain = await render(<MessageItem message={textMessage(8, 'wait for me')} />)
+    expect(plain.queryAllByText('Queued')).toHaveLength(0)
+  })
+})

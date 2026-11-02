@@ -76,7 +76,8 @@
     "tokens_one": "{{count}} token",
     "tokens_other": "{{count}} tokens",
     "errorBadge": "Error",
-    "toolFallback": "Tool"
+    "toolFallback": "Tool",
+    "queued": "Queued"
   },
   "thinking": {
     "label": "Reasoning",
