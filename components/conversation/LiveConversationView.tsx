@@ -314,6 +314,7 @@ export function LiveConversationView({
   })
   const { cancelQuestion, cancelErrorMessage, cancelNoticeMessage } =
     useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
+  const [scrapedCardShown, setScrapedCardShown] = useState(false)
 
   // A question arrives on the running → waiting_input edge, which is exactly the
   // edge that retires the thinking bubble. Mount on the question too, or a card
@@ -561,6 +562,7 @@ export function LiveConversationView({
             answerPhase={answerPhase}
             answerBusy={answerBusy}
             onCancelQuestion={cancelQuestion}
+            onScrapedCardChange={setScrapedCardShown}
             onSessionQuit={leaveToHome}
           />
         ) : null}
@@ -589,8 +591,9 @@ export function LiveConversationView({
         // blocks nothing, so an answer the server never confirms cannot strand
         // the composer — which is what makes the five exits from `active` a
         // safety net rather than the only thing standing between the user and
-        // a locked app.
-        sendDisabled={answerPhase === 'active'}
+        // a locked app. A scraped card has no phase but is just as open: the
+        // terminal scrape takes over from a server card dropped on a status flip.
+        sendDisabled={answerPhase === 'active' || scrapedCardShown}
         onAttach={handleAttach}
         onCancelUpload={cancelUpload}
         attachments={attachments}

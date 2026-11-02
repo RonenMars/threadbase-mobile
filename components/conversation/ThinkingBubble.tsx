@@ -31,12 +31,18 @@ interface Props {
   answerBusy?: boolean
   /** Cancel on the structured card; the owning view decides what reaches the PTY. */
   onCancelQuestion?: () => void
+  /**
+   * Reports whether the card on screen is the PTY scrape rather than a server
+   * prompt. The scrape has no phase, so the owning view cannot see it
+   * through `answerPhase` and needs this to keep send off while it is up.
+   */
+  onScrapedCardChange?: (shown: boolean) => void
   /** Server-derived agent phase, already gated on `presentation.live`. */
   subStatus?: AgentPhase | null
   onSessionQuit?: () => void
 }
 
-export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, subStatus, onSessionQuit }: Props) {
+export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, onScrapedCardChange, subStatus, onSessionQuit }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const { t: tc } = useTranslation('common')
@@ -56,6 +62,12 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
   // ~350ms after it appeared, leaving nothing to tap. A card outlives the phase
   // it happened to arrive in.
   const hasCard = Boolean(activeQuestion ?? questionBlock)
+
+  const scrapedCardShown = !activeQuestion && questionBlock !== null
+  useEffect(() => {
+    onScrapedCardChange?.(scrapedCardShown)
+    return () => onScrapedCardChange?.(false)
+  }, [scrapedCardShown, onScrapedCardChange])
 
   // The card opens full screen; minimizing drops it back into the transcript
   // until the next prompt arrives. Keyed on content, not identity: a PTY repaint

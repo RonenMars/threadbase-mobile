@@ -426,6 +426,68 @@ describe('TerminalView', () => {
     })
   })
 
+  describe('send while any question card is on screen', () => {
+    const SCRAPED_MENU = ['Do you trust the contents of this directory?', '> 1. Yes, continue', '2. No, quit']
+    const QUESTION_MESSAGE = {
+      type: 'question' as const,
+      sessionId: 'sess1',
+      toolUseId: 'q1',
+      questions: [
+        {
+          question: 'Which approach?',
+          header: 'Choose one',
+          multiSelect: false,
+          options: [
+            { label: 'Option A', description: '' },
+            { label: 'Option B', description: '' },
+          ],
+        },
+      ],
+    }
+    const statusUpdate = (status: string) => ({ type: 'session_update', session: { id: 'sess1', status } })
+
+    it('keeps send disabled after a status flip hands the card to the terminal scrape', async () => {
+      const { rerender } = await renderView()
+      await act(async () => dispatchWs('session_update', statusUpdate('waiting_input')))
+      await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+      expect(screen.getByTestId('question-card')).toBeTruthy()
+
+      mockLines = SCRAPED_MENU
+      await act(async () => dispatchWs('session_update', statusUpdate('running')))
+      await act(async () => rerender(<TerminalView serverId="srv1" sessionId="sess1" />))
+
+      expect(screen.queryByText('Which approach?')).toBeNull()
+      expect(screen.getByLabelText('No, quit')).toBeTruthy()
+      await act(async () => fireEvent.press(screen.getByTestId('chat-send-button')))
+      expect(mockSendInputMutate).not.toHaveBeenCalled()
+    })
+
+    it('does not lock send for a stale scrape behind the pending ghost', async () => {
+      const { rerender } = await renderView()
+      await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+      await act(async () => fireEvent.press(screen.getByLabelText('Option A')))
+      expect(screen.getByTestId('question-card-ghost')).toBeTruthy()
+
+      mockLines = SCRAPED_MENU
+      await act(async () => rerender(<TerminalView serverId="srv1" sessionId="sess1" />))
+      expect(screen.queryByLabelText('No, quit')).toBeNull()
+      await act(async () => fireEvent.press(screen.getByTestId('chat-send-button')))
+      expect(mockSendInputMutate).toHaveBeenCalledTimes(1)
+    })
+
+    it('re-enables send once the scraped card is gone', async () => {
+      mockLines = SCRAPED_MENU
+      const { rerender } = await renderView()
+      expect(screen.getByLabelText('No, quit')).toBeTruthy()
+
+      mockLines = ['line one', 'line two']
+      await act(async () => rerender(<TerminalView serverId="srv1" sessionId="sess1" />))
+      expect(screen.queryByLabelText('No, quit')).toBeNull()
+      await act(async () => fireEvent.press(screen.getByTestId('chat-send-button')))
+      expect(mockSendInputMutate).toHaveBeenCalledTimes(1)
+    })
+  })
+
   // The prompt_pending guard is a server 409 on `{ input }` and applies to the
   // Terminal view's composer too. `{ keys }` is not arbitrated server-side, so
   // Escape is the one thing that can still reach the PTY — but with no card on
