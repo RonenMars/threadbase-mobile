@@ -7,7 +7,7 @@ import FirebaseCore
 #endif
 
 @main
-class AppDelegate: ExpoAppDelegate {
+class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
   var window: UIWindow?
 
   var reactNativeDelegate: ExpoReactNativeFactoryDelegate?
@@ -24,13 +24,8 @@ class AppDelegate: ExpoAppDelegate {
     reactNativeDelegate = delegate
     reactNativeFactory = factory
 
-#if os(iOS) || os(tvOS)
-    window = UIWindow(frame: UIScreen.main.bounds)
-    factory.startReactNative(
-      withModuleName: "main",
-      in: window,
-      launchOptions: launchOptions)
-#endif
+    // SceneDelegate creates the window and starts React Native: iOS 27 traps at launch
+    // unless the app adopts the scene life cycle.
 
 #if canImport(FirebaseAppDistribution)
     checkForQAUpdate()
@@ -58,7 +53,7 @@ class AppDelegate: ExpoAppDelegate {
     options.projectID = projectID
     FirebaseApp.configure(options: options)
 
-    AppDistribution.appDistribution().checkForUpdate { [weak self] release, _ in
+    AppDistribution.appDistribution().checkForUpdate { release, _ in
       guard let release else { return }
       let alert = UIAlertController(
         title: "New QA build \(release.displayVersion) (\(release.buildVersion))",
@@ -68,7 +63,9 @@ class AppDelegate: ExpoAppDelegate {
       alert.addAction(UIAlertAction(title: "Update", style: .default) { _ in
         UIApplication.shared.open(release.downloadURL)
       })
-      self?.window?.rootViewController?.present(alert, animated: true)
+      // The window belongs to SceneDelegate now, so `self.window` is nil.
+      let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+      scene?.keyWindow?.rootViewController?.present(alert, animated: true)
     }
   }
 #endif
