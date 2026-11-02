@@ -289,5 +289,9 @@
     "emptyWorking": "Sessions running now show in this column.",
     "emptyObserved": "Sessions you watch but did not start show in this column.",
     "emptyEarlier": "Finished sessions show in this column."
+  },
+  "tour": {
+    "skip": "Skip tour",
+    "gotIt": "Got it →"
   }
 }
