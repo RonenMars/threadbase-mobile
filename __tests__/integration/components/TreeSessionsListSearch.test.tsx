@@ -1,5 +1,5 @@
 import React from 'react'
-import { act, fireEvent } from '@testing-library/react-native'
+import { act } from '@testing-library/react-native'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
@@ -49,17 +49,18 @@ beforeEach(async () => {
 
 it('renders pluralised, translated search section headers', async () => {
   mockSearch.mockReturnValue({ data: { conversations: [conversation('c1')] } })
-  const { getByPlaceholderText, getByText } = await renderWithI18n(
+  const { getByText } = await renderWithI18n(
     <TreeSessionsList
       sessions={[session('s1'), session('s2')]}
       summaries={[]}
       refreshing={false}
       onRefresh={() => {}}
       searchOpen
+      searchQuery="needle"
     />,
   )
   await act(async () => {
-    fireEvent.changeText(getByPlaceholderText('Search sessions & conversations…'), 'needle')
+    await new Promise((resolve) => setTimeout(resolve, 400))
   })
   expect(getByText('Conversations · 1 result')).toBeTruthy()
   expect(getByText('Sessions · 2 results')).toBeTruthy()
