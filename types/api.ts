@@ -533,6 +533,12 @@ export interface ServerInfo {
    */
   savedItems?: boolean
   /**
+   * Additive: the server serves GET /api/recent-dirs, the directories sessions
+   * were started in, kept across restarts. Absent on older servers, where the
+   * browse screen derives its recents from the live session list.
+   */
+  recentDirs?: boolean
+  /**
    * Additive: the server publishes the provider-neutral prompt contract
    * (`prompt_snapshot` / `prompt_event` frames, POST /prompt/answer). Absent on
    * older servers. Informational: the client negotiates by frame presence, not
