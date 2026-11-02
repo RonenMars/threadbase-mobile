@@ -386,3 +386,83 @@ describe('useEagerSessions', () => {
     expect(secondCall).toContain('sortBy=projectName')
   })
 })
+
+describe('useEagerSessions external-session liveness refetch', () => {
+  const INTERVAL_MS = 60_000
+
+  function externalPage(ids: string[]): SessionListPage {
+    return {
+      sessions: ids.map((id) => ({ ...makeSession(id), ownership: 'external' as const })),
+      nextCursor: null,
+      total: ids.length,
+    }
+  }
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('drops an external row that vanished from the server list after an interval refetch', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet
+      .mockResolvedValueOnce(externalPage(['ext1']))
+      .mockResolvedValueOnce(pageOf([], { total: 0 }))
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+    expect(result.current.sessions.map((s) => s.id)).toEqual(['ext1'])
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(INTERVAL_MS - 1)
+    })
+    expect(mockGet).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1)
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(result.current.sessions).toEqual([]))
+  })
+
+  it('does not poll a server list that holds no external session', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet.mockResolvedValue(pageOf(['a1']))
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(INTERVAL_MS * 3)
+    })
+    expect(mockGet).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the loading counters steady while the interval refetch is in flight', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    let releaseRefetch: (page: SessionListPage) => void = () => {}
+    mockGet
+      .mockResolvedValueOnce(externalPage(['ext1', 'ext2']))
+      .mockReturnValueOnce(new Promise<SessionListPage>((resolve) => { releaseRefetch = resolve }))
+
+    const { result } = await renderHook(() => useEagerSessions(), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+    expect(result.current).toMatchObject({ loaded: 2, total: 2, inFlightCount: 0 })
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(INTERVAL_MS)
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    expect(result.current).toMatchObject({ loaded: 2, total: 2, inFlightCount: 0, isCounting: false })
+
+    await act(async () => {
+      releaseRefetch(externalPage(['ext1']))
+      await jest.advanceTimersByTimeAsync(0)
+    })
+    await waitFor(() => expect(result.current.sessions.map((s) => s.id)).toEqual(['ext1']))
+    expect(result.current).toMatchObject({ loaded: 2, total: 2, inFlightCount: 0, isCounting: false })
+  })
+})
