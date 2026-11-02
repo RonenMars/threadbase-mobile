@@ -4,6 +4,13 @@ import { fireEvent, render } from '@testing-library/react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 import i18n from '@/test-utils/i18n-setup'
+import { THEMES, type Theme } from '@/constants/theme'
+
+const mockTheme: { current: Theme } = { current: THEMES.dark }
+
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => mockTheme.current,
+}))
 
 describe('TerminalOutput – rendering', () => {
   it('renders provided lines', async () => {
@@ -383,5 +390,23 @@ describe('TerminalOutput – Codex trust quit', () => {
     )
     await fireEvent.press(getByLabelText('Yes, continue'))
     expect(onSessionQuit).not.toHaveBeenCalled()
+  })
+})
+
+describe('TerminalOutput – theming', () => {
+  afterEach(() => {
+    mockTheme.current = THEMES.dark
+  })
+
+  it.each(Object.entries(THEMES))('follows the %s palette', async (_id, theme) => {
+    mockTheme.current = theme
+    const { getByText, getByTestId } = await render(
+      <TerminalOutput lines={['❯ Howdy', 'plain output']} isStreaming={false} />
+    )
+    const container = StyleSheet.flatten(getByTestId('terminal-output').props.style)
+    expect(container.backgroundColor).toBe(theme.bg.primary)
+    expect(container.borderColor).toBe(theme.bg.card)
+    expect(StyleSheet.flatten(getByText('❯ Howdy').props.style).color).toBe(theme.text.accent)
+    expect(StyleSheet.flatten(getByText('plain output').props.style).color).toBe(theme.text.primary)
   })
 })

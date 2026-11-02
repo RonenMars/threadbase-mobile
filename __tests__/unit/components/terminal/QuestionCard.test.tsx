@@ -1,7 +1,15 @@
 import { render, fireEvent } from '@testing-library/react-native'
+import { StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
+import { THEMES, type Theme } from '@/constants/theme'
+
+const mockTheme: { current: Theme } = { current: THEMES.dark }
+
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => mockTheme.current,
+}))
 
 const BASE_BLOCK: QuestionBlock = {
   source: 'structured',
@@ -214,5 +222,22 @@ describe('QuestionCard', () => {
       await dragOnFirstOption(400, 490, onSelect)
       expect(onSelect).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('QuestionCard theming', () => {
+  afterEach(() => {
+    mockTheme.current = THEMES.dark
+  })
+
+  it.each(Object.entries(THEMES))('follows the %s palette', async (_id, theme) => {
+    mockTheme.current = theme
+    const { getByTestId, getByText } = await render(<QuestionCard block={BASE_BLOCK} onSelect={jest.fn()} />)
+
+    const container = StyleSheet.flatten(getByTestId('question-card').props.style)
+    expect(container.backgroundColor).toBe(theme.bg.primary)
+    expect(container.borderTopColor).toBe(theme.bg.card)
+    expect(StyleSheet.flatten(getByText('Add fallback to ConversationCache?').props.style).color).toBe(theme.text.primary)
+    expect(StyleSheet.flatten(getByText('Fallback').props.style).color).toBe(theme.text.accent)
   })
 })

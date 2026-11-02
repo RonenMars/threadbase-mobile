@@ -32,7 +32,7 @@ interface Props {
 
 export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel, busy = false, ghost = false, large = false }: Props) {
   const { t } = useTranslation('common')
-  const { styles } = useThemedStyles(makeStyles)
+  const { styles, theme } = useThemedStyles(makeStyles)
   const q = block.questions[0]
   // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
   const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
@@ -88,7 +88,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           accessibilityRole="button"
           accessibilityLabel={t('button.cancel')}
         >
-          <X size={16} color="#8b949e" />
+          <X size={16} color={theme.text.secondary} />
         </TouchableOpacity>
       ) : null}
       {/* An unsupported form has no tappable rows, so showing all its questions costs nothing and says what the terminal is asking. */}
@@ -142,19 +142,19 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   )
 })
 
-function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
+function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
   ghost: {
     opacity: 0.55,
   },
   ghostNote: {
-    color: '#8b949e',
+    color: theme.text.secondary,
     fontSize: 12,
     marginTop: spacing.sm,
     ...rtl.copy,
   },
   unsupported: {
-    color: '#d29922',
+    color: theme.text.warning,
     fontSize: 12,
     lineHeight: 16,
     marginBottom: spacing.sm,
@@ -162,8 +162,8 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
   },
   container: {
     borderTopWidth: 1,
-    borderTopColor: '#21262d',
-    backgroundColor: '#0d1117',
+    borderTopColor: theme.bg.card,
+    backgroundColor: theme.bg.primary,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -188,7 +188,7 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
     padding: 4,
   },
   header: {
-    color: '#58a6ff',
+    color: theme.text.accent,
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -199,13 +199,13 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
   detail: {
     ...rtl.ltr,
     fontFamily: 'monospace',
-    color: '#8b949e',
+    color: theme.text.secondary,
     fontSize: 12,
     lineHeight: 16,
     marginBottom: spacing.sm,
   },
   question: {
-    color: '#e6edf3',
+    color: theme.text.primary,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: spacing.sm,
@@ -222,27 +222,27 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
     gap: 10,
   },
   optionSelected: {
-    backgroundColor: 'rgba(31, 111, 235, 0.12)',
+    backgroundColor: `${theme.text.accent}1f`,
   },
   radioOuter: {
     width: 16,
     height: 16,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: '#484f58',
+    borderColor: theme.text.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
     marginTop: 1,
   },
   radioOuterSelected: {
-    borderColor: '#58a6ff',
+    borderColor: theme.text.accent,
   },
   radioInner: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#58a6ff',
+    backgroundColor: theme.text.accent,
   },
   optionBody: {
     flex: 1,
@@ -252,17 +252,17 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
     minWidth: 0,
   },
   optionText: {
-    color: '#8b949e',
+    color: theme.text.secondary,
     fontSize: 13,
     lineHeight: 18,
     ...rtl.copy,
   },
   optionTextSelected: {
-    color: '#e6edf3',
+    color: theme.text.primary,
     fontWeight: '500',
   },
   optionDescription: {
-    color: '#6e7681',
+    color: theme.status.idle,
     fontSize: 12,
     lineHeight: 16,
     marginTop: 2,
@@ -270,7 +270,7 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
   preview: {
     fontFamily: 'monospace',
     fontSize: 12,
-    color: '#8b949e',
+    color: theme.text.secondary,
     marginTop: 4,
   },
   cancelButton: {
@@ -279,7 +279,7 @@ function makeStyles(_theme: Theme, rtl: RtlStyleKit) {
     marginTop: 4,
   },
   cancelText: {
-    color: '#8b949e',
+    color: theme.text.secondary,
     fontSize: 13,
     ...rtl.copy,
   },

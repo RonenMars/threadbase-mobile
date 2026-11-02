@@ -40,6 +40,9 @@ export function SweepBar() {
   )
 }
 
+// Fixed on purpose: this bar belongs to the splash animation, whose palette
+// (see SplashAnimation) is a fixed dark brand sequence that plays before and
+// independent of the user's theme.
 const styles = StyleSheet.create({
   sweepBar: {
     position: 'absolute',

@@ -2,7 +2,11 @@ import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { font, radius, spacing } from '@/constants/theme'
 
-/** Deterministic color from a serverId string. */
+/**
+ * Deterministic color from a serverId string.
+ * The hues are fixed on purpose: a server must keep the same color in every
+ * theme, so it stays recognisable when the user switches theme.
+ */
 const BADGE_COLORS = ['#58a6ff', '#3fb950', '#d29922', '#f778ba', '#bc8cff', '#79c0ff']
 
 function colorForServer(serverId: string): string {
