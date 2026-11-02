@@ -1,5 +1,5 @@
 import { arbitrate, globalSurface } from '@/lib/alertArbitration'
-import { useAlertStore, type AlertInput } from '@/stores/alerts'
+import { USER_DISMISS_COOLDOWN_MS, useAlertStore, type AlertInput } from '@/stores/alerts'
 import { TOAST_DEFAULT_TIMEOUT_MS, serverCause, type AlertCause, type AlertLevel } from '@/types/alerts'
 
 function entry(overrides: {
@@ -141,7 +141,7 @@ describe('useAlertStore', () => {
     expect(useAlertStore.getState().alerts[0].onPress).toBeDefined()
   })
 
-  it('clears the sticky block when the alert itself goes away', () => {
+  it('clears the sticky block once the alert is gone and the cooldown has passed', () => {
     const spec = {
       id: 'host-pressure',
       cause: 'host-pressure:srv' as AlertCause,
@@ -153,8 +153,106 @@ describe('useAlertStore', () => {
     useAlertStore.getState().upsert(spec)
     useAlertStore.getState().stickyDismiss('host-pressure')
     useAlertStore.getState().dismiss('host-pressure')
+    jest.advanceTimersByTime(USER_DISMISS_COOLDOWN_MS)
     useAlertStore.getState().upsert(spec)
     expect(useAlertStore.getState().alerts).toHaveLength(1)
+  })
+
+  describe('transient push', () => {
+    const copied = {
+      id: 'copied',
+      cause: 'servers:summary' as AlertCause,
+      level: 'info' as const,
+      title: 'Copied to clipboard',
+      message: 'Done.',
+    }
+
+    it('shows identical copy again after the first one timed out', () => {
+      useAlertStore.getState().push(copied)
+      jest.advanceTimersByTime(TOAST_DEFAULT_TIMEOUT_MS)
+      expect(useAlertStore.getState().alerts).toHaveLength(0)
+
+      useAlertStore.getState().push(copied)
+      expect(useAlertStore.getState().alerts).toHaveLength(1)
+      jest.advanceTimersByTime(TOAST_DEFAULT_TIMEOUT_MS)
+      expect(useAlertStore.getState().alerts).toHaveLength(0)
+    })
+
+    it('ignores a user dismissal of the same copy and restarts the timeout', () => {
+      useAlertStore.getState().push(copied)
+      useAlertStore.getState().stickyDismiss('copied')
+
+      useAlertStore.getState().push(copied)
+      expect(useAlertStore.getState().alerts).toHaveLength(1)
+
+      jest.advanceTimersByTime(TOAST_DEFAULT_TIMEOUT_MS - 1000)
+      useAlertStore.getState().push(copied)
+      jest.advanceTimersByTime(TOAST_DEFAULT_TIMEOUT_MS - 1000)
+      expect(useAlertStore.getState().alerts).toHaveLength(1)
+    })
+
+    it('does not leave a suppression behind for a declarative upsert of the same id', () => {
+      useAlertStore.getState().push(copied)
+      jest.advanceTimersByTime(TOAST_DEFAULT_TIMEOUT_MS)
+      useAlertStore.getState().upsert(copied)
+      expect(useAlertStore.getState().alerts).toHaveLength(1)
+    })
+  })
+
+  describe('re-nag cooldown', () => {
+    const flapping = {
+      id: 'server-state',
+      cause: 'servers:summary' as AlertCause,
+      level: 'warning' as const,
+      title: "Can't reach My Server",
+      message: 'Some sessions may be missing.',
+      timeout: null,
+    }
+
+    it('keeps a user-dismissed alert hidden across a flap inside the cooldown', () => {
+      useAlertStore.getState().upsert(flapping)
+      useAlertStore.getState().stickyDismiss('server-state')
+      useAlertStore.getState().dismiss('server-state')
+
+      jest.advanceTimersByTime(USER_DISMISS_COOLDOWN_MS - 1)
+      useAlertStore.getState().upsert(flapping)
+      expect(useAlertStore.getState().alerts).toHaveLength(0)
+    })
+
+    it('shows the same alert again once the cooldown has passed', () => {
+      useAlertStore.getState().upsert(flapping)
+      useAlertStore.getState().stickyDismiss('server-state')
+      useAlertStore.getState().dismiss('server-state')
+
+      jest.advanceTimersByTime(USER_DISMISS_COOLDOWN_MS)
+      useAlertStore.getState().upsert(flapping)
+      expect(useAlertStore.getState().alerts).toHaveLength(1)
+    })
+
+    it('lets changed copy through inside the cooldown', () => {
+      useAlertStore.getState().upsert(flapping)
+      useAlertStore.getState().stickyDismiss('server-state')
+      useAlertStore.getState().dismiss('server-state')
+
+      useAlertStore.getState().upsert({ ...flapping, title: 'My Server is back' })
+      expect(useAlertStore.getState().alerts).toHaveLength(1)
+    })
+
+    it('does not treat an expired toast as a user dismissal', () => {
+      const transient = { ...flapping, level: 'info' as const, timeout: 1000 }
+      useAlertStore.getState().upsert(transient)
+      jest.advanceTimersByTime(1000)
+      expect(useAlertStore.getState().alerts).toHaveLength(0)
+
+      // Still mounted and re-pushing the same copy: stays gone, or it would never leave.
+      useAlertStore.getState().upsert(transient)
+      expect(useAlertStore.getState().alerts).toHaveLength(0)
+
+      // Condition went away, then came back: no cooldown applies to an expiry.
+      useAlertStore.getState().dismiss('server-state')
+      useAlertStore.getState().upsert(transient)
+      expect(useAlertStore.getState().alerts).toHaveLength(1)
+    })
   })
 
   it('stamps raisedAt on first insert and keeps it across copy changes', () => {
