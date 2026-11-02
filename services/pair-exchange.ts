@@ -16,6 +16,8 @@ import {
 } from '@/services/e2ee/pair-handshake'
 import { canHoldDeviceStaticKey } from '@/services/e2ee/device-key'
 import { invalidateRestContext } from '@/services/e2ee/rest-session'
+import { HEADER_RELAY_ERROR } from '@/services/e2ee/context'
+import { FIRST_ADDRESS_TIMEOUT_MS, isRelayRoute } from '@/services/server-addresses'
 import { authedFetch } from '@/services/authed-fetch'
 import type { NoiseInitiator } from '@/services/e2ee/noise'
 
@@ -38,6 +40,12 @@ export interface PairUri {
   spk?: string
   /** QR payload format version. Absent on older streamers. Not a capability signal — see `parsePairUri`. */
   v?: number
+  /**
+   * The server's route on the Threadbase relay. An unauthenticated hint: it is
+   * only ever used to carry the handshake `spk` pins, when `url` does not
+   * answer. The address the app keeps comes from the authenticated reply.
+   */
+  relay?: string
 }
 
 export interface ExchangeResult {
@@ -63,6 +71,8 @@ export interface ExchangeResult {
    * on what terms, is RonenMars/threadbase-mobile#722.
    */
   publicUrl: string | null
+  /** The server's relay route, from the authenticated reply only. Null on a plaintext pairing. */
+  relayUrl: string | null
   machineName: string | null
   /** Per-device id minted at exchange (C5). Absent on older streamers. */
   deviceId: string | null
@@ -229,7 +239,12 @@ export function parsePairUri(raw: string): PairUri {
   const vRaw = parsed.searchParams.get('v')
   const vParsed = vRaw ? Number.parseInt(vRaw, 10) : undefined
   const v = Number.isFinite(vParsed) ? vParsed : undefined
-  return { url, token, exp: parsedExp, spk, v }
+  // Kept only beside a usable `spk`, and dropped rather than refused when it is
+  // the wrong shape: unlike `spk` it selects no path, so losing it can only
+  // cost the fallback, never the encryption.
+  const relayRaw = parsed.searchParams.get('relay')
+  const relay = spk && relayRaw && isRelayRoute(relayRaw) ? relayRaw : undefined
+  return { url, token, exp: parsedExp, spk, v, relay }
 }
 
 function assertHttpServerUrl(raw: string): void {
@@ -256,6 +271,7 @@ export async function exchangeToken({
   deviceName,
   readOnly = false,
   serverPublicKey,
+  relayUrl,
 }: {
   url: string
   token: string
@@ -270,6 +286,8 @@ export async function exchangeToken({
    * `assertWebServerAcceptsSealedSocket`.
    */
   serverPublicKey?: string
+  /** The QR's `relay` hint. Tried when `url` gives no usable answer, encrypted pairings only. */
+  relayUrl?: string
 }): Promise<ExchangeResult> {
   assertHttpServerUrl(url)
   const trimmedUrl = url.replace(/\/$/, '')
@@ -370,23 +388,69 @@ export async function exchangeToken({
     throw new PairExchangeError('cleartext', new CleartextBlockedError(exchangeUrl).message)
   }
 
-  let res: Response
+  // The relay carries this request only when it is a Noise handshake (`started.ok`):
+  // the hint in the QR is unauthenticated, and the handshake is what stops
+  // whoever wrote it from reading or answering the exchange.
+  const relayExchangeUrl =
+    started.ok && relayUrl && isRelayRoute(relayUrl) ? `${relayUrl}/api/pair/exchange` : null
+  const exchangeUrls =
+    relayExchangeUrl && isCleartextAllowed(relayExchangeUrl) ? [exchangeUrl, relayExchangeUrl] : [exchangeUrl]
+
+  // The relay reads this body, and the pair token is the handshake's secret and
+  // the only thing that proves this phone scanned the code: a relay holding it
+  // could pair a device of its own. So the relay's copy carries no token. The
+  // streamer has one live token and the handshake keyed with it is the proof.
+  const { token: _token, ...relayPayload } = bodyPayload
+
+  let res: Response | undefined
+  // The first address's own refusal, kept in case the relay has nothing better:
+  // a streamer on the LAN saying "token expired" beats "the relay is unreachable".
+  let refused: Response | undefined
   try {
-    res = await fetch(exchangeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(bodyPayload),
-      signal: timeoutController.signal,
-    })
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new PairExchangeError('network', 'Request timed out')
+    for (let i = 0; i < exchangeUrls.length; i++) {
+      const last = i === exchangeUrls.length - 1
+      // Off the LAN the QR's address is usually black-holed, so it gets a short
+      // wait before the relay is tried instead of the whole budget.
+      const early = last ? null : new AbortController()
+      const earlyId = early ? setTimeout(() => early.abort(), FIRST_ADDRESS_TIMEOUT_MS) : undefined
+      try {
+        const answer = await fetch(exchangeUrls[i], {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(exchangeUrls[i] === relayExchangeUrl ? relayPayload : bodyPayload),
+          signal: early ? early.signal : timeoutController.signal,
+        })
+        if (answer.headers?.get(HEADER_RELAY_ERROR)) {
+          throw new PairExchangeError('network', 'The relay could not reach the server')
+        }
+        // A refusal from the first address may not be the streamer's at all:
+        // off the LAN, a private address can belong to some other machine.
+        if (!last && !answer.ok) {
+          refused = answer
+          continue
+        }
+        res = answer
+        break
+      } catch (err) {
+        if (!last) continue
+        if (refused) {
+          res = refused
+          break
+        }
+        if (err instanceof PairExchangeError) throw err
+        if (err instanceof Error && err.name === 'AbortError') {
+          throw new PairExchangeError('network', 'Request timed out')
+        }
+        const message = err instanceof Error ? err.message : 'Network error'
+        throw new PairExchangeError('network', message)
+      } finally {
+        clearTimeout(earlyId)
+      }
     }
-    const message = err instanceof Error ? err.message : 'Network error'
-    throw new PairExchangeError('network', message)
   } finally {
     clearTimeout(timeoutId)
   }
+  if (!res) throw new PairExchangeError('network', 'Network error')
 
   if (res.status === 429) {
     throw new PairExchangeError('rate-limited', 'Too many attempts; try again in a minute')
@@ -440,6 +504,7 @@ export async function exchangeToken({
       // query param, so this authenticates everywhere the shared key did.
       apiKey: reply.deviceToken,
       publicUrl: reply.publicUrl,
+      relayUrl: reply.relayUrl,
       machineName: reply.machineName,
       deviceId: reply.deviceId,
       deviceToken: reply.deviceToken,
@@ -495,6 +560,7 @@ export async function exchangeToken({
     url: trimmedUrl,
     apiKey: naclUtil.encodeUTF8(plain),
     publicUrl: body.publicUrl ?? null,
+    relayUrl: null,
     machineName: body.machineName ?? null,
     deviceId,
     deviceToken,
@@ -585,6 +651,8 @@ interface PairHandshakeReply {
   capabilities: DeviceCapability[]
   /** `null` on any streamer without an operator-set public URL — the LAN default. */
   publicUrl: string | null
+  /** Absent on a streamer with no relay. Kept only when it is a bare relay route. */
+  relayUrl: string | null
   machineName: string
 }
 
@@ -595,6 +663,7 @@ interface PairHandshakeReplyWire {
   deviceToken?: string
   capabilities?: string[]
   publicUrl?: string | null
+  relayUrl?: string
   machineName?: string | null
   serverVersion?: string
   e2eeRequired?: boolean
@@ -715,6 +784,7 @@ async function readPairHandshakeReply(
     deviceToken: wire.deviceToken,
     capabilities: parseCapabilityList(wire.capabilities),
     publicUrl: wire.publicUrl,
+    relayUrl: typeof wire.relayUrl === 'string' && isRelayRoute(wire.relayUrl) ? wire.relayUrl : null,
     machineName: wire.machineName,
   }
 }
