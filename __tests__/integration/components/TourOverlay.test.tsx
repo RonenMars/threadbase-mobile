@@ -1,6 +1,14 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
+import { StyleSheet } from 'react-native'
 import { TourOverlay } from '@/components/tour/TourOverlay'
+import { THEMES, type Theme } from '@/constants/theme'
+
+const mockTheme: { current: Theme } = { current: THEMES.dark }
+
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => mockTheme.current,
+}))
 
 const TARGET = { x: 20, y: 100, width: 100, height: 50 }
 
@@ -68,5 +76,21 @@ describe('TourOverlay', () => {
       />
     )
     expect(queryByTestId('tour-step-label')).toBeNull()
+  })
+})
+
+describe('TourOverlay theming', () => {
+  afterEach(() => {
+    mockTheme.current = THEMES.dark
+  })
+
+  it.each(Object.entries(THEMES))('follows the %s palette', async (_id, theme) => {
+    mockTheme.current = theme
+    const { getByText, getByTestId } = await render(
+      <TourOverlay target={TARGET} text="Some tip" onGotIt={jest.fn()} onSkip={jest.fn()} />
+    )
+    expect(StyleSheet.flatten(getByText('Some tip').props.style).color).toBe(theme.text.primary)
+    expect(StyleSheet.flatten(getByTestId('tour-got-it').props.style).backgroundColor).toBe(theme.text.accent)
+    expect(StyleSheet.flatten(getByText('Got it →').props.style).color).toBe(theme.text.onAccent)
   })
 })
