@@ -4,6 +4,7 @@ import {
   applyListFilters,
   countByProvider,
   countByTier,
+  displayedListItems,
   isDefaultFilters,
   isNeedsMePreset,
 } from '@/lib/sessionFilters'
@@ -104,6 +105,28 @@ describe('counts and presets', () => {
 
   it('counts rows per agent', () => {
     expect(countByProvider(items)).toEqual({ 'claude-code': 2, 'codex-cli': 2, 'cursor': 1, copilot: 0 })
+  })
+
+  it('counts badges from the filtered rows and drops a live session duplicate transcript', () => {
+    const live = session(
+      { id: 'live', conversationId: 'live', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', provider: 'codex-cli' },
+      NOW - HOUR,
+    )
+    const duplicate = conversation({ id: 'live', provider: 'codex-cli' }, NOW - HOUR)
+    const older = conversation({ id: 'older', provider: 'codex-cli' }, NOW - 2 * HOUR)
+    const claude = session(
+      { id: 'claude', provider: 'claude-code', status: 'idle', ptyAttached: false, lifecycle: 'resumable' },
+      NOW - 2 * HOUR,
+    )
+    const displayed = displayedListItems(
+      [live, duplicate, older, claude],
+      { ...DEFAULT_FILTERS, providers: ['codex-cli'] },
+      NOW,
+    )
+
+    expect(displayed.map((item) => item.item.id)).toEqual(['live', 'older'])
+    expect(countByProvider(displayed)).toEqual({ 'claude-code': 0, 'codex-cli': 2, cursor: 0 })
+    expect(countByTier(displayed)).toEqual({ needsYou: 1, working: 0, resumable: 1, cantResume: 0, observed: 0 })
   })
 
   it('recognises the defaults regardless of tier order', () => {
