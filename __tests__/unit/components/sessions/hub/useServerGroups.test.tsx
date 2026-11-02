@@ -9,6 +9,7 @@ function makeGroup(
     projectName: 'proj',
     sessions: [],
     conversationCount: 0,
+    liveExternalCount: 0,
     latestActivityMs: 0,
     earliestStartMs: 0,
     ...overrides,

@@ -19,6 +19,8 @@ export interface TreeNode {
    *  not the rows. The rows are fetched only when the node is opened
    *  (DrillView), which is what keeps the tree off the eager drain. */
   conversationCount: number
+  /** Of those, how many run outside Threadbase right now (from the summary). */
+  liveExternalCount: number
   /** Most recent conversation activity at this exact path, epoch ms (0 when
    *  the node has no conversations of its own). */
   conversationActivityMs: number
