@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 import { useThrottledCallback } from 'use-debounce'
 import { isExternalSession } from '@/lib/externalSession'
 import { narrowSessionStatus } from '@/lib/sessionPresentation'
@@ -258,8 +259,24 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
       return dedupeByServerAndId([...untouchedSessions, ...perServerResults.flat()])
     },
     enabled: activeServerIds.length > 0,
-    refetchInterval: (q) => (q.state.data?.some(isExternalSession) ? EXTERNAL_LIVENESS_REFETCH_MS : false),
   })
+
+  // A plain timer rather than `refetchInterval`: React Query cannot tell an interval
+  // fetch from a foreground or invalidation fetch, and only the latter should show
+  // the sync notice (it reads `isDone`).
+  const hasExternalSession = query.data?.some(isExternalSession) ?? false
+  const [isPolling, setIsPolling] = useState(false)
+  useEffect(() => {
+    if (!hasExternalSession) return
+    const id = setInterval(() => {
+      if (AppState.currentState !== 'active' || queryClient.isFetching({ queryKey }) > 0) return
+      setIsPolling(true)
+      void queryClient.refetchQueries({ queryKey, exact: true }).finally(() => {
+        setIsPolling(false)
+      })
+    }, EXTERNAL_LIVENESS_REFETCH_MS)
+    return () => clearInterval(id)
+  }, [hasExternalSession, queryClient, queryKey])
 
   const refetch = useCallback(async () => {
     setPreservedSessions(query.data ?? preservedSessions)
@@ -298,7 +315,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   // A targeted retry uses a new query key. Keep the prior successful sessions
   // visible while that fresh query has no data yet.
   const sessions = query.data ?? preservedSessions
-  const isDone = activeServerIds.length === 0 || (query.isFetched && !query.isFetching)
+  const isDone = activeServerIds.length === 0 || (query.isFetched && (!query.isFetching || isPolling))
   // "Counting" = fetches are running but no server has returned its first page yet
   const isCounting = !isDone && aggregateProgress.total === 0 && aggregateProgress.inFlightCount > 0
 

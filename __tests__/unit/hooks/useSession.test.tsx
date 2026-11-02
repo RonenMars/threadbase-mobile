@@ -1,4 +1,6 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native'
+import { AppState } from 'react-native'
+import { focusManager } from '@tanstack/react-query'
 import { useEagerSessions } from '@/hooks/useSession'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useServersStore } from '@/stores/servers'
@@ -398,8 +400,17 @@ describe('useEagerSessions external-session liveness refetch', () => {
     }
   }
 
+  function setAppState(value: 'active' | 'background') {
+    Object.defineProperty(AppState, 'currentState', {
+      value,
+      configurable: true,
+      writable: true,
+    });
+  }
+
   beforeEach(() => {
     jest.useFakeTimers()
+    setAppState('active')
   })
 
   afterEach(() => {
@@ -464,5 +475,92 @@ describe('useEagerSessions external-session liveness refetch', () => {
     })
     await waitFor(() => expect(result.current.sessions.map((s) => s.id)).toEqual(['ext1']))
     expect(result.current).toMatchObject({ loaded: 2, total: 2, inFlightCount: 0, isCounting: false })
+  })
+
+  it('keeps isDone true while the interval refetch is in flight so the sync notice stays hidden', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet
+      .mockResolvedValueOnce(externalPage(['ext1']))
+      .mockReturnValueOnce(new Promise<SessionListPage>(() => {}))
+
+    const { result } = await renderHook(() => useEagerSessions(), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(INTERVAL_MS)
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(10)
+    })
+    expect(result.current.isDone).toBe(true)
+  })
+
+  it('still reports isDone false while a user-triggered refetch is in flight', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet
+      .mockResolvedValueOnce(externalPage(['ext1']))
+      .mockReturnValueOnce(new Promise<SessionListPage>(() => {}))
+
+    const { result } = await renderHook(() => useEagerSessions(), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    await act(async () => {
+      await result.current.refetch()
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(10)
+    })
+    expect(result.current.isDone).toBe(false)
+  })
+
+  it('reports isDone false for a foreground refetch after an interval refetch finished', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet
+      .mockResolvedValueOnce(externalPage(['ext1']))
+      .mockResolvedValueOnce(externalPage(['ext1']))
+      .mockReturnValueOnce(new Promise<SessionListPage>(() => {}))
+
+    const { result } = await renderHook(() => useEagerSessions(), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(INTERVAL_MS)
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+
+    await act(async () => {
+      focusManager.setFocused(false)
+      focusManager.setFocused(true)
+      await jest.advanceTimersByTimeAsync(10)
+    })
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(3))
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(10)
+    })
+    expect(result.current.isDone).toBe(false)
+  })
+
+  it('does not poll while the app is in the background', async () => {
+    setActiveServers([{ id: 'srv-A', label: 'A' }])
+    mockGet.mockResolvedValue(externalPage(['ext1']))
+
+    const { result } = await renderHook(() => useEagerSessions(), {
+      wrapper: createWrapper(),
+    })
+    await waitFor(() => expect(result.current.isDone).toBe(true))
+
+    setAppState('background')
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(INTERVAL_MS * 3)
+    })
+    expect(mockGet).toHaveBeenCalledTimes(1)
   })
 })
