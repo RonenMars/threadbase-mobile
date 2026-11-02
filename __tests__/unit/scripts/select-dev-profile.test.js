@@ -16,7 +16,6 @@ const path = require('path');
 const REPO_ROOT = path.resolve(__dirname, '../../..');
 const SCRIPT = path.join(REPO_ROOT, 'scripts/select-dev-profile.py');
 const APP_ENTITLEMENTS = path.join(REPO_ROOT, 'ios/Threadbase/Threadbase.entitlements');
-const WIDGET_ENTITLEMENTS = path.join(REPO_ROOT, 'ios/ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements');
 const APP = 'com.ronenmars.threadbase';
 const WIDGET = 'com.ronenmars.threadbase.widgets';
 const TIME_SENSITIVE = 'com.apple.developer.usernotifications.time-sensitive';
@@ -108,13 +107,6 @@ describe('select-dev-profile.py', () => {
     expect(res.stderr).toContain('Profile no-ts (no-ts): missing Time Sensitive Notifications');
   });
 
-  it('accepts a widget profile without Time Sensitive, since the widget does not declare it', () => {
-    const res = run(WIDGET, WIDGET_ENTITLEMENTS, [
-      profile({ uuid: 'widget', bundle: WIDGET, entitlements: { [TIME_SENSITIVE]: undefined, 'aps-environment': undefined } }),
-    ]);
-    expect(res).toMatchObject({ status: 0, uuid: 'widget' });
-  });
-
   it('rejects a profile for a different bundle, including the widget profile for the app', () => {
     const res = run(APP, APP_ENTITLEMENTS, [profile({ uuid: 'widget', bundle: WIDGET })]);
     expect(res.status).toBe(1);
@@ -132,7 +124,6 @@ describe('select-dev-profile.py', () => {
       profile({ uuid: 'adhoc', entitlements: { 'get-task-allow': false } }),
       profile({ uuid: 'appstore', ProvisionedDevices: undefined, entitlements: { 'get-task-allow': false } }),
       profile({ uuid: 'expired', expires: days(-1) }),
-      profile({ uuid: 'no-groups', entitlements: { 'com.apple.security.application-groups': undefined } }),
     ]);
     expect(res.status).toBe(1);
     expect(res.uuid).toBe('');
@@ -140,7 +131,6 @@ describe('select-dev-profile.py', () => {
     expect(res.stderr).toContain('Profile adhoc (adhoc): Ad Hoc instead of Development');
     expect(res.stderr).toContain('Profile appstore (appstore): App Store instead of Development');
     expect(res.stderr).toContain('Profile expired (expired): expired');
-    expect(res.stderr).toContain('Profile no-groups (no-groups): missing App Groups');
-    expect(res.stderr).toContain('Push Notifications, Time Sensitive Notifications, App Groups');
+    expect(res.stderr).toContain('Push Notifications, Time Sensitive Notifications');
   });
 });

@@ -230,7 +230,7 @@ PODS:
     - ExpoModulesCore
   - ExpoHaptics (57.0.1):
     - ExpoModulesCore
-  - ExpoImageManipulator (57.0.10):
+  - ExpoImageManipulator (57.0.20):
     - ExpoModulesCore
   - ExpoImagePicker (57.0.10):
     - ExpoModulesCore
@@ -302,9 +302,6 @@ PODS:
     - ExpoModulesCore
     - ExpoModulesWorklets
     - React-RCTFabric
-  - ExpoWidgets (57.0.10):
-    - ExpoModulesCore
-    - ExpoUI
   - EXStructuredHeaders (57.0.0)
   - EXUpdates (57.0.14):
     - EASClient
@@ -2721,7 +2718,6 @@ DEPENDENCIES:
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
   - "ExpoUI (from `../node_modules/@expo/ui/ios`)"
-  - ExpoWidgets (from `../node_modules/expo-widgets/ios`)
   - EXStructuredHeaders (from `../node_modules/expo-structured-headers/ios`)
   - EXUpdates (from `../node_modules/expo-updates/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
@@ -2910,8 +2906,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-system-ui/ios"
   ExpoUI:
     :path: "../node_modules/@expo/ui/ios"
-  ExpoWidgets:
-    :path: "../node_modules/expo-widgets/ios"
   EXStructuredHeaders:
     :path: "../node_modules/expo-structured-headers/ios"
   EXUpdates:
@@ -3119,7 +3113,7 @@ SPEC CHECKSUMS:
   ExpoFont: 02ab7433c23831e76b98aa1e2de67b404eeebc4a
   ExpoGlassEffect: 4b62afb489e6b84357701737ce002137c9d5fdbc
   ExpoHaptics: 4503d2da51ff7109712ccdfe0e4939f66818183e
-  ExpoImageManipulator: a41d76647f5e456053b437ab69f2d0f067f4597b
+  ExpoImageManipulator: e795a8d623905815a335edda5c967a88e25b5539
   ExpoImagePicker: 945c7f41749d99266d220a67118ae769b4d2af19
   ExpoKeepAwake: c26f14275017370cc8a4b7b43a0e23361f2053a5
   ExpoLinearGradient: 903b3f5fe566c666ff78b2599add51d094483613
@@ -3140,7 +3134,6 @@ SPEC CHECKSUMS:
   ExpoSymbols: 0efd93edf0f825bf3c762582b0769dd3b296235c
   ExpoSystemUI: ff3142b323ae7b4d11dc0b1dc4acfa30d92be7dc
   ExpoUI: 98d4650d9d32daaf772597adc76525c645b1ff76
-  ExpoWidgets: 635479dee3c9e83b9ba1be420bbe08c070482ec5
   EXStructuredHeaders: 1423c3602a30eb078e03b63b251ef912267dd4c0
   EXUpdates: 9488e42335e66cbc29c9b7f68df3ad38e0fe5961
   EXUpdatesInterface: 4c96533f11c8cefe879bd506564cc2d537f56804
@@ -3234,6 +3227,6 @@ SPEC CHECKSUMS:
   SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
   Yoga: 18b74b3ade30bebc1904004dfaceae1dd02a330a
 
-PODFILE CHECKSUM: 8c63bc5998ba83a806930edababd57a8e9c90be4
+PODFILE CHECKSUM: bb3169bf2ad8ad9f12e64e8e0c8d00fef0ad73d0
 
 COCOAPODS: 1.17.0

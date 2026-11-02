@@ -38,10 +38,6 @@ import { authToken } from '@/services/authed-fetch'
 import { answerFromNotification, registerPushTokenForAll } from '@/services/push'
 import { useNotificationPrefsSync } from '@/hooks/useNotificationPrefsSync'
 import { useSavedItemsSync } from '@/hooks/useSavedItemsSync'
-import {
-  adoptRunningActivities,
-  reconcile as reconcileLiveActivity,
-} from '@/services/live-activity'
 import { SplashAnimation } from '@/components/SplashAnimation'
 import { markIntroSeen, resolveIntroVariant, type IntroVariant } from '@/services/intro-splash'
 import { currentIntroVersion } from '@/services/intro-version'
@@ -180,15 +176,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeServerIds, isLoading, mode, navState?.key])
 
-  // Live surfaces outlive the JS context. Anything still on screen from a
-  // previous launch is untracked and could never be updated or ended, so it
-  // would sit frozen on stale data — clear it before the first session_update
-  // can start new ones. Mount-only: re-running per server change would tear
-  // down surfaces this session had just raised.
-  useEffect(() => {
-    void adoptRunningActivities()
-  }, [])
-
   // Wire WebSocket for all servers
   useEffect(() => {
     if (activeServerIds.length === 0) return
@@ -232,9 +219,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       // the list yet (e.g. a newly-alive external session), invalidate so it
       // appears without a manual pull-to-refresh.
       applySessionUpdateToEagerCache(queryClient, msg.serverId, msg.session)
-      // Live surfaces are driven from this one frame — it is the only place
-      // every status change passes through with its serverId already stamped.
-      void reconcileLiveActivity(msg.serverId, msg.session)
     })
     // Live agent-phase change within a running turn. Scoped to the session's
     // subscribers, so — unlike session_update — there is no eager list to patch;
