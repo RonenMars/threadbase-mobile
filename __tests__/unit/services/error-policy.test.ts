@@ -4,8 +4,12 @@ import {
   AUTH_RETRY_DELAY_MS,
   classifyError,
   isTransientError,
+  NOT_FOUND_GRACE_DELAY_MS,
+  NOT_FOUND_GRACE_RETRY_COUNT,
   queryRetryDelay,
+  queryRetryDelayWithNotFoundGrace,
   shouldRetryQuery,
+  shouldRetryQueryWithNotFoundGrace,
   withSilentRetries,
 } from '@/services/error-policy'
 import i18n from '@/test-utils/i18n-setup'
@@ -130,6 +134,29 @@ describe('shouldRetryQuery', () => {
     expect(shouldRetryQuery(0, err)).toBe(true)
     expect(shouldRetryQuery(1, err)).toBe(true)
     expect(shouldRetryQuery(2, err)).toBe(false)
+  })
+})
+
+describe('shouldRetryQueryWithNotFoundGrace', () => {
+  it('retries a 404 for a bounded number of attempts, then gives up', () => {
+    const err = new NotFoundError('/api/conversations/x')
+    expect(shouldRetryQueryWithNotFoundGrace(0, err)).toBe(true)
+    expect(shouldRetryQueryWithNotFoundGrace(NOT_FOUND_GRACE_RETRY_COUNT - 1, err)).toBe(true)
+    expect(shouldRetryQueryWithNotFoundGrace(NOT_FOUND_GRACE_RETRY_COUNT, err)).toBe(false)
+    expect(shouldRetryQueryWithNotFoundGrace(0, { status: 404 })).toBe(true)
+  })
+
+  it('leaves every other failure on the ordinary policy', () => {
+    expect(shouldRetryQueryWithNotFoundGrace(2, new NetworkError('boom'))).toBe(false)
+    expect(shouldRetryQueryWithNotFoundGrace(0, { status: 403 })).toBe(true)
+    expect(shouldRetryQueryWithNotFoundGrace(1, { status: 403 })).toBe(false)
+  })
+})
+
+describe('queryRetryDelayWithNotFoundGrace', () => {
+  it('waits a flat interval between 404 attempts and defers to the ordinary delay otherwise', () => {
+    expect(queryRetryDelayWithNotFoundGrace(3, { status: 404 })).toBe(NOT_FOUND_GRACE_DELAY_MS)
+    expect(queryRetryDelayWithNotFoundGrace(1, new NetworkError('boom'))).toBe(1000)
   })
 })
 
