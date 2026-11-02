@@ -497,7 +497,9 @@ describe('conversation detail — resume collision', () => {
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(2))
     expect(alertSpy).not.toHaveBeenCalled()
     expect(mockPost.mock.calls[1][0]).toBe(`/api/sessions/${CONV_ID}/fork`)
-    // Non-idempotent: a transport-level retry could spawn a second fork.
+    // Non-idempotent without a key: the transport never retries on its own;
+    // only the user-pressed Retry does, and it carries the same key.
+    expect(mockPost.mock.calls[1][1]).toEqual({ idempotencyKey: expect.any(String) })
     expect(mockPost.mock.calls[1][2]).toMatchObject({ retry: false })
     // Never silently degrades to resume/adopt.
     expect(mockPost.mock.calls.some(([, body]) => (body as { force?: boolean })?.force)).toBe(false)
@@ -514,9 +516,21 @@ describe('conversation detail — resume collision', () => {
     alertSpy.mockRestore()
   })
 
-  it('a failed fork reports the failure without re-issuing the request', async () => {
+  it('a failed fork offers Retry, and Retry replays the same idempotencyKey', async () => {
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
-    mockPost.mockRejectedValueOnce(codexBusy()).mockRejectedValueOnce(new Error('timed out'))
+    mockPost
+      .mockRejectedValueOnce(codexBusy())
+      .mockRejectedValueOnce(new Error('timed out'))
+      .mockResolvedValueOnce({
+        id: 'sess-fork',
+        conversationId: 'conv-forked-rollout',
+        projectId: 'proj-1',
+        projectPath: '/tmp/p',
+        projectName: 'Resume Test',
+        startedAt: '2026-06-10T11:00:00Z',
+        status: 'running',
+        ptyAttached: true,
+      })
 
     const { root, btn } = await renderAndFindResume()
     await act(async () => {
@@ -527,12 +541,53 @@ describe('conversation detail — resume collision', () => {
       fireEvent.press(root.getByTestId('resume-collision-fork'))
     })
     await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(1))
-    // Exactly one fork POST, and no Retry affordance that could make a second
-    // fork out of a request that may have succeeded server-side.
-    expect(mockPost.mock.calls.filter(([path]) => String(path).endsWith('/fork'))).toHaveLength(1)
-    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
-    expect(buttons.some((b) => b.text === 'Retry')).toBe(false)
+    const forkCalls = () => mockPost.mock.calls.filter(([path]) => String(path).endsWith('/fork'))
+    expect(forkCalls()).toHaveLength(1)
     expect(mockReplace).not.toHaveBeenCalled()
+
+    const buttons = (alertSpy.mock.calls[0][2] ?? []) as AlertButton[]
+    const retry = buttons.find((b) => b.text === 'Retry')
+    expect(retry).toBeDefined()
+    await act(async () => {
+      retry?.onPress?.()
+    })
+
+    // The server dedupes on this key (10 min, per source session), so a fork
+    // that succeeded behind a timed-out response is replayed, not repeated.
+    await waitFor(() => expect(forkCalls()).toHaveLength(2))
+    const [first, second] = forkCalls().map(([, body]) => (body as { idempotencyKey?: string }).idempotencyKey)
+    expect(first).toEqual(expect.any(String))
+    expect(second).toBe(first)
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1))
+
+    alertSpy.mockRestore()
+  })
+
+  it('a fresh Fork press mints a new idempotencyKey', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    mockPost
+      .mockRejectedValueOnce(codexBusy())
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockRejectedValueOnce(codexBusy())
+      .mockRejectedValueOnce(new Error('boom'))
+
+    const { root, btn } = await renderAndFindResume()
+    for (const attempt of [1, 2]) {
+      await act(async () => {
+        fireEvent.press(btn)
+      })
+      await waitFor(() => root.getByTestId('resume-collision-fork'))
+      await act(async () => {
+        fireEvent.press(root.getByTestId('resume-collision-fork'))
+      })
+      await waitFor(() => expect(alertSpy).toHaveBeenCalledTimes(attempt))
+    }
+
+    const keys = mockPost.mock.calls
+      .filter(([path]) => String(path).endsWith('/fork'))
+      .map(([, body]) => (body as { idempotencyKey: string }).idempotencyKey)
+    expect(keys).toHaveLength(2)
+    expect(keys[0]).not.toBe(keys[1])
 
     alertSpy.mockRestore()
   })

@@ -36,6 +36,7 @@ import { useMinDisplayTime } from '@/hooks/useMinDisplayTime'
 import { createApiForServer, AuthError, ConversationBusyError, NotFoundError } from '@/services/api-client'
 import { CODEX_CLI_PROVIDER, providerColor } from '@/constants/providers'
 import { wsManager } from '@/services/ws-client'
+import { generateUUID } from '@/services/device-id'
 import { mergeLiveMessages, resolveToolNames } from '@/utils/mergeLiveMessages'
 import { foldAnsweredQuestions } from '@/utils/foldAnsweredQuestions'
 import { evictStaleConversationFavorite, hardReloadConversation } from '@/lib/sessionLifecycle'
@@ -530,35 +531,42 @@ export default function ConversationDetailScreen() {
   // fighting the client that already holds the Codex writer lock. The original
   // session keeps running and keeps its rollout; the fork gets its own.
   //
-  // No Retry button on failure — the request is non-idempotent and the server
-  // contract carries no idempotency key, so a retry of a fork that actually
-  // succeeded server-side would leave two forks. The user can re-open the
-  // collision dialog from Resume instead.
+  // Retry is safe because one idempotencyKey is minted per press and reused by
+  // every Retry: a fork that succeeded behind a lost response is replayed by the
+  // streamer (10 min window) instead of spawning a second one. A fresh press
+  // from the collision dialog is a new decision and gets a new key.
   //
   // No second confirmation dialog: the collision alert that offers this action
   // already names it and already carries `resume.forkExplain`, so re-asking
   // made the user press "Fork into Threadbase" twice to do it once.
   const forkIntoThreadbase = useCallback(() => {
-    forkSession.mutate(undefined, {
-      onSuccess: (result) => {
-        if (result.sessionSnapshot) {
-          qc.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
-        }
-        const startParams = new URLSearchParams({ server: serverId })
-        if (result.projectId) startParams.set('projectId', result.projectId)
-        const projectPath = result.projectPath ?? conversation?.projectPath
-        if (projectPath) startParams.set('projectPath', projectPath)
-        // Both identities travel: the source we forked from, and the new
-        // rollout the server bound to the managed session.
-        startParams.set('forkedFromConversationId', id)
-        startParams.set('conversationId', result.conversationId)
-        startParams.set('starting', '1')
-        router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
-      },
-      onError: (err) => {
-        Alert.alert(t('resume.forkFailed'), err instanceof Error ? err.message : String(err))
-      },
-    })
+    const idempotencyKey = generateUUID()
+    function attempt() {
+      forkSession.mutate({ idempotencyKey }, {
+        onSuccess: (result) => {
+          if (result.sessionSnapshot) {
+            qc.setQueryData(['session', serverId, result.sessionId], result.sessionSnapshot)
+          }
+          const startParams = new URLSearchParams({ server: serverId })
+          if (result.projectId) startParams.set('projectId', result.projectId)
+          const projectPath = result.projectPath ?? conversation?.projectPath
+          if (projectPath) startParams.set('projectPath', projectPath)
+          // Both identities travel: the source we forked from, and the new
+          // rollout the server bound to the managed session.
+          startParams.set('forkedFromConversationId', id)
+          startParams.set('conversationId', result.conversationId)
+          startParams.set('starting', '1')
+          router.replace(`/session/${result.sessionId}?${startParams.toString()}`)
+        },
+        onError: (err) => {
+          Alert.alert(t('resume.forkFailed'), err instanceof Error ? err.message : String(err), [
+            { text: t('common:button.cancel'), style: 'cancel' },
+            { text: t('common:button.retry'), onPress: attempt },
+          ])
+        },
+      })
+    }
+    attempt()
   }, [forkSession, qc, serverId, conversation?.projectPath, id, router, t])
 
   // Resume this conversation into a live session. The server soft-blocks with a
