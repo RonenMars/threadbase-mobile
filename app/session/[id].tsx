@@ -1381,6 +1381,7 @@ export default function SessionDetailScreen() {
                 serverId={serverId}
                 sessionId={id}
                 provider={session.provider}
+                projectPath={session.projectPath}
                 disabled={isWakingUp}
                 composerAccessory={rawKeysAccessory}
                 resumedConversationId={session.resumedFromConversationId}
@@ -1393,6 +1394,7 @@ export default function SessionDetailScreen() {
                 sessionId={id}
                 conversationId={historyConversationId!}
                 provider={session.provider}
+                projectPath={session.projectPath}
                 disabled={isWakingUp}
                 composerAccessory={rawKeysAccessory}
                 onPreferRawTerminal={() => setForceRawTerminal(true)}
