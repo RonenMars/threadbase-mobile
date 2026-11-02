@@ -1,0 +1,17 @@
+{
+  "id": "session-q1152",
+  "provider": "claude-code",
+  "status": "running",
+  "statusSource": "user-input",
+  "ptyAttached": true,
+  "lifecycle": "attached",
+  "conversationId": "conv-q1152",
+  "projectPath": "/workspace/northstar-commerce/apps/storefront",
+  "projectName": "storefront",
+  "branch": "feat/health-endpoint",
+  "lastOutput": "Working",
+  "elapsedMs": 21000,
+  "promptCount": 1,
+  "subStatus": null,
+  "startedAt": "2026-09-25T10:00:00.000Z"
+}
