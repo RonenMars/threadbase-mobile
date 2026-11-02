@@ -247,21 +247,8 @@ appId: com.ronenmars.threadbase
 # Verify sessions are visible in the list
 # The session we created should be there at the top (most recent)
 
-# Wait for sessions to load
-- waitForAnimationToEnd:
-    timeout: 3000
-
-# Tap on the first session card using its testID
-- tapOn:
-    id: "first-session-card"
-
-# Wait for navigation to session detail
-- waitForAnimationToEnd:
-    timeout: 5000
-
-# Verify we entered the session (now in conversation/history view)
-- assertVisible:
-    id: "session-detail-screen"
+# Wait for the first session card, tap it, and land on session detail
+- runFlow: open-first-session.yaml
 
 # Verify our conversation history is visible with our prompt text.
 # The terminal renders the prompt line with a leading "› " marker, so match
