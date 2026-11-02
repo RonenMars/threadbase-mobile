@@ -600,6 +600,20 @@ jobs:
           fi
           xcrun simctl install booted "$APP_PATH"
 
+      # A freshly booted runner simulator hangs the XCTest driver on the first
+      # flow of a shard (screenshot / accessibility-query timeouts), after which
+      # the driver restarts and every later flow fails in milliseconds. Run the
+      # app and the screenshot path once before Maestro starts, so that first
+      # cold launch is not paid inside a flow. Never fails the job: if the
+      # warm-up itself is not enough, the flow failure is the signal.
+      - name: Warm up iOS simulator
+        run: |
+          xcrun simctl launch booted com.ronenmars.threadbase || true
+          sleep 20
+          xcrun simctl io booted screenshot /dev/null || true
+          xcrun simctl terminate booted com.ronenmars.threadbase || true
+          sleep 3
+
       - name: Run Maestro E2E suite on iOS
         env:
           FLOWS: ${{ matrix.flows }}
