@@ -24,7 +24,6 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [shipped] Session rename — rename manually, or auto-name a session from its first message.
 - [shipped] Favorites and quick access — pin sessions, conversations, or project chats for one-tap access.
 - [shipped] Export conversation — share a full transcript as Markdown.
-- [shipped] Prompt queue — queue additional prompts while the agent is busy.
 - [shipped] Draft persistence — unsent composer text is saved per session.
 - [shipped] Attach photos and files to a prompt — camera, photo library, or file picker, with HEIC converted to JPEG.
 - [shipped] Voice dictation — on-device speech-to-text for composing prompts.
