@@ -273,3 +273,96 @@ Facts re-checked on `da55f301` on 2026-09-21: the `::`-split fix from `fix/favor
 
 **Decided in review (2026-09-21):** the bubble and the Hub's New Session FAB stay separate.
 Merging them (a FAB that carries the badge and opens the shelf on long-press, Hub-only or app-wide) was considered and deferred to a later change; the FAB exists only on the Hub (`app/index.tsx`), so a merge has to settle what the other screens show.
+
+### PR B — saved items on the streamer
+
+Facts re-checked on tb-streamer `b69b748` (1.107.2) and tb-mobile `4fb94af` on 2026-10-04.
+PR A is merged (`shelfPosition` and the store-only pin path are on `main`), and the streamer has no saved-items code yet.
+
+**Key scheme (the one change to the brief)**
+- `serverId` is minted on the phone by `serverIdFromUrl()` (`types/api.ts:915`), a hash of the normalised URL.
+  - So the same streamer has a different id on a LAN URL and on a tunnel URL, and the id says nothing the server can use. Stripping it is required, as the brief says.
+- Derive the stored key from the favorite's **typed fields**, not by string-stripping the id:
+  - `session::<sessionId>`, `conversation::<conversationId>`, `project-chat::<chatType>::<chatId>`.
+  - The target id comes from `shelfTarget(fav)` (`lib/savedShelf.ts`), which already handles pre-migration session ids (last `::` part).
+  - Result: legacy and canonical favorites map to the same key, so the "store legacy ids as they are" limitation goes away, and nothing is re-keyed locally.
+- The server treats the key as opaque but validates its shape: `^(session|conversation|project-chat)::.+$`, at most 512 chars.
+
+**Storage — `src/db/runtime-migrations/006_create_saved_items.sql`**
+- `runtime.db`, not `cache.db`: authoritative, must survive `cache clear` and the integrity monitor's rebuild.
+- Columns: `item_key TEXT PRIMARY KEY`, `kind TEXT NOT NULL CHECK (kind IN ('session','conversation','project-chat'))`, `label TEXT NOT NULL`, `session_id`, `conversation_id`, `chat_type`, `chat_id`, `project_id` (all `TEXT NULL`), `position INTEGER NOT NULL`, `updated_at INTEGER NOT NULL`, `updated_by_device TEXT NULL` (the `Principal.deviceId`, `NULL` for the legacy key; diagnostics only).
+- Index on `position`.
+- Per streamer, shared by every paired device (decided in the brief). `dir` favorites never reach it.
+
+**Repository — `src/db/repositories/saved-items.repository.ts`**
+- Opened on the `RuntimeStore` db, like `devices.repository.ts`.
+- `list()` in `position` order; `upsert(item)` (`INSERT … ON CONFLICT(item_key) DO UPDATE`, a new key goes to `MAX(position)+1`); `remove(key)`; `reorder(keys)` in one transaction.
+- `reorder` semantics: listed keys take positions `0..n-1` in that order; unknown keys are ignored; stored keys missing from the list keep their relative order after them. A stale phone therefore cannot drop items by reordering.
+- A table-wide `revision` (a single-row counter, or `MAX(updated_at)`) bumped by every write, returned by `list()`.
+- Cap at 500 rows; a 501st upsert answers 409 `SAVED_ITEMS_FULL`.
+
+**Schema — `src/schemas/saved-items.schema.ts`**
+- zod discriminated union on `kind`: `session` needs `sessionId`, `conversation` needs `conversationId`, `project-chat` needs `chatType` (`session` | `conversation`) + `chatId` + `projectId`. `label` 1–200 chars. `projectId` optional otherwise.
+- `{ keys: string[] }` for reorder, max 500.
+- The URL key must equal the key derived from the body; a mismatch is a 400.
+
+**Routes — `src/api/routes/saved-items.routes.ts`, mounted at `/api/saved-items` after `authMiddleware` in `src/api/app.ts`**
+- `GET /` → `{ items, revision }`.
+- `PUT /order` → `{ items, revision }`. Registered before `PUT /:key` (keys always contain `::`, so they cannot collide with `order`, but order the routes anyway).
+- `PUT /:key` → upsert, answers the stored item.
+- `DELETE /:key` → 204, and 204 for an unknown key too (idempotent, so a retry after a lost response is harmless).
+- Same `ALREADY_HANDLED` handler style as the other route files.
+- After every write, an additive WS broadcast `{ type: "saved_items_changed", revision }`, so other paired phones refetch instead of polling. Old clients ignore unknown frame types.
+
+**Capabilities — `src/services/security/capabilities.ts`**
+- Add `["/api/saved-items", "history:read"]` to `ROUTE_CAPABILITIES` (the "every mounted route is classified" test enforces it).
+- Add a method split in `requiredCapability()` like the sessions one: `GET`/`HEAD` → `history:read`; writes → `session:control`.
+  - Reason: a `read-only` device is meant for watching, and the list is shared, so it should not be able to rewrite every other phone's shelf. Open to review — `notifications` or plain `history:read` are the alternatives.
+
+**Discovery** — `savedItems: true` in `GET /api/info` (`src/api/routes/misc.routes.ts`, next to `devicesDurable`). Additive, so no tb-mobile compatibility check.
+
+**Backup** — `/api/backup` exports project identity only today. Adding saved items to the archive is a follow-up issue, not this PR; note it in the PR body.
+
+**Tests (`__tests__/saved-items.test.ts`, Vitest, server on a random port, temp `runtime.db`)**
+- Empty list; save; re-save same key updates label and keeps position; save order; reorder (including an unknown key and a missing key); delete (and delete unknown → 204); invalid body (bad kind, missing id, URL/body key mismatch) → 400; the 500 cap.
+- Migration test: `006` applies on a fresh db and on a db already at `005`; survives a `cache.db` delete.
+- Capability test: a `read-only` device token can `GET` and is refused `PUT`/`DELETE`.
+- `/api/info` carries `savedItems: true`; a write emits `saved_items_changed`.
+- Checks: `npm run lint && npm test` under the `.nvmrc` Node.
+
+### PR C — mobile sync
+
+**Capability**
+- `ServerInfo.savedItems?: boolean` in `types/api.ts`. Only servers reporting `true` are synced; a failed or old `/api/info` reads as off.
+- Pinned (E2EE) servers need nothing special: `authedFetch` seals the bodies, and a sealed failure is surfaced, never retried in the clear.
+
+**Pure mapping — `lib/savedItemsWire.ts` (unit-tested)**
+- `favoriteToWire(fav): { key, item } | null` — `null` for `dir` and for any favorite without `serverId`.
+- `wireToFavorite(serverId, item): FavoriteItem` — new favorites get `buildFavoriteId(serverId, kind, …)`.
+- `mergeServerList(local, serverId, remote)`:
+  - For that server, the remote list wins: remote items are matched to local favorites by **key**, and a match keeps its existing local `id` (no re-keying); unmatched remote items are added; local items of that server absent remotely are dropped.
+  - Placement: the server's items fill, in remote order, the slots that server's items occupied in the local list, with extras appended. Other servers' items and `dir` items do not move.
+- Response parsing is defensive: an unknown `kind` or a malformed row is skipped, never thrown.
+
+**Service — `services/saved-items.ts`**
+- `listSavedItems`, `putSavedItem`, `deleteSavedItem`, `reorderSavedItems` over `authedFetch`, typed results, no `any`/`unknown`.
+
+**Sync hook — `hooks/useSavedItemsSync.ts`, mounted in `app/_layout.tsx` beside `useNotificationPrefsSync()` (inside `AuthGate`)**
+- Pull: on a capable server connecting, on app foreground, and on a `saved_items_changed` frame with a newer `revision`, fetch and apply `mergeServerList`.
+- First sync: the server answers empty and this server has local items, and `savedItemsBootstrapped[serverId]` is unset → upload them once (upserts, then one reorder), then set the flag.
+  - The flag is a new field in the existing quickAccess persisted state, not a new key.
+- Push: the hook subscribes to `favorites`, diffs against the last snapshot it synced for each capable server, and sends upsert / delete / reorder.
+  - Remote merges are applied with a guard, so they are not echoed back.
+  - On failure: revert that server's part of the diff in the store and raise one alert through the existing alert store (`shared:savedItems.syncFailed`, in en/he/ar/ru).
+- Every call site already writes through `pinItem` / `unpinItem` / `reorderFavorites` (PR A removed the last bypass), so no screen changes.
+- No offline queue: offline, a pin fails and rolls back while syncing is on. Say so in the PR body.
+
+**Tests**
+- `lib/savedItemsWire`: `dir` / no-`serverId` excluded; legacy session id maps to the same key as a canonical one; merge keeps local ids, slots and other servers' items.
+- `useSavedItemsSync`: first upload; server list wins after bootstrap; rollback + one alert on a failed `PUT`; no calls when `savedItems` is absent; a WS `saved_items_changed` triggers one refetch; a remote merge is not re-sent.
+- Checks: `npm run lint && npm run typecheck && npm run test:ci && npm run test:i18n`.
+
+**Docs**
+- `docs/FEATURES.md`: favorites sync across phones paired with the same streamer (servers that support it).
+- `docs/privacy-policy/proposed-privacy-policy.md:202` lists favorites as stored on the device only; add that they are also kept on the user's own streamer. This fits `docs/no-hosted-service.md`, since the data never leaves the user's machines.
+- Update the tracking issues in both repos (one issue per repo, linked by URL).
