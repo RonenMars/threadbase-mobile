@@ -26,7 +26,9 @@ Encrypted pairing and sealed connections work in a browser under three condition
 IndexedDB keeps the `CryptoKey` through structured clone, which preserves `extractable: false`, so `exportKey` refuses it; a stored key that is extractable is treated as absent and replaced.
 Static-key Diffie-Hellman runs through `crypto.subtle.deriveBits({ name: 'X25519', public }, privateKey, 256)` behind the `StaticKey` interface in `noise.ts`, and an all-zero result is refused explicitly rather than trusted to the browser.
 The Noise transcript is byte-identical to the stablelib path; `__tests__/unit/e2ee-device-key-web.test.ts` checks both committed vectors through WebCrypto.
-The key is deleted wherever native deletes it (`clearDeviceStaticKey`).
+The key is deleted only where native deletes it (`clearDeviceStaticKey`): the explicit **Forget this device** action (`forgetDevice` in `stores/servers.ts`, offered in the server menu of a pinned server) and the `e2ee-web-server-unsupported` refusal.
+Removing a server and hand-editing its URL or API key leave the key in place, so deleting a server and re-adding the same URL presents the same `e2ee_static_pub` and the streamer's `repairStmt` restores the existing device row, revoked or not (streamer design §4.4), instead of orphaning it and creating a new one.
+Forgetting a device means the next pairing mints a new identity, and a revoked row for the old key is never restored.
 The `localStorage` SecureStore shim never holds a device key.
 
 **The browser must have WebCrypto X25519 and IndexedDB.**
