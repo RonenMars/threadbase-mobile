@@ -38,7 +38,7 @@ Idea 6 (workspace sync) is "necessary eventually but only after we have more thi
 
 ---
 
-## Idea 1 — Cross-session search with hit context, ranking, and "open in session" → [Feature 6](./ROADMAP.md#feature-6--cross-session-search-with-hit-context--open-in-session)
+## Idea 1 — Cross-session search with hit context, ranking, and "open in session" → Feature 6 (shipped in part; leftover in [BACKLOG](./BACKLOG.md#leftovers-from-partly-shipped-features))
 
 **One-line pitch:** Turn the existing per-server search API into a top-level workspace search that returns ranked hits across every server, with the matching message snippet inline and a tap-to-jump-to-message action.
 
@@ -136,7 +136,7 @@ Idea 6 (workspace sync) is "necessary eventually but only after we have more thi
 
 ---
 
-## Idea 7 — Live Activities + Dynamic Island for in-progress sessions → [Feature 12](./ROADMAP.md#feature-12--live-activities--dynamic-island-for-in-progress-sessions)
+## Idea 7 — Live Activities + Dynamic Island for in-progress sessions → Feature 12 (shipped; see [FEATURES](./FEATURES.md#completed-roadmap-and-backlog-items))
 
 **One-line pitch:** A running session shows up in the iPhone's Dynamic Island and lock-screen as a live activity: project name, status (running / waiting input), elapsed time, latest terminal line. Tap to jump in.
 
@@ -153,7 +153,7 @@ Idea 6 (workspace sync) is "necessary eventually but only after we have more thi
 
 ---
 
-## Idea 8 — "Mission Control" — single screen aggregating all running/waiting sessions across all servers → [Feature 13](./ROADMAP.md#feature-13--mission-control-aggregate-every-live-session-across-servers) (recommended next-up)
+## Idea 8 — "Mission Control" — single screen aggregating all running/waiting sessions across all servers → Feature 13 (shipped as the Session Board; see [FEATURES](./FEATURES.md#completed-roadmap-and-backlog-items)) (recommended next-up)
 
 **One-line pitch:** A dedicated screen that shows every live session across every server as a grid of small cards (project, last line of terminal, status badge, elapsed). Updates in real time. Tap any card to dive in.
 
@@ -171,7 +171,7 @@ Idea 6 (workspace sync) is "necessary eventually but only after we have more thi
 
 ---
 
-## Idea 9 — Voice prompts: dictate into the composer with on-device Whisper → [Feature 14](./ROADMAP.md#feature-14--voice-prompts-via-on-device-whisper)
+## Idea 9 — Voice prompts: dictate into the composer with on-device Whisper → Feature 14 (dictation shipped; Whisper leftover in [BACKLOG](./BACKLOG.md#leftovers-from-partly-shipped-features))
 
 **One-line pitch:** Tap a mic icon in the composer → record → transcript inserted at the cursor. Works offline (Whisper coreml). One-handed orchestration while walking.
 

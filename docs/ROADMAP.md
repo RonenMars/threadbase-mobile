@@ -1,8 +1,11 @@
-# Roadmap — Planned & Shipped Features
+# Roadmap — Planned Features
 
 Forward-looking feature work for Threadbase Mobile. Open bugs live in [BACKLOG.md](./BACKLOG.md).
 
-This doc tracks **features**: new capabilities, UX changes, or feature-flag work. The historical implementation plans for shipped features are archived under [`superpowers/plans/archive/`](./superpowers/plans/archive/) — each is one self-contained build sequence at the time it shipped, useful for archaeology when revisiting an area.
+This doc tracks **planned features**: new capabilities, UX changes, or feature-flag work.
+Once a feature ships, move it to [FEATURES.md](./FEATURES.md#completed-roadmap-and-backlog-items) as a one-line entry; if only part of it shipped, the unfinished part goes to [BACKLOG.md](./BACKLOG.md#leftovers-from-partly-shipped-features).
+The full original entry stays in git history.
+Historical implementation plans for shipped features are archived under [`superpowers/plans/archive/`](./superpowers/plans/archive/).
 
 Earlier-stage, not-yet-prioritized ideas live in [IDEAS.md](./IDEAS.md). When an idea is ready to commit to, promote it into this file as a numbered Feature.
 
@@ -14,198 +17,25 @@ New discrete tasks also land under [`roadmap/`](./roadmap/index.md) (one file pe
 
 | Feature | Status |
 |---|---|
-| Feature 1 — Tree directory view: pre-fill new-session path with current directory | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
-| Feature 2 — Move Export button from Historical session bottom bar into the info shelf | ✅ Shipped 2026-05-24 (PR #11, commit 9835ecf) |
-| Feature 3 — Attach multiple files to a single message | ✅ Shipped — `attachments` is an array and all refs join into one payload (`hooks/useComposerState.ts:34,48,95`), with Bug 5's escaping |
-| Feature 4 — Auto-deploy to App Store + Google Play | Planned — [#602](https://github.com/RonenMars/threadbase-mobile/issues/602). Store listings are the gating half, not the CI half |
-| Feature 5 — Polish the onboarding flow | 🟡 Partial — top XS/S wins shipped; manual `tb pair` exchange + NotificationsStep remain. [#605](https://github.com/RonenMars/threadbase-mobile/issues/605) |
-| Feature 6 — Cross-session search with hit context + "open in session" | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
 | Feature 7 — Workspace tagging across sessions / conversations / projects | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
 | Feature 8 — Saved views: persisted filter + sort + tag combos as named tabs | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
 | Feature 9 — Side-by-side session split view | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
 | Feature 10 — Cross-server prompt templates / snippets library | Planned (orchestration) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
 | Feature 11 — Workspace sync across devices via streamer | Planned (orchestration, depends on 7/8/10) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
-| Feature 12 — Live Activities + Dynamic Island for in-progress sessions | ✅ Shipped (iOS ActivityKit + Android ongoing-notification fallback) — **but structurally cannot work for self-hosters; see the entry below.** [#636](https://github.com/RonenMars/threadbase-mobile/issues/636) (P0, open) |
-| Feature 13 — Mission Control: aggregate every live session across servers | Planned (orchestration, recommended next) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
-| Feature 14 — Voice prompts via on-device Whisper | Planned (mobile-native) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
 | Feature 15 — Scheduled prompts ("send tomorrow at 9am") | Planned (async-collab) — [#617](https://github.com/RonenMars/threadbase-mobile/issues/617) |
 | Feature 16 — Sync mode: JSONL-sourced bubbles + native prompt forms | Planned (mobile-native, cross-repo) — [#623](https://github.com/RonenMars/threadbase-mobile/issues/623). |
-| Feature 17 — Expand Maestro E2E coverage to high-value flows | Planned — [#610](https://github.com/RonenMars/threadbase-mobile/issues/610). [#598](https://github.com/RonenMars/threadbase-mobile/issues/598) (stale-build guard) is now **closed** (PR #626). Still blocked behind [#600](https://github.com/RonenMars/threadbase-mobile/issues/600): no value widening a suite that cannot signal at 11/15 |
-| Feature 18 — Upgrade to Expo SDK 56 | ✅ Shipped 2026-05-25 (TestFlight build 104; React Compiler re-enabled in 106) |
 | Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle | Planned — [#615](https://github.com/RonenMars/threadbase-mobile/issues/615). The queue exists (`components/queue/`); the composer affordance does not |
-| Feature 20 — Visual regression gate on Maestro screenshots | Planned — [#610](https://github.com/RonenMars/threadbase-mobile/issues/610), with Feature 17 |
-| Feature 21 — Tree view: render drilled-folder conversations as full Hub/Classic rows | ✅ Shipped — `DrillItem`s carry status, branch, lastOutput and counts (`components/sessions/tree/DrillView.tsx:55-80`) |
-| Feature 22 — Settings button on the Filter & Sort bar (parity with sidebar) | Planned — [#614](https://github.com/RonenMars/threadbase-mobile/issues/614) |
 | Feature 23 — Onboarding: optional server-name slide before the QR scan | Planned — [#614](https://github.com/RonenMars/threadbase-mobile/issues/614) |
-| Feature 24 — Manage Favorites: "Add to favorites" empty-state CTA | Planned — [#614](https://github.com/RonenMars/threadbase-mobile/issues/614). Bug 30 is done, so this is no longer spec-gated |
-| Feature 25 — Clear react-hooks v5 lint warnings (React Compiler prereq) | 🟡 Near-done — **1** warning left across `app/`, `components/`, `hooks/`. [#621](https://github.com/RonenMars/threadbase-mobile/issues/621) |
-| Feature 26 — Verify SDK 56 precompiled XCFrameworks are active in Maestro CI | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616) |
 | Feature 27 — Adopt EAS precompiled community libs for iOS build time | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616) |
 | Feature 28 — Audit manual `useMemo`/`useCallback`/`React.memo` for React Compiler-driven deletion | Planned — [#621](https://github.com/RonenMars/threadbase-mobile/issues/621). Sequence after [#607](https://github.com/RonenMars/threadbase-mobile/issues/607) so there is a number to regress against |
 | Feature 29 — Spike: swap `@gorhom/bottom-sheet` for SDK 56's drop-in replacement | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616). Still on `^5.2.13` |
-| Feature 30 — Build-time warning cleanup (ship-121 follow-ups) | Planned — [#616](https://github.com/RonenMars/threadbase-mobile/issues/616) |
-| Feature 32 — Handle batched `conversation_events` WS event | ✅ Shipped — `hooks/useConversationStream.ts:160` subscribes to the batched frame |
-| Feature 34 — Structured prompt cards for Codex sessions | Planned — [#620](https://github.com/RonenMars/threadbase-mobile/issues/620) |
-| Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only) | ✅ Shipped — `reportOneShot` / `submitFeedbackViaSentry` self-init and tear down (`services/sentry.ts:359,477`). PR #343 was closed; the code landed |
-| Feature 36 — Validate the privacy checklist [Privacy follow-up checklist](./privacy-policy/privacy-follow-up-checklist.md) and review also: [app recommendations](./privacy-policy/threadbase-crash-reporting-ux-recommendation.md) | 🟡 Partial — code path in #343; store/legal/on-device evidence still human-only — [#601](https://github.com/RonenMars/threadbase-mobile/issues/601). Code path shipped; store, legal and dashboard evidence stay human-only. |
 
-**Status re-verified 2026-08-10 — see [`followups/RELEASE-READINESS-2026-08-10.md`](./followups/RELEASE-READINESS-2026-08-10.md).** Features 3, 21, 32 and 35 have shipped; 5 and 25 are nearly done. PRs #343 and #345, which the old ordering note waited on, are **closed, not merged** — their code landed by another route, so verify at the source rather than by PR state. Remaining work is tracked as GitHub issues #597–#621 with severity, priority and an execution plan.
-
-**Status re-verified 2026-08-11.** [#597](https://github.com/RonenMars/threadbase-mobile/issues/597) (`threadbase://pair` deep link) and [#598](https://github.com/RonenMars/threadbase-mobile/issues/598) (stale E2E build) are now closed — merged as [PR #627](https://github.com/RonenMars/threadbase-mobile/pull/627) (`24627baa`) and [PR #626](https://github.com/RonenMars/threadbase-mobile/pull/626) (`2de1c1ae`), with #597 additionally confirmed on a real device (iPhone 17 Pro Max, iOS 26.1), not just CI. **Feature 12 (Live Activities) turned out to already be shipped, not planned** — its entry below is corrected, including a self-hosting limitation now tracked as [#636](https://github.com/RonenMars/threadbase-mobile/issues/636) (P0) plus RonenMars/threadbase-streamer#528 and RonenMars/threadbase-streamer#519. New: [#638](https://github.com/RonenMars/threadbase-mobile/issues/638) (P2, pair-link error copy), found while verifying #597 on-device. See [`followups/RELEASE-READINESS-2026-08-10.md`](./followups/RELEASE-READINESS-2026-08-10.md) for the full dated update.
-
-**Suggested order for the orchestration cluster (6–15):** **Feature 13 Mission Control** (biggest daily-orchestration unlock, no native modules, reuses existing infra) → **Feature 6 Cross-session search** (already half-shipped at `hooks/useConversations.ts:431`; finishing it changes what the app is for) → **Feature 12 Live Activities** (**already shipped as of 2026-08-11 — see its entry below**; kept here only for the historical sequencing rationale) → **Feature 15 Scheduled prompts** (strong async-teammate unlock if streamer cron is cheap) → **Feature 7 Tagging** → **Feature 8 Saved views** (builds on 7) → **Feature 10 Snippets** → **Feature 11 Workspace sync** (only after 7/8/10 exist and are worth syncing) → **Feature 14 Voice** (great but possibly overkill before #6 and #13 settle the workflow) → **Feature 9 Split view** (fun but iPad-coded; deprioritize if primary device is iPhone).
+**Suggested order for the orchestration cluster ([#617](https://github.com/RonenMars/threadbase-mobile/issues/617), re-verified 2026-11-02):** Features 6, 12 and 13 shipped and Feature 14 shipped as system dictation; their leftovers are in [BACKLOG.md](./BACKLOG.md#leftovers-from-partly-shipped-features).
+Remaining order: **Feature 15 Scheduled prompts** → **Feature 7 Workspace tagging** → **Feature 8 Saved views** → **Feature 10 Snippets** → **Feature 11 Workspace sync** (needs 7/8/10) → **Feature 9 Split view**.
 
 ---
 
 ## Planned
-
-### Feature 3 — Attach multiple files to a single message
-
-**Goal:** Let the user attach more than one file to a message before sending, instead of being limited to a single attachment per turn.
-
-**Direction:**
-- Move from a single-attachment model to an array of pending attachments held in message-composer state.
-- Composer UI: show a horizontal strip / chip list of pending files with per-file remove, plus an "Add file" affordance that stays available until a (per-message) cap is hit.
-- Wire send to upload/encode all pending attachments and submit them as one user turn.
-
-**Open questions:**
-- **Per-message cap.** What's the upper limit (e.g. 5? 10? unlimited with a soft warning)? Drives UI density and validation.
-- **Per-file size / total size limits.** Need a streamer-side limit and a client-side pre-check; what's the current per-file limit and does it still apply to the *sum*?
-- **Supported types.** Images only, or any file (PDFs, text, code)? Mixed-type batches allowed?
-- **Streamer contract.** Does the existing send-message endpoint accept an array of attachments, or do we need a new shape? Confirm before client work.
-- **Upload progress UX.** One combined progress bar vs. per-file progress vs. fire-and-forget with retry on the failed ones?
-- **Failure isolation.** If 1 of 3 files fails to upload, do we send the message with the 2 that succeeded, or block the whole send?
-- **Picker.** iOS multi-select via `expo-image-picker` / `expo-document-picker` — confirm both support multi-select on current SDK.
-- **Paste / drag.** Out of scope for v1? (Probably yes — keep it explicit-pick-only.)
-
-**Files likely involved (to verify):**
-- Message composer component (wherever the current single-file attach lives)
-- Attachment upload helper in `lib/` / `services/`
-- Send-message handler / hook
-- streamer: send-message endpoint payload shape
-
-**Related:** [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) (multi-attachment send produces no output) is likely the same code paths surfaced as a bug. When picking up Feature 3, diagnose Bug 5 first — the fix may already collapse the two.
-
-**Note:** This is a sizable feature — once we start it, split into its own plan doc and link back here.
-
----
-
-### Feature 4 — Auto-deploy to App Store + Google Play
-
-**Filed:** 2026-05-22.
-
-**Goal:** Replace today's manual `/expo-local-ship` flow (build → archive → upload to TestFlight) with an automated CI pipeline that builds and submits to both App Store and Google Play on a release trigger (tag push, manual workflow dispatch, or merge to a release branch).
-
-Today's setup (per [README](../README.md#shipping) + the local ship scripts):
-- Local-only: bumps `app.json` build/version numbers, archives with native tooling, and uploads through the configured iOS/Android release paths.
-- Alpha/beta distribution exists through TestFlight and Google Play Alpha, but there is no automated production store submission pipeline.
-- Cloud builds via EAS (`/ship-expo-cloud`) exist but are opt-in and still need a human in the loop.
-
-**Direction (decide on pickup):**
-
-1. **EAS Build + EAS Submit on GitHub Actions.** Simplest path on paper: `eas build --platform all --non-interactive` then `eas submit --platform all`. Requires EAS account billing, GitHub secrets for Apple + Google credentials, and trust in EAS's queue. Matches the `/ship-expo-cloud` flow but automated.
-
-2. **Local build in GitHub-hosted macOS runner + Fastlane.** Keep the local build toolchain (the canonical path per project docs) but lift it into CI. Apple needs macOS runner (~10 min/min for self-hosted, or use GH macOS minutes). Android can run on Linux. Fastlane for App Store Connect + Play Console submission. More moving parts; full control.
-
-3. **Mixed.** EAS for iOS (which is the part most painful locally — codesigning, provisioning, Xcode versions), local-style for Android (cheaper, simpler). Avoids EAS minutes for the easier platform.
-
-**Open questions / prerequisites:**
-- **App Store production listing.** Today iOS distribution is through TestFlight. Need to populate App Store Connect (screenshots, description, privacy policy URL, support URL, ratings questionnaire) before the first prod submission can succeed. This is *not* infra work — it's content + legal — and probably gates the iOS half of this feature.
-- **Google Play production listing.** Android alpha distribution exists, but production rollout still needs a complete Play Console listing (graphics, content rating, target audience, data safety).
-- **Android build path.** The repo's iOS build setup is mature; Android has `npm run android` + Expo prebuild but no documented release archive flow. Verify `eas build --platform android` works end-to-end before betting on it, or document the local Gradle release flow first.
-- **Signing.** iOS: confirm whether we keep the existing Apple ID + app-specific password setup, or move to Apple's App Store Connect API key (recommended for CI — no per-run 2FA prompts). Android: generate + securely store the upload keystore; document rotation policy.
-- **Versioning.** Today the build number bumps in `app.json` per ship. Decide CI strategy: auto-increment from CI run number, derive from git tag, or read+bump from `app.json`. Consistency between iOS `buildNumber` and Android `versionCode` matters.
-- **Release notes.** Pull from git log between tags? From a `CHANGELOG.md`? From the GitHub release body? Each platform needs them in a different format (App Store: "What's New" per locale; Play: release notes per track).
-- **Crash + analytics provisioning.** If we don't already have Sentry/Crashlytics for prod, this is a good moment to wire it. Out of scope for the deploy plumbing itself, but flag for coordination.
-- **Phased rollout.** Both stores support staged rollouts (X% of users). Default to manual promotion via the console, or wire CI to ramp automatically? Manual is safer for v1.
-
-**Files likely involved (none yet — this is mostly new infrastructure):**
-- `.github/workflows/release.yml` — new
-- `eas.json` — likely needs profile additions for production tracks (currently profiled for cloud dev builds)
-- `app.json` — versioning automation
-- `fastlane/` directory if going with option 2
-- Possibly a small `scripts/ci/` directory for shared bump-and-tag logic
-
-**Coordination:**
-- The `/expo-local-ship` skill is the user's stated default (per global memory) — Feature 4 doesn't replace it for ad-hoc TestFlight pushes; it adds a parallel automated path for tagged releases. Keep the local skill intact.
-- If we ever want CI to push *to TestFlight*, that's a smaller scope and doesn't need full App Store listing — could be a Phase 1.
-
-**Note:** Sizable feature touching credentials, billing decisions, and external account setup. Once started, split into its own plan doc; it's almost certainly bigger than a single sprint.
-
----
-
-### Feature 5 — Polish the onboarding flow
-
-**Filed:** 2026-05-22. **Status (2026-07-22):** 🔄 In flight on `feat/onboarding-polish-top5` — audit complete; shipping top XS/S wins (Skip/swipe empty-Hub guard, QR advance without re-handshake, back-to-choose, Mac→computer copy + i18n QR steps, default port 8766). Still open: manual `tb pair` token exchange in `useTBPair`, NotificationsStep re-wire.
-
-
-**Goal:** Refine the first-launch onboarding experience. Today's flow (`app/onboarding.tsx` + `components/onboarding/{OnboardingShell,OnboardingNavigator}.tsx` + `components/onboarding/steps/*`) gets users from cold install to a paired server, but the rough edges haven't been cataloged or prioritized.
-
-**Scope is intentionally undefined.** Before designing or implementing, do a discovery pass:
-
-1. **Audit the current flow.** Step through onboarding on a fresh sim install (`xcrun simctl uninstall booted` → reinstall). Note every friction point: copy that reads as placeholder, transitions that feel abrupt, errors that surface as system alerts instead of in-screen treatment, fields that don't autofocus, keyboard avoiding gaps, illegible contrast, missing back affordances, mismatched motion. Capture as a punch list in this entry (or a sub-plan doc if it gets long).
-2. **Look at the empty-state scenarios.** What happens if the user enters an unreachable server URL? An invalid API key? Cancels the QR scanner? Denies camera permission? Tries to paste a malformed URL?
-3. **Identify the top 5 fixes by impact × cost.** Don't try to do everything in one pass — onboarding polish is bottomless work. Pick the wins that meaningfully reduce drop-off or confusion.
-
-**Likely areas (to verify in the audit):**
-- **QR vs. manual entry.** Today they're parallel paths; which one converts better? Should one be primary?
-- **Default server URL.** `EXPO_PUBLIC_DEFAULT_SERVER_URL` (= `http://localhost:8766`) is a dev convenience; in prod it's likely useless or actively confusing. Hide it on release builds or steer users toward the URL printed by `tb-streamer pair`?
-- **Pairing protocol.** NaCl key exchange (`services/pair-exchange.ts`) — does the user see any meaningful state during the handshake, or just a spinner? What's the error UX if it fails?
-- **Transitions.** Animation system at `components/onboarding/animations.ts` — feels deliberate but worth checking it's coherent end-to-end on Android too (the recent SDK 55 downgrade may have regressed something).
-- **Theme.** Onboarding has its own `theme.ts` — verify it stays in step with the main app theme after the recent theming-system work, or intentionally deviates for a "welcome" tone.
-
-**Open questions for the audit pass:**
-- What's the actual drop-off shape? Without analytics on each step, this is qualitative. Worth wiring step-event logging before designing fixes if data doesn't exist yet.
-- Is there an "onboarded skipped" state? E.g. for users restoring from backup with credentials already in Keychain.
-
-**Files likely involved (to verify):**
-- `app/onboarding.tsx`
-- `components/onboarding/OnboardingNavigator.tsx`
-- `components/onboarding/OnboardingShell.tsx`
-- `components/onboarding/steps/*` (each step component)
-- `components/onboarding/animations.ts`
-- `components/onboarding/theme.ts`
-- `services/pair-exchange.ts` (for pairing UX)
-- `stores/servers.ts` (for "is onboarded" gating)
-
-**Coordination:**
-- [Bug 7b](./BACKLOG.md#bug-7--quick-access-strip-default-collapsed--tab-reorder--hide-when-fully-empty) hides the Quick Access strip when there's nothing to show. A newly-onboarded user has no favorites/recents/popular yet → the strip *should* be hidden post-onboarding until they have something. Make sure Feature 5's polish doesn't reintroduce an empty-strip experience by re-expanding by default.
-- [Issue 1](./BACKLOG.md#issue-1--post-intro-cached-hub-list-flashes-then-re-paints-with-server-data) is "post-intro Hub flashes when cache hydrates before server data lands." The intro→Hub transition is owned by onboarding's exit, so Feature 5 might be the right place to fix the handoff (e.g. delay the navigation until first-server-fetch settles) rather than gating the Hub itself.
-
-**Note:** Start with audit → punch list → prioritization. Don't pick a solution before the audit. Once we have the top fixes, split into its own plan doc with concrete tasks.
-
----
-
-### Feature 6 — Cross-session search with hit context + "open in session"
-
-**Filed:** 2026-05-22 (promoted from [IDEAS.md](./IDEAS.md) Idea 1).
-
-**Goal:** Turn the existing per-server search API into a top-level workspace search that returns ranked hits across every server, with the matching message snippet inline and a tap-to-jump-to-message action.
-
-**Why:** `hooks/useConversations.ts:431` already calls `/api/search?q=` per server. The bones are there, but it's wired into the History tab as "filter conversations by title" — not "find that one message where I told Claude about the bug we shipped last week." The mobile sweet spot is "I'm on the train, I need to look at a thing the agent said three days ago."
-
-**Direction:**
-- A dedicated `/search` route. Single input, debounced.
-- Fan-out across `activeServerIds` via `useQueries`.
-- Group results by server → project → conversation; show the matching message excerpt with the hit highlighted.
-- Tap → deep-link to that exact message in the conversation view (existing `/conversation/[id]` + a new `?focus=<messageId>` param + scroll-to-anchor).
-- Recent searches persisted to AsyncStorage.
-
-**Open questions:**
-- Does the streamer's search response already include message snippets, or just conversation metadata? If just metadata, that's a streamer-side change before client work starts. Verify against `services/api-client.ts` + streamer code.
-- Ranking: simple recency first, or does the streamer return relevance? If we need to merge ranked results from N servers client-side, how do we normalize scores?
-- Scoping: search-all by default vs. search-current-server. A toggle vs. a chip strip vs. respect `displayedServerIds`?
-- Filters in the search results: by project, by date, by status? Or punt to v2?
-
-**Scope:** ~1 week, assuming the streamer already returns snippets. Add ~3–5 days if streamer changes are needed.
-
-**Files likely involved:**
-- `app/search.tsx` — new
-- `hooks/useConversations.ts` (extend `useConversationSearch` for multi-server)
-- `services/api-client.ts` — verify search endpoint shape
-- `app/conversation/[id].tsx` — add `?focus=<messageId>` handling
-
----
 
 ### Feature 7 — Workspace tagging across sessions / conversations / projects
 
@@ -368,124 +198,6 @@ Today's setup (per [README](../README.md#shipping) + the local ship scripts):
 
 ---
 
-### Feature 12 — Live Activities + Dynamic Island for in-progress sessions
-
-**Filed:** 2026-05-22 (promoted from [IDEAS.md](./IDEAS.md) Idea 7).
-
-**Status (2026-08-11): ✅ Shipped — iOS ActivityKit + Android ongoing-notification fallback — but structurally unusable by self-hosters. Two open defects below.**
-
-This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/SessionLiveActivity.tsx`, `services/live-activity.ts`, `ios/ExpoWidgetsTarget/`). Android has no Live Activity equivalent, so it falls back to a sticky ongoing notification with the same start/update/end lifecycle (`services/live-activity.android.ts`). It landed via tb-mobile PRs #419–#423 (closed unmerged; the work reached `main` as direct commits — see `docs/superpowers/plans/live-activities-leftovers.md`) and tb-streamer #292–#294 (merged). The 12-hour Apple renewal cap named in the open questions below was resolved by streamer-side push-to-start renewal — see that doc's §3.1.
-
-**This cannot be fixed for self-hosters, ever — it is an Apple platform boundary, not an engineering gap.** The streamer signs its own APNs pushes targeting the topic `${bundleId}.push-type.liveactivity` (`apnsClient.ts`), which requires a Team-Scoped-All-Topics signing key. Apple issues APNs keys per developer team, and a key only signs topics for bundle IDs that team owns — so a self-hosted streamer's key can never sign for the published app's bundle ID (`com.ronenmars.threadbase`). Cross-repo: RonenMars/threadbase-streamer#519 (P0 — the server never tells a client whether push will actually work, so the feature silently no-ops for every non-maintainer user instead of being hidden) and RonenMars/threadbase-streamer#480 / RonenMars/threadbase-streamer#481.
-
-**Two open defects:**
-- [#636](https://github.com/RonenMars/threadbase-mobile/issues/636) (P0) — the Live Activity `content-state` payload carries real terminal output (`lastOutput`), a prompt-derived `title`, and the project name, while `docs/privacy-policy/proposed-privacy-policy.md:51` claims payloads exclude exactly those, and separately describes an "Expo notification relay" that Live Activity pushes never use — they go direct to `api.push.apple.com`.
-- Ordinary (non-Live-Activity) push notifications — the one delivery path that *would* work for self-hosters, since Expo centrally holds the app's own APNs/FCM credentials — are not implemented at all. Mobile registers an Expo push token and POSTs it to `/api/push/register` (`services/push.ts:40`); the streamer stores it (`src/db/repositories/push.repository.ts`) and nothing ever sends through it — `PushRepository.listDeliverable()` is defined and never called. Cross-repo: RonenMars/threadbase-streamer#528 (P1).
-
----
-
-**Original plan (2026-05-22), kept below for context.** The goal, direction and open questions describe the pre-implementation design; treat the renewal/self-hosting facts above as authoritative over anything conflicting below.
-
-**Goal:** A running session shows up in the iPhone's Dynamic Island and lock-screen as a live activity: project name, status (running / waiting input), elapsed time, latest terminal line. Tap to jump in.
-
-**Why:** *Quintessential* mobile-orchestration superpower. The user can put the phone down, watch the island for status, glance at the lock screen, and only open the app when they need to act. It's the difference between "I check the app every 2 minutes" and "the app tells me when to care."
-
-**Direction:**
-- iOS: a new native module (or `expo-live-activities` once stable — check the current Expo SDK 55 ecosystem status). On session start (or via a "make this session live" action), register an ActivityKit activity.
-- Push updates via APNs to the activity, fed by the existing WS `session_update` stream (push tokens already wired in `services/push.ts`).
-- Android: a foreground service notification with similar content; not as flashy but functionally parallel.
-
-**Open questions:**
-- Auto-promote all running sessions to a Live Activity, or only on user opt-in per session? iOS has a per-app limit (around 5–8 concurrent activities, depending on iOS version) — auto-promote on a multi-session orchestrator hits that fast.
-- 12-hour Apple cap on Live Activities — need renewal logic for genuinely long-running sessions. Renewal = end the old activity, start a new one with the same id; OK or jarring?
-- Lock-screen vs. island vs. both. Both is default; verify the layout works at all three sizes (compact / expanded / minimal).
-- Android: foreground service has battery / permission implications. Worth the lift for a v1, or iOS-only first?
-
-**Scope:** ~2 weeks iOS + ~1 week Android. Native module work is the spiky part. Start iOS-only.
-
-**Files likely involved:**
-- `modules/live-activities/` — new native module (or wrap an Expo plugin)
-- `services/push.ts` — extend payload routing for activity-update pushes
-- `services/ws-client.ts` — hook session_update events into the activity update path
-- `app/session/[id].tsx` — "Make live" action
-- streamer: send activity-update pushes alongside the existing session-update notifications
-
-**Related:** [Smartwatch surfaces](./roadmap/tasks/smartwatch-session-surfaces.md) — once phone Live Activities / Live Updates exist, extend glanceability to paired smartwatches (mirroring first, native watch companions later if needed). See also [`docs/roadmap/`](./roadmap/index.md).
-
----
-
-### Feature 13 — Mission Control: aggregate every live session across servers
-
-**Filed:** 2026-05-22 (promoted from [IDEAS.md](./IDEAS.md) Idea 8).
-
-**Recommended next-up for the orchestration cluster** — biggest daily unlock, lowest implementation risk (no native modules), reuses existing infra.
-
-**Goal:** A dedicated screen that shows every live session across every server as a grid of small cards (project, last line of terminal, status badge, elapsed). Updates in real time. Tap any card to dive in.
-
-**Why:** Today the Hub mixes live + historical + projects. When you're orchestrating, the *only* thing you care about for 30 seconds is "what's running and which one needs me?" Mission Control answers exactly that.
-
-**Direction:**
-- A new `/mission-control` route (or a tab).
-- Subscribes to all WS streams via the existing `wsManager`.
-- 2-column grid on phone (iPad: 3–4) of mini-cards.
-- Cards highlight (amber border + haptic on first appearance) when their status flips to `waiting_input`.
-- Header strip: live counts — "3 running · 2 waiting · 1 failed".
-- Tap-and-hold a card → quick-reply sheet that pushes a prompt without leaving Mission Control.
-
-**Open questions:**
-- Entry point: tab vs. modal vs. swipe-down from Hub? A persistent tab is most discoverable but adds chrome.
-- Card content: how much of the terminal is useful? Last 1 line? Last 3? Last 1 *non-decoration* line (the VirtualTerminal strips spinner frames already)?
-- Auto-refresh cadence: subscribe to WS push (real-time but chatty) vs. throttle to 1s ticks (smoother on long-running streams)?
-- Sorting: by "needs you most" (waiting_input first), by recency, or user-pickable?
-- What about historical sessions completed in the last N minutes — show or hide?
-
-**Scope:** ~1.5 weeks. Infrastructure already exists; this is largely a new view over the same data.
-
-**Files likely involved:**
-- `app/mission-control.tsx` — new (or a new tab inside `app/index.tsx`)
-- `components/sessions/MissionControlCard.tsx` — new mini-card
-- `services/ws-client.ts` — verify the multi-server subscribe path scales
-- `hooks/useSession.ts` — extend the all-servers active-sessions query
-- `components/shared/QuickReplySheet.tsx` — new sheet for tap-and-hold-to-reply
-
-**Related:** Feature 12 (Live Activities) makes Mission Control even more useful — you act on a Live Activity prompt, Mission Control shows you the resulting state.
-
----
-
-### Feature 14 — Voice prompts via on-device Whisper
-
-**Filed:** 2026-05-22 (promoted from [IDEAS.md](./IDEAS.md) Idea 9).
-
-**Goal:** Tap a mic icon in the composer → record → transcript inserted at the cursor. Works offline (Whisper coreml). One-handed orchestration while walking.
-
-**Why:** Typing prompts on a phone is the single biggest friction in mobile orchestration. Voice removes it. iOS native speech recognition is OK; Whisper is excellent. The streamer doesn't need to know — it sees plain text.
-
-**Direction:**
-- A native module wrapping `whisper.cpp` with the coreml-optimized iOS build, OR `expo-speech-recognition` for the simpler-but-cloud path.
-- Mic button in the composer.
-- Visual waveform during recording.
-- Auto-stop on 2s silence.
-- Edit before send (don't auto-fire).
-
-**Open questions:**
-- On-device Whisper (best UX, ~75 MB `tiny.en` or ~150 MB `base.en` bundled with the app) vs. iOS Speech framework (no bundle bloat, but cloud-y and English-biased)? On-device is the *right* answer for an orchestration tool but adds ~150 MB to the IPA.
-- Model choice: `tiny.en` is fast and fine for short prompts; `base.en` is noticeably better for technical jargon. Bundle one, or let the user pick?
-- Languages: English-only v1, or multi-language from day one? `tiny` (multilingual) is ~75 MB; English-only is roughly half.
-- Background recording: not for v1. Foreground only.
-- Punctuation: Whisper does its own punctuation; iOS Speech doesn't. Worth normalizing?
-
-**Scope:** ~2 weeks on-device; ~1 week for the iOS Speech fallback.
-
-**Files likely involved:**
-- `modules/whisper/` — new native module (or `expo-speech-recognition` wrapper)
-- The composer component
-- App bundle config (`app.json`, `Info.plist` microphone usage description) — already partially in place if push notifications are
-- Privacy policy update (microphone permission disclosure for App Store)
-
-**Note:** Possibly overkill before Features 6 and 13 settle the workflow. Revisit after those ship.
-
----
-
 ### Feature 15 — Scheduled prompts ("send tomorrow at 9am")
 
 **Filed:** 2026-05-22 (promoted from [IDEAS.md](./IDEAS.md) Idea 10).
@@ -562,62 +274,6 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 
 ---
 
-### Feature 17 — Expand Maestro E2E coverage to high-value flows
-
-**Filed:** 2026-05-23.
-
-**Goal:** Grow the Maestro smoke suite (`launch.yaml` + `browse.yaml`, ~30–60s, hub-only) into coverage of the flows most likely to regress in day-to-day work.
-
-**Why:** Current suite proves the app boots to the hub and the filter/sort sheet opens. Session detail navigation, chat send, attachments, settings, and keyboard-avoidance are all uncovered — and several of these have been the source of recent bugs (multi-attachment Bug 5, the 2026-05-22 keyboard-avoidance fix).
-
-**Priority order (P0 → P3):**
-- **P0 — unblockers**
-  1. Fix project-row testID a11y so Maestro can tap into a session detail (`e2e/README.md` "Known limits" #1). Wrap row in a `<View accessible testID>` instead of relying on `TouchableOpacity` prop forwarding.
-  2. Add the mock endpoints currently 404ing (`/api/sessions/names`, `/api/projects/popular`, `/api/conversations/count`, `POST /api/push/register`) so the hub error banner stops obscuring elements.
-- **P1 — regression coverage for recent fixes**
-  3. Keyboard-avoidance flow on the chat input (guards the 2026-05-22 fix).
-  4. Onboarding end-to-end on a freshly erased sim (`xcrun simctl erase` in CI before the run).
-  5. Session rename flow.
-- **P2 — needs mock work**
-  6. Minimal `/ws` WebSocket fake in `e2e/mock-server.js` (frame-replay from a fixture). Unlocks `chat_send.yaml`.
-  7. Single-attachment send flow.
-  8. Multi-attachment send flow — currently expected to fail ([Bug 5](./BACKLOG.md) territory); use as a watchdog test that flips green when the bug is fixed.
-- **P3 — broader UX**
-  9. Settings: theme toggle.
-  10. Settings: language switch + RTL spot-check.
-  11. Filter/sort *application* (not just sheet open).
-
-**Open questions:**
-- Pay the cost of erasing the sim once per CI run for the onboarding flow, or gate behind an env flag?
-- Attachment + WS flows in `test:e2e:mock` (slower smoke) or a separate `test:e2e:full` job?
-- Also run the suite on Android — Maestro's `testID` handling is better there per `e2e/README.md`.
-
-**TestIDs likely needed (preliminary):**
-- `project-row-<projectId>` on the hub's project group row
-- `session-detail-back`, `session-detail-rename-cta`, `session-rename-input`, `session-rename-confirm`
-- `chat-input`, `chat-send-cta`, `chat-attachment-cta`, `chat-message-<index>`
-- `settings-screen`, `settings-theme-toggle`, `settings-language-select`
-- A keyboard-spacer anchor for asserting input visibility above the keyboard
-
-**Files likely involved:**
-- `e2e/mock-server.js` — endpoint additions + `/ws` fake
-- `e2e/*.yaml` — new flow files per priority item
-- `components/sessions/hub/ProjectHubCard.tsx` (or row component) — testID a11y fix
-- Misc source files for the testIDs above
-- `e2e/README.md` — document each new flow and its testIDs
-
-**Plan stub:** [`superpowers/plans/2026-05-23-e2e-expansion.md`](./superpowers/plans/2026-05-23-e2e-expansion.md)
-
-**Related:** the open "GitHub Actions: Tests + E2E" CI item — pairs naturally with this so the expanded suite runs on every push.
-
----
-
-### Feature 18 — Upgrade to Expo SDK 56
-
-✅ **Shipped 2026-05-25** (TestFlight build 104, React Compiler re-enabled in build 106). See the [Shipped](#shipped) table for the row. The Features 25–29 below capture the follow-on opportunities the SDK 56 + React Compiler landing unlocked.
-
----
-
 ### Feature 19 — Queue-while-thinking: recolor send button as "add to queue" during a turn, auto-send when idle
 
 **Filed:** 2026-05-24.
@@ -665,118 +321,15 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 
 **Coordination:**
 - Related to [Feature 16](#feature-16--native-mini-form-for-claude-code-interactive-prompts): both touch the moment a turn is in flight, and both involve the composer area. If 16 lands first, account for the prompt-form taking precedence over the queue UI when a structured prompt is active.
-- Related to [Bug 5](./BACKLOG.md#bug-5--multi-attachment-send-produces-no-output) only loosely — queueing is independent of attachments — but verify that a queued message with attachments fires the same code path on auto-send.
+- Related to Bug 5 (done) only loosely — queueing is independent of attachments — but verify that a queued message with attachments fires the same code path on auto-send.
 
 **Scope:** ~3–5 days client-side, no streamer change required. Single-message-at-a-time flush is a smaller, safer v1; multi-message merge / reorder is v2.
 
 ---
 
-### Feature 20 — Visual regression gate on Maestro screenshots
-
-**Filed:** 2026-05-24. **Depends on:** [Feature 17 — Expand Maestro E2E coverage to high-value flows](#feature-17--expand-maestro-e2e-coverage-to-high-value-flows). Pick up once the Maestro suite is stable in CI and the screenshot set has settled.
-
-**Goal:** Turn the per-flow `takeScreenshot` checkpoints already wired into the Maestro suite into a real regression gate — each CI run diffs the captured screenshot against a committed baseline and fails the build (or surfaces a PR comment) on visual drift.
-
-**Why:** The current setup *captures* screenshots but doesn't *compare* them. Layout regressions like Bug 6 (last message hidden behind action bar) are exactly the class of bug pixel diffs catch reliably — and the screenshots are already produced on every CI run, so the marginal cost of adding a comparator is small.
-
-**Direction (decide on pickup):**
-
-1. **Option A — `pixelmatch` + baselines committed to the repo (lowest friction).** Add `e2e/compare-screenshots.js` (~50 lines) that loads each `e2e/_artifacts/screenshots/*.png` and diffs against `e2e/_baselines/*.png` using `pixelmatch` + `pngjs`. New script `npm run test:e2e:regression` runs the Maestro suite then the comparator. CI invokes it on push-to-main. Baselines are captured from a clean CI run and committed.
-2. **Option B — Maestro Cloud (zero friction, paid + vendor-locked).** Swap `maestro test` for `maestro cloud` in the CI job. Maestro Cloud handles the baseline storage + diff UI. Costs above the free tier; requires uploading the build to mobile.dev.
-3. **Option C — Reg-Suit / Loki (open-source visual regression toolchain).** Adds an S3 (or gh-pages) bucket for baseline hosting + a PR-comment diff gallery. More polish for non-engineer reviewers; one more moving part in CI.
-
-**Recommendation:** Start with Option A. Graduate to B or C if (a) false-positive thrash from antialiasing / font hinting becomes unmanageable, (b) the screenshot set grows past ~20 frames, or (c) designers want a UI to triage diffs.
-
-**Open questions:**
-
-- **Capture baselines locally or in CI?** Local sims (iOS 26.1 today) and the CI macOS runner (whatever Apple ships on `macos-14`) may not pixel-match. Capturing baselines inside CI avoids the cross-environment drift problem. First-time setup: merge an empty-baseline PR, let the CI run produce screenshots, download the `maestro-artifacts` artifact, copy into `e2e/_baselines/`, commit, re-run.
-- **Crop status bar + home indicator before diffing?** They change between sim versions / clock ticks and reliably trigger false positives. Crop a 20px top + 20px bottom band before comparison, or use Maestro's `takeScreenshot` with a region argument if 2.x supports it.
-- **Threshold per flow.** A global `0.5%` pixel diff threshold may be too strict for `pty-divider-01-session-detail.png` (terminal contents shift slightly) and too loose for `bug6-01-last-message-above-bar.png` (overlap is a 200pt regression, easy to detect). Per-flow override map.
-- **Update workflow.** When a UI change *intentionally* changes a screenshot, the PR author needs a one-command way to update the baseline (`npm run test:e2e:regression -- --update`). Treat baselines as code: reviewed in the diff, not auto-committed.
-- **CI cost.** Option A adds ~5 seconds to the existing macOS Maestro job — negligible. B and C add network round trips + paid quota.
-
-**Files likely involved (to verify):**
-
-- `e2e/compare-screenshots.js` (new) — the comparator.
-- `e2e/_baselines/` (new directory) — committed PNGs.
-- `package.json` — new `test:e2e:regression` script + `pixelmatch` + `pngjs` devDependencies.
-- `.github/workflows/e2e.yml` — invoke regression after the existing Maestro step in the `e2e-maestro` job.
-- `e2e/README.md` — document how to update baselines after intentional UI changes.
-
-**Coordination:**
-
-- Don't start until Feature 17 (the broader E2E expansion) has settled — the screenshot set should be stable before baselines are committed. Otherwise every Feature 17 PR churns the baselines.
-- Land separately from the existing "Maestro in CI" work — that lives on `combo-a-e2e-runs` and treats Maestro as a smoke gate; this is the regression-detection layer on top.
-
-**Scope:** ~half a day for Option A + initial baselines + one round of false-positive tuning. More if the baselines need cropping logic or per-flow threshold overrides.
-
----
-
-### Feature 21 — Tree view: render drilled-folder conversations as full Hub/Classic rows
-
-**Filed:** 2026-05-25.
-
-**Goal:** When the user drills into a folder in Tree view, the conversation list should look and behave like the rows on Hub and Classic — same `SessionRow` content (path, last-activity time, short message preview, message count, server name + color dot). Today Tree's `DrillRow` only renders a thin row (server label + timestamp), which makes it harder to identify and rank conversations without opening them.
-
-**Why:** Hub and Classic already use a richer row, and users move freely between the three views. Asymmetric row content forces the user to re-learn each view; closing the gap removes a steady source of friction and reuses code we already trust.
-
-**Direction:**
-
-- `DrillRow` (`components/sessions/tree/DrillRow.tsx:17-24`) currently calls `SessionRow` with `previewMode="none"` and omits `messageCount` / `preview` / `path` / `previewPref` wiring. Switch it to mirror Hub's `ConvRow` (`components/sessions/hub/ConvRow.tsx:23-32`):
-  - `messageCount={item.messageCount}`
-  - `preview={item.preview}`
-  - `previewMode` honoring the user's `historyMessageDisplay` setting (first vs. last)
-  - whatever path field Hub exposes today (verify the source on `useTreeSessions` / `treeUtils` matches the shape Hub gets from `useConversations`)
-- If the data source feeding the drilled list (`useTreeSessions` or equivalent) doesn't carry `preview` / `messageCount` / `path` today, extend it to fetch the same fields Hub/Classic do — ideally from the same query layer so we don't get two divergent shapes.
-
-**Verify before coding:**
-
-- Confirm the conversation payload behind Tree drill view is the same `Conversation` type as Hub; if not, identify the gap and decide whether to widen the type or branch in the query layer.
-- Spot-check `SessionRow` doesn't assume `preview` is non-empty — drilled rows may be on truly empty conversations.
-
-**Open questions:**
-
-- **Row height parity.** Hub's `ConvRow` is taller than today's `DrillRow`. Tree drill view may render hundreds of rows per folder (overlaps with the perf concerns in [Bug 2](./BACKLOG.md#bug-2--hub-tree-node-open-loader--long-list-render-stall) / Issue 2) — verify FlashList row-height estimates still hold after the swap.
-- **Path display in drilled context.** When the user has already drilled into a folder, showing the full path on each row may be redundant. Decide whether to render the path relative to the drilled folder, hide it entirely inside drilled view, or keep it absolute for parity with Hub.
-- **Server name redundancy.** Drill view is server-scoped (you drilled from a server root); the server label + color dot on every row may be noise. Compare against Hub's behavior when grouping is server-scoped — if Hub hides the server label in that case, do the same here.
-
-**Files likely involved:**
-
-- `components/sessions/tree/DrillRow.tsx` — the swap.
-- `components/sessions/tree/types.ts` + the hook that feeds drilled rows — widen the shape if `preview` / `messageCount` are missing.
-- `components/sessions/hub/ConvRow.tsx` — reference, no change expected.
-- `components/sessions/shared/SessionRow.tsx` (or wherever the shared row lives) — verify the existing API covers the drilled case, otherwise extend.
-
-**Coordination:**
-
-- Watch interaction with [Bug 2](./BACKLOG.md#bug-2--hub-tree-node-open-loader--long-list-render-stall) / Issue 2 — taller rows + longer folders may make the accordion stall worse. Land Issue 2's perf work first if profiling shows the swap regresses scroll.
-- Once Tree rows match Hub/Classic, [Feature 1](#feature-1--tree-directory-view-pre-fill-new-session-path-with-current-directory) ("Create new session from drilled dir") becomes a more obvious affordance — the row already speaks the same language as Hub, so the new-session CTA can sit in the same row chrome.
-
-**Scope:** Small if the data is already there (~few hours: swap `DrillRow`'s props, re-test FlashList sizing, ship). Medium (~half a day) if `useTreeSessions` needs to be widened or merged with the Hub query layer.
-
----
-
-### Feature 22 — Settings button on the Filter & Sort bar (parity with sidebar)
-
-**Filed:** 2026-05-25 (promoted from BACKLOG Bug 25 on 2026-05-25 — pure additive UI, no broken behavior).
-
-**Goal:** Add a Settings icon button to the Hub's Filter & Sort bar so Settings is reachable without opening the sidebar.
-
-**Why:** The top sidebar has a Settings entry to the right of the "Threadbase" logo-text. The Filter & Sort bar on the Hub doesn't expose any way to reach Settings — opening the sidebar is the only path. Adding a button there closes a small but consistent paper-cut for users who live in the Hub.
-
-**Direction:** Place a Settings icon button in the Filter & Sort bar at the right edge, alongside the existing filter/sort controls. Reuse the icon + nav handler the sidebar uses so both stay in lockstep.
-
-**Files likely involved:**
-- The Filter & Sort bar component (likely `components/sessions/hub/FilterSortBar.tsx` — grep `Filter` / `Sort` under `components/sessions/`)
-- `components/sidebar/SidebarHeader.tsx` (source of the Settings entry to mirror)
-
-**Scope:** ~1 hour. Smallest possible additive change.
-
----
-
 ### Feature 23 — Onboarding: optional server-name slide before the QR scan
 
-**Filed:** 2026-05-25 (promoted from BACKLOG Bug 27 on 2026-05-25 — net-new onboarding step, not a fix). **Related:** [Feature 5 — Polish the onboarding flow](#feature-5--polish-the-onboarding-flow).
+**Filed:** 2026-05-25 (promoted from BACKLOG Bug 27 on 2026-05-25 — net-new onboarding step, not a fix). **Related:** Feature 5 — Polish the onboarding flow (shipped, see [FEATURES.md](./FEATURES.md#completed-roadmap-and-backlog-items)).
 
 **Goal:** Add an onboarding carousel slide before the QR-scan slide that asks "What's this server called?" — a single text input with a Skip affordance. Optional — empty submit is allowed and the user continues to the scanner regardless.
 
@@ -793,89 +346,9 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 - New `components/onboarding/ServerNameSlide.tsx`
 - `services/pair-exchange.ts` (carry optional name into the pair payload)
 
-**Coordination:** Pairs with [Bug 28](./BACKLOG.md#bug-28--pull-to-refresh-modal-show-ipport-when-server-has-no-name) — once Bug 28's IP+port fallback is in, the Skip path is safely labeled everywhere a server name shows up. Ship Feature 23 → Bug 28 together if you can. Also consider folding into [Feature 5 — Polish the onboarding flow](#feature-5--polish-the-onboarding-flow) when its scope is defined; otherwise this stays standalone.
+**Coordination:** Pairs with Bug 28 (done, see [FEATURES.md](./FEATURES.md#completed-roadmap-and-backlog-items)) — once Bug 28's IP+port fallback is in, the Skip path is safely labeled everywhere a server name shows up. Ship Feature 23 → Bug 28 together if you can. Also consider folding into Feature 5 — Polish the onboarding flow (shipped, see [FEATURES.md](./FEATURES.md#completed-roadmap-and-backlog-items)) when its scope is defined; otherwise this stays standalone.
 
 **Scope:** ~half a day mobile (slide + persistence wiring + 1 Maestro flow update).
-
----
-
-### Feature 24 — Manage Favorites: "Add to favorites" empty-state CTA
-
-**Filed:** 2026-05-25 (promoted from BACKLOG Bug 8b on 2026-05-25 — Bug 8a's duplicate-header fix stays in BACKLOG; this half is net-new affordance, not a bugfix). **Depends on:** [Bug 30](./BACKLOG.md#bug-30--add-to-favorites-is-non-functional--needs-spec-from-claude-code) (Favorites system spec must land first — there's no point shipping a CTA that pins items if pinning doesn't work yet).
-
-**Goal:** When the Manage Favorites screen is empty *and* there is at least one conversation across paired servers (so there's actually something the user could favorite), replace the current static "long-press a chip to pin" copy with a primary "Add to favorites" button that navigates somewhere the user can pick an item to pin.
-
-**Why:** Today the empty state is informational only ("Tap a chip in the strip and choose 'Pin to Favorites'") — accurate but inert. New users have no Quick Access items to long-press anyway, so the instruction is a dead end. A CTA closes the loop.
-
-**Direction:**
-- Empty-state branching:
-  - `favorites empty + all servers report 0 conversations` → keep the current "long-press a chip" copy (genuinely nothing to favorite).
-  - `favorites empty + any server has conversations` → render an "Add to favorites" primary button.
-  - `favorites non-empty` → render the existing FlatList unchanged.
-- **CTA destination — open question for spec time.** Three candidates, all valid:
-  1. **`/browse`** (project directory picker — `app/browse.tsx`) — lets the user pick a folder, then "Pin to Favorites" from there. Requires browse to support pinning in addition to "Start new session".
-  2. **Back to the Hub** (`/`) with the Quick Access strip auto-expanded and switched to a tab the user can pin from. But if the user has nothing in any tab yet, this doesn't help — circular.
-  3. **A new dedicated "pick something to favorite" screen** showing recents + popular + a project picker. Cleanest UX, most code.
-- Tentative recommendation: defer the destination choice until the [Bug 30](./BACKLOG.md#bug-30--add-to-favorites-is-non-functional--needs-spec-from-claude-code) spec lands — it has to answer "what is a favorite?" before this can pick a sensible target.
-
-**Files likely involved:**
-- `app/manage-favorites.tsx` (branch the empty state, add the CTA)
-- `app/browse.tsx` (only if destination option 1 is chosen)
-- `hooks/useConversations.ts` / `hooks/useQuickAccess.ts` — reuse the "any server has conversations" signal that [Bug 7](./BACKLOG.md#bug-7--quick-access-strip-default-collapsed--tab-reorder--hide-when-fully-empty)b lands on; don't query twice.
-
-**Scope:** ~half a day once Bug 30's spec is approved and the destination is decided. The empty-state branching itself is small.
-
----
-
-### Feature 25 — Clear react-hooks v5 lint warnings (React Compiler prereq)
-
-**Filed:** 2026-05-27.
-
-**Goal:** Drive the `eslint-plugin-react-hooks` v5 warning count to zero so React Compiler (already enabled in `app.json` `experiments.reactCompiler: true`) operates on code that actually follows the Rules of React. Without this, RC's automatic memoization can silently produce wrong outputs in the cases where it skips compilation.
-
-**Why:** The SDK 56 upgrade brought `eslint-plugin-react-hooks` v5, which surfaced ~100 pre-existing rule violations the v4 plugin didn't flag: 74 refs-in-render, 19 set-state-in-effect, 6 immutability, 1 preserve-manual-memoization, 1 exhaustive-deps. These are not just style — they are the exact patterns RC's safety bailout uses to decide whether to compile a component. Components that fail the rules get skipped, and the worst case is partial compilation across a render tree where memoization correctness depends on every level. Cleaning them up is the prereq for Feature 28 (memoization deletion audit) and for getting the full RC perf payoff Meta reports (up to 12% load, 2.5× interaction speed).
-
-**Direction:**
-- Pick up the in-flight parallel-agent cleanup (batches A/C clean as of 2026-05-19; B/D in progress). Resume B/D, then re-baseline the count on `main`.
-- Triage by category, not by file — refs-in-render and set-state-in-effect each have a small set of canonical fixes; doing them as a sweep is cheaper than file-by-file.
-- For each fix, run `npm run test:ci` to make sure the rewrite is behavior-preserving (a `setState` inside `useEffect` removed without thought is a real semantic change).
-- Final state: `npm run lint` shows zero `react-hooks/*` warnings; baseline in `main` updated accordingly.
-
-**Acceptance criteria:**
-- `npm run lint` shows zero `react-hooks/*` rule violations.
-- `npm run test:ci` exits 0 (476+ tests).
-- `npm run test:e2e:mock` exits 0.
-- App still launches and renders the Hub on iPhone 17 Pro physical device after the cleanup branch lands.
-
-**Files likely involved:** spread across the 40 files currently using manual memoization patterns; concentrated in `components/sessions/hub/*`, `components/sessions/tree/*`, `app/conversation/[id].tsx`, `contexts/ThemeContext.tsx`.
-
-**Out of scope:** Deleting now-redundant `useMemo`/`useCallback` calls (that's Feature 28). Touching pre-existing dead code or refactoring unrelated patterns.
-
-**Scope:** ~1–2 days depending on how much the B/D batches already covered.
-
----
-
-### Feature 26 — Verify SDK 56 precompiled XCFrameworks are active in Maestro CI
-
-**Filed:** 2026-05-27.
-
-**Goal:** Confirm that SDK 56's precompiled XCFrameworks (default-on, ~16% iOS build time savings) are actually in effect for both local `expo-local-ship` and the Maestro CI workflow. The optimization is "default-on" — but only if `EXPO_USE_PRECOMPILED_MODULES` isn't explicitly set to `0` anywhere.
-
-**Why:** Maestro CI's iOS build is currently 35 min cold / target 5–10 min warm with DerivedData cache. A free ~16% on top of that is worth the half-hour audit. SDK 56 also enables an additional ~20% EAS-side precompile of community libs (`react-native-reanimated`, `react-native-screens`) but that's covered separately in Feature 27.
-
-**Direction:**
-- Grep `scripts/`, `.github/workflows/`, `eas.json`, and any `.env*` files for `EXPO_USE_PRECOMPILED_MODULES`. If it's set to `0` anywhere, decide whether the reason still applies; otherwise remove the override.
-- Look at the next clean Maestro CI run's iOS build log and confirm the `xcodebuild` lines reference `.xcframework` paths for the prebuilt Expo modules (Expo logs a line like "Using prebuilt XCFramework for ExpoModulesCore" on cache hit).
-- Compare median clean build time before/after over 3 consecutive CI runs.
-
-**Acceptance criteria:**
-- No `EXPO_USE_PRECOMPILED_MODULES=0` anywhere in the repo.
-- Maestro CI log shows prebuilt XCFramework usage on a clean build.
-- Build time delta documented in the CI workflow comment or this entry.
-
-**Files likely involved:** `.github/workflows/maestro.yml` (or whichever workflow runs the iOS build), `scripts/archive-and-upload.sh`, any `.env*` referenced by `expo-local-ship`.
-
-**Scope:** ~half a day, mostly waiting for CI runs.
 
 ---
 
@@ -902,7 +375,7 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 
 **Scope:** ~half a day of measurement once Feature 4 picks the iOS pipeline.
 
-**Depends on:** [Feature 4](#feature-4--auto-deploy-to-app-store--google-play) iOS pipeline decision.
+**Depends on:** Feature 4 iOS pipeline decision (shipped: iOS deploys through fastlane, see [FEATURES.md](./FEATURES.md#completed-roadmap-and-backlog-items)).
 
 ---
 
@@ -915,7 +388,7 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 **Why:** Manual memoization is a hand-maintained substitute for what RC now does at build time. Every `useMemo`/`useCallback` is a place where the dependency array can go stale, where a refactor silently breaks memoization, or where the cost of the memoization machinery exceeds the saved work. Particularly relevant for the Hub perf backlog (Issues 1 + 2 in BACKLOG.md) — `ProjectHubCard`'s inline `.map` is exactly the shape RC targets. Meta reports 20–30% render-time reduction internally post-RC; some of that comes from deleting now-redundant manual hooks, not just from RC's own work.
 
 **Direction:**
-- Cannot start until [Feature 25](#feature-25--clear-react-hooks-v5-lint-warnings-react-compiler-prereq) is green — RC bails out on components that violate Rules of React, and a "delete the manual memo" change on a component RC skipped would regress perf, not improve it.
+- Cannot start until Feature 25 ([its leftover](./BACKLOG.md#leftovers-from-partly-shipped-features)) is green — RC bails out on components that violate Rules of React, and a "delete the manual memo" change on a component RC skipped would regress perf, not improve it.
 - Sweep the 40 known files (see hot list below) in a single branch, one component at a time.
 - For each deletion: keep the manual hook only if either (a) the value is referentially compared in a downstream `useEffect` dep array where reference identity matters (RC's auto-memo gives a new reference per call), or (b) profiling shows RC didn't actually compile the component (use `babel-plugin-react-compiler`'s feedback output).
 - Verify with React DevTools profiler before/after on Hub cold-launch + accordion expand — those are the documented stalls.
@@ -928,7 +401,7 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 
 **Hot list (concentration of manual memoization, by memory):** `components/sessions/hub/ProjectHubCard.tsx`, `components/sessions/hub/useProjectGroups.ts`, `components/sessions/hub/useServerGroups.ts`, `components/sessions/hub/SessionRow.tsx`, `components/sessions/hub/ConvRow.tsx`, `components/sessions/tree/TreeSessionsList.tsx`, `components/sessions/shared/ConversationListItem.tsx`, `components/terminal/TerminalOutput.tsx`, `contexts/ThemeContext.tsx`, `app/conversation/[id].tsx`, `app/project/[id].tsx`.
 
-**Depends on:** [Feature 25](#feature-25--clear-react-hooks-v5-lint-warnings-react-compiler-prereq).
+**Depends on:** Feature 25 ([its leftover](./BACKLOG.md#leftovers-from-partly-shipped-features)).
 
 **Scope:** ~2–3 days; the audit dominates over the deletion.
 
@@ -959,41 +432,6 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 **Scope:** ~1 day for the spike. Migration of the remaining sheets would be ~half a day if drop-in checks out.
 
 **Priority:** Low — current `@gorhom/bottom-sheet` works. Pick up only when an iOS-26 or SDK-57 incompatibility forces the hand, or as filler during a slow week.
-
----
-
-### Feature 30 — Build-time warning cleanup (ship-121 follow-ups)
-
-**Filed:** 2026-05-31 (observed during the build 121 archive — see commit `007d9a3`).
-
-**Goal:** Address three categories of low-priority build-time noise surfaced during recent TestFlight ships. None of these block users or shipping; they show up in the xcodebuild log and add cognitive load when scanning a build for real failures.
-
-**Direction:** Three independent sub-items, picked up opportunistically.
-
-- **Sub-item A — Swift Sendable warnings from third-party Expo modules.** Two warnings in node_modules during archive:
-  - `node_modules/expo-speech-recognition/ios/ExpoSpeechRecognizer.swift:1:1` — *add `@preconcurrency` to suppress `Sendable`-related warnings from module `AVFAudio`*.
-  - `node_modules/expo-secure-store/ios/SecureStoreExceptions.swift:15:22` — *class `SecAccessControlError` must restate inherited `@unchecked Sendable` conformance*.
-  These are upstream Expo modules — our code does not need to change. The fix path is to (a) check the latest published versions of `expo-speech-recognition` and `expo-secure-store` for a resolved release, then bump in `package.json`, or (b) file upstream issues / PRs if a fixed release does not exist yet. **Do not** patch our local `node_modules/` directly — that gets blown away on every `npm install` and creates ghost diffs nobody can find later.
-
-- **Sub-item B — Hermes / JS bundle "variable X not declared in anonymous function" warnings.** A long block of warnings of the form *"the variable `Promise` was not declared in anonymous function"*, *"the variable `URL` was not declared in anonymous arrow function"*, etc., emitted by xcodebuild against `Build/.../Release-iphoneos/main.jsbundle`. This is expected noise — xcodebuild's lint pass scanning the Hermes-generated JS bundle does not understand RN's runtime globals (`Promise`, `URL`, `fetch`, `performance`, `setTimeout`, `clearTimeout`, `Blob`, `FileReader`, `FormData`, `URLSearchParams`, `XMLHttpRequest`, `ErrorUtils`, `DOMException`, `TransformStream`, `TextDecoder`, `TextEncoder`, `Request`, `clearImmediate`, `requestAnimationFrame`, `ReadableStream`, `Headers`, `Image`, `cancelAnimationFrame`, `REACT_NAVIGATION_DEVTOOLS`, `Promise`, `setImmediate`, …). Likely harmless. The fix is to either (a) suppress the warning class in the Xcode build settings (cleaner log, slight risk of hiding a real issue some day), or (b) document this entry as "known noise, ignore" and leave the warnings in place. Verify with a sanity check that the warnings predate any recent Hermes-bundle issue before suppressing.
-
-- **Sub-item C — Fastlane self-update prompt (2.233.1).** The lane prints *"Please update using `bundle update fastlane`"* at the end of every run. Not blocking. Pick up when there is a quiet moment: bump `Gemfile.lock`, re-run the lane locally to confirm it still archives + uploads cleanly, commit. The fastlane release notes for 2.233.1 list improvements not relevant to our pipeline (deliver preview behaviour, App Store Connect locale additions, abbrev/base64 gem constraint relaxation), so there is no urgency.
-
-**Open questions:**
-
-- **Sub-item A.** Has a fixed release of `expo-speech-recognition` or `expo-secure-store` shipped since SDK 56? If not, is filing the upstream issue worth the round-trip, or do we wait for SDK 57 to bring fresh module versions?
-- **Sub-item B.** Is there a documented project-wide policy for suppressing `js-undefined-variable` lint warnings against generated bundles, or do we leave them visible as a tripwire for future Hermes/Metro breakage? (Leave them be unless they start hiding real signal.)
-- **Sub-item C.** Risk of a fastlane minor bump regressing the lane in subtle ways (export-options, codesigning behaviour). Mitigation: test locally before pushing the `Gemfile.lock` bump; do not bump immediately before a release window.
-
-**Acceptance criteria:**
-
-- **A:** Both warnings disappear from the next xcodebuild archive log on a clean DerivedData, OR an upstream issue is filed and linked from this entry.
-- **B:** Either the warnings are suppressed in build settings, or this entry is updated to mark them as *"intentionally tolerated noise"* with the rationale.
-- **C:** `bundle update fastlane` lands, `bundle exec fastlane beta` archives + uploads cleanly at least once after the bump.
-
-**Scope:** Each sub-item is independently picked up in <half a day. The whole entry is roughly a day of opportunistic cleanup.
-
-**Priority:** Low. None of these block users, gate releases, or risk regressing functionality if left alone.
 
 ---
 
@@ -1038,190 +476,3 @@ This was tracked above as "Planned"; it is not. iOS uses ActivityKit (`widgets/S
 **Scope:** ~1-2 days for sub-items A and B (the deduplication + parameterization). Sub-item C (visual regression) is its own ~2-3 day project depending on tooling choice. Sub-item D is a 30-minute decision once we know the test cadence.
 
 **Priority:** Medium. Not gating any release, but the longer the two copies diverge the more painful the eventual merge. Worth picking up before we add more Maestro flows that depend on fixtures.
-
----
-
-### Feature 32 — Handle batched `conversation_events` WS event
-
-**Filed:** 2026-06-25.
-
-**Goal:** Subscribe to the `conversation_events` (plural) batched WS event in `useConversationStream`, in addition to the existing `conversation_event` (singular) handler.
-
-**Why:** The streamer (see [7ed083d](https://github.com/RonenMars/threadbase-streamer/commit/7ed083dd575d6a2b1ff69abf4c27259b32f8ba86)) emits `conversation_events` as a throughput optimization — multiple JSONL lines batched into one WS frame instead of one message per line. The mobile client currently only handles the singular form, so it misses the batched delivery and would lose messages silently if the streamer ever deprecates the singular form.
-
-**Shape:** `{ type: 'conversation_events'; sessionId: string; lines: string[] }` — one message, N lines.
-
-**Direction:**
-- In `hooks/useConversationStream.ts`, alongside the existing `conversation_event` `wsManager.getClient(serverId)?.on(...)` call, add a second subscription on `'conversation_events'` that loops over `evt.lines` and runs the same `parseLineToMessage` → dedup → append path.
-- Both subscriptions share the same `seenIds` ref so dedup still works if both event types arrive for the same line.
-
-**Scope:** ~15 minutes. Two-line addition in one file; no new types needed (WSMessage union already has the singular; add the plural variant to match the streamer).
-
-**Priority:** Low — the singular form still works today. Pick up opportunistically.
-
-**Files likely involved:**
-- `hooks/useConversationStream.ts` — add `conversation_events` subscription
-- `services/ws-client.ts` — add `{ type: 'conversation_events'; sessionId: string; lines: string[] }` to the `WSMessage` union
-
----
-
-### Feature 33 — Repair stale `demo-server-*.yaml` E2E flows (selector drift + Maestro 2.x syntax)
-
-**Filed:** 2026-06-30. **Status:** **Implemented (pending verification run).** All breakage below was fixed in the E2E-remediation branch (2026-06-30): `demo-server-connect-only.yaml` now uses `chat-message-input` / `chat-send-button` / `onboarding-notifications-cta` and asserts `session-detail-screen` instead of the non-existent `terminal-output`; `demo-server-test.yaml` was rewritten to delegate onboarding to `setup-demo.yaml`, drop the unsupported `assertVisible: { timeout: }` syntax, and use the FAB → browse → "Start Session Here" → `chat-*` path. `prod-server-connect-only.yaml` got the same `Skip → onboarding-notifications-cta` and `send-message-button → chat-send-button` fixes. Still needs a green run on a supported (iOS ≤ 18) sim with a Release build to close it out. `demo-server-test.yaml` was never wired into any script despite the rewrite, so it was deleted as unrun (issue #519); only `demo-server-connect-only.yaml` remains.
-
-**Goal:** Make the demo-server Maestro flow (`demo-server-connect-only.yaml`) run green again against the live demo server (`threadbase-demo.fly.dev`). It was written against an older onboarding/chat UI and an older Maestro, and now fails on dead selectors and unsupported syntax — independently of the build/driver blockers tracked in the E2E failure report.
-
-**Why:** With `.env.demo` + a Release build in place, `setup-demo.yaml` and the `shots-*.yaml` screenshot flows used to work, but both were deleted as unrun (issue #519) — `demo-server-connect-only.yaml` still references UI that has since been renamed or removed, so it can never pass as-is. This is repair of an *existing* flow, distinct from Feature 17's goal of *adding new* coverage.
-
-**Known breakage (audited 2026-06-30 against current source/locales):**
-- `demo-server-connect-only.yaml`
-  - `id: "message-input"` → renamed to **`chat-message-input`** (`ChatComposer.tsx`).
-  - `id: "send-message-button"` → renamed to **`chat-send-button`**.
-  - `id: "terminal-output"` → no such testID exists (only a React Query key); pick a real anchor or drop the assertion.
-  - `text: "New chat"` → string gone; the FAB is `fab-new-session`.
-- `demo-server-test.yaml` (deleted 2026-08-03 as unrun, issue #519 — breakage below is historical)
-  - **`assertVisible: { timeout: }` is not supported in Maestro 2.x** — replace with bare `assertVisible` (7s auto-retry) or `extendedWaitUntil` (per `e2e/README.md` "Maestro 2.x notes").
-  - `text: "Welcome to Threadbase"` → that string is `welcome.title` in `locales/en/onboarding.json` but `WelcomeStep.tsx` renders `welcome.headline` ("Pull a thread."), not the title — assertion never matches. Assert the rendered headline or the `onboarding-welcome-cta` testID instead.
-  - `text: "New chat"` → gone (as above); `text: "Type a message"` → composer placeholder is now `"Send a message…"`.
-
-**Scope:** ~30 min, flow-file edits only — no app-source changes. Verify with `npm run test:e2e:demo` once a Release build is installed.
-
-**Files likely involved:**
-- `e2e/demo-server-connect-only.yaml` — selector + syntax fixes
-- `e2e/README.md` — refresh the demo-flow notes if selectors are documented there
-
-**Related:** the E2E failure report (`E2E-TESTS-FAILURE-REPORT.md`, §9) diagnosed this drift and the build/driver blockers; the `ensure-release-build.js` bundle-id/app-name/detection fix (separate commit) unblocks the Release-build half. Feature 17 covers net-new flows.
-
----
-
-### Feature 34 — Structured prompt cards for Codex sessions
-
-**Filed:** 2026-07-04.
-
-**Goal:** Give Codex live sessions (added in [threadbase-streamer PR #159](https://github.com/RonenMars/threadbase-streamer/pull/159), mobile-side selector in [PR #263](https://github.com/RonenMars/threadbase-mobile/pull/263)) the same native `QuestionCard` UI that Claude Code sessions get for permission gates and `AskUserQuestion` menus, instead of raw terminal text the user has to type into manually.
-
-**Why:** `useActiveQuestion.ts` already listens for the generic `question` / `question_cancelled` / `permission` / `permission_cancelled` WS events and renders them provider-agnostically — no mobile change needed there. The gap is entirely upstream: the streamer's `CodexPtyRunner` never emits these events, because Codex's rendered-screen approval/choice prompts aren't detected yet the way Claude's are (`src/services/questions/*` in tb-streamer).
-
-**This is a cross-repo, streamer-side feature — no tb-mobile code changes are expected.** Full scoping, reusable-vs-Claude-only file assessment, and open questions requiring a live Codex probe live in [threadbase-streamer `docs/plans/2026-07-04-codex-structured-prompts-followup.md`](https://github.com/RonenMars/threadbase-streamer/blob/main/docs/plans/2026-07-04-codex-structured-prompts-followup.md).
-
-**Priority:** Low — Codex sessions are otherwise fully usable (start/watch/type/stop/resume); this is a UX polish gap, not a broken flow.
-
----
-
-### Feature 35 — Decide the crash-reporting consent model (auto-init vs. explicit-only)
-
-**Filed:** 2026-07-13. **Implemented:** 2026-07-18 — decision **(a)**.
-
-**Decision:** Option **(a)** — explicit user-initiated actions (one-shot crash report AND Help & Feedback) both self-init Sentry for the duration of the submit, then tear down if standing consent is off. Standing/automatic reporting remains gated by the Settings toggle (off by default).
-
-**What was implemented:**
-
-1. **`services/sentry.ts`** — `submitFeedbackViaSentry` now self-inits like `reportOneShot`: when the user taps Send, it initializes Sentry for that one submission even if the standing toggle is off, then tears down afterward so the "reporting is off" state is genuinely unaffected.
-2. **`app/help-feedback.tsx`** — success view now shows a brief note indicating which delivery method was used ("Sent via Sentry crash-reporting service" or "Sent via email"), addressing the "user expectation mismatch" concern by making the delivery path visible.
-3. **`locales/en/feedback.json`** — added translation keys for the delivery-path notes.
-4. **`docs/privacy-policy/proposed-privacy-policy.md`** — updated to clearly describe that feedback submissions may use Sentry even when the standing toggle is off, matching the one-shot crash report behavior.
-5. **`docs/store-privacy-checklist.md`** — updated cross-cutting reminder to describe both crash report and feedback as user-initiated Sentry paths independent of the standing toggle.
-6. **`docs/store-console-wording.md`** — updated App Store Connect and Google Play Console draft wording to include feedback submissions alongside crash reports as cases where Sentry may be used.
-
-**Consent model summary:**
-
-| Path | Standing toggle required? | How it works |
-|------|--------------------------|--------------|
-| Automatic crash reporting | Yes | Only initializes if toggle is on |
-| Manual crash report ("Report this crash") | No | Self-inits for one send, tears down after |
-| Help & Feedback submission | No | Self-inits for one send, tears down after |
-
-All three paths still require a DSN and an environment that permits reporting — those gates are unconditional. The only thing the standing toggle controls is whether Sentry stays running in the background to catch crashes automatically.
-
-**Not implemented (follow-up):** The full first-crash recovery screen from `docs/privacy-policy/threadbase-crash-reporting-ux-recommendation.md` (showing what's included/excluded, offering "Always send" as a separate opt-in) — this can be a future enhancement but is not required for the consent-model consistency fix.
-
----
-
-<details>
-<summary>Original problem statement (archived)</summary>
-
-**Goal:** Resolve a design gap surfaced while testing the Sentry feedback flow (`feat/sentry-crash-reporting`, PR #303): two of the app's Sentry entry points behave inconsistently with each other around the "Share anonymous reports" toggle, and the inconsistency itself raises a real product question — should *any* Sentry path work without the standing toggle being on?
-
-**The dilemma:**
-
-Today there are three ways data can reach Sentry, and they don't agree on what "consent" means:
-
-1. **Standing/automatic reporting** (`initCrashReporting` / `useCrashReportingSync`) — gated correctly: only initializes if the toggle is on. This is the only path that matches the "off by default, opt-in" story in `docs/privacy-policy/proposed-privacy-policy.md`.
-2. **Manual one-time crash report** (`reportOneShot`, the "Report this crash" button in `RootErrorBoundary`) — deliberately bypasses the toggle by design: it temporarily inits Sentry for one send, then tears the client back down, and never touches the persisted setting. This was an explicit, discussed decision (see PR #303 description) — a single, user-initiated action is treated as its own consent, separate from the standing setting.
-3. **Help & Feedback submission via Sentry** (`submitFeedbackViaSentry`, called from `trySentry` in `services/feedback-transport.ts`) — checks `initialized` but does **not** self-init like `reportOneShot` does. If the toggle is off, it silently returns `undefined` and the transport falls through to the email/copy fallback. Found during on-device testing 2026-07-13: submitting feedback with the toggle off did not reach Sentry, which is *technically* correct given the current code, but produces a confusing experience — the user filled out a feedback form, hit send, and it silently used a different delivery mechanism (email) with no visible explanation of why.
-
-**Why this matters:** paths 2 and 3 read like they should have the same consent model (both are single, explicit, user-initiated submissions — a crash report and a feedback form are the same category of action) but they don't. Either:
-
-- **(a)** Path 3 is the odd one out and should match path 2 — self-init like `reportOneShot` for the duration of the submit, then close again. This makes "explicit user action always tries Sentry first" a consistent rule across the app, and gives Help & Feedback a working Sentry-with-attachment path even when the user never turned on standing crash reporting.
-- **(b)** Path 2 is the odd one out and manual crash reports should also require the standing toggle, making "off means off, full stop" the consistent rule, and manual reporting becomes just a way to force-send *while already opted in* (e.g. after declining the standing toggle initially but wanting to report one specific issue).
-
-**Considerations for the decision:**
-
-- **Privacy-policy honesty.** Whichever model is chosen must match what `docs/privacy-policy/proposed-privacy-policy.md` / the live policy at `threadbase.sh/privacy-policy` actually says. Option (a) requires clear policy language that manual, explicit actions (crash report button, feedback submission) can send data regardless of the standing toggle — this is already partially true today (path 2) and the policy draft already accounts for it.
-- **User expectation mismatch.** A toggle labeled "Share anonymous reports" that's off, followed by a feedback submission that silently uses Sentry anyway, could reasonably feel like a violation even if technically scoped to one explicit action. Any move toward (a) should make this visible in the UI (e.g. a one-line note near the send button: "sent via Sentry" vs. "sent via email"), not just correct in code.
-- **Consistency reduces support/debug burden.** Right now, "does this feature work?" has a different answer depending on which Sentry entry point is asked — as seen in this session's own back-and-forth diagnosing why feedback attachments/diagnostics weren't appearing. A single consistent rule (whichever direction) removes an entire class of "why didn't this work" investigation.
-- **Silent fallback vs. explicit failure.** Path 3's current silent fallback to email is defensible (the user still gets their feedback delivered), but it means the "Include technical diagnostics" and screenshot-attachment work only reliably reaches Sentry when the toggle happens to already be on — which may be rare for typical users who never visit Settings.
-
-**Status (2026-07-22):** Decision **(a)** chosen — explicit feedback self-inits Sentry like one-shot crash. Implementation in flight: [PR #343](https://github.com/RonenMars/threadbase-mobile/pull/343). Update this entry to ✅ when #343 merges.
-
-**Files likely involved:**
-- `services/sentry.ts` — `submitFeedbackViaSentry`, `reportOneShot`, `initCrashReporting`
-- `services/feedback-transport.ts` — `trySentry`
-- `docs/privacy-policy/proposed-privacy-policy.md`, `docs/store-privacy-checklist.md`, `docs/store-console-wording.md` — wording depends on the direction chosen
-- `app/help-feedback.tsx` — if (a) is chosen, likely needs a small UI note about the delivery path used
-
----
-
-### Sentry Mobile Builds — app-size tracking and build distribution
-
-**Goal:** Decide whether to adopt [Sentry Mobile Builds](https://docs.sentry.io/api/mobile-builds/), which ingests the IPA/AAB itself to give app-size analysis, size-regression alerts, and build distribution to testers.
-
-**Recommendation (2026-08-01): not yet.** Deferred deliberately, for three reasons:
-
-- **The layer underneath only just started working.** Until 2026-08-01 nothing in the pipeline created a Sentry Release at all — a build appeared only if it happened to crash. That is now fixed (`releases new` + `finalize` + a deploy marker per ship), but the fix has one shipped build behind it. Let releases and deploy markers prove themselves across a few ships before stacking another surface on them.
-- **Half of it is redundant.** Distribution is already handled by TestFlight and the Play internal track. Adopting Mobile Builds for that would add a second, parallel channel testers have no reason to use.
-- **Signal volume does not justify it.** The project has had 4 error events in 90 days. Instrumentation is worth adding when it will be read.
-
-**What would make it worth revisiting:**
-
-- App size becomes a live concern. This is the genuinely valuable half, and the risk is real for this app: an RN JS bundle plus a widget extension plus Live Activities all grow independently, and nothing currently tracks the total or alerts on a regression.
-- Releases and deploy markers have been reliable for several ships, and commit association is connected (see the investigation doc), so a build in Sentry can be traced to the change that caused a size jump.
-
-**Cost when adopted:** a `sentry-cli build upload` step in both `scripts/archive-and-upload.sh` and `scripts/bundle-and-upload-android.sh`, following the same credential guard and non-fatal pattern as the existing release calls. The Mobile Build monitors page is reachable on the current plan (verified 2026-08-01: it loads with an empty monitor list and no upgrade wall), unlike saved searches, which are gated behind Team.
-
-**Files likely involved:**
-- `scripts/archive-and-upload.sh`, `scripts/bundle-and-upload-android.sh` — the upload step
-- `.github/workflows/deploy.yml` — no change expected; the scripts are shared between CI and local ships
-- `docs/sentry-releases-investigation.md` — record the outcome alongside the release/deploy work
-
----
-
-## Shipped
-
-Historical implementation plans archived under [`superpowers/plans/archive/`](./superpowers/plans/archive/). Each was the source of truth for that feature's build sequence at the time it shipped — useful when revisiting the area, but not active work.
-
-| Date | Feature | Plan |
-|---|---|---|
-| 2026-04-23 | **Splash animation** — animated thread-lines icon with the wordmark, replacing the static dark splash. The matrix-style digits and sweep bar in the plan are no longer rendered. Since 2026-09-13 the full animation plays once per app version and build — once per deploy on web, keyed on the hashed entry bundle (`services/intro-splash.ts`, `services/intro-version*.ts`); later launches, and every launch under Reduce Motion, get a 300 ms fade that still covers the onboarding/Hub redirect. | [archive/2026-04-23-splash-animation.md](./superpowers/plans/archive/2026-04-23-splash-animation.md) |
-| 2026-04-30 | **Projects Hub redesign** — replaced the tab navigator with a tab-free Projects hub (accordion cards per project, green FAB, avatar dropdown) while preserving Classic mode. | [archive/2026-04-30-projects-hub-redesign.md](./superpowers/plans/archive/2026-04-30-projects-hub-redesign.md) |
-| 2026-04-30 | **Server list redesign** — inline icon actions (Delete/Edit/Refresh), error/edit modals, pull-to-refresh, Phosphor migration. | [archive/2026-04-30-server-list-redesign.md](./superpowers/plans/archive/2026-04-30-server-list-redesign.md) |
-| 2026-05-01 | **Adopt discovered session** — prompt to kill and resume a `disc_` (discovered) session as a managed PTY, poll until live, then navigate. | [archive/2026-05-01-adopt-discovered-session.md](./superpowers/plans/archive/2026-05-01-adopt-discovered-session.md) |
-| 2026-05-01 | **CardShell unified template** — extended the `Card` component to own all shared visual tokens; migrated `SessionCard` and `ProjectHubCard`. | [archive/2026-05-01-cardshell-unified-card-template.md](./superpowers/plans/archive/2026-05-01-cardshell-unified-card-template.md) |
-| 2026-05-01 | **Maestro E2E setup** — Maestro flows + Node mock server covering Sessions Hub and Session Detail. | [archive/2026-05-01-maestro-e2e-setup.md](./superpowers/plans/archive/2026-05-01-maestro-e2e-setup.md) |
-| 2026-05-01 | **NativeWind Wave 1** — migrated all 8 `components/ui/` primitives from `StyleSheet.create` to NativeWind `className=`, with `clsx` and tailwind config tokens. | [archive/2026-05-01-nativewind-wave1.md](./superpowers/plans/archive/2026-05-01-nativewind-wave1.md) |
-| 2026-05-01 | **Server headers — Hub & Classic** — added server section headers to Hub and Classic merged layouts, matching the Tree layout. | [archive/2026-05-01-server-headers-hub-classic.md](./superpowers/plans/archive/2026-05-01-server-headers-hub-classic.md) |
-| 2026-05-01 | **Tree view server headers** — server header rows above each server's tree section. | [archive/2026-05-01-tree-server-headers.md](./superpowers/plans/archive/2026-05-01-tree-server-headers.md) |
-| 2026-05-02 | **i18n implementation** — i18next with 6 namespaces, RTL readiness, Zustand-backed locale system; 5-wave string extraction. | [archive/2026-05-02-i18n-implementation.md](./superpowers/plans/archive/2026-05-02-i18n-implementation.md) |
-| 2026-05-02 | **PTY turn divider** — "YOU → <text>" divider injected into terminal output after each user input, once the stream goes idle. | [archive/2026-05-02-pty-turn-divider.md](./superpowers/plans/archive/2026-05-02-pty-turn-divider.md) |
-| 2026-05-02 | **Quick Access strip** — collapsible strip above the session list with Favorites / Recents / Popular tabs. | [archive/2026-05-02-quick-access-strip.md](./superpowers/plans/archive/2026-05-02-quick-access-strip.md) |
-| 2026-05-02 | **Session naming** — user-visible session names via 4 touchpoints (creation modal, auto-name from first message, inline rename, on-exit prompt); Zustand + SecureStore ↔ streamer SQLite. | [archive/2026-05-02-session-naming.md](./superpowers/plans/archive/2026-05-02-session-naming.md) |
-| 2026-05-02 | **Theming system** — 5-theme picker (Dark, Light, Dracula, Catppuccin Mocha, Nord) with CSS custom properties + NativeWind. | [archive/2026-05-02-theming-system.md](./superpowers/plans/archive/2026-05-02-theming-system.md) |
-| 2026-05-11 | **Server drag-and-drop reordering** — iOS-style jiggle animation; accessible from the Filter & Sort sheet. | [archive/2026-05-11-server-drag-reorder.md](./superpowers/plans/archive/2026-05-11-server-drag-reorder.md) |
-| 2026-05-24 | **Feature 1 — Tree directory view: pre-fill new-session path** — drilled-dir path passed through to new-session flow; Maestro flow `feat1_tree_drill_new_session.yaml` covers it. | PR #11, commit 9835ecf |
-| 2026-05-24 | **Feature 2 — Export button moved from bottom bar to info shelf** — declutters the historical session bottom bar; Maestro flow `feat2_export_in_info_shelf.yaml` covers it. | PR #11, commit 9835ecf |
-| 2026-05-25 | **Feature 18 — Upgrade to Expo SDK 56** — RN 0.85.3, React 19.2.3, TS 6.0.3, iOS 16.4 deployment target, React Compiler enabled. TestFlight build 104 shipped; React Compiler / Metro MessagePack workaround removed in build 106 after upstream fix. | [upgrade-to-expo-56.md](./upgrade-to-expo-56.md) |
-
-Recent bug-only backlog docs (no new features) also archived for traceability:
-
-- [archive/2026-05-16-loading-perf-and-tree-new-session.md](./superpowers/plans/archive/2026-05-16-loading-perf-and-tree-new-session.md) — original collected bug + feature list that became this split (BACKLOG / ROADMAP).
-- [archive/2026-05-22-hub-cached-flash-and-long-list-perf.md](./superpowers/plans/archive/2026-05-22-hub-cached-flash-and-long-list-perf.md) — the perf doc that became Issue 1 and Issue 2 in BACKLOG.

@@ -5,7 +5,7 @@
 **Goal:** Let a running session’s status — project name, running / waiting input, elapsed duration, latest terminal line — show up on paired smartwatches so the user can glance at their wrist without unlocking the phone.
 
 ## Prerequisite
-[Feature 12 — Live Activities + Dynamic Island](../../ROADMAP.md#feature-12--live-activities--dynamic-island-for-in-progress-sessions) puts the session on the iPhone Lock Screen / Dynamic Island and (in parallel) as an Android Live Update / ongoing notification. This task is the wrist follow-on: Apple Watch, Samsung Galaxy Watch, OnePlus Watch, and other paired wearables.
+[Feature 12 — Live Activities + Dynamic Island](../../FEATURES.md#completed-roadmap-and-backlog-items) puts the session on the iPhone Lock Screen / Dynamic Island and (in parallel) as an Android Live Update / ongoing notification. This task is the wrist follow-on: Apple Watch, Samsung Galaxy Watch, OnePlus Watch, and other paired wearables.
 
 ## Why
 Same “only open the app when you need to act” loop as Feature 12, one layer further from the desk. Duration belongs on the wrist the same way it belongs on the Live Activity — prefer passing `startedAt` so the system can tick a timer without per-second pushes.
