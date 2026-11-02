@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, type GestureResponderEvent } from 'react-native'
 import * as Haptics from 'expo-haptics'
-import { X } from 'phosphor-react-native'
+import { CheckSquare, Square, X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
@@ -13,9 +13,18 @@ import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 // tap costs one more tap, a committed drag costs an unintended permission grant.
 const DRAG_CANCEL_PX = 8
 
+// A screen-read multi-select card lists Claude's own "Type something" and
+// "Chat about this" rows beside the model's options. The streamer has not
+// verified Space on them, and the wire carries no marker to tell them apart, so
+// they are recognised by their fixed English text (the terminal UI is not
+// localised). They are dropped from the form only; the answer is sent by label.
+const TERMINAL_ONLY_ROW_RE = /^(?:type something\.?|chat about this)$/i
+
 interface Props {
   block: QuestionBlock
   onSelect: (questionIndex: number, optionIndex: number) => void
+  /** Multi-select form submit: indexes into the question's options, in on-screen order. */
+  onSubmitMulti?: (questionIndex: number, optionIndexes: number[]) => void
   /** Dismiss this prompt without answering (sends Esc, same as the stop-response action). */
   onCancel?: () => void
   /** An answer is in flight. Locks the rows so a double-tap cannot send twice. */
@@ -30,7 +39,7 @@ interface Props {
   large?: boolean
 }
 
-export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCancel, busy = false, ghost = false, large = false }: Props) {
+export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubmitMulti, onCancel, busy = false, ghost = false, large = false }: Props) {
   const { t } = useTranslation('common')
   const { styles, theme } = useThemedStyles(makeStyles)
   const q = block.questions[0]
@@ -38,6 +47,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   const cursorRow = block.source === 'pty' || block.source === 'permission' ? block.selectedIndex ?? null : null
   const initialSelected = cursorRow
   const [selected, setSelected] = useState<number | null>(initialSelected)
+  const [checked, setChecked] = useState<number[]>([])
 
   // PTY blocks update in place as the terminal cursor moves, so they resync
   // instead of resetting. Every other source arrives unselected, and the next
@@ -51,13 +61,19 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   const ptyCursor = block.source === 'pty' ? cursorRow : null
   useEffect(() => {
     setSelected(cursorRow)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- cursorRow reseeds on a new prompt only (see above)
+    setChecked([])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- cursorRow reseeds on a new prompt only (see above)
   }, [promptKey, ptyCursor])
 
   const locked = busy || ghost
-  // The streamer refuses every answer to a multi-select question
-  // (400 unsupported_prompt_shape), so offering a tap would only fail.
-  const readOnly = block.source === 'structured' && !block.unsupportedShape && q.multiSelect
+  const structuredMulti = block.source === 'structured' && q.multiSelect
+  // An unreadable checkbox marker is refused by the streamer
+  // (400 unsupported_prompt_shape), so a form would only fail.
+  const readOnly = structuredMulti && Boolean(q.multiSelectUnverified)
+  const multiForm = structuredMulti && !readOnly
+  const formOptions = q.options
+    .map((option, index) => ({ option, index }))
+    .filter(({ option }) => !TERMINAL_ONLY_ROW_RE.test(option.label.trim()))
 
   const pressStartY = useRef<number | null>(null)
 
@@ -86,6 +102,20 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
     onSelect(0, index)
   }
 
+  const handleToggle = (index: number) => {
+    if (locked) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setChecked(prev => (prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]))
+  }
+
+  const canSubmit = !locked && checked.length > 0
+
+  const handleSubmit = () => {
+    if (!canSubmit) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    onSubmitMulti?.(0, [...checked].sort((a, b) => a - b))
+  }
+
   return (
     <View style={[styles.container, large && styles.containerLarge, ghost && styles.ghost]} testID={ghost ? 'question-card-ghost' : 'question-card'}>
       {onCancel && !ghost ? (
@@ -106,7 +136,32 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           <Text style={[styles.question, large && styles.questionLarge]}>{item.question}</Text>
         </React.Fragment>
       ))}
-      {q.options.map((option, index) => readOnly ? (
+      {multiForm ? formOptions.map(({ option, index }) => {
+        const isChecked = checked.includes(index)
+        const BoxIcon = isChecked ? CheckSquare : Square
+        return (
+          <TouchableOpacity
+            key={index}
+            style={[styles.option, isChecked && styles.optionSelected]}
+            onPress={() => handleToggle(index)}
+            disabled={locked}
+            accessibilityRole="checkbox"
+            accessibilityState={{ disabled: locked, checked: isChecked }}
+            accessibilityLabel={option.label}
+          >
+            <BoxIcon size={18} color={isChecked ? '#58a6ff' : '#484f58'} weight={isChecked ? 'fill' : 'regular'} />
+            <View style={styles.optionBody}>
+              <Text style={[styles.optionText, large && styles.optionTextLarge, isChecked && styles.optionTextSelected]}>
+                {option.label}
+              </Text>
+              {option.description ? (
+                <Text style={styles.optionDescription}>{option.description}</Text>
+              ) : null}
+              {option.preview ? <Text style={styles.preview}>{option.preview}</Text> : null}
+            </View>
+          </TouchableOpacity>
+        )
+      }) : q.options.map((option, index) => readOnly ? (
         <View key={index} style={styles.option}>
           <View style={styles.optionBody}>
             <Text style={[styles.optionText, large && styles.optionTextLarge]}>{option.label}</Text>
@@ -141,6 +196,18 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           </View>
         </TouchableOpacity>
       ))}
+      {multiForm ? (
+        <TouchableOpacity
+          style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={!canSubmit}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canSubmit }}
+          accessibilityLabel={t('question.submit')}
+        >
+          <Text style={styles.submitText}>{t('question.submit')}</Text>
+        </TouchableOpacity>
+      ) : null}
       {block.unsupportedShape || readOnly ? (
         <Text style={styles.unsupported} testID="question-card-unsupported">{t('question.unsupportedShape')}</Text>
       ) : null}
@@ -289,6 +356,22 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     fontSize: 12,
     color: theme.text.secondary,
     marginTop: 4,
+  },
+  submitButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginTop: 4,
+    borderRadius: 8,
+    backgroundColor: '#1f6feb',
+  },
+  submitButtonDisabled: {
+    opacity: 0.4,
+  },
+  submitText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+    ...rtl.copy,
   },
   cancelButton: {
     alignItems: 'center',

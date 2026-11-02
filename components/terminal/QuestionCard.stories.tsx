@@ -53,10 +53,18 @@ export const Structured: Story = {
   args: { block: structured },
 }
 
-// The streamer cannot take a multi-select answer, so the options are read-only
-// and the card points the user at the terminal.
+// Checkbox rows with a Submit that stays disabled until something is checked.
 export const MultiSelect: Story = {
-  args: { block: multiSelect, onCancel: () => {} },
+  args: { block: multiSelect, onSubmitMulti: () => {}, onCancel: () => {} },
+}
+
+// A screen-read card whose checkbox marker was unreadable: the streamer refuses
+// to answer it, so the options are read-only and the card points at the terminal.
+export const MultiSelectUnverified: Story = {
+  args: {
+    block: { ...multiSelect, questions: [{ ...multiSelect.questions[0], multiSelectUnverified: true }] },
+    onCancel: () => {},
+  },
 }
 
 // The permission gate: a `detail` block above the question, and a Cancel that

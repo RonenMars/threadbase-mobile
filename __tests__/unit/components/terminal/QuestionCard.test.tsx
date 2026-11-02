@@ -1,3 +1,4 @@
+import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
@@ -132,45 +133,146 @@ describe('QuestionCard', () => {
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
-  // The streamer refuses every answer to a multi-select question (400
-  // unsupported_prompt_shape), so the card must not offer a tap that answers it.
+  // The streamer answers a multi-select question with a toggle sequence for the
+  // chosen labels, so the card collects several options and submits them once.
   describe('a multi-select structured question', () => {
     const MULTI_BLOCK: QuestionBlock = {
       ...BASE_BLOCK,
       questions: [{ ...BASE_BLOCK.questions[0], multiSelect: true }],
     }
-
-    it('does not call onSelect when an option label is pressed', async () => {
+    const renderMulti = async (props: Partial<React.ComponentProps<typeof QuestionCard>> = {}) => {
       const onSelect = jest.fn()
-      const { getByText } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={onSelect} />)
-      await fireEvent.press(getByText('indicator only'))
+      const onSubmitMulti = jest.fn()
+      const utils = await render(<QuestionCard block={MULTI_BLOCK} onSelect={onSelect} onSubmitMulti={onSubmitMulti} {...props} />)
+      return { onSelect, onSubmitMulti, ...utils }
+    }
+
+    it('renders one unchecked checkbox per option', async () => {
+      const { getAllByRole } = await renderMulti()
+      const boxes = getAllByRole('checkbox')
+      expect(boxes).toHaveLength(optionLabels.length)
+      for (const box of boxes) expect(box).not.toBeChecked()
+    })
+
+    it('toggles an option on and off without answering', async () => {
+      const { getAllByRole, onSelect, onSubmitMulti } = await renderMulti()
+      await fireEvent.press(getAllByRole('checkbox')[1])
+      expect(getAllByRole('checkbox')[1]).toBeChecked()
+      await fireEvent.press(getAllByRole('checkbox')[1])
+      expect(getAllByRole('checkbox')[1]).not.toBeChecked()
+      expect(onSelect).not.toHaveBeenCalled()
+      expect(onSubmitMulti).not.toHaveBeenCalled()
+    })
+
+    it('disables Submit until something is chosen', async () => {
+      const { getByRole, getAllByRole, onSubmitMulti } = await renderMulti()
+      expect(getByRole('button', { name: 'Submit' })).toBeDisabled()
+      await fireEvent.press(getByRole('button', { name: 'Submit' }))
+      expect(onSubmitMulti).not.toHaveBeenCalled()
+      await fireEvent.press(getAllByRole('checkbox')[0])
+      expect(getByRole('button', { name: 'Submit' })).toBeEnabled()
+    })
+
+    it('submits every chosen option once, in on-screen order', async () => {
+      const { getByRole, getAllByRole, onSubmitMulti, onSelect } = await renderMulti()
+      await fireEvent.press(getAllByRole('checkbox')[3])
+      await fireEvent.press(getAllByRole('checkbox')[0])
+      await fireEvent.press(getAllByRole('checkbox')[2])
+      await fireEvent.press(getAllByRole('checkbox')[2])
+      await fireEvent.press(getByRole('button', { name: 'Submit' }))
+      expect(onSubmitMulti).toHaveBeenCalledTimes(1)
+      expect(onSubmitMulti).toHaveBeenCalledWith(0, [0, 3])
       expect(onSelect).not.toHaveBeenCalled()
     })
 
-    it('renders the options without tappable rows', async () => {
-      const { getByText, queryAllByRole } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={jest.fn()} />)
-      for (const label of optionLabels) {
-        expect(getByText(label)).toBeTruthy()
-      }
-      expect(queryAllByRole('button')).toHaveLength(0)
+    it('keeps the choices after submitting so a refused answer can be retried', async () => {
+      const { getByRole, getAllByRole } = await renderMulti()
+      await fireEvent.press(getAllByRole('checkbox')[1])
+      await fireEvent.press(getByRole('button', { name: 'Submit' }))
+      expect(getAllByRole('checkbox')[1]).toBeChecked()
     })
 
-    it('says to answer in the terminal', async () => {
-      const { getByTestId } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={jest.fn()} />)
-      expect(getByTestId('question-card-unsupported')).toBeTruthy()
+    it.each([['busy'], ['ghost']] as const)('locks the rows and Submit while %s', async (flag) => {
+      const { getByRole, getAllByRole, onSubmitMulti } = await renderMulti({ [flag]: true })
+      await fireEvent.press(getAllByRole('checkbox')[0])
+      expect(getAllByRole('checkbox')[0]).not.toBeChecked()
+      expect(getByRole('button', { name: 'Submit' })).toBeDisabled()
+      await fireEvent.press(getByRole('button', { name: 'Submit' }))
+      expect(onSubmitMulti).not.toHaveBeenCalled()
+    })
+
+    it('disables Submit once a pending answer locks a card that already has choices', async () => {
+      const { getByRole, getAllByRole, rerender, onSelect, onSubmitMulti } = await renderMulti()
+      await fireEvent.press(getAllByRole('checkbox')[0])
+      await rerender(<QuestionCard block={MULTI_BLOCK} onSelect={onSelect} onSubmitMulti={onSubmitMulti} busy />)
+      expect(getByRole('button', { name: 'Submit' })).toBeDisabled()
+      await fireEvent.press(getByRole('button', { name: 'Submit' }))
+      expect(onSubmitMulti).not.toHaveBeenCalled()
+    })
+
+    it('does not offer the terminal-only escape rows a screen-read card appends', async () => {
+      const screenRead: QuestionBlock = {
+        ...MULTI_BLOCK,
+        questions: [{
+          ...MULTI_BLOCK.questions[0],
+          options: [{ label: 'Alpha' }, { label: 'Beta' }, { label: 'Type something.' }, { label: 'Chat about this' }],
+        }],
+      }
+      const { getAllByRole, queryByText, getByRole, onSubmitMulti } = await renderMulti({ block: screenRead })
+      expect(getAllByRole('checkbox')).toHaveLength(2)
+      expect(queryByText('Type something.')).toBeNull()
+      expect(queryByText('Chat about this')).toBeNull()
+      await fireEvent.press(getAllByRole('checkbox')[1])
+      await fireEvent.press(getByRole('button', { name: 'Submit' }))
+      expect(onSubmitMulti).toHaveBeenCalledWith(0, [1])
+    })
+
+    it('drops the choices when the next prompt arrives', async () => {
+      const { getAllByRole, getByRole, rerender } = await renderMulti()
+      await fireEvent.press(getAllByRole('checkbox')[0])
+      const next: QuestionBlock = {
+        ...MULTI_BLOCK,
+        questions: [{ ...MULTI_BLOCK.questions[0], question: 'Which others?', options: [{ label: 'X' }, { label: 'Y' }] }],
+      }
+      await rerender(<QuestionCard block={next} onSelect={jest.fn()} onSubmitMulti={jest.fn()} />)
+      for (const box of getAllByRole('checkbox')) expect(box).not.toBeChecked()
+      expect(getByRole('button', { name: 'Submit' })).toBeDisabled()
     })
 
     it('keeps the Cancel button working', async () => {
       const onCancel = jest.fn()
-      const { getByText } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={jest.fn()} onCancel={onCancel} />)
+      const { getByText } = await renderMulti({ onCancel })
       await fireEvent.press(getByText('Cancel'))
       expect(onCancel).toHaveBeenCalledTimes(1)
     })
 
-    it('leaves a single-select structured question answerable on the first tap with no terminal line', async () => {
-      const onSelect = jest.fn()
-      const { getAllByRole, queryByTestId } = await render(<QuestionCard block={BASE_BLOCK} onSelect={onSelect} />)
+    it('shows no terminal line when the form is answerable', async () => {
+      const { queryByTestId } = await renderMulti()
       expect(queryByTestId('question-card-unsupported')).toBeNull()
+    })
+
+    // The screen could not read the checkbox marker, so the streamer refuses
+    // the answer (unsupported_prompt_shape): offering a form would only fail.
+    it('stays read-only with the terminal line when the checkbox marker was unreadable', async () => {
+      const unverified: QuestionBlock = {
+        ...MULTI_BLOCK,
+        questions: [{ ...MULTI_BLOCK.questions[0], multiSelectUnverified: true }],
+      }
+      const { queryAllByRole, queryByText, getByText, getByTestId, onSelect, onSubmitMulti } = await renderMulti({ block: unverified })
+      expect(queryAllByRole('checkbox')).toHaveLength(0)
+      expect(queryAllByRole('button')).toHaveLength(0)
+      expect(queryByText('Submit')).toBeNull()
+      expect(getByTestId('question-card-unsupported')).toBeTruthy()
+      await fireEvent.press(getByText('indicator only'))
+      expect(onSelect).not.toHaveBeenCalled()
+      expect(onSubmitMulti).not.toHaveBeenCalled()
+    })
+
+    it('leaves a single-select structured question answerable on the first tap, with no checkboxes or Submit', async () => {
+      const onSelect = jest.fn()
+      const { getAllByRole, queryAllByRole, queryByText } = await render(<QuestionCard block={BASE_BLOCK} onSelect={onSelect} onSubmitMulti={jest.fn()} />)
+      expect(queryAllByRole('checkbox')).toHaveLength(0)
+      expect(queryByText('Submit')).toBeNull()
       await fireEvent.press(getAllByRole('button')[1])
       expect(onSelect).toHaveBeenCalledWith(0, 1)
     })
@@ -178,9 +280,17 @@ describe('QuestionCard', () => {
     it('does not apply to a permission gate that carries multiSelect', async () => {
       const gate: QuestionBlock = { source: 'permission', permissionIndices: [1, 2], questions: [{ question: 'Proceed?', multiSelect: true, options: [{ label: 'Yes' }, { label: 'No' }] }] }
       const onSelect = jest.fn()
-      const { getAllByRole } = await render(<QuestionCard block={gate} onSelect={onSelect} />)
+      const { getAllByRole, queryAllByRole } = await render(<QuestionCard block={gate} onSelect={onSelect} onSubmitMulti={jest.fn()} />)
+      expect(queryAllByRole('checkbox')).toHaveLength(0)
       await fireEvent.press(getAllByRole('button')[0])
       expect(onSelect).toHaveBeenCalledWith(0, 0)
+    })
+
+    it('keeps an unsupported multi-select prompt card fail-closed', async () => {
+      const prompt: QuestionBlock = { source: 'prompt', unsupportedShape: 'multi', questions: [{ question: 'Pick?', multiSelect: true, options: [] }] }
+      const { queryAllByRole, getByTestId } = await render(<QuestionCard block={prompt} onSelect={jest.fn()} onSubmitMulti={jest.fn()} />)
+      expect(queryAllByRole('checkbox')).toHaveLength(0)
+      expect(getByTestId('question-card-unsupported')).toBeTruthy()
     })
   })
 

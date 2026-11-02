@@ -33,15 +33,28 @@ describe('ThinkingBubble structured question', () => {
 })
 
 describe('ThinkingBubble multi-select structured question', () => {
-  it('sends no answer when an option is pressed', async () => {
-    const multi: QuestionBlock = { ...aq, questions: [{ ...aq.questions[0], multiSelect: true }] }
+  const multi: QuestionBlock = { ...aq, questions: [{ ...aq.questions[0], multiSelect: true }] }
+
+  it('sends every checked label as an array on Submit, and nothing before', async () => {
     const onAnswer = jest.fn()
-    const { getByText, getByTestId } = await render(
+    const { getByLabelText, getByRole } = await render(
       <ThinkingBubble lines={[]} activeQuestion={multi} onAnswer={onAnswer} />,
     )
-    await fireEvent.press(getByText('B'))
+    await fireEvent.press(getByLabelText('B'))
+    await fireEvent.press(getByLabelText('A'))
     expect(onAnswer).not.toHaveBeenCalled()
-    expect(getByTestId('question-card-unsupported')).toBeTruthy()
+    await fireEvent.press(getByRole('button', { name: 'Submit' }))
+    expect(onAnswer).toHaveBeenCalledTimes(1)
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': ['A', 'B'] })
+  })
+
+  it('still sends a plain string for a single-select question', async () => {
+    const onAnswer = jest.fn()
+    const { getByLabelText } = await render(
+      <ThinkingBubble lines={[]} activeQuestion={aq} onAnswer={onAnswer} />,
+    )
+    await fireEvent.press(getByLabelText('A'))
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'A' })
   })
 })
 
