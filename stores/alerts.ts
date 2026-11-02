@@ -9,15 +9,36 @@ type AlertState = {
   alerts: AlertEntry[]
   inlineClaims: Record<string, number>
   upsert: (entry: AlertInput) => void
+  push: (entry: AlertInput) => void
   dismiss: (id: string) => void
-  stickyDismiss: (id: string) => void
+  stickyDismiss: (id: string, reason?: SuppressionReason) => void
   claimInline: (cause: AlertCause) => void
   releaseInline: (cause: AlertCause) => void
   reset: () => void
 }
 
+type SuppressionReason = 'user' | 'expired'
+
+type Suppression = {
+  fingerprint: string
+  reason: SuppressionReason
+  at: number
+}
+
+// How long identical copy stays hidden after a user-dismissed alert's condition
+// clears. Long enough that a flapping connection doesn't re-nag on every flap,
+// short enough that a genuine recurrence later in the same sitting is seen. A
+// nag-frequency choice, not a correctness one.
+export const USER_DISMISS_COOLDOWN_MS = 5 * 60 * 1000
+
 const timers = new Map<string, ReturnType<typeof setTimeout>>()
-const stickyFingerprints = new Map<string, string>()
+// Holds while the condition does: the declarative emitter re-pushes the same
+// spec every commit, so a dismissed or expired alert must stay gone until the
+// copy changes or `dismiss` reports the condition ended.
+const stickyFingerprints = new Map<string, Suppression>()
+// Only user dismissals graduate here. An expiry is the toast doing its job, so
+// it never earns a cooldown.
+const cooldowns = new Map<string, Suppression>()
 
 // `alertFingerprint` answers "is this the same alert?" and drives sticky
 // suppression, so it covers copy only. This answers "does the row need
@@ -46,7 +67,7 @@ function clearTimer(id: string) {
   timers.delete(id)
 }
 
-function scheduleTimeout(entry: AlertEntry) {
+function scheduleTimeout(entry: AlertEntry, transient = false) {
   clearTimer(entry.id)
   if (entry.level !== 'info') return
   const timeout = entry.timeout === undefined ? TOAST_DEFAULT_TIMEOUT_MS : entry.timeout
@@ -55,7 +76,11 @@ function scheduleTimeout(entry: AlertEntry) {
     entry.id,
     setTimeout(() => {
       timers.delete(entry.id)
-      useAlertStore.getState().stickyDismiss(entry.id)
+      const { dismiss, stickyDismiss } = useAlertStore.getState()
+      // A pushed toast is an event, not a mirrored condition: expiring it must
+      // not leave a record behind for the next occurrence to trip over.
+      if (transient) dismiss(entry.id)
+      else stickyDismiss(entry.id, 'expired')
     }, timeout),
   )
 }
@@ -69,7 +94,12 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   inlineClaims: {},
   upsert: (entry) => {
     const fingerprint = alertFingerprint(entry)
-    if (stickyFingerprints.get(entry.id) === fingerprint) return
+    if (stickyFingerprints.get(entry.id)?.fingerprint === fingerprint) return
+    const cooling = cooldowns.get(entry.id)
+    if (cooling?.fingerprint === fingerprint) {
+      if (Date.now() - cooling.at < USER_DISMISS_COOLDOWN_MS) return
+      cooldowns.delete(entry.id)
+    }
 
     const existing = get().alerts.find((alert) => alert.id === entry.id)
     if (existing) {
@@ -97,8 +127,20 @@ export const useAlertStore = create<AlertState>((set, get) => ({
     scheduleTimeout(next)
     set({ alerts: [...get().alerts, next] })
   },
+  push: (entry) => {
+    const next = withRaisedAt(entry, Date.now())
+    scheduleTimeout(next, true)
+    const { alerts } = get()
+    set({
+      alerts: alerts.some((alert) => alert.id === entry.id)
+        ? alerts.map((alert) => (alert.id === entry.id ? next : alert))
+        : [...alerts, next],
+    })
+  },
   dismiss: (id) => {
     clearTimer(id)
+    const held = stickyFingerprints.get(id)
+    if (held?.reason === 'user') cooldowns.set(id, { ...held, at: Date.now() })
     stickyFingerprints.delete(id)
     const { alerts } = get()
     if (!alerts.some((alert) => alert.id === id)) return
@@ -106,9 +148,9 @@ export const useAlertStore = create<AlertState>((set, get) => ({
       alerts: alerts.filter((alert) => alert.id !== id),
     })
   },
-  stickyDismiss: (id) => {
+  stickyDismiss: (id, reason = 'user') => {
     const alert = get().alerts.find((entry) => entry.id === id)
-    if (alert) stickyFingerprints.set(id, alertFingerprint(alert))
+    if (alert) stickyFingerprints.set(id, { fingerprint: alertFingerprint(alert), reason, at: Date.now() })
     clearTimer(id)
     set({
       alerts: get().alerts.filter((entry) => entry.id !== id),
@@ -130,6 +172,7 @@ export const useAlertStore = create<AlertState>((set, get) => ({
   reset: () => {
     for (const id of timers.keys()) clearTimer(id)
     stickyFingerprints.clear()
+    cooldowns.clear()
     set({ alerts: [], inlineClaims: {} })
   },
 }))
