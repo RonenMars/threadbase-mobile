@@ -225,16 +225,17 @@ export function useSessionActions(serverId: string, sessionId: string) {
   })
 
   // Forks the conversation into a separate managed session (`codex fork`),
-  // leaving the process that already owns the original rollout untouched. Same
-  // non-idempotent spawn as resume — retry:false, because a silent retry of a
-  // timed-out fork would create a second fork rather than reusing the first.
+  // leaving the process that already owns the original rollout untouched.
+  // Every accepted call spawns another Codex process, so the transport stays
+  // retry:false; the caller owns retrying and reuses one `idempotencyKey`, which
+  // the streamer replays for 10 minutes instead of forking again.
   // `conversationId` is the NEW rollout the server bound; the source id stays
   // `sessionId`, so callers can attribute both.
   const forkSession = useMutation({
-    mutationFn: async (): Promise<ResumeResult> => {
+    mutationFn: async ({ idempotencyKey }: { idempotencyKey: string }): Promise<ResumeResult> => {
       const resp = await api.post<ResumeConversationResponse>(
         `/api/sessions/${sessionId}/fork`,
-        undefined,
+        { idempotencyKey },
         { timeoutMs: START_SESSION_TIMEOUT_MS, retry: false },
       )
       return {
