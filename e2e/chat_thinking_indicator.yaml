@@ -1,0 +1,45 @@
+# Maestro E2E — a running session shows the thinking indicator in chat
+#
+# ThinkingBubble renders inside LiveConversationView, which only mounts when the
+# session has a conversationId (hasConversationId in app/session/[id].tsx).
+# session-detail.json has none, so 05_chat_flow stays on the terminal surface.
+# The mock's session-scrollback session is running with conversationId
+# conv-scrollback and a transcript behind it, so switching it to the chat
+# surface reaches the conversation view with the indicator up.
+#
+# Requires: mock server running on localhost:7071
+# Usage: node e2e/run-maestro.js test e2e/chat_thinking_indicator.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-scrollback"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 8000
+
+# sessionView defaults to 'terminal'; the chip switches to chat once the
+# session has a conversationId.
+- tapOn:
+    id: "session-view-mode-chip"
+
+# The transcript row proves LiveConversationView mounted and loaded history.
+- extendedWaitUntil:
+    visible: ".*Test added, 1 passing.*"
+    timeout: 8000
+
+- extendedWaitUntil:
+    visible:
+      id: "thinking-bubble"
+    timeout: 8000
+
+- takeScreenshot: e2e/_artifacts/screenshots/chat-thinking-indicator
