@@ -88,12 +88,19 @@ interface PersistedState {
   recentsEnabled: boolean
   popularEnabled: boolean
   shelfPosition: ShelfPosition | null
+  /** Servers whose saved-items list has been seeded from this device once. */
+  savedItemsBootstrapped: string[]
 }
 
 interface QuickAccessStore extends PersistedState {
+  /** True once `hydrate` has finished, whether or not anything was stored. Not persisted. */
+  hydrated: boolean
   pinItem: (item: FavoriteItem) => void
   unpinItem: (id: string) => void
   reorderFavorites: (from: number, to: number) => void
+  /** Whole-list replace, for applying a server's saved list or rolling one back. */
+  setFavorites: (favorites: FavoriteItem[]) => void
+  markSavedItemsBootstrapped: (serverId: string) => void
   ignoreRecent: (id: string) => void
   ignorePopular: (id: string) => void
   setStripCollapsed: (v: boolean) => void
@@ -116,10 +123,12 @@ const DEFAULTS: PersistedState = {
   recentsEnabled: true,
   popularEnabled: true,
   shelfPosition: null,
+  savedItemsBootstrapped: [],
 }
 
 export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
   ...DEFAULTS,
+  hydrated: false,
 
   pinItem: (item) =>
     set((s) => {
@@ -137,6 +146,15 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
       next.splice(to > from ? to - 1 : to, 0, item)
       return { favorites: next }
     }),
+
+  setFavorites: (favorites) => set({ favorites }),
+
+  markSavedItemsBootstrapped: (serverId) =>
+    set((s) =>
+      s.savedItemsBootstrapped.includes(serverId)
+        ? s
+        : { savedItemsBootstrapped: [...s.savedItemsBootstrapped, serverId] },
+    ),
 
   ignoreRecent: (id) =>
     set((s) => ({
@@ -168,9 +186,14 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
         recentsEnabled: parsed.recentsEnabled ?? s.recentsEnabled,
         popularEnabled: parsed.popularEnabled ?? s.popularEnabled,
         shelfPosition: isShelfPosition(parsed.shelfPosition) ? parsed.shelfPosition : s.shelfPosition,
+        savedItemsBootstrapped: Array.isArray(parsed.savedItemsBootstrapped)
+          ? parsed.savedItemsBootstrapped.filter((id) => typeof id === 'string')
+          : s.savedItemsBootstrapped,
       }))
     } catch {
       // storage unavailable or corrupted — ignore
+    } finally {
+      set({ hydrated: true })
     }
   },
 }))
@@ -185,6 +208,7 @@ useQuickAccessStore.subscribe((state) => {
     recentsEnabled: state.recentsEnabled,
     popularEnabled: state.popularEnabled,
     shelfPosition: state.shelfPosition,
+    savedItemsBootstrapped: state.savedItemsBootstrapped,
   }
   AsyncStorage.setItem(QUICK_ACCESS_STORAGE_KEY, JSON.stringify(payload)).catch(() => {})
 })
