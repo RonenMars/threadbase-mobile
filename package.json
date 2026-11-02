@@ -141,7 +141,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-i18next": "^17.0.12",
-    "react-native": "0.87.1",
+    "react-native": "0.86.3",
     "react-native-css": "^3.0.7",
     "react-native-draggable-flatlist": "^4.0.3",
     "react-native-gesture-handler": "~3.2.1",
@@ -163,7 +163,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.0",
     "@playwright/test": "1.64.1",
-    "@react-native/jest-preset": "^0.87.1",
+    "@react-native/jest-preset": "^0.86.3",
     "@storybook/react-native-web-vite": "10.5.9",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/react-native": "^14.0.1",
