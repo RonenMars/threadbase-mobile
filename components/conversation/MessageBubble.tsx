@@ -10,6 +10,7 @@ import Markdown from 'react-native-markdown-display'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
+import { Wrench } from 'phosphor-react-native'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
 import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
@@ -424,7 +425,7 @@ function ContentBlock({
   matchAnchor?: MatchAnchor
   activeMatch?: boolean
 }) {
-  const { styles } = useBubbleStyles()
+  const { styles, theme } = useBubbleStyles()
   if (block.type === 'text') {
     return (
       <TextBlockBody
@@ -439,7 +440,8 @@ function ContentBlock({
   if (block.type === 'tool_use') {
     return (
       <View style={styles.toolTag}>
-        <Text style={styles.toolTagText}>🔧 {block.name}</Text>
+        <Wrench size={font.xs} color={theme.text.accent} weight="bold" />
+        <Text style={styles.toolTagText}>{block.name}</Text>
       </View>
     )
   }
@@ -575,6 +577,9 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       backgroundColor: 'rgba(248, 81, 73, 0.18)',
     },
     toolTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
       backgroundColor: `${theme.text.accent}20`,
       borderRadius: radius.sm,
       paddingHorizontal: spacing.sm,
