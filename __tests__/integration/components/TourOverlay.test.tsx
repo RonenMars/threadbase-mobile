@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
+import i18n from 'i18next'
 import { TourOverlay } from '@/components/tour/TourOverlay'
 import { THEMES, type Theme } from '@/constants/theme'
 
@@ -9,7 +10,6 @@ const mockTheme: { current: Theme } = { current: THEMES.dark }
 jest.mock('@/contexts/ThemeContext', () => ({
   useTheme: () => mockTheme.current,
 }))
-import i18n from 'i18next'
 
 const TARGET = { x: 20, y: 100, width: 100, height: 50 }
 
