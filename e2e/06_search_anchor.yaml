@@ -37,6 +37,22 @@ appId: com.ronenmars.threadbase
 
 - inputText: "idempotency"
 
+# The fixture is dated 2026-05-20, so its row sits in the `earlier` day bucket,
+# which viewPrefs collapses by default. Wait for the group header, then expand
+# it only if the row is still hidden.
+- extendedWaitUntil:
+    visible:
+      id: "day-bucket-.*"
+    timeout: 8000
+
+- runFlow:
+    when:
+      notVisible:
+        id: "conversation-row-conv-search-anchor"
+    commands:
+      - tapOn:
+          id: "day-bucket-.*"
+
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-search-anchor"
