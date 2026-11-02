@@ -50,6 +50,12 @@ on:
         required: false
         type: string
 
+# Serialize store releases to prevent overlapping uploads and version-bump PRs.
+# A queued release must not cancel an in-progress upload.
+concurrency:
+  group: threadbase-store-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy-ios:
     name: Ship iOS
