@@ -777,6 +777,58 @@ describe('LiveConversationView — send refused while the ghost is pending', () 
   })
 })
 
+// A status flip away from waiting_input drops the server card, and the PTY
+// scrape takes over. The menu is still open in the terminal, so the composer
+// has to stay locked for as long as the scraped card is up.
+describe('LiveConversationView — send while a scraped card is on screen', () => {
+  const SCRAPED_MENU = ['Do you trust the contents of this directory?', '> 1. Yes, continue', '2. No, quit']
+  const statusUpdate = (status: string) => ({ type: 'session_update', session: { id: 'sess1', status } })
+
+  beforeEach(() => {
+    mockMutate.mockClear()
+    mockSendInputState = { isError: false, error: null }
+    mockSessionStatus = 'waiting_input'
+    mockHistorical = []
+    mockLive = []
+    mockPtyLines = []
+    for (const key of Object.keys(wsHandlers)) delete wsHandlers[key]
+  })
+
+  async function typeAndSend(text: string) {
+    await fireEvent.changeText(screen.getByTestId('chat-message-input'), text)
+    await act(async () => { fireEvent.press(screen.getByTestId('chat-send-button')) })
+  }
+
+  it('keeps send disabled after a status flip hands the card to the terminal scrape', async () => {
+    const { rerender } = await renderView()
+    await act(async () => dispatchWs('session_update', statusUpdate('waiting_input')))
+    await act(async () => dispatchWs('question', QUESTION_MESSAGE))
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+
+    mockPtyLines = SCRAPED_MENU
+    mockSessionStatus = 'running'
+    await act(async () => dispatchWs('session_update', statusUpdate('running')))
+    await act(async () => rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />))
+    expect(screen.queryByText('Which approach?')).toBeNull()
+    expect(screen.getAllByLabelText('No, quit').length).toBeGreaterThan(0)
+
+    await typeAndSend('hello there')
+    expect(mockMutate).not.toHaveBeenCalled()
+  })
+
+  it('sends again once the scraped card is gone', async () => {
+    mockPtyLines = SCRAPED_MENU
+    mockSessionStatus = 'running'
+    const { rerender } = await renderView()
+    expect(screen.getAllByLabelText('No, quit').length).toBeGreaterThan(0)
+
+    mockPtyLines = []
+    await act(async () => rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />))
+    await typeAndSend('hello there')
+    expect(mockMutate).toHaveBeenCalledWith('hello there', expect.anything())
+  })
+})
+
 // The bubble view hosts the same card, so its Cancel has to take the same
 // bound route; the full reply handling is covered in PromptAnswerSeam.
 describe('LiveConversationView — cancel on a prompt card', () => {
