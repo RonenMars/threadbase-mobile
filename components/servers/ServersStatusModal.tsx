@@ -13,7 +13,7 @@ import {
   Easing,
 } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Cloud, DotsThreeVertical, Trash, PencilSimple, ArrowsClockwise } from 'phosphor-react-native'
+import { Cloud, DotsThreeVertical, Trash, PencilSimple, ArrowsClockwise, Key } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { wsManager, type WsPermanentError } from '@/services/ws-client'
@@ -209,10 +209,11 @@ interface ServerMenuModalProps {
   onClose: () => void
   onRefresh: () => void
   onEdit: () => void
+  onForget: (() => void) | null
   onDelete: () => void
 }
 
-function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onDelete }: ServerMenuModalProps) {
+function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onForget, onDelete }: ServerMenuModalProps) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const directionStyle = useDirectionStyle()
@@ -243,6 +244,15 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
             <Text style={[styles.dropItemText, copyStyle]}>{t('statusModal.menuRefresh')}</Text>
           </TouchableOpacity>
           <View style={styles.dropDivider} />
+          {onForget ? (
+            <>
+              <TouchableOpacity style={styles.dropItem} onPress={onForget}>
+                <Key size={16} color={theme.text.secondary} />
+                <Text style={[styles.dropItemText, copyStyle]}>{t('statusModal.menuForget')}</Text>
+              </TouchableOpacity>
+              <View style={styles.dropDivider} />
+            </>
+          ) : null}
           <TouchableOpacity style={styles.dropItem} onPress={onDelete}>
             <Trash size={16} color={theme.text.danger} />
             <Text style={[styles.dropItemText, copyStyle, { color: theme.text.danger }]}>{t('statusModal.menuDelete')}</Text>
@@ -261,7 +271,7 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const router = useRouter()
-  const { servers, activeServerIds, refreshServerInfo } = useServersStore()
+  const { servers, activeServerIds, refreshServerInfo, forgetDevice } = useServersStore()
   const statuses = useServerStatuses(activeServerIds)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const [editServerId, setEditServerId] = useState<string | null | 'new'>(null)
@@ -290,6 +300,22 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
               router.replace('/onboarding')
             }
           },
+        },
+      ]
+    )
+  }
+
+  const handleForgetDevice = (serverId: string) => {
+    const server = servers[serverId]
+    Alert.alert(
+      i18n.t('servers:dialog.forgetTitle'),
+      i18n.t('servers:dialog.forgetMessage', { server: server?.label || server?.url }),
+      [
+        { text: i18n.t('common:button.cancel'), style: 'cancel' },
+        {
+          text: i18n.t('servers:dialog.forgetConfirm'),
+          style: 'destructive',
+          onPress: () => forgetDevice(serverId),
         },
       ]
     )
@@ -389,6 +415,7 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
         onClose={() => setOpenMenuId(null)}
         onRefresh={() => { const id = openMenuId!; setOpenMenuId(null); handleRefresh(id) }}
         onEdit={() => { const id = openMenuId!; setOpenMenuId(null); setEditServerId(id) }}
+        onForget={menuServer?.serverPublicKey ? () => { const id = openMenuId!; setOpenMenuId(null); handleForgetDevice(id) } : null}
         onDelete={() => { const id = openMenuId!; setOpenMenuId(null); handleRemove(id) }}
       />
       <ServerEditModal
