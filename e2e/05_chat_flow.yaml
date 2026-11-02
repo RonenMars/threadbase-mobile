@@ -128,6 +128,8 @@ appId: com.ronenmars.threadbase
 # fixture. Covering the bubble end-to-end means giving the fixture a
 # conversationId and mocking the conversation-messages route, i.e. a new mock
 # surface rather than a flow edit.
+# chat_thinking_indicator.yaml covers it with the session-scrollback session,
+# which already has a conversationId and a mocked transcript.
 #
 # The component itself is unit-tested in
 # __tests__/unit/components/conversation/ThinkingBubble.{question,indicator}.test.tsx.
