@@ -65,6 +65,12 @@ const liveSockets = new Set()
 // are otherwise unreachable against a mock that always succeeds.
 let nextAnswerReply = { status: 200, reason: null }
 
+// Every body POSTed to /api/sessions/:id/input, oldest first. A permission-gate
+// answer that leaks onto this route is raw keystrokes in the PTY, which the
+// terminal then types as chat text — nothing on screen distinguishes that from
+// an echo, so a flow reads the log through POST /__test__/inputs instead.
+const inputLog = []
+
 // ── terminal-scrollback scenario ────────────────────────────────────────────
 // Claude Code wipes its whole scrollback (ESC[2J ESC[3J ESC[H) whenever a live
 // frame taller than the viewport changes above it, then repaints only the
@@ -628,6 +634,7 @@ async function handleRequest(req, res) {
     } catch {
       return json(res, 400, { error: 'Invalid JSON body' })
     }
+    inputLog.push({ sessionId, ...body })
     const text = typeof body?.input === 'string' ? body.input : (body?.text ?? '')
     json(res, 200, { ok: true })
 
@@ -734,6 +741,19 @@ async function handleRequest(req, res) {
     termSeq += 1
     broadcast({ type: 'terminal_output', sessionId, data: body?.data ?? '', seq: termSeq })
     return json(res, 200, { ok: true, seq: termSeq })
+  }
+
+  // Returns the /input log; { reset: true } clears it after reading.
+  if (method === 'POST' && p === '/__test__/inputs') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    const inputs = inputLog.slice()
+    if (body?.reset) inputLog.length = 0
+    return json(res, 200, { ok: true, inputs })
   }
 
   // Arms the next /permission/answer reply, e.g. { status: 409, reason: 'gate_mismatch' }.
