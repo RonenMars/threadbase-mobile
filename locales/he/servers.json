@@ -17,7 +17,10 @@
   "dialog": {
     "removeTitle": "הסר שרת",
     "removeMessage": "להתנתק מ-{{server}}?",
-    "removeConfirm": "הסר"
+    "removeConfirm": "הסר",
+    "forgetTitle": "שכח את המכשיר הזה",
+    "forgetMessage": "לשכוח את המכשיר הזה עבור {{server}}? הטלפון הזה יציג זהות חדשה בפעם הבאה שיבוצע צימוד עם השרת, ורשומה שנשללה עבור הטלפון הזה בשרת לא תשוחזר. יהיה צורך לבצע צימוד מחדש.",
+    "forgetConfirm": "שכח"
   },
   "form": {
     "labelOptional": "תווית (אופציונלי)",
@@ -108,6 +111,7 @@
     "menuEdit": "ערוך",
     "menuRefresh": "רענן",
     "menuDelete": "מחק",
+    "menuForget": "שכח את המכשיר הזה",
     "optionsLabel": "אפשרויות שרת",
     "titleSingle": "מצב השרת",
     "titleMultiple": "מצב השרתים"
