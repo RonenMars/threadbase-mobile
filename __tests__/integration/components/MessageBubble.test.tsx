@@ -302,3 +302,27 @@ describe("MessageBubble – markdown lists", () => {
     expect(style.flexShrink).toBe(1);
   });
 });
+
+describe("MessageBubble – queued", () => {
+  it("labels and dims a queued bubble", async () => {
+    const { getByText, getByTestId } = await render(<MessageBubble message={makeMessage()} queued />);
+    expect(getByText("Queued")).toBeTruthy();
+    expect(StyleSheet.flatten(getByTestId("message-bubble").props.style).opacity).toBeLessThan(1);
+  });
+
+  it("shows neither label nor dimming by default", async () => {
+    const { queryByText, getByTestId } = await render(<MessageBubble message={makeMessage()} />);
+    expect(queryByText("Queued")).toBeNull();
+    expect(StyleSheet.flatten(getByTestId("message-bubble").props.style).opacity).toBeUndefined();
+  });
+
+  it("follows the selected language direction like the message copy", async () => {
+    await i18n.changeLanguage("he");
+    const { getByText, unmount } = await render(<MessageBubble message={makeMessage()} queued />);
+    expect(StyleSheet.flatten(getByText("Queued").props.style)).toEqual(
+      expect.objectContaining({ writingDirection: "rtl", textAlign: "auto" }),
+    );
+    unmount();
+    await i18n.changeLanguage("en");
+  });
+});

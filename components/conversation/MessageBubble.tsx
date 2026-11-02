@@ -38,6 +38,8 @@ interface Props {
   /** Set when nested inside MessageItem's toolContainer, which already applies its own
    * marginVertical + gap — an outer margin here would double the spacing between rows. */
   noOuterMargin?: boolean
+  /** Sent mid-turn and not yet picked up by the agent: dimmed and labelled. */
+  queued?: boolean
 }
 
 export interface MatchAnchor {
@@ -451,7 +453,7 @@ function ContentBlock({
 // Memoized: message objects are stable by reference for already-loaded pages
 // (adaptRawMessage output is reused between renders), so screen-level state
 // changes don't re-render — and re-highlight — every visible row.
-export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor, activeMatch, noOuterMargin }: Props) {
+export const MessageBubble = React.memo(function MessageBubble({ message, highlight, matchAnchor, activeMatch, noOuterMargin, queued }: Props) {
   const { t } = useTranslation('conversation')
   const { styles } = useBubbleStyles()
   const isGlass = useIsGlass()
@@ -459,7 +461,10 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
 
   return (
     <View style={[styles.container, noOuterMargin && styles.containerNoMargin, isUser ? styles.containerUser : styles.containerAssistant]}>
-      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass]}>
+      <View
+        testID="message-bubble"
+        style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass, queued && styles.bubbleQueued]}
+      >
         {!isUser && <GlassFill />}
         {message.content.map((block, i) => (
           <ContentBlock
@@ -475,6 +480,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
           <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
         ) : null}
       </View>
+      {queued ? <Text style={styles.queuedLabel}>{t('message.queued')}</Text> : null}
     </View>
   )
 })
@@ -509,6 +515,13 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     },
     bubbleAssistantGlass: {
       backgroundColor: 'transparent',
+    },
+    bubbleQueued: { opacity: 0.55 },
+    queuedLabel: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      marginTop: spacing.xs,
+      ...rtl.copy,
     },
     messageText: {
       color: theme.text.primary,
