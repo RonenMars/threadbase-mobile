@@ -19,6 +19,11 @@ const structured: QuestionBlock = {
   }],
 }
 
+const multiSelect: QuestionBlock = {
+  ...structured,
+  questions: [{ ...structured.questions[0], question: 'Which caches should be cleared?', multiSelect: true }],
+}
+
 const permission: QuestionBlock = {
   source: 'permission',
   permissionIndices: [1, 2, 3],
@@ -46,6 +51,12 @@ type Story = StoryObj<typeof QuestionCard>
 
 export const Structured: Story = {
   args: { block: structured },
+}
+
+// The streamer cannot take a multi-select answer, so the options are read-only
+// and the card points the user at the terminal.
+export const MultiSelect: Story = {
+  args: { block: multiSelect, onCancel: () => {} },
 }
 
 // The permission gate: a `detail` block above the question, and a Cancel that

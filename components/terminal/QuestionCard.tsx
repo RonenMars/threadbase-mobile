@@ -51,6 +51,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   }, [promptKey, ptyCursor])
 
   const locked = busy || ghost
+  // The streamer refuses every answer to a multi-select question
+  // (400 unsupported_prompt_shape), so offering a tap would only fail.
+  const readOnly = block.source === 'structured' && !block.unsupportedShape && q.multiSelect
 
   const pressStartY = useRef<number | null>(null)
 
@@ -99,7 +102,17 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           <Text style={[styles.question, large && styles.questionLarge]}>{item.question}</Text>
         </React.Fragment>
       ))}
-      {q.options.map((option, index) => (
+      {q.options.map((option, index) => readOnly ? (
+        <View key={index} style={styles.option}>
+          <View style={styles.optionBody}>
+            <Text style={[styles.optionText, large && styles.optionTextLarge]}>{option.label}</Text>
+            {option.description ? (
+              <Text style={styles.optionDescription}>{option.description}</Text>
+            ) : null}
+            {option.preview ? <Text style={styles.preview}>{option.preview}</Text> : null}
+          </View>
+        </View>
+      ) : (
         <TouchableOpacity
           key={index}
           style={[styles.option, index === selected && styles.optionSelected]}
@@ -124,7 +137,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
           </View>
         </TouchableOpacity>
       ))}
-      {block.unsupportedShape ? (
+      {block.unsupportedShape || readOnly ? (
         <Text style={styles.unsupported} testID="question-card-unsupported">{t('question.unsupportedShape')}</Text>
       ) : null}
       {ghost ? <Text style={styles.ghostNote}>{t('question.answerSent')}</Text> : null}

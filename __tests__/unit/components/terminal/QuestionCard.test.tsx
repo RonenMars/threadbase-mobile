@@ -123,6 +123,58 @@ describe('QuestionCard', () => {
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
+  // The streamer refuses every answer to a multi-select question (400
+  // unsupported_prompt_shape), so the card must not offer a tap that answers it.
+  describe('a multi-select structured question', () => {
+    const MULTI_BLOCK: QuestionBlock = {
+      ...BASE_BLOCK,
+      questions: [{ ...BASE_BLOCK.questions[0], multiSelect: true }],
+    }
+
+    it('does not call onSelect when an option label is pressed', async () => {
+      const onSelect = jest.fn()
+      const { getByText } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={onSelect} />)
+      await fireEvent.press(getByText('indicator only'))
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+
+    it('renders the options without tappable rows', async () => {
+      const { getByText, queryAllByRole } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={jest.fn()} />)
+      for (const label of optionLabels) {
+        expect(getByText(label)).toBeTruthy()
+      }
+      expect(queryAllByRole('button')).toHaveLength(0)
+    })
+
+    it('says to answer in the terminal', async () => {
+      const { getByTestId } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={jest.fn()} />)
+      expect(getByTestId('question-card-unsupported')).toBeTruthy()
+    })
+
+    it('keeps the Cancel button working', async () => {
+      const onCancel = jest.fn()
+      const { getByText } = await render(<QuestionCard block={MULTI_BLOCK} onSelect={jest.fn()} onCancel={onCancel} />)
+      await fireEvent.press(getByText('Cancel'))
+      expect(onCancel).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves a single-select structured question answerable on the first tap with no terminal line', async () => {
+      const onSelect = jest.fn()
+      const { getAllByRole, queryByTestId } = await render(<QuestionCard block={BASE_BLOCK} onSelect={onSelect} />)
+      expect(queryByTestId('question-card-unsupported')).toBeNull()
+      await fireEvent.press(getAllByRole('button')[1])
+      expect(onSelect).toHaveBeenCalledWith(0, 1)
+    })
+
+    it('does not apply to a permission gate that carries multiSelect', async () => {
+      const gate: QuestionBlock = { source: 'permission', permissionIndices: [1, 2], questions: [{ question: 'Proceed?', multiSelect: true, options: [{ label: 'Yes' }, { label: 'No' }] }] }
+      const onSelect = jest.fn()
+      const { getAllByRole } = await render(<QuestionCard block={gate} onSelect={onSelect} />)
+      await fireEvent.press(getAllByRole('button')[0])
+      expect(onSelect).toHaveBeenCalledWith(0, 0)
+    })
+  })
+
   // The card holds its slot in the tree, so the next prompt re-renders this
   // same instance rather than mounting a fresh one — the previous answer's
   // highlight used to ride along onto a question it was never given for.
