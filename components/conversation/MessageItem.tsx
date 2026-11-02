@@ -57,6 +57,7 @@ export const MessageItem = React.memo(function MessageItem({
   isActiveMatch,
   onMatchLayout,
   animateIn,
+  queued,
 }: {
   message: Message
   isLast?: boolean
@@ -72,6 +73,8 @@ export const MessageItem = React.memo(function MessageItem({
   onMatchLayout?: (messageIndex: number, y: number) => void
   /** Play the fade-in-from-bottom entrance — set only on freshly-arrived tail rows. */
   animateIn?: boolean
+  /** A user message sent mid-turn that the agent has not picked up yet. */
+  queued?: boolean
 }) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
@@ -144,6 +147,7 @@ export const MessageItem = React.memo(function MessageItem({
         highlight={highlight}
         matchAnchor={matchAnchor}
         activeMatch={isActiveMatch}
+        queued={queued}
       />
     </Row>
   )

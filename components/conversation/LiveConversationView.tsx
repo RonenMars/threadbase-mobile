@@ -134,6 +134,10 @@ export function LiveConversationView({
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
   // matching echo arrives in the historical/live stream (matched on text).
   const [pendingSends, setPendingSends] = useState<Message[]>([])
+  // Sends made while a turn was already in flight. Decided at send time: a first
+  // message also sees the status flip to running right after it, and must not
+  // jump below the reply it started.
+  const [queuedSendIds, setQueuedSendIds] = useState<string[]>([])
   // A provider with no transcript (Copilot) never echoes the user's text back, so a
   // pending send is not a reliable "turn still open" signal. It only counts until the
   // turn it started has run and ended.
@@ -158,11 +162,15 @@ export function LiveConversationView({
   // Live appended messages (WS)
   const { liveMessages } = useConversationStream(serverId, sessionId, conversationId)
 
+  // Session status for thinking indicator and the queued-send placement
+  const { data: session } = useSessionDetail(serverId, sessionId)
+  const turnInFlight = isWorkingTurn(session)
+
   // Memoized so `data` keeps its identity across unrelated re-renders.
   // FlashList runs its autoscroll-to-bottom check on every `data` identity
   // change, so a fresh array from e.g. the jump-to-latest FAB toggling
   // snapped a reader who had scrolled up a few lines back to the tail.
-  const allMessages = useMemo(() => {
+  const { allMessages, queuedIds } = useMemo(() => {
     const historicalMessages: Message[] = data?.messages ?? []
     // Historical carries a server message_index; live WS messages do not (yet —
     // real indexes arrive with the WS-resume follow-up). Order historical by
@@ -192,14 +200,22 @@ export function LiveConversationView({
       return remaining
     })()
 
-    // Order: historical → optimistic user bubble → live WS messages. Dedup by
-    // uuid, messageIndex, then id (shared with the read-only conversation view).
-    // newLive above is recomputed inside the helper — kept local here only for the echo matching.
-    return foldAnsweredQuestions(resolveToolNames(mergeLiveMessages(orderedHistorical, liveMessages, stillPending)))
-  }, [data?.messages, liveMessages, pendingSends])
+    // A send made mid-turn waits behind the reply in progress, so it goes after
+    // the live messages; once the turn ends it falls back to the inline slot.
+    const queued = turnInFlight ? stillPending.filter((m) => queuedSendIds.includes(m.id)) : []
+    const inline = stillPending.filter((m) => !queued.includes(m))
 
-  // Session status for thinking indicator
-  const { data: session } = useSessionDetail(serverId, sessionId)
+    // Order: historical → optimistic user bubble → live WS messages → queued sends.
+    // Dedup by uuid, messageIndex, then id (shared with the read-only conversation view).
+    // newLive above is recomputed inside the helper — kept local here only for the echo matching.
+    return {
+      allMessages: [
+        ...foldAnsweredQuestions(resolveToolNames(mergeLiveMessages(orderedHistorical, liveMessages, inline))),
+        ...queued,
+      ],
+      queuedIds: new Set(queued.map((m) => m.id)),
+    }
+  }, [data?.messages, liveMessages, pendingSends, queuedSendIds, turnInFlight])
 
   // Keep session status fresh: subscribe to WS session_update so the cache
   // updates immediately when the agent finishes (status: running → idle).
@@ -353,6 +369,7 @@ export function LiveConversationView({
       const msg = makeOptimisticMessage(optimisticText)
       optimisticId = msg.id
       setPendingSends((prev) => [...prev, msg])
+      if (turnInFlight) setQueuedSendIds((prev) => [...prev, msg.id])
       sawRunning.current = false
       setAwaitingTurn(true)
     }
@@ -504,11 +521,11 @@ export function LiveConversationView({
           tag="message_item"
           rawFallback={userMessageText(item) || item.role}
         >
-          <MessageItem message={item} isLast={item.id === lastMessageId} />
+          <MessageItem message={item} isLast={item.id === lastMessageId} queued={queuedIds.has(item.id)} />
         </RenderErrorBoundary>
       </>
     ),
-    [forkSeam, lastMessageId],
+    [forkSeam, lastMessageId, queuedIds],
   )
 
   return (
