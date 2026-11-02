@@ -45,7 +45,7 @@ function canRetryPairFailure(err: Error): boolean {
 
 // One name for both the params this screen accepts and the params it rebuilds,
 // so the two lists cannot drift apart.
-type PairParams = { url?: string; token?: string; exp?: string; spk?: string; v?: string }
+type PairParams = { url?: string; token?: string; exp?: string; spk?: string; v?: string; relay?: string }
 
 // Expo Router splits `threadbase://pair?url=...&token=...&exp=...&spk=...&v=...`
 // into query params before this screen mounts; rebuild the URI so parsePairUri
@@ -65,6 +65,7 @@ function buildPairUri(params: PairParams): string {
   // damaged key the scanner would have rejected.
   if (params.spk !== undefined) search.set('spk', params.spk)
   if (params.v) search.set('v', params.v)
+  if (params.relay) search.set('relay', params.relay)
   return `threadbase://pair?${search.toString()}`
 }
 
@@ -107,6 +108,7 @@ export default function PairDeepLinkScreen() {
         token: parsed.token,
         deviceName: defaultPairDeviceName(),
         serverPublicKey: parsed.spk,
+        relayUrl: parsed.relay,
       })
       if (!mountedRef.current) return
       pendingExchange.current = exchanged
@@ -137,6 +139,7 @@ export default function PairDeepLinkScreen() {
       deviceToken: exchanged.deviceToken ?? undefined,
       capabilities: exchanged.capabilities ?? undefined,
       publicUrl: exchanged.publicUrl ?? undefined,
+      relayUrl: exchanged.relayUrl ?? undefined,
       serverPublicKey: exchanged.serverPublicKey ?? undefined,
       requireEncryption: exchanged.e2eeRequired,
     })
