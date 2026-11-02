@@ -19,42 +19,13 @@
 
 'use strict';
 
-const { execFileSync } = require('child_process');
-const fs = require('fs');
-const os = require('os');
 const path = require('path');
+
+const { runScript: run } = require('./_runScript');
 
 const SCRIPT = path.resolve(__dirname, '../../../scripts/ship-android.sh');
 
-let tmpDir;
-
-beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ship-android-test-'));
-});
-
-afterEach(() => {
-  fs.rmSync(tmpDir, { recursive: true, force: true });
-});
-
-function runScript(args) {
-  try {
-    const stdout = execFileSync('bash', [SCRIPT, ...args], {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 10000,
-      cwd: tmpDir,
-      env: {
-        ...process.env,
-        HOME: tmpDir,
-        GOOGLE_APPLICATION_CREDENTIALS: '',
-        PLAY_SA_JSON_B64: '',
-      },
-    });
-    return { stdout, stderr: '', code: 0 };
-  } catch (err) {
-    return { stdout: err.stdout || '', stderr: err.stderr || '', code: err.status ?? 1 };
-  }
-}
+const runScript = args => run(SCRIPT, args);
 
 describe('ship-android.sh — --track validation', () => {
   it('rejects an unknown track name', () => {
