@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 import { useThrottledCallback } from 'use-debounce'
+import { isExternalSession } from '@/lib/externalSession'
 import { narrowSessionStatus } from '@/lib/sessionPresentation'
 import { createApiForServer } from '@/services/api-client'
 import { withSilentRetries } from '@/services/error-policy'
@@ -22,6 +24,9 @@ const DEFAULT_PAGE_SIZE = 50
 // Initial Hub loading must fail promptly when a phone cannot reach a configured
 // server. The user can explicitly retry from the non-blocking server alert.
 const SESSIONS_FETCH_TIMEOUT_MS = 12_000
+// The streamer reports an external process's death by dropping its row from the
+// list — there is no removal frame — so the only way to notice is to re-ask.
+const EXTERNAL_LIVENESS_REFETCH_MS = 60_000
 
 // The home screen's `SortBy` (UI) uses 'lastActivity'; the wire format is
 // 'lastActivityAt' to match the field on SessionResponse. All other names
@@ -129,6 +134,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   const recordSuccess = useServerFetchStatusStore((s) => s.recordSuccess)
   const recordFailure = useServerFetchStatusStore((s) => s.recordFailure)
   const recordWarmingUp = useServerFetchStatusStore((s) => s.recordWarmingUp)
+  const queryClient = useQueryClient()
 
   const sortBy: SortBy = args.sort?.sortBy ?? 'lastActivity'
   const order: SortOrder = args.sort?.order ?? 'desc'
@@ -155,6 +161,9 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   // re-renders the whole Hub. Coalesce to ≤1 write per 250ms (flushed on
   // completion so the final counter is exact).
   const throttledSetAggregate = useThrottledCallback(setAggregateProgress, 250)
+  // True while a refetch runs over rows that are already on screen: the N/M
+  // counter belongs to the first load and must not replay on every poll.
+  const isSilentRefetchRef = useRef(false)
 
   const serversRef = useRef(servers)
   useEffect(() => {
@@ -169,6 +178,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   // Recomputes and flushes aggregate to state. Called from per-server progress
   // callbacks — runs on the JS thread between awaits so no locking needed.
   const flushAggregate = useCallback(() => {
+    if (isSilentRefetchRef.current) return
     let loaded = 0
     let total = 0
     let inFlight = 0
@@ -185,14 +195,17 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   const query = useQuery<MultiSession[], Error>({
     queryKey,
     queryFn: async ({ signal }) => {
-      // Reset per-server slices and aggregate at the start of every run.
-      const initialMap = new Map<string, ServerProgress>()
-      for (const id of targetServerIds) {
-        initialMap.set(id, { loaded: 0, total: null, done: false })
+      isSilentRefetchRef.current = queryClient.getQueryData(queryKey) !== undefined
+      if (!isSilentRefetchRef.current) {
+        // Reset per-server slices and aggregate at the start of every first load.
+        const initialMap = new Map<string, ServerProgress>()
+        for (const id of targetServerIds) {
+          initialMap.set(id, { loaded: 0, total: null, done: false })
+        }
+        serverProgressRef.current = initialMap
+        throttledSetAggregate.cancel()
+        setAggregateProgress({ loaded: 0, total: 0, inFlightCount: targetServerIds.length })
       }
-      serverProgressRef.current = initialMap
-      throttledSetAggregate.cancel()
-      setAggregateProgress({ loaded: 0, total: 0, inFlightCount: targetServerIds.length })
 
       const perServerResults = await Promise.all(
         targetServerIds.map(async (serverId) => {
@@ -248,6 +261,23 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
     enabled: activeServerIds.length > 0,
   })
 
+  // A plain timer rather than `refetchInterval`: React Query cannot tell an interval
+  // fetch from a foreground or invalidation fetch, and only the latter should show
+  // the sync notice (it reads `isDone`).
+  const hasExternalSession = query.data?.some(isExternalSession) ?? false
+  const [isPolling, setIsPolling] = useState(false)
+  useEffect(() => {
+    if (!hasExternalSession) return
+    const id = setInterval(() => {
+      if (AppState.currentState !== 'active' || queryClient.isFetching({ queryKey }) > 0) return
+      setIsPolling(true)
+      void queryClient.refetchQueries({ queryKey, exact: true }).finally(() => {
+        setIsPolling(false)
+      })
+    }, EXTERNAL_LIVENESS_REFETCH_MS)
+    return () => clearInterval(id)
+  }, [hasExternalSession, queryClient, queryKey])
+
   const refetch = useCallback(async () => {
     setPreservedSessions(query.data ?? preservedSessions)
     setFetchRequest((previous) => ({
@@ -285,7 +315,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
   // A targeted retry uses a new query key. Keep the prior successful sessions
   // visible while that fresh query has no data yet.
   const sessions = query.data ?? preservedSessions
-  const isDone = activeServerIds.length === 0 || (query.isFetched && !query.isFetching)
+  const isDone = activeServerIds.length === 0 || (query.isFetched && (!query.isFetching || isPolling))
   // "Counting" = fetches are running but no server has returned its first page yet
   const isCounting = !isDone && aggregateProgress.total === 0 && aggregateProgress.inFlightCount > 0
 
