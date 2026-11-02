@@ -32,6 +32,19 @@ describe('ThinkingBubble structured question', () => {
   })
 })
 
+describe('ThinkingBubble multi-select structured question', () => {
+  it('sends no answer when an option is pressed', async () => {
+    const multi: QuestionBlock = { ...aq, questions: [{ ...aq.questions[0], multiSelect: true }] }
+    const onAnswer = jest.fn()
+    const { getByText, getByTestId } = await render(
+      <ThinkingBubble lines={[]} activeQuestion={multi} onAnswer={onAnswer} />,
+    )
+    await fireEvent.press(getByText('B'))
+    expect(onAnswer).not.toHaveBeenCalled()
+    expect(getByTestId('question-card-unsupported')).toBeTruthy()
+  })
+})
+
 describe('ThinkingBubble full-screen question', () => {
   it('gives the modal its own SafeAreaProvider so insets are not 0 inside the native window', async () => {
     const { getByTestId } = await render(
