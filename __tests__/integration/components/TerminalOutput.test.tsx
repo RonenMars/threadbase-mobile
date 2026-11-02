@@ -322,6 +322,25 @@ describe('TerminalOutput – answering a question', () => {
     expect(onCancelQuestion).not.toHaveBeenCalled()
   })
 
+  it('answers a multi-select structured question with every checked label', async () => {
+    const onAnswer = jest.fn()
+    const multi: QuestionBlock = { ...structured, questions: [{ ...structured.questions[0], multiSelect: true }] }
+    const { getByLabelText, getByRole } = await render(
+      <TerminalOutput
+        lines={[]}
+        isStreaming={false}
+        activeQuestion={multi}
+        onSendKeys={jest.fn()}
+        onAnswer={onAnswer}
+      />
+    )
+
+    await fireEvent.press(getByLabelText('B'))
+    await fireEvent.press(getByLabelText('A'))
+    await fireEvent.press(getByRole('button', { name: 'Submit' }))
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Which one?': ['A', 'B'] })
+  })
+
   // The block carrying nothing for the tapped option used to be decided here,
   // by permissionAnswerKeys returning null. The position is still well defined,
   // so the component reports it and the answer route decides there is nothing

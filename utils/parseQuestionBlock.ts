@@ -15,6 +15,8 @@ export interface QuestionItem {
   /** Permission-gate only: descriptive block (tool + command + action) shown above the question. */
   detail?: string
   multiSelect: boolean
+  /** Structured only: the streamer could not read the checkbox marker and refuses to answer it. */
+  multiSelectUnverified?: boolean
   options: QuestionOption[]
 }
 export interface QuestionBlock {

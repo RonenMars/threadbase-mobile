@@ -294,6 +294,33 @@ describe('useQuestionAnswer – an answer the server refuses to write', () => {
     },
   )
 
+  // A multi-select answer carrying a label the streamer no longer has (400
+  // unknown_option, nothing written). The card stays so the user can retry or
+  // answer in the terminal, and the failure reads as an error rather than
+  // being swallowed or thrown.
+  it('keeps the card up and surfaces the error when a multi-select answer is refused as unknown_option', async () => {
+    const refused = mutation({
+      mutateAsync: jest.fn().mockRejectedValue(new NetworkError('Server returned 400', 'unknown_option')),
+    })
+    const { result } = await setup({ respondToQuestion: refused })
+    await act(() => __wsTest.emit('question', question))
+
+    await act(async () => {
+      await result.current.handleAnswerQuestion('tool-1', { 'Which language?': ['TypeScript', 'Go'] })
+    })
+
+    expect(refused.mutateAsync).toHaveBeenCalledWith({ toolUseId: 'tool-1', answers: { 'Which language?': ['TypeScript', 'Go'] } })
+    expect(result.current.activeQuestion).not.toBeNull()
+    expect(result.current.answerPhase).toBe('active')
+  })
+
+  it('shows an unknown_option refusal as the answer error', async () => {
+    const refused = mutation({ isError: true, error: new NetworkError('Server returned 400', 'unknown_option') })
+    const { result } = await setup({ respondToQuestion: refused })
+    expect(result.current.answerErrorMessage).toBe('Server returned 400')
+    expect(result.current.answerNoticeMessage).toBeNull()
+  })
+
   // Negative control: a closed question DOES clear the card through the same
   // handler — so the case above passes because of the code, not because the
   // handler never clears anything.

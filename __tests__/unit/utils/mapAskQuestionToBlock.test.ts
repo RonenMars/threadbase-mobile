@@ -20,4 +20,10 @@ describe('mapAskQuestionToBlock', () => {
     expect(block.questions[0].header).toBe('Format')
     expect(block.questions[0].options[1].preview).toBe('x\ny')
   })
+
+  it('carries an unreadable-checkbox flag through, and omits it otherwise', () => {
+    const flagged = mapAskQuestionToBlock('toolu_2', [{ ...qs[0], multiSelect: true, multiSelectUnverified: true }])
+    expect(flagged.questions[0].multiSelectUnverified).toBe(true)
+    expect(mapAskQuestionToBlock('toolu_3', qs).questions[0]).not.toHaveProperty('multiSelectUnverified')
+  })
 })

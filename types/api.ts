@@ -351,6 +351,8 @@ export interface AskQuestion {
   question: string
   header: string
   multiSelect: boolean
+  /** Screen-read only: the checkbox marker was unreadable, so the streamer refuses to answer it. */
+  multiSelectUnverified?: boolean
   options: AskOption[]
 }
 
