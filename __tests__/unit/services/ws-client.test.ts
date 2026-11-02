@@ -332,6 +332,38 @@ describe('WSClient – status listeners', () => {
     wsClient.connect('http://test.local', 'key')
     expect(listener).not.toHaveBeenCalled()
   })
+
+  // #886: `useActiveQuestion` resets on this transition, so an error-only
+  // socket death must reach status listeners just like a close does.
+  it('emits disconnected once when onerror fires alone', () => {
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.onopen!()
+    const listener = jest.fn()
+    const unsub = wsClient.onStatusChange(listener)
+
+    mockSocket.onerror!()
+
+    expect(listener.mock.calls).toEqual([['disconnected']])
+    unsub()
+  })
+
+  it('emits disconnected once and redials once when onerror is followed by onclose', () => {
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.onopen!()
+    const listener = jest.fn()
+    const unsub = wsClient.onStatusChange(listener)
+    // The platform keeps its own reference to the callback, so onclose can
+    // still arrive after onerror has retired the socket.
+    const staleOnClose = mockSocket.onclose!
+
+    mockSocket.onerror!()
+    staleOnClose()
+    jest.advanceTimersByTime(14_000)
+
+    expect(listener.mock.calls.filter(([s]) => s === 'disconnected')).toHaveLength(1)
+    expect(MockWebSocket).toHaveBeenCalledTimes(2)
+    unsub()
+  })
 })
 
 describe('WSClient – disconnect', () => {
