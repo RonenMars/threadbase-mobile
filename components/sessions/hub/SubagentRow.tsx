@@ -19,9 +19,8 @@ export function SubagentRow({ conv, ...rest }: ConvRowProps) {
         <View style={styles.activeDot} accessibilityLabel={t('subagents.active')} testID={`subagent-board-active-${conv.id}`} />
       ) : null}
       <View style={styles.body}>
-        <ConvRow conv={conv} {...rest} />
+        <ConvRow conv={conv} {...rest} trailing={type ? <Text style={styles.tag}>{type}</Text> : null} />
       </View>
-      {type ? <Text style={styles.tag}>{type}</Text> : null}
     </View>
   )
 }
