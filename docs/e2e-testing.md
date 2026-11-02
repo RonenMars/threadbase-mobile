@@ -125,9 +125,11 @@ and regenerate commands live in
 | `e2e/native-liquid-glass-settings-themes.yaml` | Settings viewport for every retained dark and light palette |
 
 ```bash
-node e2e/run-maestro.js test e2e/native-liquid-glass-visual.yaml
-node e2e/run-maestro.js test e2e/native-liquid-glass-settings-themes.yaml
+npm run test:e2e:visual:glass         # first-run frames
+npm run test:e2e:visual:glass-themes  # one Settings capture per palette
 ```
+
+Each script checks for a booted iOS simulator and a Release build for this `HEAD` before running its flow, as `test:e2e:mock` does, and passes `--rebuild-stale` (the same switch as `E2E_REBUILD_STALE=1`, as an argument so it works on Windows) so a stale build is rebuilt with `xcodebuild` instead of `expo run:ios`, which would hold Metro open and never reach Maestro.
 
 ## Running Tests
 
