@@ -263,9 +263,11 @@ the dev client over adb replaces a store install of the same signing identity, a
 vice versa (signature-mismatch installs are rejected; uninstall first with
 `adb uninstall com.ronenmars.threadbase`).
 
-Persistence across a same-bundle-id reinstall mirrors iOS: `SecureStore` keys tend
-to survive; `AsyncStorage` (server URLs, favorites, settings, session names) is
-wiped. Re-add servers after a swap.
+Persistence across a reinstall does not mirror iOS. The `SecureStore` preferences file
+(paired servers and their credentials) is excluded from Android backup and lives in
+app-private storage that Android deletes on uninstall, so expect to re-pair after a
+swap; not verified on a device. Details: [troubleshooting.md](troubleshooting.md) →
+"I reinstalled the app and my paired servers are still there".
 
 ---
 
