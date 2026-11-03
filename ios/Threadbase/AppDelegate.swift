@@ -1,6 +1,10 @@
 internal import Expo
 import React
 import ReactAppDependencyProvider
+#if canImport(FirebaseAppDistribution)
+import FirebaseAppDistribution
+import FirebaseCore
+#endif
 
 @main
 class AppDelegate: ExpoAppDelegate {
@@ -28,8 +32,46 @@ class AppDelegate: ExpoAppDelegate {
       launchOptions: launchOptions)
 #endif
 
+#if canImport(FirebaseAppDistribution)
+    checkForQAUpdate()
+#endif
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+#if canImport(FirebaseAppDistribution)
+  // QA builds only: the pod is linked just when ship-qa.sh asks for it, and the
+  // Info.plist values are empty in every other build.
+  private func checkForQAUpdate() {
+    let info = Bundle.main.infoDictionary
+    guard let appID = info?["TBFirebaseAppID"] as? String, !appID.isEmpty,
+          let apiKey = info?["TBFirebaseAPIKey"] as? String, !apiKey.isEmpty,
+          let projectID = info?["TBFirebaseProjectID"] as? String, !projectID.isEmpty
+    else { return }
+    // A Firebase app ID is `1:<project number>:ios:<hash>`, and the project
+    // number is the sender ID FirebaseOptions wants.
+    let parts = appID.split(separator: ":")
+    guard parts.count > 1 else { return }
+
+    let options = FirebaseOptions(googleAppID: appID, gcmSenderID: String(parts[1]))
+    options.apiKey = apiKey
+    options.projectID = projectID
+    FirebaseApp.configure(options: options)
+
+    AppDistribution.appDistribution().checkForUpdate { [weak self] release, _ in
+      guard let release else { return }
+      let alert = UIAlertController(
+        title: "New QA build \(release.displayVersion) (\(release.buildVersion))",
+        message: release.releaseNotes,
+        preferredStyle: .alert)
+      alert.addAction(UIAlertAction(title: "Later", style: .cancel))
+      alert.addAction(UIAlertAction(title: "Update", style: .default) { _ in
+        UIApplication.shared.open(release.downloadURL)
+      })
+      self?.window?.rootViewController?.present(alert, animated: true)
+    }
+  }
+#endif
 
   // Linking API
   public override func application(
