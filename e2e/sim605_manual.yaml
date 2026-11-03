@@ -1,0 +1,104 @@
+appId: com.ronenmars.threadbase
+env:
+  TOKEN: pt_goodtoken
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-cta"
+    timeout: 30000
+- takeScreenshot: sim605_01_language
+- tapOn:
+    id: "onboarding-language-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- takeScreenshot: sim605_02_welcome
+- tapOn:
+    id: "onboarding-welcome-cta"
+- waitForAnimationToEnd
+- assertVisible:
+    id: "onboarding-connect-qr-card"
+- assertVisible:
+    id: "onboarding-connect-paste-card"
+- takeScreenshot: sim605_03_choose
+- tapOn:
+    id: "onboarding-connect-paste-card"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding-connect-url-input"
+- inputText: "http://localhost:7071"
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
+- tapOn:
+    id: "onboarding-connect-token-input"
+- inputText: ${TOKEN}
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
+- waitForAnimationToEnd
+- takeScreenshot: sim605_04_form_filled
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- extendedWaitUntil:
+    visible: "Add server"
+    timeout: 10000
+    optional: true
+- takeScreenshot: sim605_04b_after_connect
+- runFlow:
+    when:
+      visible: "Add server"
+    commands:
+      - tapOn: "Add server"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-notifications-cta"
+    timeout: 10000
+- takeScreenshot: sim605_05_notifications_step
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- tapOn: "Push notifications.*"
+- waitForAnimationToEnd
+- takeScreenshot: sim605_06_permission_prompt
+# The system alert is outside the app's a11y tree on this runtime, so tap its Allow button by position.
+- tapOn:
+    point: "68%,59%"
+- waitForAnimationToEnd
+- takeScreenshot: sim605_07_after_prompt
+- tapOn:
+    id: "onboarding-notifications-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+- takeScreenshot: sim605_08_done
+- tapOn:
+    id: "onboarding-done-cta"
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 10000
+- takeScreenshot: sim605_09_hub
+- launchApp
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 15000
+- takeScreenshot: sim605_10_relaunch_hub
