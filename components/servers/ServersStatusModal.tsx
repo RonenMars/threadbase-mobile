@@ -228,8 +228,9 @@ function ServerMenuModal({ visible, serverLabel, onClose, onRefresh, onEdit, onD
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable style={[styles.dropBackdrop, directionStyle]} onPress={onClose}>
-        <Pressable style={styles.dropSheet} onPress={() => {}}>
+      {/* Pressable is accessible by default, which makes iOS fold the whole subtree into one VoiceOver element. */}
+      <Pressable style={[styles.dropBackdrop, directionStyle]} onPress={onClose} accessible={false}>
+        <Pressable style={styles.dropSheet} onPress={() => {}} accessible={false}>
           <Text style={[styles.dropTitle, ltrContentStyle]} numberOfLines={1}>{serverLabel}</Text>
           <View style={styles.dropDivider} />
           <TouchableOpacity style={styles.dropItem} onPress={onEdit}>
@@ -318,8 +319,8 @@ export function ServersStatusModal({ visible, onClose, onRetrySessions }: Props)
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable style={[styles.backdrop, directionStyle]} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+      <Pressable style={[styles.backdrop, directionStyle]} onPress={onClose} accessible={false}>
+        <Pressable style={styles.sheet} onPress={() => {}} accessible={false}>
           <View style={styles.header}>
             <Cloud size={18} color={theme.text.secondary} weight="regular" />
           <Text style={[styles.title, copyStyle]}>
