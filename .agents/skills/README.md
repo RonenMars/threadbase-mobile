@@ -21,6 +21,7 @@ registering anything. Do not add a skill to `AGENTS.md` just to make it visible;
 | [`ship-expo-cloud`](ship-expo-cloud/SKILL.md) | EAS cloud build and submit — **only** when the user types `/ship-expo-cloud` |
 | [`ship-fastlane`](ship-fastlane/SKILL.md) | Vanilla fastlane TestFlight pipeline — **only** when the user types `/ship-fastlane` |
 | [`setup-cloudflared`](setup-cloudflared/SKILL.md) | Exposing Metro over HTTPS through a Cloudflare tunnel for remote dev |
+| [`add-provider`](add-provider/SKILL.md), [`integration-by-batches`](integration-by-batches/SKILL.md) | Mirror of the shared `threadbase-skills` plugin from the threadbase umbrella. Never hand-edit; the `Skills mirror` workflow fails a PR that drifts from the pinned commit |
 | `_shared` | Not a skill — shared fragments the ship skills include |
 
 The three release skills overlap deliberately and their descriptions carry the routing rules, because

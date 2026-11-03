@@ -1,9 +1,11 @@
 ---
-name: add-provider
-description: Add a new agent CLI start provider in threadbase-mobile (browse chips, health parser, badges, filters, i18n). Use when adding Cursor, Codex, Gemini, Amp, Aider, OpenCode, Goose, ClawCode, Hermes, cursor, start chips, provider badges, or when the user says add a provider. Live PTY and history indexing are other repos — see Companions.
+name: add-provider-mobile
+description: Add a new agent CLI start provider in threadbase-mobile (browse chips, health parser, badges, filters, i18n). Use when adding Cursor, Codex, Gemini, Amp, Aider, OpenCode, Goose, ClawCode, Hermes, cursor, start chips, provider badges, or when the user says add a provider. Live PTY and history indexing are other repos — see Companions. The shared workflow is `threadbase-skills:add-provider`.
 ---
 
 # Add a provider (mobile)
+
+The cross-repo workflow (wire-name convention, intake rules, iron rules, land order) lives in the shared skill `threadbase-skills:add-provider`. Read it first; this file holds only this repo's file-level steps and verify commands.
 
 This repo is the **phone chips** half. Without it, a streamer that accepts the new `provider` is unused: browse will not send that name.
 
@@ -14,10 +16,10 @@ Scanner, streamer, and mobile each declare `ProviderName`. They are not linked. 
 | Half | Repo | Skill |
 |---|---|---|
 | Live PTY | [`threadbase-streamer`](https://github.com/RonenMars/threadbase-streamer) | [`.claude/skills/add-provider/SKILL.md`](https://github.com/RonenMars/threadbase-streamer/blob/HEAD/.claude/skills/add-provider/SKILL.md) |
-| Phone chips | `threadbase-mobile` (this repo) | `.claude/skills/add-provider/` |
+| Phone chips | `threadbase-mobile` (this repo) | `.claude/skills/add-provider-mobile/` |
 | History index | [`threadbase-scanner`](https://github.com/RonenMars/threadbase-scanner) | [`.claude/skills/add-provider/SKILL.md`](https://github.com/RonenMars/threadbase-scanner/blob/HEAD/.claude/skills/add-provider/SKILL.md) |
 
-**Keep companions in sync.** These three skills are one workflow. Changing this file (intake rules, wire-name convention, land order, companion links, or out-of-scope) means updating the other two in the same change set — PRs in `threadbase-streamer`, `threadbase-mobile`, and `threadbase-scanner`. Do not leave a companion on stale steps or a moved path.
+**Keep companions in sync.** Changing this repo's steps alongside the shared skill's intake rules, wire-name convention or land order means updating the streamer and scanner skills in the same change set. Do not leave a companion on stale steps or a moved path.
 
 Mobile-only against an old streamer fail-opens the chip and then 501s on start. **Merge the streamer PR first** unless this is a badge-only name that history already returns.
 
