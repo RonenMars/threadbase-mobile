@@ -34,8 +34,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   const { t } = useTranslation('common')
   const { styles, theme } = useThemedStyles(makeStyles)
   const q = block.questions[0]
-  // Structured questions arrive unselected; PTY scrape carries the ❯ cursor row.
-  const initialSelected = block.source === 'pty' ? block.selectedIndex ?? null : null
+  // Structured questions arrive unselected; PTY scrape and permission gates carry the cursor row.
+  const cursorRow = block.source === 'pty' || block.source === 'permission' ? block.selectedIndex ?? null : null
+  const initialSelected = cursorRow
   const [selected, setSelected] = useState<number | null>(initialSelected)
 
   // PTY blocks update in place as the terminal cursor moves, so they resync
@@ -43,11 +44,14 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onCanc
   // prompt re-renders this same mounted card rather than a fresh one, so the
   // previous answer's highlight has to be dropped by hand. Keyed on the prompt's
   // content, not on the block object: a repaint is a new object carrying the same
-  // prompt, and must not wipe a selection the user just made.
+  // prompt, and must not wipe a selection the user just made. A permission gate's
+  // cursor only seeds a new prompt; unlike the PTY cursor it is not re-applied when
+  // it moves, because the gate re-broadcasts after the user's own tap.
   const promptKey = `${q.question} ${q.options.map(o => o.label).join(' ')}`
-  const ptyCursor = block.source === 'pty' ? block.selectedIndex ?? null : null
+  const ptyCursor = block.source === 'pty' ? cursorRow : null
   useEffect(() => {
-    setSelected(ptyCursor)
+    setSelected(cursorRow)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cursorRow reseeds on a new prompt only (see above)
   }, [promptKey, ptyCursor])
 
   const locked = busy || ghost

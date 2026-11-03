@@ -2,6 +2,7 @@ import { render, fireEvent } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
+import { mapPermissionToBlock } from '@/utils/mapPermissionToBlock'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 import { THEMES, type Theme } from '@/constants/theme'
 
@@ -176,6 +177,50 @@ describe('QuestionCard', () => {
     await rerender(<QuestionCard block={{ ...gate, selectedIndex: 1 }} onSelect={jest.fn()} />)
     expect(getByText('No')).toHaveStyle({ fontWeight: '500' })
   })
+  describe('a permission gate that names its cursor row', () => {
+    const gate = mapPermissionToBlock(
+      'Do you trust the files in this folder?',
+      [{ index: 1, label: 'Yes, I trust this folder' }, { index: 2, label: 'No, exit' }],
+      2
+    )
+
+    it('shows the cursor row as selected before any tap', async () => {
+      const { getAllByRole } = await render(<QuestionCard block={gate} onSelect={jest.fn()} />)
+      const rows = getAllByRole('button')
+      expect(rows[1].props.accessibilityState).toEqual(expect.objectContaining({ selected: true }))
+      expect(rows[0].props.accessibilityState).toEqual(expect.objectContaining({ selected: false }))
+    })
+
+    it('still sends the tapped row, not the cursor row', async () => {
+      const onSelect = jest.fn()
+      const { getAllByRole } = await render(<QuestionCard block={gate} onSelect={onSelect} />)
+      await fireEvent.press(getAllByRole('button')[0])
+      expect(onSelect).toHaveBeenCalledWith(0, 0)
+    })
+
+    it('lets a tap replace the cursor row and keeps it through a repaint that moves the cursor', async () => {
+      const three = mapPermissionToBlock(
+        'Allow this command?',
+        [{ index: 1, label: 'Yes' }, { index: 2, label: 'Yes, always' }, { index: 3, label: 'No' }],
+        2
+      )
+      const { getAllByRole, rerender } = await render(<QuestionCard block={three} onSelect={jest.fn()} />)
+      await fireEvent.press(getAllByRole('button')[0])
+      await rerender(<QuestionCard block={{ ...three, selectedIndex: 2 }} onSelect={jest.fn()} />)
+      const rows = getAllByRole('button')
+      expect(rows[0].props.accessibilityState).toEqual(expect.objectContaining({ selected: true }))
+      expect(rows[2].props.accessibilityState).toEqual(expect.objectContaining({ selected: false }))
+    })
+
+    it('seeds the cursor row again for a different prompt', async () => {
+      const next = mapPermissionToBlock('Allow this command?', [{ index: 1, label: 'Yes' }, { index: 2, label: 'No' }], 1)
+      const { getAllByRole, rerender } = await render(<QuestionCard block={gate} onSelect={jest.fn()} />)
+      await fireEvent.press(getAllByRole('button')[0])
+      await rerender(<QuestionCard block={next} onSelect={jest.fn()} />)
+      expect(getAllByRole('button')[0].props.accessibilityState).toEqual(expect.objectContaining({ selected: true }))
+    })
+  })
+
   // A row only cancels a travelling touch once Pressability has measured its
   // responder region, and that measure is async — under test it never resolves,
   // which is exactly the device case this guard exists for: `onResponderMove`
