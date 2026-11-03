@@ -52,7 +52,7 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
 
   return (
     <>
-      <SwipeableRow leading={rowActions.swipe.leading} trailing={rowActions.swipe.trailing}>
+      <SwipeableRow leading={rowActions.swipe.leading} trailing={rowActions.swipe.trailing} compact>
       <ConversationListItem
         title={title}
         timestamp={activityTimestamp}
