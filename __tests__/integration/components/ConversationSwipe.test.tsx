@@ -3,6 +3,7 @@ import { fireEvent, screen } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConvRow } from '@/components/sessions/hub/ConvRow'
 import { SessionRow } from '@/components/sessions/hub/SessionRow'
+import { ConversationList } from '@/components/conversation/ConversationList'
 import { renderWithI18n } from '@/test-utils/render'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -71,5 +72,26 @@ describe('swipe on project hub rows', () => {
     await renderRow(<SessionRow session={session({ ownership: 'external' })} />)
     expect(screen.getByTestId('session-swipe-favorite')).toBeTruthy()
     expect(screen.queryByTestId('session-swipe-rename')).toBeNull()
+  })
+})
+
+describe('swipe on the all-conversations list', () => {
+  it('favorites a conversation row and offers nothing else', async () => {
+    await renderRow(
+      <ConversationList
+        conversations={[conv]}
+        onRefresh={jest.fn()}
+        refreshing={false}
+        onEndReached={jest.fn()}
+        searchQuery=""
+        onSearchChange={jest.fn()}
+        searchOpen={false}
+      />,
+    )
+    expect(screen.queryByTestId('session-swipe-rename')).toBeNull()
+    await fireEvent.press(screen.getByTestId('conversation-swipe-favorite'))
+    expect(useQuickAccessStore.getState().favorites).toEqual([
+      expect.objectContaining({ type: 'conversation', id: 'server-1::conversation::c1', label: 'Refactor the parser' }),
+    ])
   })
 })

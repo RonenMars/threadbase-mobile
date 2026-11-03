@@ -25,6 +25,8 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
+import { useConversationSwipe } from '@/hooks/useConversationSwipe'
 import type { MultiConversation } from '@/types/api'
 import { conversationHref } from '@/lib/conversationHref'
 import { useTextDirectionStyle } from '@/lib/rtl'
@@ -62,8 +64,10 @@ const ConversationRow = React.memo(function ConversationRow({
   const serverIndicator = useSettingsStore((s) => s.rowServerIndicator)
   const chipVariant = useSettingsStore((s) => s.rowServerChipVariant)
   const serverColor = useServersStore((s) => (c.serverId ? s.servers[c.serverId]?.color : undefined))
+  const swipe = useConversationSwipe(c, c.title)
 
   return (
+    <SwipeableRow leading={swipe.leading}>
     <ConversationListItem
       testID={`conversation-row-${c.id}`}
       title={c.title}
@@ -89,6 +93,7 @@ const ConversationRow = React.memo(function ConversationRow({
         router.push(conversationHref(c.id, c.serverId, highlight))
       }}
     />
+    </SwipeableRow>
   )
 })
 
