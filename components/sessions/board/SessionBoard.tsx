@@ -75,13 +75,20 @@ export function SessionBoard({
   const board = useMemo(() => {
     const byParent = new Map(groups.map((g) => [g.parentId, g]))
     const claimed = new Set<string>()
-    const toCard = (entry: NowEntry): BoardCardModel => {
-      const group = subagentParentKeys(entry.item).map((k) => byParent.get(k)).find((g) => g != null)
+    const groupOf = (entry: NowEntry) => subagentParentKeys(entry.item).map((k) => byParent.get(k)).find((g) => g != null)
+    const toCard = ({ entry }: { entry: NowEntry }): BoardCardModel => {
+      const group = groupOf(entry)
       if (group) claimed.add(group.parentId)
       const key = `${entry.item.kind}:${entry.item.item.serverId}::${entry.item.item.id}`
       return { kind: 'entry', key, entry, group }
     }
-    const buckets = bucketBoard(entries, order, direction)
+    // Running sub-agents pull their parent into Working whatever its own tier, bar Needs you.
+    // Only the column moves: the card keeps its own tier for its badge.
+    const placed = entries.map((entry) => {
+      const busy = entry.tier !== 'needsYou' && (groupOf(entry)?.activeCount ?? 0) > 0
+      return { item: entry.item, tier: busy ? ('working' as const) : entry.tier, entry }
+    })
+    const buckets = bucketBoard(placed, order, direction)
     const out: Record<BoardColumnId, BoardCardModel[]> = {
       needsYou: buckets.needsYou.map(toCard),
       working: buckets.working.map(toCard),

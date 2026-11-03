@@ -5,6 +5,9 @@ import type { Conversation, ConversationPage } from '@/types/api'
 
 const LIMIT = 100
 const POLL_MS = 5000
+// Slow poll while nothing runs, so a new wave of sub-agents shows without a refocus.
+// react-query skips interval refetches while the app is backgrounded (focusManager via AppState).
+const IDLE_POLL_MS = 30_000
 
 export interface BoardSubagent {
   serverId: string
@@ -22,7 +25,7 @@ export function useAllSubagents(serverIds: readonly string[], opts?: { enabled?:
       queryKey: ['subagents-board', serverId] as const,
       enabled: opts?.enabled ?? true,
       refetchInterval: (q: { state: { data?: { rows: Conversation[] } } }) =>
-        q.state.data?.rows.some((c) => c.subagentActive === true) ? POLL_MS : (false as const),
+        q.state.data?.rows.some((c) => c.subagentActive === true) ? POLL_MS : IDLE_POLL_MS,
       queryFn: async ({ signal }: { signal?: AbortSignal }) => {
         const api = createApiForServer(serverId)
         const raw = await api.get<ConversationPage | Conversation[]>(
