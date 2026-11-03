@@ -52,8 +52,6 @@ interface Props {
   /** `state` sections the list; the other two flatten it into one ordered run. */
   order?: SortBy
   direction?: SortOrder
-  /** Servers still indexing history — live cards stay, conversation rows become skeletons. */
-  warmingServerIds?: string[]
   onNewSession?: () => void
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
   onRetryServer?: (serverId: string) => void
@@ -191,7 +189,6 @@ export const NowList = React.memo(function NowList({
   ListHeaderComponent,
   order = 'state',
   direction: sortDirection = 'desc',
-  warmingServerIds = [],
   onNewSession,
   onScroll,
   onRetryServer,
@@ -216,7 +213,10 @@ export const NowList = React.memo(function NowList({
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
   const multiServer = activeServerIds.length > 1
-  const warming = useMemo(() => new Set(warmingServerIds), [warmingServerIds])
+  const warming = useMemo(
+    () => new Set(activeServerIds.filter((id) => fetchStatuses[id]?.status === 'warming_up')),
+    [activeServerIds, fetchStatuses],
+  )
 
   const entries = useMemo(
     () => buildNowEntries(items, searchQuery, conversationsFromServer, names, nameOrigins),

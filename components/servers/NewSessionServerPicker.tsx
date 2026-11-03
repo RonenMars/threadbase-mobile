@@ -8,7 +8,7 @@ import BottomSheet, {
 import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import type { ServerConfig } from '@/types/api'
-import type { ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { useGlassSheetBackground } from '@/components/ui/GlassSheet'
@@ -24,7 +24,6 @@ interface Props {
   visible: boolean
   serverIds: string[]
   servers: Record<string, ServerConfig>
-  fetchStatuses: Record<string, ServerFetchStatusEntry>
   onPick: (serverId: string) => void
   onClose: () => void
 }
@@ -38,7 +37,8 @@ function renderBackdrop(props: BottomSheetBackdropProps) {
   return <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} pressBehavior="close" />
 }
 
-export function NewSessionServerPicker({ visible, serverIds, servers, fetchStatuses, onPick, onClose }: Props) {
+export function NewSessionServerPicker({ visible, serverIds, servers, onPick, onClose }: Props) {
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const theme = useTheme()
   const isGlass = useIsGlass()
   const glassBackground = useGlassSheetBackground()

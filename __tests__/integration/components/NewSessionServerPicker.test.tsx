@@ -3,6 +3,7 @@ import { StyleSheet, type ViewStyle } from 'react-native'
 import { render, fireEvent } from '@testing-library/react-native'
 import { NewSessionServerPicker } from '@/components/servers/NewSessionServerPicker'
 import { DirectionRoot } from '@/lib/direction-root'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { ServerConfig } from '@/types/api'
 import i18n from '@/test-utils/i18n-setup'
 
@@ -40,6 +41,7 @@ describe('NewSessionServerPicker', () => {
   })
 
   afterEach(async () => {
+    useServerFetchStatusStore.getState().reset()
     await i18n.changeLanguage('en')
   })
   it('renders nothing when not visible', async () => {
@@ -47,7 +49,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible={false}
         serverIds={['alpha', 'beta']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -61,7 +62,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -84,7 +84,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -105,7 +104,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -124,7 +122,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'missing']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
@@ -140,7 +137,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={onPick}
         onClose={jest.fn()}
@@ -160,7 +156,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={onPick}
         onClose={onClose}
@@ -185,8 +180,7 @@ describe('NewSessionServerPicker', () => {
         <NewSessionServerPicker
           visible
           serverIds={['alpha']}
-          fetchStatuses={{}}
-        servers={servers}
+          servers={servers}
           onPick={jest.fn()}
           onClose={jest.fn()}
         />
@@ -212,11 +206,13 @@ describe('NewSessionServerPicker', () => {
 
   it('marks an unreachable server and still lets it be picked', async () => {
     const onPick = jest.fn()
+    useServerFetchStatusStore.setState({
+      statuses: { beta: { status: 'error', error: 'unreachable', lastCheckedAt: 0 } },
+    })
     const { getByTestId, getByText } = await render(
       <NewSessionServerPicker
         visible
         serverIds={['alpha', 'beta']}
-        fetchStatuses={{ beta: { status: 'error', error: 'unreachable', lastCheckedAt: 0 } }}
         servers={servers}
         onPick={onPick}
         onClose={jest.fn()}
@@ -237,7 +233,6 @@ describe('NewSessionServerPicker', () => {
       <NewSessionServerPicker
         visible
         serverIds={['alpha']}
-        fetchStatuses={{}}
         servers={servers}
         onPick={jest.fn()}
         onClose={jest.fn()}
