@@ -9,6 +9,7 @@ import type { MultiSession } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { TreeNode, FlatNode } from './types'
 import i18n from '@/lib/i18n'
+import { liveExternalCountOf } from '@/lib/externalSession'
 
 // Brand palette for the tree leaf indicator. Live (running / waiting_input)
 // gets amber, the brand "now" colour. Idle gets blue, the brand "thread /
@@ -45,6 +46,7 @@ export function buildTree(
     children: new Map(),
     sessions: [],
     conversationCount: 0,
+    liveExternalCount: 0,
     conversationActivityMs: 0,
     totalCount: 0,
     directCount: 0,
@@ -62,6 +64,7 @@ export function buildTree(
           children: new Map(),
           sessions: [],
           conversationCount: 0,
+          liveExternalCount: 0,
           conversationActivityMs: 0,
           totalCount: 0,
           directCount: 0,
@@ -84,6 +87,7 @@ export function buildTree(
     const node = ensurePath(splitPath(summary.path))
     node.projectPath = summary.path
     node.conversationCount += summary.conversationCount
+    node.liveExternalCount += liveExternalCountOf(summary)
     node.conversationActivityMs = Math.max(
       node.conversationActivityMs,
       toMs(summary.lastActivity),
@@ -170,8 +174,9 @@ export function latestActivityLabel(node: TreeNode): string {
 }
 
 export function activeSessionColor(node: TreeNode): string | null {
-  if (node.sessions.length === 0) return null
+  if (node.sessions.length === 0 && node.liveExternalCount === 0) return null
   const tiers = new Set(node.sessions.map((s) => deriveSessionPresentation(s).tier))
+  if (node.liveExternalCount > 0) tiers.add('observed')
   const tier = TIER_PRIORITY.find((candidate) => tiers.has(candidate))
   return tier ? TIER_COLOR[tier] : null
 }
@@ -182,7 +187,7 @@ export function activeSessionColor(node: TreeNode): string | null {
  * dot should pulse.
  */
 export function hasLiveSession(node: TreeNode): boolean {
-  return node.sessions.some(isPresentationLive)
+  return node.liveExternalCount > 0 || node.sessions.some(isPresentationLive)
 }
 
 function walkSubtree(node: TreeNode, visit: (n: TreeNode) => void) {
@@ -204,6 +209,7 @@ export function subtreeActiveColor(node: TreeNode): string | null {
   const tiers = new Set<SessionTier>()
   walkSubtree(node, (n) => {
     for (const session of n.sessions) tiers.add(deriveSessionPresentation(session).tier)
+    if (n.liveExternalCount > 0) tiers.add('observed')
   })
   const tier = TIER_PRIORITY.find((candidate) => tiers.has(candidate))
   return tier ? TIER_COLOR[tier] : null
