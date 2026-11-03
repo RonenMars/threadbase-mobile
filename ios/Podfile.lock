@@ -230,7 +230,7 @@ PODS:
     - ExpoModulesCore
   - ExpoHaptics (57.0.1):
     - ExpoModulesCore
-  - ExpoImageManipulator (57.0.10):
+  - ExpoImageManipulator (57.0.20):
     - ExpoModulesCore
   - ExpoImagePicker (57.0.10):
     - ExpoModulesCore
@@ -3119,7 +3119,7 @@ SPEC CHECKSUMS:
   ExpoFont: f8198a952ba2ff53c9b393b5269ea435f232cfc3
   ExpoGlassEffect: 4b62afb489e6b84357701737ce002137c9d5fdbc
   ExpoHaptics: 4503d2da51ff7109712ccdfe0e4939f66818183e
-  ExpoImageManipulator: a41d76647f5e456053b437ab69f2d0f067f4597b
+  ExpoImageManipulator: e795a8d623905815a335edda5c967a88e25b5539
   ExpoImagePicker: 945c7f41749d99266d220a67118ae769b4d2af19
   ExpoKeepAwake: 72af0b3be3615e59bc819d26061ff4e06b155ee0
   ExpoLinearGradient: 903b3f5fe566c666ff78b2599add51d094483613
