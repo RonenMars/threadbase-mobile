@@ -78,7 +78,8 @@
     "tokens_two": "שני טוקנים",
     "tokens_other": "{{count}} טוקנים",
     "errorBadge": "שגיאה",
-    "toolFallback": "כלי"
+    "toolFallback": "כלי",
+    "queued": "בתור"
   },
   "thinking": {
     "label": "חשיבה",

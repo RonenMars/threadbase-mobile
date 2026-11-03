@@ -84,7 +84,8 @@
     "tokens_many": "{{count}} توكنًا",
     "tokens_other": "{{count}} توكن",
     "errorBadge": "خطأ",
-    "toolFallback": "أداة"
+    "toolFallback": "أداة",
+    "queued": "في قائمة الانتظار"
   },
   "thinking": {
     "label": "الاستدلال",
