@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@
 import { AppState } from 'react-native'
 import { createApiForServer } from '@/services/api-client'
 import { traceHistoryPayload, isHistoryPayloadTracingEnabled } from '@/services/history-payload-trace'
-import { withSilentRetries } from '@/services/error-policy'
+import { queryRetryDelayWithNotFoundGrace, shouldRetryQueryWithNotFoundGrace, withSilentRetries } from '@/services/error-policy'
 import { getServerWarmupState } from '@/services/server-warmup'
 import { getEtag, setEtag, deleteEtag } from '@/services/etag-store'
 import { QUERY_GC_TIME, SEVEN_DAYS } from '@/services/query-client'
@@ -618,6 +618,14 @@ export function useConversation(
       return cursor != null ? { resume: cursor } : undefined
     },
     enabled: Boolean(serverId && id) && (opts?.enabled ?? true),
+    // The byte-bounded seed view is only opened by the session screen, where the
+    // transcript may not exist yet (older streamers 404 until the first turn
+    // lands), so a 404 there gets a bounded quiet retry instead of the error
+    // row. Spread, not `retry: undefined`, which would erase the client default.
+    ...(maxBytes != null && {
+      retry: shouldRetryQueryWithNotFoundGrace,
+      retryDelay: queryRetryDelayWithNotFoundGrace,
+    }),
   })
 
   const queryKeyHash = JSON.stringify(queryKey)

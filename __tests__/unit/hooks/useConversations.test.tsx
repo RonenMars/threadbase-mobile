@@ -8,6 +8,8 @@ import {
   useConversationSearch,
 } from '@/hooks/useConversations'
 import { __resetTriggerGuardForTests } from '@/hooks/conversationCursor'
+import { NotFoundError } from '@/services/api-client'
+import { NOT_FOUND_GRACE_DELAY_MS, NOT_FOUND_GRACE_RETRY_COUNT, queryRetryDelay, shouldRetryQuery } from '@/services/error-policy'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { createWrapper } from '@/test-utils'
@@ -61,6 +63,7 @@ const metaHandlers: Record<
 > = {}
 
 jest.mock('@/services/api-client', () => ({
+  ...jest.requireActual('@/services/api-client'),
   createApiForServer: (serverId: string) => ({
     get: (path: string, _opts?: { signal?: AbortSignal }) => {
       const h = handlers[serverId]
@@ -897,6 +900,77 @@ describe('useConversation — retention gcTime', () => {
 
     const q = qc.getQueryCache().find({ queryKey: ['conversation', 'srv_gc_anchor', 'c_gca', 'anchor-150'] })
     expect(q?.gcTime).toBe(1000 * 60 * 5)
+  })
+})
+
+describe('useConversation — 404 grace on the session seed view', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  // The real client defaults: shouldRetryQuery never retries a 404 on its own.
+  function realPolicyWrapper() {
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: shouldRetryQuery, retryDelay: queryRetryDelay } },
+    })
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    return { qc, wrapper }
+  }
+
+  it('retries a 404 quietly until the conversation exists, never reaching error state', async () => {
+    setActiveServers(['srv_g'])
+    let calls = 0
+    metaHandlers.srv_g = () => {
+      calls += 1
+      if (calls <= 3) return Promise.reject(new NotFoundError('/api/conversations/c_g'))
+      return Promise.resolve({ status: 200, etag: '"v1"', body: rawConversationPage('c_g', ['hi']) })
+    }
+    const { wrapper } = realPolicyWrapper()
+    const { result } = await renderHook(
+      () => useConversation('srv_g', 'c_g', { maxBytes: 524_288 }),
+      { wrapper },
+    )
+    for (let i = 0; i < 3; i++) {
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(NOT_FOUND_GRACE_DELAY_MS)
+      })
+      expect(result.current.error).toBeNull()
+    }
+    await waitFor(() => expect(result.current.data?.messages).toHaveLength(1))
+    expect(calls).toBe(4)
+  })
+
+  it('still surfaces a 404 that outlasts the grace period', async () => {
+    setActiveServers(['srv_g2'])
+    let calls = 0
+    metaHandlers.srv_g2 = () => {
+      calls += 1
+      return Promise.reject(new NotFoundError('/api/conversations/c_g2'))
+    }
+    const { wrapper } = realPolicyWrapper()
+    const { result } = await renderHook(
+      () => useConversation('srv_g2', 'c_g2', { maxBytes: 524_288 }),
+      { wrapper },
+    )
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(NOT_FOUND_GRACE_DELAY_MS * NOT_FOUND_GRACE_RETRY_COUNT)
+    })
+    await waitFor(() => expect(result.current.error).toBeInstanceOf(NotFoundError))
+    expect(calls).toBe(NOT_FOUND_GRACE_RETRY_COUNT + 1)
+  })
+
+  it('does not retry a 404 on a conversation opened outside a session (no maxBytes)', async () => {
+    setActiveServers(['srv_g3'])
+    let calls = 0
+    metaHandlers.srv_g3 = () => {
+      calls += 1
+      return Promise.reject(new NotFoundError('/api/conversations/c_g3'))
+    }
+    const { wrapper } = realPolicyWrapper()
+    const { result } = await renderHook(() => useConversation('srv_g3', 'c_g3'), { wrapper })
+    await waitFor(() => expect(result.current.error).toBeInstanceOf(NotFoundError))
+    expect(calls).toBe(1)
   })
 })
 

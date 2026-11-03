@@ -88,6 +88,26 @@ export function shouldRetryQuery(failureCount: number, error: unknown): boolean 
   return failureCount < QUERY_RETRY_COUNT
 }
 
+/** Flat spacing and cap for the session-startup 404 grace: 6 x 2s = 12s, the
+ * longest the create race was measured to take (issue #956). */
+export const NOT_FOUND_GRACE_DELAY_MS = 2000
+export const NOT_FOUND_GRACE_RETRY_COUNT = 6
+
+/**
+ * `shouldRetryQuery` plus a bounded retry of a 404. For a conversation read made
+ * while a session is starting, the transcript may not exist yet, so a 404 is
+ * "not created yet" rather than "gone". Past the cap it is reported as usual.
+ */
+export function shouldRetryQueryWithNotFoundGrace(failureCount: number, error: unknown): boolean {
+  if (isNotFoundError(error)) return failureCount < NOT_FOUND_GRACE_RETRY_COUNT
+  return shouldRetryQuery(failureCount, error)
+}
+
+/** TanStack Query `retryDelay` — pairs with `shouldRetryQueryWithNotFoundGrace`. */
+export function queryRetryDelayWithNotFoundGrace(failureCount: number, error: unknown): number {
+  return isNotFoundError(error) ? NOT_FOUND_GRACE_DELAY_MS : queryRetryDelay(failureCount, error)
+}
+
 /** TanStack Query `retryDelay` — pairs with `shouldRetryQuery`. */
 export function queryRetryDelay(failureCount: number, error: unknown): number {
   if (isAuthStatus(error)) return AUTH_RETRY_DELAY_MS
