@@ -34,6 +34,11 @@ appId: com.ronenmars.threadbase
       id: "filter-sort-sheet"
     timeout: 5000
 
+# The toggle is the sheet's last item, below the fold since the Show/Agent/
+# Servers sections grew the sheet.
+- scrollUntilVisible:
+    element:
+      id: "filter-sort-tree-view-toggle"
 - tapOn:
     id: "filter-sort-tree-view-toggle"
 
