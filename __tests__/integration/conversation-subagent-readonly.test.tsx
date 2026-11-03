@@ -61,7 +61,9 @@ describe('conversation detail — sub-agent transcript', () => {
   it('hides Resume and the sub-agent section', async () => {
     mockMetaRef.current = { parentConversationId: 'parent-1' }
     const r = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
-    await waitFor(() => expect(r.getByTestId('conversation-search-btn')).toBeTruthy())
+    // The search button also renders in the cold-load skeleton, so it cannot signal that the
+    // loaded screen is up; the history list only mounts once the conversation has resolved.
+    await waitFor(() => expect(r.getByTestId('conversation-history-list')).toBeTruthy())
     expect(r.queryByTestId('resume-button')).toBeNull()
     expect(r.queryByTestId('conversation-bottom-bar')).toBeNull()
     expect(r.queryByTestId('subagent-section')).toBeNull()
