@@ -48,7 +48,7 @@ describe('app.config.js Sentry plugin props', () => {
     ]);
   });
 
-  it('keeps the Sentry plugin props and ships no Live Activity plugins after the rewrite', () => {
+  it('keeps Live Activity plugin order from app.json after the rewrite', () => {
     process.env.SENTRY_ORG = 'ronen-mars';
     process.env.SENTRY_PROJECT = 'threadbase';
 
@@ -60,8 +60,11 @@ describe('app.config.js Sentry plugin props', () => {
       SENTRY_PLUGIN,
       { organization: 'ronen-mars', project: 'threadbase' },
     ]);
-    expect(names).not.toContain('expo-widgets');
-    expect(names).not.toContain('./plugins/withLiveActivityTarget');
-    expect(names).not.toContain('./plugins/withLiveActivityLogo');
+    expect(names.indexOf('expo-widgets')).toBeGreaterThan(
+      names.indexOf('./plugins/withLiveActivityTarget'),
+    );
+    expect(names.indexOf('./plugins/withLiveActivityTarget')).toBeGreaterThan(
+      names.indexOf('./plugins/withLiveActivityLogo'),
+    );
   });
 });

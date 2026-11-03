@@ -189,11 +189,6 @@
     "ws": "^8.21.1"
   },
   "expo": {
-    "autolinking": {
-      "exclude": [
-        "expo-widgets"
-      ]
-    },
     "install": {
       "exclude": [
         "@shopify/flash-list"
