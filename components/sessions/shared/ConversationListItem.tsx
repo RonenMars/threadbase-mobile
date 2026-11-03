@@ -255,7 +255,8 @@ export function ConversationListItem(props: ConversationListItemProps) {
       )}
       {leading === 'dot' && !isChip && (
         <View style={styles.dotSlot}>
-          <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />
+          {/* The meta-line StateBadge draws its own dot; the empty slot keeps titles aligned. */}
+          {tier ? null : <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />}
         </View>
       )}
       {leading === 'depth' && !isChip && (
