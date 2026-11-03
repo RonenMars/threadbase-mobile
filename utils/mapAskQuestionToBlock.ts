@@ -9,6 +9,7 @@ export function mapAskQuestionToBlock(toolUseId: string, questions: AskQuestion[
       question: q.question,
       header: q.header,
       multiSelect: q.multiSelect,
+      ...(q.multiSelectUnverified ? { multiSelectUnverified: true } : {}),
       options: q.options.map(o => ({ label: o.label, description: o.description, preview: o.preview })),
     })),
   }
