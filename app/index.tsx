@@ -21,7 +21,7 @@ import { useLiveInstanceCount } from '@/lib/openTrace'
 import { useSettingsStore } from '@/stores/settings'
 import { useTreeDrillStore } from '@/stores/treeDrill'
 import { SessionNamesSyncer } from '@/hooks/useSessionName'
-import { wsManager } from '@/services/ws-client'
+import { useShallow } from 'zustand/react/shallow'
 import { ProjectHubList } from '@/components/sessions/hub/ProjectHubList'
 import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { NowList } from '@/components/sessions/now/NowList'
@@ -68,7 +68,7 @@ import { serverCause } from '@/types/alerts'
 import { PROVIDER_COLOR } from '@/constants/providers'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import type { MultiSession, MultiConversation } from '@/types/api'
+import type { MultiSession, MultiConversation, ServerConfig } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { ALL_TIERS, DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, displayedListItems, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
 
@@ -83,6 +83,44 @@ const CHROME_ESTIMATE = 120
 /** Below this the five header controls need the title's room; the app icon stays. */
 const HEADER_TITLE_MIN_WIDTH = 330
 
+
+// Warming / upgrade banners stay in the scrolling header. Fetch errors
+// belong on the section (1c) or the all-down stale banner (1a).
+function ServerStatusBanners({
+  activeServerIds,
+  servers,
+  unsupportedServerIds,
+}: {
+  activeServerIds: string[]
+  servers: Record<string, ServerConfig>
+  unsupportedServerIds: string[]
+}) {
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
+  return (
+    <>
+      {activeServerIds.map((id) => {
+        const label = servers[id]?.label ?? id
+        const status = fetchStatuses[id]?.status
+        if (status === 'error') return null
+        if (status === 'warming_up') return <ServerWarmingBanner key={id} serverLabel={label} />
+        if (unsupportedServerIds.includes(id)) return <ServerUnsupportedBanner key={id} serverLabel={label} />
+        return null
+      })}
+    </>
+  )
+}
+
+// Renders nothing; exists so the per-server error subscription sits below the
+// Hub root. While every server is down the stale banner speaks for all of them.
+function InlineFailureClaims({ activeServerIds, suppressed }: { activeServerIds: string[]; suppressed: boolean }) {
+  const failedServerIds = useServerFetchStatusStore(
+    useShallow((s) =>
+      activeServerIds.filter((id) => isServerFetchErrorVisible(s.statuses[id], s.dismissedFailureAt[id])),
+    ),
+  )
+  useClaimInline(suppressed ? [] : failedServerIds.map(serverCause))
+  return null
+}
 
 export default function ProjectsHub() {
   useLiveInstanceCount('ProjectsHub')
@@ -121,31 +159,13 @@ export default function ProjectsHub() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Connection status. Banners and the servers modal AND-combine WS with the
-  // last HTTP fetch; the header no longer carries a status bell.
-  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
-  const dismissedFailureAt = useServerFetchStatusStore((s) => s.dismissedFailureAt)
+  // Per-server fetch status and WS state live in the leaves that show them
+  // (ServerStateMessage, ServerStatusBanners, NowList, ...), so a status tick
+  // does not re-render this screen. Only actions are read here.
   const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
-  const [wsConnectedCount, setWsConnectedCount] = useState(0)
-  useEffect(() => {
-    const updateCount = () => {
-      let count = 0
-      for (const id of activeServerIds) {
-        if (wsManager.status(id) === 'connected') count++
-      }
-      setWsConnectedCount(count)
-    }
-    updateCount()
-    const unsub = wsManager.onAnyStatusChange(() => updateCount())
-    return unsub
-  }, [activeServerIds])
 
   const cacheAlert = useServersStore((s) => s.cacheAlert)
 
-  const warmingServerIds = useMemo(
-    () => activeServerIds.filter((id) => fetchStatuses[id]?.status === 'warming_up'),
-    [activeServerIds, fetchStatuses],
-  )
   const { hidden: fabCollapsed, onScroll, reveal: revealFab } = useHideOnScrollDown()
 
   // Header controls
@@ -296,16 +316,16 @@ export default function ProjectsHub() {
   // header fallback spinner in Classic. Multi-server is covered by the chips.
   const showSyncNotice = isBackgroundRefreshing && activeServerIds.length <= 1
   const syncNoticeVariant = sessionsLayout === 'projects' ? 'banner' : 'caption'
-  const allServersFailed =
-    activeServerIds.length > 0 &&
-    sessionsDone &&
-    activeServerIds.every((serverId) =>
-      isServerFetchErrorVisible(fetchStatuses[serverId], dismissedFailureAt[serverId]),
-    )
-  const failedServerIds = activeServerIds.filter((id) =>
-    isServerFetchErrorVisible(fetchStatuses[id], dismissedFailureAt[id]),
+  // A boolean selector: the root wakes only when every server goes down or one
+  // recovers, not on each individual server's status change.
+  const allServersFailed = useServerFetchStatusStore(
+    (s) =>
+      activeServerIds.length > 0 &&
+      sessionsDone &&
+      activeServerIds.every((serverId) =>
+        isServerFetchErrorVisible(s.statuses[serverId], s.dismissedFailureAt[serverId]),
+      ),
   )
-  useClaimInline(allServersFailed ? [] : failedServerIds.map(serverCause))
 
   // Sessions cluster to the top of the merged list under the LIVE header
   // (running / waiting_input first, then idle), regardless of conversation
@@ -386,7 +406,8 @@ export default function ProjectsHub() {
   const openBrowse = (serverId: string, path?: string) => {
     if (browseOpening.current) return
     const unreachable =
-      fetchStatuses[serverId]?.status === 'error' || Boolean(servers[serverId]?.connectionError)
+      useServerFetchStatusStore.getState().statuses[serverId]?.status === 'error' ||
+      Boolean(servers[serverId]?.connectionError)
     if (unreachable) {
       // Picker stays open behind the error, so closing the error returns to the
       // list rather than dumping the user back on the hub.
@@ -420,17 +441,6 @@ export default function ProjectsHub() {
   }
 
   const fabRef = useRef<View>(null)
-
-  // Warming / upgrade banners stay in the scrolling header. Fetch errors
-  // belong on the section (1c) or the all-down stale banner (1a).
-  const serverBanners = activeServerIds.map((id) => {
-    const label = servers[id]?.label ?? id
-    const status = fetchStatuses[id]?.status
-    if (status === 'error') return null
-    if (status === 'warming_up') return <ServerWarmingBanner key={id} serverLabel={label} />
-    if (unsupportedServerIds.includes(id)) return <ServerUnsupportedBanner key={id} serverLabel={label} />
-    return null
-  })
 
   // Floating chrome: brand row, Now | Projects, and the search field. Rows
   // scroll under it. The banners below may scroll away only because this block
@@ -570,8 +580,6 @@ export default function ProjectsHub() {
       <ServerStateMessage
         activeServerIds={activeServerIds}
         servers={servers}
-        fetchStatuses={fetchStatuses}
-        wsConnectedCount={wsConnectedCount}
         onRetryFailed={retryServer}
         isRetrying={isRetryingFailedServers}
       />
@@ -590,7 +598,13 @@ export default function ProjectsHub() {
         />
       ) : null}
 
-      {serverBanners}
+      <InlineFailureClaims activeServerIds={activeServerIds} suppressed={allServersFailed} />
+
+      <ServerStatusBanners
+        activeServerIds={activeServerIds}
+        servers={servers}
+        unsupportedServerIds={unsupportedServerIds}
+      />
 
       {/* Nothing needs you → the presets have nothing to offer; keep them while the preset is on so it can be undone. */}
       {!showBoard && sessionsLayout === 'now' && (needsYouAvailable > 0 || isNeedsMePreset(filters)) ? (
@@ -679,7 +693,6 @@ export default function ProjectsHub() {
             isBackgroundRefreshing={isBackgroundRefreshing}
             topInset={chromeHeight}
             ListHeaderComponent={listHeader}
-            warmingServerIds={warmingServerIds}
             onNewSession={handleFABPress}
             onScroll={onScroll}
             onRetryServer={(serverId) => retryFailed([serverId])}
@@ -736,7 +749,6 @@ export default function ProjectsHub() {
         visible={pickerVisible}
         serverIds={activeServerIds}
         servers={servers}
-        fetchStatuses={fetchStatuses}
         onPick={startSessionOn}
         onClose={() => setPickerVisible(false)}
       />

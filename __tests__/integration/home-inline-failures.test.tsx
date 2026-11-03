@@ -1,5 +1,5 @@
 import React from 'react'
-import { fireEvent, render } from '@testing-library/react-native'
+import { act, fireEvent, render } from '@testing-library/react-native'
 import ProjectsHub from '@/app/index'
 import { useAlertStore } from '@/stores/alerts'
 import { useErrorSheetStore } from '@/stores/errorSheet'
@@ -10,6 +10,16 @@ import { createWrapper } from '@/test-utils'
 import { serverCause } from '@/types/alerts'
 
 let mockWsStatus = 'disconnected'
+// ProjectsHub calls useLiveInstanceCount unconditionally in its body, so this
+// counts renders of the root component and nothing below it.
+let mockHubRenders = 0
+
+jest.mock('@/lib/openTrace', () => ({
+  ...jest.requireActual('@/lib/openTrace'),
+  useLiveInstanceCount: (name: string) => {
+    if (name === 'ProjectsHub') mockHubRenders++
+  },
+}))
 
 jest.mock('@/services/ws-client', () => ({
   wsManager: {
@@ -94,6 +104,7 @@ describe('home inline-first failures', () => {
     useServerFetchStatusStore.getState().reset()
     useErrorSheetStore.setState({ open: false, serversStatusOpen: false })
     mockWsStatus = 'disconnected'
+    mockHubRenders = 0
     seedTwoServers()
   })
 
@@ -171,5 +182,25 @@ describe('home inline-first failures', () => {
     await fireEvent.press(getByTestId('header-board-btn'))
     expect(queryByTestId('phone-board')).toBeNull()
     expect(getByTestId('now-list-scroll')).toBeTruthy()
+  })
+
+  // ADR 0001 step 4: a status tick must wake the leaf that shows it, not the
+  // whole Hub. Only the all-servers-down flip is allowed to reach the root.
+  it('does not re-render the hub root when one server changes fetch status', async () => {
+    mockWsStatus = 'connected'
+    await render(<ProjectsHub />, { wrapper: createWrapper() })
+    const baseline = mockHubRenders
+
+    await act(async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv-2', 'startup')
+    })
+    await act(async () => {
+      useServerFetchStatusStore.getState().recordFailure('srv-1', new Error('offline'))
+    })
+    await act(async () => {
+      useServerFetchStatusStore.getState().recordReady('srv-2')
+    })
+
+    expect(mockHubRenders).toBe(baseline)
   })
 })

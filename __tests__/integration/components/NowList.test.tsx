@@ -254,14 +254,17 @@ describe('NowList', () => {
   it('keeps live cards and shows history skeletons while a server is warming', async () => {
     const waiting = session({ id: 'w', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', sessionName: 'Why sessions open in terminal view' })
     const history = asConv(conversation({ id: 'old', sessionName: 'Fix the resume collision copy' }))
-    const { getByTestId, getAllByTestId, queryByTestId } = await renderList(
-      [asItem(waiting), history],
-      'state',
-      { warmingServerIds: ['server-1'] },
-    )
-    expect(getByTestId('session-row-w')).toBeTruthy()
-    expect(queryByTestId('conversation-row-old')).toBeNull()
-    expect(getAllByTestId('history-skeleton', { includeHiddenElements: true })).toHaveLength(2)
+    useServersStore.setState({ activeServerIds: ['server-1'] })
+    useServerFetchStatusStore.getState().recordWarmingUp('server-1', 'startup')
+    try {
+      const { getByTestId, getAllByTestId, queryByTestId } = await renderList([asItem(waiting), history], 'state')
+      expect(getByTestId('session-row-w')).toBeTruthy()
+      expect(queryByTestId('conversation-row-old')).toBeNull()
+      expect(getAllByTestId('history-skeleton', { includeHiddenElements: true })).toHaveLength(2)
+    } finally {
+      useServerFetchStatusStore.getState().reset()
+      useServersStore.setState({ activeServerIds: [] })
+    }
   })
 
   it('does not repeat a live waiting session as an earlier conversation row', async () => {
