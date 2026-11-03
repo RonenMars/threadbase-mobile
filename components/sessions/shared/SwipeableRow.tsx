@@ -84,13 +84,17 @@ export function SwipeableRow({ leading = [], trailing = [], children, testID }: 
       renderLeftActions={left.length > 0 ? (_p, _t, methods) => renderPanel(left, 'left', methods) : undefined}
       renderRightActions={right.length > 0 ? (_p, _t, methods) => renderPanel(right, 'right', methods) : undefined}
     >
-      <View style={layoutDirectionStyle(direction)}>{children}</View>
+      <View style={[layoutDirectionStyle(direction), styles.surface]}>{children}</View>
     </Swipeable>
   )
 }
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
+    // Rows are transparent over the list, so without this the panel underneath shows through them.
+    surface: {
+      backgroundColor: theme.bg.primary,
+    },
     panel: {
       flexDirection: 'row',
       alignItems: 'center',
