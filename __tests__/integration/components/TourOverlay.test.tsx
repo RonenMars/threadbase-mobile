@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import { TourOverlay } from '@/components/tour/TourOverlay'
+import i18n from 'i18next'
 
 const TARGET = { x: 20, y: 100, width: 100, height: 50 }
 
@@ -68,5 +69,25 @@ describe('TourOverlay', () => {
       />
     )
     expect(queryByTestId('tour-step-label')).toBeNull()
+  })
+
+  describe('button labels', () => {
+    afterEach(async () => {
+      await i18n.changeLanguage('en')
+    })
+
+    it.each([
+      ['en', 'Skip tour', 'Got it →'],
+      ['he', 'דלג על הסיור', 'הבנתי ←'],
+      ['ar', 'تخطي الجولة', 'فهمت ←'],
+      ['ru', 'Пропустить обзор', 'Понятно →'],
+    ])('renders the %s skip and got-it labels', async (lng, skip, gotIt) => {
+      await i18n.changeLanguage(lng)
+      const { getByText } = await render(
+        <TourOverlay target={TARGET} text="Some tip" onGotIt={jest.fn()} onSkip={jest.fn()} />
+      )
+      expect(getByText(skip)).toBeTruthy()
+      expect(getByText(gotIt)).toBeTruthy()
+    })
   })
 })
