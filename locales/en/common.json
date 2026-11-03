@@ -98,6 +98,7 @@
   },
   "question": {
     "answerSent": "Answer sent — waiting for the agent to move on.",
+    "submit": "Submit",
     "unsupportedShape": "This prompt needs an answer this app can't send yet — answer it in the terminal.",
     "openFullScreen": "Open full screen",
     "minimize": "Minimize",

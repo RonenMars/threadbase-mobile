@@ -15,6 +15,8 @@ export interface QuestionItem {
   /** Permission-gate only: descriptive block (tool + command + action) shown above the question. */
   detail?: string
   multiSelect: boolean
+  /** Structured only: the streamer could not read the checkbox marker and refuses to answer it. */
+  multiSelectUnverified?: boolean
   options: QuestionOption[]
 }
 export interface QuestionBlock {
@@ -25,11 +27,10 @@ export interface QuestionBlock {
   /** Prompt-contract only: the revision this block was built from, echoed on the answer. */
   promptRevision?: number
   /**
-   * Set when the prompt needs an answer this build cannot send — a
-   * multi-question form, a multi-select or free-text question, or an input mode
-   * it does not know. The prompt contract sets all four; the legacy `question`
-   * event sets `multi`. The card renders no options and says so; no keystrokes
-   * are ever synthesized for it.
+   * Prompt-contract only: set when the prompt needs an answer this build cannot
+   * send — a multi-question form, a multi-select or free-text question, or an
+   * input mode it does not know. The card renders no options and says so; no
+   * keystrokes are ever synthesized for it.
    */
   unsupportedShape?: 'form' | 'multi' | 'text' | 'unknown'
   questions: QuestionItem[]

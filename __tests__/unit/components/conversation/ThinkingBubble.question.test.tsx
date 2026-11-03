@@ -32,6 +32,32 @@ describe('ThinkingBubble structured question', () => {
   })
 })
 
+describe('ThinkingBubble multi-select structured question', () => {
+  const multi: QuestionBlock = { ...aq, questions: [{ ...aq.questions[0], multiSelect: true }] }
+
+  it('sends every checked label as an array on Submit, and nothing before', async () => {
+    const onAnswer = jest.fn()
+    const { getByLabelText, getByRole } = await render(
+      <ThinkingBubble lines={[]} activeQuestion={multi} onAnswer={onAnswer} />,
+    )
+    await fireEvent.press(getByLabelText('B'))
+    await fireEvent.press(getByLabelText('A'))
+    expect(onAnswer).not.toHaveBeenCalled()
+    await fireEvent.press(getByRole('button', { name: 'Submit' }))
+    expect(onAnswer).toHaveBeenCalledTimes(1)
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': ['A', 'B'] })
+  })
+
+  it('still sends a plain string for a single-select question', async () => {
+    const onAnswer = jest.fn()
+    const { getByLabelText } = await render(
+      <ThinkingBubble lines={[]} activeQuestion={aq} onAnswer={onAnswer} />,
+    )
+    await fireEvent.press(getByLabelText('A'))
+    expect(onAnswer).toHaveBeenCalledWith('t1', { 'Q?': 'A' })
+  })
+})
+
 describe('ThinkingBubble full-screen question', () => {
   it('gives the modal its own SafeAreaProvider so insets are not 0 inside the native window', async () => {
     const { getByTestId } = await render(

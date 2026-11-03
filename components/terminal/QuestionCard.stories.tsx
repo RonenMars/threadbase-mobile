@@ -19,6 +19,11 @@ const structured: QuestionBlock = {
   }],
 }
 
+const multiSelect: QuestionBlock = {
+  ...structured,
+  questions: [{ ...structured.questions[0], question: 'Which caches should be cleared?', multiSelect: true }],
+}
+
 const permission: QuestionBlock = {
   source: 'permission',
   permissionIndices: [1, 2, 3],
@@ -46,6 +51,20 @@ type Story = StoryObj<typeof QuestionCard>
 
 export const Structured: Story = {
   args: { block: structured },
+}
+
+// Checkbox rows with a Submit that stays disabled until something is checked.
+export const MultiSelect: Story = {
+  args: { block: multiSelect, onSubmitMulti: () => {}, onCancel: () => {} },
+}
+
+// A screen-read card whose checkbox marker was unreadable: the streamer refuses
+// to answer it, so the options are read-only and the card points at the terminal.
+export const MultiSelectUnverified: Story = {
+  args: {
+    block: { ...multiSelect, questions: [{ ...multiSelect.questions[0], multiSelectUnverified: true }] },
+    onCancel: () => {},
+  },
 }
 
 // The permission gate: a `detail` block above the question, and a Cancel that

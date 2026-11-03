@@ -398,6 +398,12 @@ export function TerminalOutput({
     onAnswer(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
   }, [activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt])
 
+  const handleStructuredSubmitMulti = useCallback((questionIndex: number, optionIndexes: number[]) => {
+    if (!activeQuestion?.toolUseId || !onAnswer) return
+    const q = activeQuestion.questions[questionIndex]
+    onAnswer(activeQuestion.toolUseId, { [q.question]: optionIndexes.map(i => q.options[i].label) })
+  }, [activeQuestion, onAnswer])
+
   const listHeader = useMemo(() => {
     if (transcript.length > 0) {
       return <HistoryLoadBoundary hasOlder={hasOlder} isFetching={isFetchingOlder} />
@@ -508,6 +514,7 @@ export function TerminalOutput({
         <QuestionCard
           block={activeQuestion}
           onSelect={handleStructuredSelect}
+          onSubmitMulti={handleStructuredSubmitMulti}
           busy={answerBusy}
           ghost={answerPhase === 'pending'}
           onCancel={onCancelQuestion}
