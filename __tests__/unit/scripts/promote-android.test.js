@@ -6,10 +6,11 @@
 
 'use strict';
 
-const { execFileSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+
+const { runScript: run } = require('./_runScript');
 
 const SCRIPT = path.resolve(__dirname, '../../../scripts/promote-android.js');
 
@@ -37,18 +38,7 @@ function makeSaFile(override = {}) {
   return tmpPath;
 }
 
-function runScript(args /* string[] */) {
-  try {
-    const stdout = execFileSync('node', [SCRIPT, ...args], {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 5000,
-    });
-    return { stdout, stderr: '', code: 0 };
-  } catch (err) {
-    return { stdout: err.stdout || '', stderr: err.stderr || '', code: err.status ?? 1 };
-  }
-}
+const runScript = args => run(SCRIPT, args, { interpreter: 'node', timeout: 5000 });
 
 describe('promote-android.js — argument validation', () => {
   it('exits non-zero and prints usage when called with no arguments', () => {
