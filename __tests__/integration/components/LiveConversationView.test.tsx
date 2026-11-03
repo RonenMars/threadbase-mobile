@@ -11,9 +11,10 @@ import { Alert, Keyboard } from 'react-native'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { NetworkError } from '@/services/api-client'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createWrapper } from '@/test-utils'
 import { useServersStore } from '@/stores/servers'
-import type { Message, Prompt } from '@/types/api'
+import type { Message, Prompt, Session } from '@/types/api'
 
 const mockMutate = jest.fn()
 const mockMutateAsync = jest.fn(async (payload: string) => {
@@ -877,5 +878,51 @@ describe('LiveConversationView virtualized paging', () => {
     expect(listRenderItem()).toBe(before)
     mockHistorical = []
     mockPtyLines = []
+  })
+})
+
+describe('LiveConversationView — session_update cache write', () => {
+  const key = ['session', 'srv1', 'sess1']
+  const cached: Session = {
+    id: 'sess1',
+    status: 'running',
+    ptyAttached: true,
+    projectPath: '/p',
+    projectName: 'p',
+    lastOutput: '',
+    elapsedMs: 0,
+    promptCount: 1,
+    startedAt: '2026-01-01T00:00:00Z',
+    subStatus: null,
+    effort: 'high',
+    permissionMode: 'accept edits on',
+    model: 'Opus 4.8',
+  }
+
+  it('keeps REST-only fields the WS frame omits while the view is mounted', async () => {
+    // effort/permissionMode/model come only from GET /sessions/:id; a broadcast
+    // session_update never carries them, so a whole-object replace erases them.
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    queryClient.setQueryData(key, cached)
+    await render(
+      <LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />,
+      {
+        wrapper: ({ children }: { children: React.ReactNode }) => (
+          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        ),
+      },
+    )
+
+    const { effort, permissionMode, model, ...frame } = cached
+    act(() => {
+      dispatchWs('session_update', { type: 'session_update', session: { ...frame, status: 'idle' } })
+    })
+
+    expect(queryClient.getQueryData<Session>(key)).toMatchObject({
+      status: 'idle',
+      effort,
+      permissionMode,
+      model,
+    })
   })
 })
