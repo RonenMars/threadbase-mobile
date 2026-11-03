@@ -33,4 +33,27 @@ describe('SwipeableRow', () => {
     expect(StyleSheet.flatten(wrapper?.props.style).backgroundColor).toBe(listBackground)
     expect(listBackground).toBeTruthy()
   })
+
+  it('drops the visible label in compact rows so the panel fits a short row, keeping the a11y label', async () => {
+    const leading = [{ key: 'fav', label: 'Favorite', icon: Star, color: '#f5c518', onPress: jest.fn(), testID: 'fav' }]
+    await render(
+      <ThemeProvider>
+        <SwipeableRow leading={leading}>
+          <Text>tall</Text>
+        </SwipeableRow>
+        <SwipeableRow leading={leading} compact>
+          <Text>short</Text>
+        </SwipeableRow>
+      </ThemeProvider>,
+    )
+
+    expect(screen.getAllByText('Favorite')).toHaveLength(1)
+    const [tall, short] = screen.getAllByTestId('fav')
+    expect(short.props.accessibilityLabel).toBe('Favorite')
+    const size = (action: typeof tall) => {
+      const circle = action.children[0]
+      return typeof circle === 'string' ? 0 : StyleSheet.flatten(circle?.props.style).height
+    }
+    expect(size(short)).toBeLessThan(size(tall))
+  })
 })
