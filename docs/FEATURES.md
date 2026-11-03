@@ -25,7 +25,6 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [shipped] Favorites and quick access — pin sessions, conversations, or project chats for one-tap access.
 - [shipped] Favorites sync — saved sessions, conversations, and project chats are also kept on the streamer, so every phone paired with it shows the same list; needs a streamer that serves `/api/saved-items`.
 - [shipped] Export conversation — share a full transcript as Markdown.
-- [shipped] Prompt queue — queue additional prompts while the agent is busy.
 - [shipped] Draft persistence — unsent composer text is saved per session.
 - [shipped] Attach photos and files to a prompt — camera, photo library, or file picker, with HEIC converted to JPEG.
 - [shipped] Voice dictation — on-device speech-to-text for composing prompts.
@@ -93,3 +92,65 @@ Multi-question and multi-select approval forms cannot be answered from the phone
 ### GitHub Copilot CLI
 
 Select **Copilot** when starting a session on a streamer that advertises the installed `copilot` CLI. Live terminal input/output and native resume are supported; trust and permission prompts are handled in the terminal. Copilot stays unavailable on older streamers. Bulk Copilot history indexing, structured question cards, and model/effort controls are not included in this integration.
+
+## Completed roadmap and backlog items
+
+Items moved here from [ROADMAP.md](./ROADMAP.md) and [BACKLOG.md](./BACKLOG.md) once they shipped, re-verified against `main` on 2026-11-02.
+One line each; the full original entry is in git history (`git show 500e37e3:docs/ROADMAP.md`, `git show 500e37e3:docs/BACKLOG.md`).
+For a partly shipped feature, the unfinished part is in [BACKLOG.md](./BACKLOG.md#leftovers-from-partly-shipped-features).
+
+### Roadmap features
+
+- 2026-04-23 to 2026-05-11 — Splash animation, Projects Hub redesign, server list redesign, adopt discovered session, CardShell, Maestro E2E setup, NativeWind wave 1, server headers (Hub, Classic, Tree), i18n, PTY turn divider, Quick Access strip, session naming, theming, server drag-and-drop reordering. Plans in [`superpowers/plans/archive/`](./superpowers/plans/archive/).
+- Feature 1 — Tree view pre-fills the new-session path with the drilled directory (PR #11, `9835ecf`).
+- Feature 2 — Export moved from the history bottom bar into the info shelf (PR #11, `9835ecf`).
+- Feature 3 — Several files attached to one message (`services/uploads.ts`, `hooks/useComposerState.ts`).
+- Feature 4 — Store deploy workflow for the App Store and Google Play (`.github/workflows/deploy.yml`, fastlane; started by hand) ([#602](https://github.com/RonenMars/threadbase-mobile/issues/602)).
+- Feature 5 — Onboarding polish, including the `tb pair` exchange (`hooks/useTBPair.ts`) and the notifications step (`NotificationsStep.tsx`) ([#605](https://github.com/RonenMars/threadbase-mobile/issues/605)).
+- Feature 6 (part) — Cross-session search with two-line snippet previews (PR #778) and tap-to-jump to the matching message (`lib/conversationHref.ts`, [anchored-search runbook](./anchored-search-runbook.md)).
+- Feature 12 — Live Activities and Dynamic Island (iOS ActivityKit) with an Android ongoing-notification fallback ([#636](https://github.com/RonenMars/threadbase-mobile/issues/636)).
+- Feature 13 — Mission Control, shipped as the Session Board: web `/board` (PR #1275) and the mobile home-screen board (PR #1322), with Needs you / Working / Observed / Earlier columns, per-column counts (`components/sessions/board/BoardChips.tsx`), answering a question from a card (`BoardQuestionModal.tsx`) and the row menu on long-press.
+- Feature 14 (part) — Voice dictation in the composer (`expo-speech-recognition`, `e2e/voice_dictation.yaml`).
+- Feature 17 (part) — Maestro suite grown to 19 flows.
+- Feature 18 — Expo SDK 56 upgrade (TestFlight build 104; React Compiler re-enabled in 106). The app has since moved to SDK 57.
+- Feature 20 (part) — Reference screenshots for visual regression.
+- Feature 21 — Tree drill rows render as full Hub/Classic rows (`components/sessions/tree/DrillView.tsx`).
+- Feature 22 — Settings gear on the Filter & Sort bar (`components/servers/FilterSortSheet.tsx`, PR #298).
+- Feature 24 — "Add to favorites" call to action on the empty Manage Favorites screen (`app/manage-favorites.tsx`).
+- Feature 25 (part) — Zero react-hooks v5 lint warnings in CI.
+- Feature 26 (part) — Precompiled XCFrameworks enabled.
+- Feature 30 (part) — Native modules bumped for the ship-121 warnings.
+- Feature 32 — Batched `conversation_events` WebSocket frame handled (`hooks/useConversationStream.ts`).
+- Feature 33 — Stale `demo-server-*.yaml` flows repaired (#538, #541).
+- Feature 34 (part) — Structured prompt cards for Codex, streamer side (threadbase-streamer PR #1050).
+- Feature 35 — Crash-reporting consent model: one-shot reports self-init and tear down (`services/sentry.ts`).
+- Feature 36 (part) — 13 of 34 privacy checklist items done ([#601](https://github.com/RonenMars/threadbase-mobile/issues/601)).
+- Sentry Mobile Builds — size tracking adopted: `sentry-cli build upload` in `scripts/archive-and-upload.sh` and `scripts/ship-android.sh`; build distribution stays with TestFlight and Play.
+
+### Backlog bugs
+
+- Bug 1 — Loader on conversation open stops the flicker (`7e197ab`).
+- Bug 3 — Quick Access strip loads its items (`eea502d`).
+- Bug 4 — Smooth scroll-to-end on long conversations (`78218fb`).
+- Bug 5 — Multi-attachment send escapes paths (`hooks/useComposerState.ts`).
+- Bug 6 — Conversation content no longer hidden under the bottom bar (PR #11, `9835ecf`).
+- Bug 7, Bug 9, Bug 26, Bug 29 — Quick Access became a Favorites-only strip; the pencil shows only when expanded and non-empty; no chevron (`c43e9a1`, `QuickAccessStrip.tsx`).
+- Bug 8 — Manage Favorites has a single native header.
+- Bug 10, Bug 11 — Top and Bottom scroll buttons appear only when useful (`384790c`).
+- Bug 12 — MessageBubble bleed and code-fence collapse fixed (recorded as `cdf0303`, `d3aec11`, `f58d74d`, `1a020fb`; those commits are not in the current history).
+- Bug 13 — Replaced: the create and exit name modals were removed (`6c138c8`).
+- Bug 14, Bug 15 — New session no longer leaves the file browser in the stack (`0909404`).
+- Bug 16 — Replaced by the session leave policy (`hooks/useSessionLeaveGuard.ts`, `lib/sessionLeavePolicy.ts`).
+- Bug 17 (part) — Scroll-to-bottom uses `maintainVisibleContentPosition` (`LiveConversationView.tsx`, `ConversationHistoryList.tsx`).
+- Bug 18 — `server_drag_reorder` flow wired into the mock suite.
+- Bug 19 — Closed: the flow was deleted as unrun.
+- Bug 21 — Recents removed; stale favorites are evicted on 404 with a recovery action.
+- Bug 22 — Settings QR scanner button opens the scanner (`app/settings.tsx`, `e2e/settings_qr_scanner.yaml`).
+- Bug 23, Bug 24 — Obsolete: the Popular tab was removed.
+- Bug 25 — Moved to the roadmap as Feature 22, now shipped.
+- Bug 27 — Moved to the roadmap as Feature 23 (still planned).
+- Bug 28 — Pull-to-refresh modal falls back to IP and port (`components/sessions/shared/serverDisplayName.ts`).
+- Bug 30 — Add, remove and reorder favorites, persisted (`stores/quickAccess.ts`).
+- Bug 32 — One unavailable server no longer hides every server's conversations (`1ec1686`).
+- Bug 33 — Browse-to-session navigation simplified (`app/browse.tsx`).
+- Issue 1 — Cached Hub list shows a refresh indicator instead of flashing (`2a3e6d8`, #326).

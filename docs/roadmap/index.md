@@ -12,5 +12,5 @@ The historical numbered feature list (Features 1–36, Live Activities as Featur
 
 ## Related
 
-- Feature 12 (phone Live Activities / Dynamic Island / Android Live Updates) in [`../ROADMAP.md`](../ROADMAP.md#feature-12--live-activities--dynamic-island-for-in-progress-sessions).
+- Feature 12 (phone Live Activities / Dynamic Island / Android Live Updates) shipped; see [`../FEATURES.md`](../FEATURES.md#completed-roadmap-and-backlog-items).
 - Earlier-stage ideas in [`../IDEAS.md`](../IDEAS.md).
