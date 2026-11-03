@@ -67,6 +67,8 @@ export interface TreeSessionsListProps {
   refreshing: boolean
   onRefresh: () => void
   searchOpen?: boolean
+  /** Owned by the screen's search bar; the tree only reads it. */
+  searchQuery?: string
   isBackgroundRefreshing?: boolean
   /** Servers whose streamer predates /api/projects/summary — the tree can't be
    *  built for them, so the list renders an upgrade prompt instead. */

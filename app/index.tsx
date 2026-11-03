@@ -626,6 +626,7 @@ export default function ProjectsHub() {
           refreshing={manualRefreshing}
           onRefresh={handleRefresh}
           searchOpen={searchOpen}
+          searchQuery={classicConvSearch}
           isBackgroundRefreshing={isBackgroundRefreshing}
           topInset={chromeHeight}
           ListHeaderComponent={listHeader}
