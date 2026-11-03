@@ -53,3 +53,16 @@ export const CursorMcpCall: Story = {
     },
   },
 }
+
+export const BashWithDescription: Story = {
+  args: {
+    block: {
+      type: 'tool_use',
+      name: 'Bash',
+      input: {
+        command: 'cd /c/work && test -d cf-test-025748 && rm -rf cf-test-025748',
+        description: 'Delete cf-test-025748 folder and verify removal',
+      },
+    },
+  },
+}
