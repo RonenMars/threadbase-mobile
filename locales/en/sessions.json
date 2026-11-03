@@ -1,7 +1,11 @@
 {
   "search": {
     "placeholder": "Search sessions & conversations…",
-    "accessibilityLabel": "Search"
+    "accessibilityLabel": "Search",
+    "conversationsResults_one": "Conversations · {{count}} result",
+    "conversationsResults_other": "Conversations · {{count}} results",
+    "sessionsResults_one": "Sessions · {{count}} result",
+    "sessionsResults_other": "Sessions · {{count}} results"
   },
   "nameSession": {
     "createTitle": "Name this session?",

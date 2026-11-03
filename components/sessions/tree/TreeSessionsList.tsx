@@ -78,20 +78,20 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
     const result: { title: string; data: (MultiConversation | MultiSession)[]; kind: 'conversation' | 'session' }[] = []
     if (matchedConversations.length > 0) {
       result.push({
-        title: `Conversations · ${matchedConversations.length} result${matchedConversations.length === 1 ? '' : 's'}`,
+        title: t('search.conversationsResults', { count: matchedConversations.length }),
         data: matchedConversations,
         kind: 'conversation',
       })
     }
     if (matchedSessions.length > 0) {
       result.push({
-        title: `Sessions · ${matchedSessions.length} result${matchedSessions.length === 1 ? '' : 's'}`,
+        title: t('search.sessionsResults', { count: matchedSessions.length }),
         data: matchedSessions,
         kind: 'session',
       })
     }
     return result
-  }, [debouncedQuery, convSearchData, sessions])
+  }, [debouncedQuery, convSearchData, sessions, t])
 
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const servers = useServersStore((s) => s.servers)
