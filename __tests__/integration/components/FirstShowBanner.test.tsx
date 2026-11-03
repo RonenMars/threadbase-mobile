@@ -1,7 +1,15 @@
 import React from 'react'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { StyleSheet } from 'react-native'
 import { FirstShowBanner } from '@/components/tour/FirstShowBanner'
+import { THEMES, type Theme } from '@/constants/theme'
+
+const mockTheme: { current: Theme } = { current: THEMES.dark }
+
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => mockTheme.current,
+}))
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -37,5 +45,18 @@ describe('FirstShowBanner', () => {
       expect(queryByText('Some hint')).toBeNull()
     })
     expect(AsyncStorage.setItem).toHaveBeenCalledWith('test_banner', 'seen')
+  })
+})
+
+describe('FirstShowBanner theming', () => {
+  afterEach(() => {
+    mockTheme.current = THEMES.dark
+  })
+
+  it.each(Object.entries(THEMES))('follows the %s palette', async (_id, theme) => {
+    mockTheme.current = theme
+    const { findByText } = await render(<FirstShowBanner storageKey="test_banner" text="Some hint" />)
+    expect(StyleSheet.flatten((await findByText('Some hint')).props.style).color).toBe(theme.text.secondary)
+    expect(StyleSheet.flatten((await findByText('Got it')).props.style).color).toBe(theme.text.accent)
   })
 })

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import type { Theme } from '@/constants/theme'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 
 interface Props {
   storageKey: string
@@ -8,6 +10,7 @@ interface Props {
 }
 
 export function FirstShowBanner({ storageKey, text }: Props) {
+  const { styles } = useThemedStyles(makeStyles)
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -38,31 +41,33 @@ export function FirstShowBanner({ storageKey, text }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(59,130,246,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.25)',
-    borderRadius: 8,
-    marginHorizontal: 12,
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    gap: 10,
-  },
-  text: {
-    flex: 1,
-    color: '#94aac7',
-    fontSize: 12.5,
-    lineHeight: 18,
-  },
-  dismiss: {
-    color: '#3b82f6',
-    fontFamily: 'Menlo',
-    fontSize: 11.5,
-    fontWeight: '600',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    banner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: `${theme.text.accent}1a`,
+      borderWidth: 1,
+      borderColor: `${theme.text.accent}40`,
+      borderRadius: 8,
+      marginHorizontal: 12,
+      marginTop: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      gap: 10,
+    },
+    text: {
+      flex: 1,
+      color: theme.text.secondary,
+      fontSize: 12.5,
+      lineHeight: 18,
+    },
+    dismiss: {
+      color: theme.text.accent,
+      fontFamily: 'Menlo',
+      fontSize: 11.5,
+      fontWeight: '600',
+    },
+  })
+}
