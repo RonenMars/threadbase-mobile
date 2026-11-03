@@ -4,15 +4,13 @@ import type { TFunction } from 'i18next'
 import { useAlertListSync } from '@/hooks/useAlertSync'
 import { wsManager } from '@/services/ws-client'
 import type { AlertInput } from '@/stores/alerts'
-import type { ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
+import { useServerFetchStatusStore, type ServerFetchStatusEntry } from '@/stores/serverFetchStatus'
 import { serverCause, type AlertCause, type AlertLevel, type AlertSpec } from '@/types/alerts'
 import type { ServerConfig } from '@/types/api'
 
 type Props = {
   activeServerIds: string[]
   servers: Record<string, ServerConfig>
-  fetchStatuses: Record<string, ServerFetchStatusEntry>
-  wsConnectedCount: number
   onRetryFailed: (serverId: string) => void
   isRetrying: boolean
 }
@@ -150,13 +148,26 @@ function toSpec(
 export function ServerStateMessage({
   activeServerIds,
   servers,
-  fetchStatuses,
-  wsConnectedCount,
   onRetryFailed,
   isRetrying,
 }: Props) {
   const { t } = useTranslation('servers')
   const [showInfo, setShowInfo] = useState(false)
+  // Subscribed here, not in the Hub root: this component renders null, so a
+  // status tick re-renders nothing visible.
+  const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
+  const [wsConnectedCount, setWsConnectedCount] = useState(0)
+  useEffect(() => {
+    const updateCount = () => {
+      let count = 0
+      for (const id of activeServerIds) {
+        if (wsManager.status(id) === 'connected') count++
+      }
+      setWsConnectedCount(count)
+    }
+    updateCount()
+    return wsManager.onAnyStatusChange(updateCount)
+  }, [activeServerIds])
 
   const rows = useMemo((): ServerRow[] => {
     return activeServerIds.flatMap((id) => {
