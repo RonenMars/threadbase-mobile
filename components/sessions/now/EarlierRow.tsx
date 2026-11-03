@@ -39,7 +39,7 @@ function SessionEarlierRow({ session, ms, title, isFirst, highlight, previewMode
   const serverColor = useServersStore((s) => s.servers[session.serverId]?.color)
   const { tier } = deriveSessionPresentation(session)
   return (
-    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing}>
+    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing} compact>
       <ConversationListItem
         testID={isFirst ? 'first-session-card' : `session-row-${session.id}`}
         title={title}
@@ -85,7 +85,7 @@ function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, domin
   }, [conv, highlight, router])
 
   return (
-    <SwipeableRow leading={swipe.leading}>
+    <SwipeableRow leading={swipe.leading} compact>
     <ConversationListItem
       testID={`conversation-row-${conv.id}`}
       title={title}
