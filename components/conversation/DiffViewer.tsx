@@ -6,7 +6,8 @@ import { FileCode } from 'phosphor-react-native'
 import * as Clipboard from 'expo-clipboard'
 import { useRecyclingState } from '@shopify/flash-list'
 import { useTranslation } from 'react-i18next'
-import { dark, font, radius, spacing } from '@/constants/theme'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useTheme } from '@/contexts/ThemeContext'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO, MIN_TOUCH_TARGET } from '@/constants/a11y'
 import type { DiffHunk } from '@/types/api'
 
@@ -46,6 +47,8 @@ function toPatch(filename: string, hunks: DiffHunk[]): string {
 
 export function DiffViewer({ filename, hunks, language, recycleKey }: Props) {
   const { t } = useTranslation('conversation')
+  const theme = useTheme()
+  const styles = makeStyles(theme)
   const totalLines = hunks.reduce((acc, h) => acc + h.lines.length, 0)
   const [expanded, setExpanded] = useRecyclingState(
     totalLines <= COLLAPSE_THRESHOLD,
@@ -67,7 +70,7 @@ export function DiffViewer({ filename, hunks, language, recycleKey }: Props) {
   return (
     <View style={styles.container} accessible accessibilityLabel={filename}>
       <View style={styles.header}>
-        <FileCode size={14} color="#8b949e" />
+        <FileCode size={14} color={theme.text.secondary} />
         <Text style={styles.filename} numberOfLines={1} maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}>{filename}</Text>
         <Text style={styles.added}>+{added}</Text>
         <Text style={styles.removed}>−{removed}</Text>
@@ -119,65 +122,68 @@ export function DiffViewer({ filename, hunks, language, recycleKey }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: dark.bg.primary,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: dark.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    padding: spacing.sm,
-    backgroundColor: '#1c2128',
-  },
-  filename: {
-    color: dark.text.primary,
-    fontSize: font.sm,
-    flex: 1,
-    fontFamily: 'monospace',
-  },
-  added: { color: dark.status.running, fontSize: font.sm, fontWeight: '600' },
-  removed: { color: dark.status.failed, fontSize: font.sm, fontWeight: '600' },
-  copyBtn: { paddingHorizontal: spacing.sm, minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET, justifyContent: 'center' },
-  copyText: { color: dark.text.secondary, fontSize: font.xs },
-  collapseBtn: {
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  collapseBtnText: {
-    color: dark.text.accent,
-    fontSize: font.sm,
-  },
-  hunkHeader: {
-    color: '#7d8590',
-    backgroundColor: '#1c2128',
-    fontFamily: 'monospace',
-    fontSize: font.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  hunksContainer: {
-    minWidth: '100%',
-  },
-  lineRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.xs,
-  },
-  lineAdded: { backgroundColor: '#0d4429' },
-  lineDeleted: { backgroundColor: '#4b1113' },
-  linePrefix: {
-    color: dark.text.secondary,
-    fontFamily: 'monospace',
-    fontSize: font.xs,
-    width: 12,
-  },
-  lineContent: {
-    color: dark.text.primary,
-    fontFamily: 'monospace',
-    fontSize: font.xs,
-  },
-})
+// Palette hexes are 6-digit, so a 2-digit suffix is a valid alpha channel (33 = 20%).
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: theme.bg.primary,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: theme.border,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      padding: spacing.sm,
+      backgroundColor: theme.bg.card,
+    },
+    filename: {
+      color: theme.text.primary,
+      fontSize: font.sm,
+      flex: 1,
+      fontFamily: 'monospace',
+    },
+    added: { color: theme.status.running, fontSize: font.sm, fontWeight: '600' },
+    removed: { color: theme.status.failed, fontSize: font.sm, fontWeight: '600' },
+    copyBtn: { paddingHorizontal: spacing.sm, minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET, justifyContent: 'center' },
+    copyText: { color: theme.text.secondary, fontSize: font.xs },
+    collapseBtn: {
+      padding: spacing.md,
+      alignItems: 'center',
+    },
+    collapseBtnText: {
+      color: theme.text.accent,
+      fontSize: font.sm,
+    },
+    hunkHeader: {
+      color: theme.status.idle,
+      backgroundColor: theme.bg.card,
+      fontFamily: 'monospace',
+      fontSize: font.xs,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    hunksContainer: {
+      minWidth: '100%',
+    },
+    lineRow: {
+      flexDirection: 'row',
+      paddingHorizontal: spacing.xs,
+    },
+    lineAdded: { backgroundColor: `${theme.status.running}33` },
+    lineDeleted: { backgroundColor: `${theme.status.failed}33` },
+    linePrefix: {
+      color: theme.text.secondary,
+      fontFamily: 'monospace',
+      fontSize: font.xs,
+      width: 12,
+    },
+    lineContent: {
+      color: theme.text.primary,
+      fontFamily: 'monospace',
+      fontSize: font.xs,
+    },
+  })
+}
