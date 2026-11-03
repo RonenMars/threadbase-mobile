@@ -32,7 +32,7 @@ export interface QuestionBlock {
    */
   unsupportedShape?: 'form' | 'multi' | 'text' | 'unknown'
   questions: QuestionItem[]
-  /** PTY-scrape only: index of the ❯ cursor row among options of questions[0] */
+  /** PTY-scrape and permission gates only: index of the cursor row among options of questions[0] */
   selectedIndex?: number
   /** PTY-scrape only: index in source lines[] where the question line sits */
   questionLineIndex?: number
