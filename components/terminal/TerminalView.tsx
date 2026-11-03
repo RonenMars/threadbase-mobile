@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { MagnifyingGlass } from 'phosphor-react-native'
 import Reanimated from 'react-native-reanimated'
@@ -78,6 +78,7 @@ export function TerminalView({
   })
   const { cancelQuestion, cancelErrorMessage, cancelNoticeMessage } =
     useQuestionCancel({ serverId, activeQuestion, clearQuestion, sendKeys, sendRawKey })
+  const [scrapedCardShown, setScrapedCardShown] = useState(false)
 
   // Scrollback comes from the transcript, the PTY grid only covers the turn in
   // progress: Claude Code wipes its own scrollback mid-turn, so the join works
@@ -237,6 +238,7 @@ export function TerminalView({
           answerPhase={answerPhase}
           answerBusy={answerBusy}
           onCancelQuestion={cancelQuestion}
+          onScrapedCardChange={setScrapedCardShown}
           onSessionQuit={leaveToHome}
           onViewResumedConversation={resumedConversationId && !conversationId ? onViewResumedConversation : undefined}
           onSearchResumedConversation={resumedConversationId && !conversationId ? onSearchResumedConversation : undefined}
@@ -251,8 +253,9 @@ export function TerminalView({
         // blocks nothing, so an answer the server never confirms cannot strand
         // the composer — which is what makes the five exits from `active` a
         // safety net rather than the only thing standing between the user and
-        // a locked app.
-        sendDisabled={answerPhase === 'active'}
+        // a locked app. A scraped card has no phase but is just as open: the
+        // terminal scrape takes over from a server card dropped on a status flip.
+        sendDisabled={answerPhase === 'active' || scrapedCardShown}
         onAttach={handleAttach}
         onCancelUpload={cancelUpload}
         attachments={attachments}

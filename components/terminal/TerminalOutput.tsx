@@ -136,6 +136,12 @@ interface Props {
   /** Cancel on the structured card; the owning view decides what reaches the PTY. */
   onCancelQuestion?: () => void
   /**
+   * Reports whether the card on screen is the PTY scrape rather than a server
+   * prompt. The scrape has no phase, so the owning view cannot see it
+   * through `answerPhase` and needs this to keep send off while it is up.
+   */
+  onScrapedCardChange?: (shown: boolean) => void
+  /**
    * Resumed sessions start a fresh PTY — prior terminal bytes are gone.
    * When set, show a scrollback-top disclosure linking to the durable conversation.
    */
@@ -169,6 +175,7 @@ export function TerminalOutput({
   answerPhase = null,
   answerBusy = false,
   onCancelQuestion,
+  onScrapedCardChange,
   onViewResumedConversation,
   onSearchResumedConversation,
   disabled = false,
@@ -352,6 +359,12 @@ export function TerminalOutput({
     const window = collapsedLines.slice(-30).filter((l) => !isUserLine(stripAnsi(l), userMessageTexts))
     return parseQuestionBlock(window)
   }, [collapsedLines, onSendKeys, userMessageTexts])
+
+  const scrapedCardShown = !activeQuestion && questionBlock !== null
+  useEffect(() => {
+    onScrapedCardChange?.(scrapedCardShown)
+    return () => onScrapedCardChange?.(false)
+  }, [scrapedCardShown, onScrapedCardChange])
 
   const handleOptionSelect = useCallback((_questionIndex: number, optionIndex: number) => {
     if (!onSendKeys || !questionBlock) return
