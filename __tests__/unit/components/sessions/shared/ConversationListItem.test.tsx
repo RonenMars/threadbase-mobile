@@ -1,6 +1,7 @@
 import { act } from 'react'
 import renderer from 'react-test-renderer'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { LiveDot } from '@/components/sessions/LiveDot'
 
 const NOW = new Date(2026, 4, 15, 14, 35, 0)
 
@@ -87,6 +88,21 @@ describe('ConversationListItem', () => {
     expect(text).toContain('Working')
     expect(text).not.toContain('LIVE')
     expect(text).toContain('14:34')
+  })
+
+  it('drops the leading dot when the state badge already shows one', async () => {
+    const tree = await render(
+      <ConversationListItem title="watched" density="compact" leading="dot" tier="observed" />,
+    )
+    expect(collectText(tree.toJSON() as unknown as Json)).toContain('Observed')
+    expect((tree.root as renderer.ReactTestInstance).findAllByType(LiveDot)).toHaveLength(1)
+  })
+
+  it('keeps the leading dot when no state badge renders', async () => {
+    const tree = await render(
+      <ConversationListItem title="plain conversation" density="compact" leading="dot" />,
+    )
+    expect((tree.root as renderer.ReactTestInstance).findAllByType(LiveDot)).toHaveLength(1)
   })
 
   it('shows the server chip when multi-server and showServer=auto', async () => {
