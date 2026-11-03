@@ -1,0 +1,19 @@
+# Shared step: open the first session on the hub and land on its detail screen.
+# Waits for the card to render before tapping — a tap that lands before the
+# hub has laid out its rows hits nothing and navigation never fires (#664).
+# Requires: hub-screen already visible.
+
+appId: com.ronenmars.threadbase
+---
+- extendedWaitUntil:
+    visible:
+      id: "first-session-card"
+    timeout: 15000
+
+- tapOn:
+    id: "first-session-card"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 12000

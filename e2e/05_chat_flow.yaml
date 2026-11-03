@@ -49,18 +49,7 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "live-sessions-header"
 
-- extendedWaitUntil:
-    visible:
-      id: "first-session-card"
-    timeout: 10000
-
-- tapOn:
-    id: "first-session-card"
-
-- extendedWaitUntil:
-    visible:
-      id: "session-detail-screen"
-    timeout: 12000
+- runFlow: open-first-session.yaml
 
 - takeScreenshot: e2e/_artifacts/screenshots/chat-flow-01-session-open.png
 
