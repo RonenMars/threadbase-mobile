@@ -26,10 +26,10 @@ beforeEach(() => {
 afterEach(() => jest.useRealTimers())
 
 describe('useAllSubagents polling', () => {
-  it('refetches every 5s while a row is active and stops once none is', async () => {
+  it('refetches every 5s while a row is active and slows down once none is', async () => {
     mockGet
       .mockResolvedValueOnce({ conversations: [child('a', { subagentActive: true })] })
-      .mockResolvedValueOnce({ conversations: [child('a', { subagentActive: false })] })
+      .mockResolvedValue({ conversations: [child('a', { subagentActive: false })] })
     const { result } = await renderHook(() => useAllSubagents(['s1']), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.items).toHaveLength(1))
     expect(mockGet).toHaveBeenCalledTimes(1)
@@ -39,11 +39,13 @@ describe('useAllSubagents polling', () => {
     expect(mockGet).toHaveBeenCalledTimes(2)
   })
 
-  it('does not poll when no row is active', async () => {
+  it('keeps polling slowly when no row is active, so the next wave shows up', async () => {
     mockGet.mockResolvedValue({ conversations: [child('a')] })
     const { result } = await renderHook(() => useAllSubagents(['s1']), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.items).toHaveLength(1))
     await jest.advanceTimersByTimeAsync(20000)
     expect(mockGet).toHaveBeenCalledTimes(1)
+    await jest.advanceTimersByTimeAsync(10000)
+    await waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
   })
 })
