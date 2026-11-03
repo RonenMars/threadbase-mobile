@@ -153,6 +153,7 @@ export function SessionBoard({
       openIds={openIds}
       onToggle={toggleOpen}
       onShowQuestion={showQuestion}
+      searchQuery={searchQuery}
       serverIdFor={serverIdFor}
       subagentsFailed={subagents.isError}
       refreshing={refreshing}
