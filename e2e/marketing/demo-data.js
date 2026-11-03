@@ -230,6 +230,32 @@ const MACHINES = {
           ['assistant', 'Only for transient failures. I added an authentication retry for timeouts and 5xx replies, capped at three attempts. A rejected key is permanent, so that case surfaces immediately instead of looping.'],
         ],
       }),
+      // Hero video: a third "callback per environment" hit (second Claude row, other repo, ~3 weeks old).
+      conversation({
+        id: 'conv-hm-storefront-redirect',
+        title: 'Sign-in redirect for the storefront',
+        projectPath: '/code/acme-web',
+        branch: 'fix/signin-redirect',
+        provider: 'claude-code',
+        endedMinutesAgo: 60 * 24 * 21,
+        turns: [
+          ['user', 'Sign-in on the preview deploy sends people back to the production storefront. How should the redirect work?'],
+          ['assistant', 'The redirect URI is hard-coded to production, so preview and local sign-ins return to the wrong host.\n\nRegister one callback per environment — dev, preview and production — and read the active one from config so the sign-in code is identical everywhere.'],
+        ],
+      }),
+      // Hero video: a Codex-only hit, ~7 weeks old, to check the date label.
+      conversation({
+        id: 'conv-hm-ios-profile',
+        title: 'Renew the provisioning profile',
+        projectPath: '/code/demo-ios',
+        branch: 'chore/signing',
+        provider: 'codex-cli',
+        endedMinutesAgo: 60 * 24 * 49,
+        turns: [
+          ['user', 'TestFlight uploads fail with a signing error. What is wrong?'],
+          ['assistant', 'The provisioning profile is time sensitive: it expires in 7 days, and the archive was signed with the old one. Regenerate the profile, download it and re-run the archive.'],
+        ],
+      }),
     ],
   },
 
