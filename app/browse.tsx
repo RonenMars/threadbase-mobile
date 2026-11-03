@@ -21,7 +21,7 @@ import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
 import { useSessions } from '@/hooks/useSession'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { NetworkError } from '@/services/api-client'
+import { NetworkError, NotFoundError } from '@/services/api-client'
 import { BrowseSlowBanner } from '@/components/browse/BrowseSlowBanner'
 import { RecentDirsModal, type RecentDir } from '@/components/browse/RecentDirsModal'
 import { SelectedDirsTray } from '@/components/browse/SelectedDirsTray'
@@ -158,13 +158,16 @@ export default function BrowseScreen() {
 
   // The TreeView drill prefill passes the session's absolute cwd, which may
   // live outside the server's configured browse root (adopted sessions, demo
-  // seed data, root changed after the session ran). Such a path can neither
+  // seed data, root changed after the session ran) or no longer exist on
+  // disk (the streamer answers 404). Such a path can neither
   // be listed nor started — fall back to the browse root instead of
   // dead-ending on it. setState is deferred to a microtask so the
   // `react-hooks/set-state-in-effect` rule is satisfied (same pattern as
   // app/session/[id].tsx).
   useEffect(() => {
-    if (isError && currentPath && error?.message?.includes('outside browse root')) {
+    const unusablePrefill =
+      error instanceof NotFoundError || error?.message?.includes('outside browse root')
+    if (isError && currentPath && unusablePrefill) {
       queueMicrotask(() => {
         setCurrentPath('')
       })
