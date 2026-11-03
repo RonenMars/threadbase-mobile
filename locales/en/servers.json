@@ -17,7 +17,10 @@
   "dialog": {
     "removeTitle": "Remove Server",
     "removeMessage": "Disconnect from {{server}}?",
-    "removeConfirm": "Remove"
+    "removeConfirm": "Remove",
+    "forgetTitle": "Forget this device",
+    "forgetMessage": "Forget this device for {{server}}? This phone will present a new identity the next time it pairs with this server, and a revoked entry for this phone on the server will not be restored. You will need to pair again.",
+    "forgetConfirm": "Forget"
   },
   "form": {
     "labelOptional": "Label (optional)",
@@ -107,6 +110,7 @@
     "menuEdit": "Edit",
     "menuRefresh": "Refresh",
     "menuDelete": "Delete",
+    "menuForget": "Forget this device",
     "optionsLabel": "Server options",
     "titleSingle": "Server Status",
     "titleMultiple": "Servers Status"

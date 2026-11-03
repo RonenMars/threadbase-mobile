@@ -99,6 +99,7 @@ interface ServersStore {
     device?: AddServerMeta,
   ) => Promise<string | { error: 'duplicate' }>
   removeServer: (serverId: string) => Promise<void>
+  forgetDevice: (serverId: string) => Promise<void>
   setDisplayedServerIds: (ids: string[]) => void
   updateServerLabel: (serverId: string, label: string) => void
   setRequireEncryption: (serverId: string, requireEncryption: boolean) => void
@@ -347,7 +348,9 @@ export const useServersStore = create<ServersStore>((set, get) => ({
   removeServer: async (serverId: string) => {
     await SecureStore.deleteItemAsync(secureKeyForServer(serverId))
     await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
-    await clearDeviceStaticKey(serverId)
+    // The device static key stays: re-adding this URL must present the same
+    // e2ee_static_pub so the streamer restores the old (possibly revoked) row
+    // instead of orphaning it. Only `forgetDevice` drops it.
     recordDiagnosticEvent('server_removed')
     useServerFetchStatusStore.getState().clearServer(serverId)
 
@@ -361,6 +364,12 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       persistServerList(servers, activeServerIds, displayedServerIds, state.hasEverHadServer)
       return { servers, activeServerIds, displayedServerIds }
     })
+  },
+
+  forgetDevice: async (serverId: string) => {
+    await clearDeviceStaticKey(serverId)
+    // A live sealed context was opened with the key just deleted.
+    invalidateRestContext(serverId)
   },
 
   setDisplayedServerIds: (ids: string[]) => {
@@ -569,11 +578,6 @@ export const useServersStore = create<ServersStore>((set, get) => ({
       // the freshly-entered key may know nothing about.
       await SecureStore.deleteItemAsync(secureKeyForDeviceToken(serverId))
       if (newId !== serverId) await SecureStore.deleteItemAsync(secureKeyForDeviceToken(newId))
-      // Same terms, same reason: this device's static key was registered by the
-      // old exchange and the pinned server identity was proved by it. Neither
-      // survives a hand-edited URL or key.
-      await clearDeviceStaticKey(serverId)
-      if (newId !== serverId) await clearDeviceStaticKey(newId)
     }
 
     set((state) => {
@@ -584,7 +588,7 @@ export const useServersStore = create<ServersStore>((set, get) => ({
         url: normalised,
         apiKey: patch.apiKey,
         label: patch.label,
-        // Device key, pinned server key and pin move as one. They describe a
+        // Device token, pinned server key and pin move as one. They describe a
         // single pairing: keeping the pin after the identity it was proved
         // against is gone leaves a demand pointing at nothing, and keeping the
         // pinned key after the URL moved would claim a machine we never reached.
