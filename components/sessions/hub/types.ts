@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { MultiSession, MultiConversation } from '@/types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
@@ -52,6 +52,7 @@ export interface ConvRowProps {
   conv: MultiConversation
   onLongPress?: (conv: MultiConversation) => void
   forceServerChip?: boolean
+  trailing?: ReactNode
 }
 
 export function isMultiSession(item: MultiConversation | MultiSession): item is MultiSession {
