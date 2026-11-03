@@ -50,6 +50,62 @@ Client-side notes and the invariants: [e2ee-client.md](e2ee-client.md).
 
 ---
 
+## Paired servers and credentials
+
+### I reinstalled the app and my paired servers are still there (iOS), or how to clear them
+
+**Where it is stored.**
+The paired-server list is one JSON entry, key `threadbase_servers`, written through `services/secure-store.ts` to `expo-secure-store` (`stores/servers.ts:19`, `:183-184`).
+It holds each server's id, URL, label, colour, device id, capabilities, public key and encryption-pin flag, and no secrets.
+The secrets are separate secure-store entries: `threadbase_api_key_<serverId>`, `threadbase_device_token_<serverId>` (`stores/servers.ts:25-31`) and, for an encrypted pairing, `threadbase_e2ee_device_key_<serverId>` (`services/e2ee/device-key.ts`).
+Nothing in the list lives in AsyncStorage any more.
+`loadPersistedServers` reads secure store first and only migrates an old AsyncStorage copy into it (`stores/servers.ts:633-640`).
+On native, secure store is the iOS Keychain or the Android Keystore-backed `SecureStore` preferences file.
+On web it is `localStorage` (`services/secure-store.web.ts`), cleared with the browser's site data.
+
+**iOS: it survives uninstall and reinstall.**
+`expo-secure-store` has no uninstall hook and this app never clears the Keychain on a fresh install, so the entries above are still there after the app is deleted and installed again with the same bundle id and signing team.
+The app's own comments say so (`stores/servers.ts:183`, `:633`).
+On the simulator, `xcrun simctl uninstall` kept the pairing and only `xcrun simctl erase` produced a zero-server start (recorded 2026-08-11 in `docs/followups/RELEASE-READINESS-2026-08-10.md`).
+Not verified by this doc on a physical device.
+Everything else the app keeps in AsyncStorage (settings, favourites, cached queries) is removed with the app.
+Session names and unsent drafts are also secure-store entries (`stores/sessionNames.ts:4`, `stores/drafts.ts:4`) and survive the same way.
+The device static key is written with `WHEN_UNLOCKED_THIS_DEVICE_ONLY` (`services/e2ee/device-key.ts:83`), which the library documents as not migrating to a new device from a backup; it still survives an uninstall on the same device.
+The other entries use the library default class, which the library docs imply can migrate to a new device with a backup restore (not verified).
+
+**Android: the entry is not expected to survive.**
+Android keeps the entries in the app-private `SecureStore` SharedPreferences file, encrypted with a Keystore key (`expo-secure-store` 57.0.1, `SecureStoreModule.kt`: `SHARED_PREFERENCES_NAME = "SecureStore"`).
+The app's manifest points `fullBackupContent` and `dataExtractionRules` at the library's `secure_store_backup_rules` and `secure_store_data_extraction_rules` (`android/app/src/main/AndroidManifest.xml:25`).
+Both exclude `sharedpref/SecureStore` from cloud backup and device transfer, so a restore does not bring the list back.
+Android deletes an app's private data on uninstall, so a reinstall starts with no servers.
+That last step is platform behaviour, not something this repo tests, and it is not verified on a device.
+The privacy checklist keeps that device check as an open item (`docs/privacy-policy/privacy-follow-up-checklist.md`).
+
+**How to clear it.**
+Do it before you uninstall, because uninstalling does not delete these entries on iOS and the app is the only normal way to delete them.
+
+1. Open Settings, then the Servers section, and use the delete (trash) control on a server card.
+   The same action is in the servers status modal: open a server's menu and choose "Delete".
+   A server that fails its encrypted-connection check also offers "Forget" on its banner.
+2. Confirm "Remove".
+   This deletes that server's API key, device token and device static key, and rewrites the list without it (`stores/servers.ts:351-366`).
+   It also asks the streamer to drop this device's push token first, and carries on if the streamer is unreachable (`services/server-removal.ts`).
+3. Repeat for every server.
+   Removing the last one returns to onboarding.
+4. Uninstall the app.
+
+If the app is already uninstalled, reinstall it, remove each server as above, then uninstall again.
+On a simulator, `xcrun simctl erase <SIM_UDID>` wipes the Keychain with everything else.
+
+**What removal does not do.**
+Editing a server's URL or API key also drops its device token and device static key (`stores/servers.ts:561-580`), but a label-only edit keeps them.
+There is no single "reset everything" control in the app.
+Removal is local plus the push-token request: this code path does not delete the device's registration on the streamer.
+To revoke this phone as well, do it from Settings, "Paired devices" (`app/paired-devices.tsx`) before you remove the server, because that screen works from the servers still in the list.
+The `threadbase_servers` entry itself stays in secure store, rewritten with an empty list, until the app is uninstalled.
+
+---
+
 ## Terminal output / session display
 
 ### SSH passphrase prompt appears mid-conversation in the terminal view
@@ -281,7 +337,7 @@ xcrun simctl install    <SIM_UDID> "$(ls -dt ~/Library/Developer/Xcode/DerivedDa
 xcrun simctl openurl    <SIM_UDID> "threadbase://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081"
 ```
 
-Caveat: uninstall wipes AsyncStorage, so paired servers must be re-added after this. Once the app is on the live bundle, ordinary source edits hot-reload via Fast Refresh — no reinstall needed for iteration, only to escape a stale cache.
+Caveat: uninstall wipes AsyncStorage, but the paired-server list and its credentials are in the Keychain and survive a simulator `uninstall`, so the servers reappear after the reinstall (`simctl erase` clears them). See "I reinstalled the app and my paired servers are still there" above. Re-pair only if the list came back empty or a server shows an auth error. Once the app is on the live bundle, ordinary source edits hot-reload via Fast Refresh — no reinstall needed for iteration, only to escape a stale cache.
 
 ### The profiler is recording the debugger UI, not the app
 
