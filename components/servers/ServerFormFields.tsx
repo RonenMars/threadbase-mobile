@@ -186,6 +186,11 @@ export function ServerFormFields({
           placeholder={t('form.apiKeyPlaceholder')}
           placeholderTextColor={theme.text.secondary}
           secureTextEntry={!showApiKey}
+          // An API key is not a site password: stop iOS offering to save it to Keychain. On iOS RN
+          // ignores autoComplete and reads only textContentType, so 'oneTimeCode' is what opts out.
+          textContentType="oneTimeCode"
+          autoComplete="off"
+          importantForAutofill="no"
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="done"
