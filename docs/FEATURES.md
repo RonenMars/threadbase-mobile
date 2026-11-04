@@ -109,7 +109,7 @@ For a partly shipped feature, the unfinished part is in [BACKLOG.md](./BACKLOG.m
 - Feature 5 — Onboarding polish, including the `tb pair` exchange (`hooks/useTBPair.ts`) and the notifications step (`NotificationsStep.tsx`) ([#605](https://github.com/RonenMars/threadbase-mobile/issues/605)).
 - Feature 6 (part) — Cross-session search with two-line snippet previews (PR #778) and tap-to-jump to the matching message (`lib/conversationHref.ts`, [anchored-search runbook](./anchored-search-runbook.md)).
 - Feature 12 — Live Activities and Dynamic Island (iOS ActivityKit) with an Android ongoing-notification fallback ([#636](https://github.com/RonenMars/threadbase-mobile/issues/636)).
-- Feature 13 — Mission Control, shipped as the Session Board: web `/board` (PR #1275) and the mobile home-screen board (PR #1322), with Needs you / Working / Observed / Earlier columns, per-column counts (`components/sessions/board/BoardChips.tsx`), answering a question from a card (`BoardQuestionModal.tsx`) and the row menu on long-press.
+- Feature 13 — Mission Control, shipped as the Session Board: web `/board` (PR #1275) and the mobile home-screen board (PR #1322), with Needs you / Working / External / Earlier columns, per-column counts (`components/sessions/board/BoardChips.tsx`), answering a question from a card (`BoardQuestionModal.tsx`) and the row menu on long-press.
 - Feature 14 (part) — Voice dictation in the composer (`expo-speech-recognition`, `e2e/voice_dictation.yaml`).
 - Feature 17 (part) — Maestro suite grown to 19 flows.
 - Feature 18 — Expo SDK 56 upgrade (TestFlight build 104; React Compiler re-enabled in 106). The app has since moved to SDK 57.

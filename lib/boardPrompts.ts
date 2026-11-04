@@ -1,5 +1,6 @@
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import type { Prompt, PromptQuestion, Session } from '@/types/api'
+import { stripAnsi } from '@/utils/stripAnsi'
 
 export interface BoardQuestion {
   prompt: Prompt
@@ -46,5 +47,5 @@ export function promptRefetchKey(items: readonly MergedItem[]): string {
 }
 
 export function terminalTailLine(output: string | null | undefined): string | undefined {
-  return output?.split('\n').map((l) => l.trim()).filter(Boolean).pop()
+  return stripAnsi(output ?? '').split('\n').map((l) => l.trim()).filter(Boolean).pop()
 }

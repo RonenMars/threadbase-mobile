@@ -150,7 +150,7 @@
     "working": "עובד",
     "resumable": "ניתן לחידוש",
     "cantResume": "לא ניתן לחידוש",
-    "observed": "בצפייה"
+    "observed": "חיצוני"
   },
   "phase": {
     "thinking": "חושב",
@@ -242,6 +242,12 @@
     "rename": "שינוי שם",
     "terminate": "סיום",
     "delete": "מחיקה"
+  },
+  "terminateExternal": {
+    "title": "לסיים את הסשן הזה?",
+    "body": "הפעולה סוגרת את סשן הטרמינל האמיתי ב-Mac שלך. גם הסוכן שם ייעצר.",
+    "confirm": "סיום",
+    "failed": "לא ניתן היה לסיים את הסשן"
   },
   "deleteDialog": {
     "title": "למחוק את הסשן?",

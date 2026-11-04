@@ -1,4 +1,5 @@
 import React from 'react'
+import { StyleSheet } from 'react-native'
 import { fireEvent, screen } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ConvRow } from '@/components/sessions/hub/ConvRow'
@@ -68,10 +69,11 @@ describe('swipe on project hub rows', () => {
     expect(screen.getByTestId('session-swipe-rename')).toBeTruthy()
   })
 
-  it('limits an observed session row to favorite', async () => {
+  it('limits an observed session row to favorite and rename', async () => {
     await renderRow(<SessionRow session={session({ ownership: 'external' })} />)
     expect(screen.getByTestId('session-swipe-favorite')).toBeTruthy()
-    expect(screen.queryByTestId('session-swipe-rename')).toBeNull()
+    expect(screen.getByTestId('session-swipe-rename')).toBeTruthy()
+    expect(screen.queryByTestId('session-swipe-terminate')).toBeNull()
   })
 })
 
@@ -89,6 +91,9 @@ describe('swipe on the all-conversations list', () => {
       />,
     )
     expect(screen.queryByTestId('session-swipe-rename')).toBeNull()
+    // Same compact circle as the hub rows, not the full-size card button.
+    const circle = screen.getByTestId('conversation-swipe-favorite').children[0]
+    expect(typeof circle !== 'string' && StyleSheet.flatten(circle.props.style).height).toBe(32)
     await fireEvent.press(screen.getByTestId('conversation-swipe-favorite'))
     expect(useQuickAccessStore.getState().favorites).toEqual([
       expect.objectContaining({ type: 'conversation', id: 'server-1::conversation::c1', label: 'Refactor the parser' }),

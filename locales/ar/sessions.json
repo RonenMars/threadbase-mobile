@@ -183,7 +183,7 @@
     "working": "يعمل",
     "resumable": "قابل للاستئناف",
     "cantResume": "لا يمكن الاستئناف",
-    "observed": "مُراقَب"
+    "observed": "خارجي"
   },
   "phase": {
     "thinking": "يفكر",
@@ -193,7 +193,7 @@
     "working": "يعمل"
   },
   "capability": {
-    "observeOnly": "للمشاهدة فقط",
+    "observeOnly": "للعرض فقط",
     "liveControl": "تحكم مباشر"
   },
   "timeBucket": {
@@ -278,6 +278,12 @@
     "rename": "إعادة تسمية",
     "terminate": "إنهاء",
     "delete": "حذف"
+  },
+  "terminateExternal": {
+    "title": "إنهاء هذه الجلسة؟",
+    "body": "يؤدي هذا إلى إغلاق جلسة الطرفية الفعلية على جهاز Mac. ويتوقف الوكيل هناك أيضًا.",
+    "confirm": "إنهاء",
+    "failed": "تعذّر إنهاء الجلسة"
   },
   "deleteDialog": {
     "title": "حذف هذه الجلسة؟",
