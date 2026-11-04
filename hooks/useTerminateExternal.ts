@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
 import { Alert } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useQueryClient } from '@tanstack/react-query'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
+import { queryClient } from '@/services/query-client'
 
 /**
  * Terminate for an external (observed) session: the streamer SIGTERMs the
@@ -11,7 +11,6 @@ import { createApiForServer, NotFoundError } from '@/services/api-client'
  */
 export function useTerminateExternal(serverId: string, sessionId: string): () => void {
   const { t } = useTranslation(['sessions', 'common'])
-  const qc = useQueryClient()
 
   return useCallback(() => {
     const run = async () => {
@@ -24,12 +23,12 @@ export function useTerminateExternal(serverId: string, sessionId: string): () =>
           return
         }
       }
-      void qc.invalidateQueries({ queryKey: ['sessions'] })
-      void qc.invalidateQueries({ queryKey: ['conversation', serverId, sessionId] })
+      void queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      void queryClient.invalidateQueries({ queryKey: ['conversation', serverId, sessionId] })
     }
     Alert.alert(t('terminateExternal.title'), t('terminateExternal.body'), [
       { text: t('common:button.cancel'), style: 'cancel' },
       { text: t('terminateExternal.confirm'), style: 'destructive', onPress: () => void run() },
     ])
-  }, [qc, serverId, sessionId, t])
+  }, [serverId, sessionId, t])
 }

@@ -12,10 +12,11 @@ import { getProviderLabel } from '@/components/sessions/providerLabel'
 import type { SwipeAction } from '@/components/sessions/shared/SwipeableRow'
 import { useTheme } from '@/contexts/ThemeContext'
 import { conversationHref } from '@/lib/conversationHref'
-import { isExternalSession } from '@/lib/externalSession'
+import { isExternalAlive, isExternalSession } from '@/lib/externalSession'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useEndSession } from '@/hooks/useEndSession'
 import { useRenameSession } from '@/hooks/useSessionName'
+import { useTerminateExternal } from '@/hooks/useTerminateExternal'
 import { useNavLockStore } from '@/stores/navLock'
 import { buildFavoriteId, useQuickAccessStore } from '@/stores/quickAccess'
 import type { MultiSession } from '@/types/api'
@@ -57,6 +58,7 @@ export function useSessionRowActions(session: MultiSession, title: string) {
   const presentation = deriveSessionPresentation(session)
   const canEnd = presentation.live && presentation.capabilities.canCancel
   const end = useEndSession(session.serverId, session.id, canEnd)
+  const requestTerminate = useTerminateExternal(session.serverId, session.id)
   const [menuVisible, setMenuVisible] = useState(false)
   const [renameVisible, setRenameVisible] = useState(false)
   const favoriteId = buildFavoriteId(session.serverId, 'session', session.id)
@@ -184,8 +186,12 @@ export function useSessionRowActions(session: MultiSession, title: string) {
       trailing.push({ key: 'delete', label: t('swipe.delete'), icon: Trash, color: theme.status.failed, onPress: end.requestDelete, testID: 'session-swipe-delete' })
     }
   }
-  // External sessions are read-only: the display name lives in the streamer's own store, so only favorite and rename apply.
-  const swipe = isExternal ? { leading, trailing: [rename] } : { leading, trailing }
+  // External sessions are read-only: the display name lives in the streamer's own store, so only favorite, rename and
+  // terminating the outside process apply.
+  const externalTrailing: SwipeAction[] = isExternalAlive(session)
+    ? [rename, { key: 'terminate', label: t('swipe.terminate'), icon: Power, color: theme.status.idle, onPress: requestTerminate, testID: 'session-swipe-terminate' }]
+    : [rename]
+  const swipe = isExternal ? { leading, trailing: externalTrailing } : { leading, trailing }
 
   const renameOverlay = renameVisible ? (
     <RenameSessionOverlay session={session} currentName={title} onClose={() => setRenameVisible(false)} />
