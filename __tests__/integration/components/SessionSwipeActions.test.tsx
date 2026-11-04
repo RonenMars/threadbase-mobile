@@ -137,3 +137,17 @@ describe('session swipe actions', () => {
     expect(screen.queryByTestId('session-swipe-delete')).toBeNull()
   })
 })
+
+describe('needs-you terminal tail', () => {
+  it('strips terminal control codes from the tail', async () => {
+    await renderCard(session({ lastOutput: '\x1b[?25lAllow edit? (y/n)\x1b[?25h' }))
+    expect(screen.getByText('Allow edit? (y/n)')).toBeTruthy()
+  })
+
+  it('hides the tail when only control codes are left', async () => {
+    await renderCard(session({ lastOutput: '\x1b[?25l \n' }))
+    expect(screen.queryByText(/\[\?25l/)).toBeNull()
+    // The default normalizer trims, which would hide a whitespace-only line.
+    expect(screen.queryByText(/^\s+$/, { normalizer: (text) => text })).toBeNull()
+  })
+})
