@@ -288,7 +288,7 @@
     "testCrash": "בדיקת דיווח קריסות",
     "testThrow": "זריקת חריגה לא מטופלת",
     "testCrashConfirmTitle": "לשלוח קריסת בדיקה?",
-    "testCrashConfirmMessage": "פעולה זו יוצרת שגיאת בדיקה כדי לוודא שהדיווח פועל. זמין רק בגרסאות פיתוח.",
+    "testCrashConfirmMessage": "פעולה זו יוצרת שגיאת בדיקה כדי לוודא שהדיווח פועל. זמין רק בגרסאות פיתוח וב-QA.",
     "testCrashSend": "שלח קריסת בדיקה"
   },
   "diagnosticsTerms": {

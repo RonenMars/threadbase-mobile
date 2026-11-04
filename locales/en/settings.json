@@ -286,7 +286,7 @@
     "testCrash": "Test crash reporting",
     "testThrow": "Throw uncaught exception",
     "testCrashConfirmTitle": "Send a test crash?",
-    "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development builds.",
+    "testCrashConfirmMessage": "This raises a test error so you can confirm reporting works. Only available in development and QA builds.",
     "testCrashSend": "Send test crash"
   },
   "diagnosticsTerms": {
