@@ -15,7 +15,7 @@ import {
   type LayoutChangeEvent,
   type ListRenderItemInfo,
 } from 'react-native'
-import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star, ArrowsClockwise } from 'phosphor-react-native'
+import { ExportIcon, InfoIcon, MagnifyingGlass, Play, ArrowLeft, Star, ArrowsClockwise, Power } from 'phosphor-react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -42,6 +42,8 @@ import { foldAnsweredQuestions } from '@/utils/foldAnsweredQuestions'
 import { evictStaleConversationFavorite, hardReloadConversation } from '@/lib/sessionLifecycle'
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
+import { useTerminateExternal } from '@/hooks/useTerminateExternal'
+import { isExternalAlive, isExternalSession } from '@/lib/externalSession'
 import { useServersStore } from '@/stores/servers'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -94,7 +96,7 @@ interface SearchTargetResponse {
 
 export default function ConversationDetailScreen() {
   useLiveInstanceCount('ConversationDetail')
-  const { t } = useTranslation(['conversation', 'common'])
+  const { t } = useTranslation(['conversation', 'common', 'sessions'])
   const theme = useTheme()
   const { direction } = useAppDirection()
   const styles = useMemo(() => makeStyles(theme), [theme])
@@ -462,6 +464,8 @@ export default function ConversationDetailScreen() {
     router.back()
   }, [qc, serverId, id, router])
   const { resume, adoptSession, forkSession } = useSessionActions(serverId, id)
+  const requestTerminate = useTerminateExternal(serverId, id)
+  const canTerminate = conversation != null && isExternalSession(conversation) && isExternalAlive(conversation)
 
   // Seed the session cache from the resume snapshot (so /session/:id renders
   // without a round-trip) then hand off to the live session, carrying the
@@ -781,6 +785,16 @@ export default function ConversationDetailScreen() {
             },
             testID: 'conversation-hard-reload',
           },
+          ...(canTerminate
+            ? [{
+                key: 'terminate',
+                label: t('sessions:terminateExternal.confirm'),
+                icon: Power,
+                destructive: true,
+                onPress: requestTerminate,
+                testID: 'conversation-terminate',
+              }]
+            : []),
         ]}
       />
     </View>

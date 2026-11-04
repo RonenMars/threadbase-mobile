@@ -1,0 +1,35 @@
+import { useCallback } from 'react'
+import { Alert } from 'react-native'
+import { useTranslation } from 'react-i18next'
+import { useQueryClient } from '@tanstack/react-query'
+import { createApiForServer, NotFoundError } from '@/services/api-client'
+
+/**
+ * Terminate for an external (observed) session: the streamer SIGTERMs the
+ * process that owns it, which is the user's own terminal session, so every
+ * call confirms first. Returns the function that opens that confirmation.
+ */
+export function useTerminateExternal(serverId: string, sessionId: string): () => void {
+  const { t } = useTranslation(['sessions', 'common'])
+  const qc = useQueryClient()
+
+  return useCallback(() => {
+    const run = async () => {
+      try {
+        await createApiForServer(serverId).post(`/api/sessions/${sessionId}/terminate`)
+      } catch (err) {
+        // A 404 means the process is already gone: what was asked for.
+        if (!(err instanceof NotFoundError)) {
+          Alert.alert(t('terminateExternal.failed'), err instanceof Error ? err.message : String(err))
+          return
+        }
+      }
+      void qc.invalidateQueries({ queryKey: ['sessions'] })
+      void qc.invalidateQueries({ queryKey: ['conversation', serverId, sessionId] })
+    }
+    Alert.alert(t('terminateExternal.title'), t('terminateExternal.body'), [
+      { text: t('common:button.cancel'), style: 'cancel' },
+      { text: t('terminateExternal.confirm'), style: 'destructive', onPress: () => void run() },
+    ])
+  }, [qc, serverId, sessionId, t])
+}
