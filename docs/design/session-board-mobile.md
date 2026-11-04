@@ -20,7 +20,7 @@ The board opens from an icon button in the hub header, not from a tab and not fr
 
 ## Columns
 
-Same four columns as the web board: Needs you, Working, Observed, Earlier.
+Same four columns as the web board: Needs you, Working, External, Earlier.
 Resumable, can't-resume and tierless history all land in Earlier (`lib/boardColumns.ts`); an unknown tier lands there too rather than disappearing.
 With the default order, Needs you sorts longest wait first and every other column by last activity; another order from the drawer applies to every column.
 

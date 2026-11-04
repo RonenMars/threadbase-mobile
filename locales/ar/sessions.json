@@ -183,7 +183,7 @@
     "working": "يعمل",
     "resumable": "قابل للاستئناف",
     "cantResume": "لا يمكن الاستئناف",
-    "observed": "مُراقَب"
+    "observed": "خارجي"
   },
   "phase": {
     "thinking": "يفكر",
@@ -193,7 +193,7 @@
     "working": "يعمل"
   },
   "capability": {
-    "observeOnly": "للمشاهدة فقط",
+    "observeOnly": "للعرض فقط",
     "liveControl": "تحكم مباشر"
   },
   "timeBucket": {

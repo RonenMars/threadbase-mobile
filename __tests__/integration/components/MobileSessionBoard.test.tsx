@@ -148,7 +148,7 @@ describe('SessionBoard columns', () => {
     expect(selected(r, 'working')).toBe(true)
     expect(r.getByTestId('board-column-working')).toHaveTextContent('Working1')
     expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1')
-    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed0')
+    expect(r.getByTestId('board-column-observed')).toHaveTextContent('External0')
   })
 
   it('starts on Needs you when something waits, whatever was remembered', async () => {
@@ -223,7 +223,7 @@ describe('SessionBoard cards', () => {
     mockGet.mockResolvedValue({ conversations: [sub('a1', 'e', true), sub('a2', 'e', false)], hasMore: false, offset: 0, total: 2 })
     const r = await renderBoard([row(terminal)])
     await waitFor(() => expect(r.getByTestId('board-column-working')).toHaveTextContent('Working1'))
-    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed0')
+    expect(r.getByTestId('board-column-observed')).toHaveTextContent('External0')
     expect(r.queryByText('Sub-agents of other sessions')).toBeNull()
   })
 
@@ -231,7 +231,7 @@ describe('SessionBoard cards', () => {
     mockGet.mockResolvedValue({ conversations: [sub('a1', 'e', false)], hasMore: false, offset: 0, total: 1 })
     const r = await renderBoard([row(terminal)])
     await waitFor(() => expect(r.getByTestId('board-toggle-e')).toHaveTextContent('1'))
-    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed1')
+    expect(r.getByTestId('board-column-observed')).toHaveTextContent('External1')
     expect(r.getByTestId('board-column-working')).toHaveTextContent('Working0')
   })
 

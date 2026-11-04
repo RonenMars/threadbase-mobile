@@ -102,7 +102,7 @@ describe('ConversationListItem', () => {
     const tree = await render(
       <ConversationListItem title="watched" density="compact" leading="dot" tier="observed" />,
     )
-    expect(collectText(tree.toJSON() as unknown as Json)).not.toContain('Observed')
+    expect(collectText(tree.toJSON() as unknown as Json)).not.toContain('External')
     expect((tree.root as renderer.ReactTestInstance).findAllByType(LiveDot)).toHaveLength(1)
   })
 

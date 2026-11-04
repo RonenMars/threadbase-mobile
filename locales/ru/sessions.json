@@ -161,7 +161,7 @@
     "working": "Работает",
     "resumable": "Можно возобновить",
     "cantResume": "Нельзя возобновить",
-    "observed": "Наблюдение"
+    "observed": "Внешняя"
   },
   "phase": {
     "thinking": "Думает",

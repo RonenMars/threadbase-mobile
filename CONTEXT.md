@@ -37,6 +37,10 @@ Prefer it over inferring end-or-hold from `ptyAttached` + `status`.
 
 **Provider** — the agent backing a session: Claude Code or Codex (`constants/providers`). Capabilities differ per provider; don't assume Claude's behaviour.
 
+**External session** — a session the streamer discovered but does not own (`ownership: 'external'`). Read-only in the app: favorite, rename and terminate only, never input or takeover. Shown to users as "External", never "Observed".
+
+**Managed session** — a session the streamer spawned.
+
 **Hub** — the home screen (`app/index.tsx`). Three layouts over the same data, and the difference is structural, not cosmetic: **classic** is a flat merged list, **tree** is a directory hierarchy, **hub** groups by project. Pagination that works on the flat list does not work on the grouped ones — they need the whole group to draw it. This is the subject of [ADR 0001](./docs/adr/0001-hub-data-layer-lazy-pagination.md).
 
 ## What this glossary does not cover
