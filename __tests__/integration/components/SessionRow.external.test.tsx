@@ -46,11 +46,11 @@ beforeEach(() => {
 })
 
 describe('SessionRow — external session', () => {
-  it('marks an alive external row as Observed', async () => {
-    const { getByText, queryByText } = await render(
+  it('shows no Observed badge on an alive external row', async () => {
+    const { queryByText } = await render(
       <SessionRow session={makeSession({ ownership: 'external', processLiveness: 'alive' })} />,
     )
-    expect(getByText('Observed')).toBeTruthy()
+    expect(queryByText('Observed')).toBeNull()
     expect(queryByText('Working')).toBeNull()
   })
 
