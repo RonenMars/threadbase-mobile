@@ -11,6 +11,7 @@ import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
+import { stripAnsi } from '@/utils/stripAnsi'
 import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
 import { LiveCard } from './LiveCard'
 
@@ -51,6 +52,8 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const tierLabel = getSessionTierLabel('needsYou', t)
   const accessibilityLabel = qualifier ? `${title}, ${tierLabel}, ${qualifier}` : `${title}, ${tierLabel}`
   const projectLabel = shortPath(session.projectPath)
+  // The streamer leaves private-mode codes such as cursor-hide in the tail.
+  const output = stripAnsi(session.lastOutput ?? '').trim()
 
   return (
     <SwipeableRow leading={swipe.leading} trailing={swipe.trailing}>
@@ -70,8 +73,8 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         isFirst={isFirst}
       >
         <StateBadge tier="needsYou" qualifier={qualifier} />
-        {session.lastOutput ? (
-          <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
+        {output ? (
+          <Text style={styles.output} numberOfLines={1}>{output}</Text>
         ) : null}
         <View style={styles.footer}>
           {projectLabel ? (
