@@ -120,27 +120,28 @@ class AppDelegate: ExpoAppDelegate {
         alert.addAction(UIAlertAction(title: "Later", style: .cancel) { _ in
           deferPrompt()
         })
-        alert.addAction(UIAlertAction(title: "Update", style: .default) { [weak self] _ in
-          // Finish dismissing this alert before presenting a possible open error.
-          presenter.dismiss(animated: true) {
-            UIApplication.shared.open(release.downloadURL, options: [:]) { opened in
-              DispatchQueue.main.async {
-                if opened {
-                  deferPrompt()
-                  return
-                }
-                guard let self, let presenter = self.qaUpdatePresenter() else { return }
-                let error = UIAlertController(
-                  title: "Couldn't open update",
-                  message: "Please try again from the update prompt.",
-                  preferredStyle: .alert)
-                error.addAction(UIAlertAction(title: "OK", style: .default))
-                self.qaUpdateAlert = error
-                presenter.present(error, animated: true)
+        // UIKit has already dismissed the alert when an action handler runs.
+        func openUpdate() {
+          let url = release.downloadURL
+          UIApplication.shared.open(url, options: [:]) { [weak self] opened in
+            DispatchQueue.main.async {
+              if opened {
+                deferPrompt()
+                return
               }
+              guard let self, let presenter = self.qaUpdatePresenter() else { return }
+              let error = UIAlertController(
+                title: "Couldn't open update",
+                message: "iOS refused the \(url.scheme ?? "unknown")://\(url.host ?? "") link. Retry, or force-close and reopen TbDev.",
+                preferredStyle: .alert)
+              error.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+              error.addAction(UIAlertAction(title: "Retry", style: .default) { _ in openUpdate() })
+              self.qaUpdateAlert = error
+              presenter.present(error, animated: true)
             }
           }
-        })
+        }
+        alert.addAction(UIAlertAction(title: "Update", style: .default) { _ in openUpdate() })
         self.qaUpdateAlert = alert
         presenter.present(alert, animated: true)
       }
