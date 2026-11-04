@@ -16,6 +16,12 @@ async function renderWithTheme(ui: React.ReactElement) {
   return await render(<ThemeProvider>{ui}</ThemeProvider>)
 }
 
+let mockNativeBuild: string | null = null
+// A getter inside an object spread is read once at mock time, so define it on the copy instead.
+jest.mock('expo-application', () =>
+  Object.defineProperty({ ...jest.requireActual('expo-application') }, 'nativeBuildVersion', { get: () => mockNativeBuild }),
+)
+
 const mockReplace = jest.fn()
 const mockPush = jest.fn()
 jest.mock('expo-router', () => ({
@@ -298,6 +304,19 @@ describe('Settings – about section', () => {
   it('shows app version', async () => {
     const { getByText } = await renderWithTheme(<SettingsScreen />)
     expect(getByText(/Threadbase Mobile v1\.0\.0/)).toBeTruthy()
+  })
+
+  it('shows the native build number over the config one', async () => {
+    mockNativeBuild = '240.2611040945'
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
+    mockNativeBuild = null
+    expect(getByText('Threadbase Mobile v1.0.0 (240.2611040945)')).toBeTruthy()
+  })
+
+  it('falls back to the config build number when the native one is unknown', async () => {
+    const { getByText } = await renderWithTheme(<SettingsScreen />)
+    // jest-expo's Constants mock reports build number 1.
+    expect(getByText('Threadbase Mobile v1.0.0 (1)')).toBeTruthy()
   })
 
   it('shows app tagline', async () => {
