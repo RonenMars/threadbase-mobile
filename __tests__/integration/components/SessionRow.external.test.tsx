@@ -50,7 +50,7 @@ describe('SessionRow — external session', () => {
     const { queryByText } = await render(
       <SessionRow session={makeSession({ ownership: 'external', processLiveness: 'alive' })} />,
     )
-    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('External')).toBeNull()
     expect(queryByText('Working')).toBeNull()
   })
 
@@ -59,7 +59,7 @@ describe('SessionRow — external session', () => {
       <SessionRow session={makeSession({ status: 'running', ptyAttached: true })} />,
     )
     expect(getByText('Working')).toBeTruthy()
-    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('External')).toBeNull()
   })
 
   it('routes an external row to the read-only conversation view, not /session', async () => {
@@ -110,7 +110,7 @@ describe('SessionRow — external session', () => {
   it('renders an older-server payload (no new fields) without crashing', async () => {
     const { getByTestId, queryByText } = await render(<SessionRow session={makeSession()} />)
     expect(getByTestId('session-row-sess-1')).toBeTruthy()
-    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('External')).toBeNull()
     expect(queryByText('Working')).toBeNull()
   })
 })

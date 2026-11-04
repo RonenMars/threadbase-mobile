@@ -34,13 +34,13 @@ describe('SessionStatusBadge', () => {
     expect(toJSON()).not.toBeNull()
   })
 
-  it('renders Observed for an alive external process', async () => {
+  it('renders External for an alive external process', async () => {
     const { getByText, queryByText } = await render(
       <SessionStatusBadge
         session={{ status: 'idle', ownership: 'external', processLiveness: 'alive' }}
       />,
     )
-    expect(getByText('Observed')).toBeTruthy()
+    expect(getByText('External')).toBeTruthy()
     expect(queryByText('Resumable')).toBeNull()
   })
 
@@ -51,10 +51,10 @@ describe('SessionStatusBadge', () => {
       />,
     )
     const running = await render(<SessionStatusBadge session={managed('running')} />)
-    expect(external.getByText('Observed')).toBeTruthy()
+    expect(external.getByText('External')).toBeTruthy()
     expect(external.queryByText('Working')).toBeNull()
     expect(running.getByText('Working')).toBeTruthy()
-    expect(running.queryByText('Observed')).toBeNull()
+    expect(running.queryByText('External')).toBeNull()
   })
 
   it('uses presentation kind from a full session payload', async () => {

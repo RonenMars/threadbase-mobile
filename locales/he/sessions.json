@@ -150,7 +150,7 @@
     "working": "עובד",
     "resumable": "ניתן לחידוש",
     "cantResume": "לא ניתן לחידוש",
-    "observed": "בצפייה"
+    "observed": "חיצוני"
   },
   "phase": {
     "thinking": "חושב",

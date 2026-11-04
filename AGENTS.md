@@ -43,6 +43,14 @@ The mobile client absorbs streamer evolution: a newer server may degrade a scree
 - Probe `GET /api/info` and `GET /api/config/feature-flags`; hide or explain unsupported features instead of throwing. A failed probe means the feature is off.
 - Report malformed data while keeping the rest of the screen alive. Do not invent client-side repair shims or pin a minimum server version.
 
+## Session ownership terms
+
+- **External**: a session the streamer discovered but does not own (`ownership: 'external'`, `isExternalSession`). The app shows it read-only: it never sends input to it and never takes it over.
+- The user-facing word is "External", never "Observed". Code identifiers such as `observed` and `isObserveOnly` keep their names.
+- Allowed actions on an External session: favorite, rename, and terminate. Terminate calls `POST /sessions/:id/terminate`, asks for confirmation first, and is offered only while the process is alive.
+- **Managed**: a session the streamer spawned.
+- **View only**: a provider without live control, so its sessions can't be typed into. Shown as the "View only" chip; code keeps `observeOnly` / `isObserveOnly`.
+
 ## Encryption (E2EE)
 
 A server whose record carries `serverPublicKey` is **pinned**: its traffic is sealed and must never silently fall back to plaintext. See [docs/e2ee-client.md](docs/e2ee-client.md).

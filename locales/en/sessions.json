@@ -139,7 +139,7 @@
     "working": "Working",
     "resumable": "Resumable",
     "cantResume": "Can't resume",
-    "observed": "Observed"
+    "observed": "External"
   },
   "phase": {
     "thinking": "Thinking",
@@ -149,7 +149,7 @@
     "working": "Working"
   },
   "capability": {
-    "observeOnly": "Observe only",
+    "observeOnly": "View only",
     "liveControl": "Live control"
   },
   "timeBucket": {

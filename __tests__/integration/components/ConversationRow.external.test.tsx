@@ -43,7 +43,7 @@ describe('ConvRow (project hub, drill)', () => {
         <ConvRow conv={makeConv(external)} />
       </ThemeProvider>,
     )
-    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('External')).toBeNull()
   })
 
   it('renders exactly as before without the fields', async () => {
@@ -52,7 +52,7 @@ describe('ConvRow (project hub, drill)', () => {
         <ConvRow conv={makeConv()} />
       </ThemeProvider>,
     )
-    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('External')).toBeNull()
   })
 
   it('still opens the conversation screen, never the session/overtake route', async () => {
@@ -87,13 +87,13 @@ describe('ConversationList (project screen, search results)', () => {
       makeConv({ id: 'live', ...external }),
       makeConv({ id: 'plain' }),
     ])
-    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('External')).toBeNull()
     expect(getByTestId('conversation-row-live')).toBeTruthy()
   })
 
   it('shows no indicator without the fields', async () => {
     const { queryByText } = await renderList([makeConv({ id: 'plain' })])
-    expect(queryByText('Observed')).toBeNull()
+    expect(queryByText('External')).toBeNull()
   })
 
   it('tapping a live-outside row routes to the conversation, not /session', async () => {
