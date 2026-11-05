@@ -1,7 +1,12 @@
+import type { ReactNode } from 'react'
+import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
+import { useConversationSwipe } from '@/hooks/useConversationSwipe'
+import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
+import type { MultiConversation, MultiSession } from '@/types/api'
 import type { DrillItem } from './types'
 
 interface Props {
@@ -23,7 +28,31 @@ function rowTestIDFromKey(key: string): string {
   return `drill-row-${key}`
 }
 
+function SessionSwipe({ session, title, children }: { session: MultiSession; title: string; children: ReactNode }) {
+  const { swipe, overlays } = useSessionRowActions(session, title)
+  return (
+    <>
+      <SwipeableRow leading={swipe.leading} trailing={swipe.trailing}>
+        {children}
+      </SwipeableRow>
+      {overlays}
+    </>
+  )
+}
+
+function ConversationSwipe({ conv, title, children }: { conv: MultiConversation; title: string; children: ReactNode }) {
+  const swipe = useConversationSwipe(conv, title)
+  return <SwipeableRow leading={swipe.leading}>{children}</SwipeableRow>
+}
+
 export function DrillRow({ item }: Props) {
+  const row = <DrillRowBody item={item} />
+  if (item.session) return <SessionSwipe session={item.session} title={item.label}>{row}</SessionSwipe>
+  if (item.conversation) return <ConversationSwipe conv={item.conversation} title={item.label}>{row}</ConversationSwipe>
+  return row
+}
+
+function DrillRowBody({ item }: Props) {
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => (item.serverId ? s.servers[item.serverId]?.color : undefined))
   const rowPreviewModeSetting = useSettingsStore((s) => s.rowPreviewMode)

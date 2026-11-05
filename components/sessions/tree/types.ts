@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
-import type { MultiSession } from '@/types/api'
+import type { MultiConversation, MultiSession } from '@/types/api'
 import type { SessionTier } from '@/lib/sessionPresentation'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { ProviderName } from '@/constants/providers'
@@ -58,6 +58,9 @@ export type DrillItem = {
   serverId?: string
   serverLabel?: string
   provider?: ProviderName
+  /** The record behind the row; present, it decides which swipe actions the row offers. */
+  session?: MultiSession
+  conversation?: MultiConversation
   onPress: () => void
 }
 
