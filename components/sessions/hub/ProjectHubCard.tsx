@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { CaretRight } from 'phosphor-react-native'
 import { useNavLockStore } from '@/stores/navLock'
 import { isPresentationLive, deriveSessionPresentation } from '@/lib/sessionPresentation'
+import { sessionLastActivityMs } from '@/lib/sessionBoard'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
 import { projectRailToken } from './projectTiers'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
@@ -139,7 +140,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
               const merged = [
                 ...group.sessions.map((s) => ({
                   key: `s-${s.serverId}::${s.id}`,
-                  ms: s.completedAt ? Date.parse(s.completedAt) : Date.parse(s.startedAt) + (s.elapsedMs ?? 0),
+                  ms: sessionLastActivityMs(s),
                   node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
                 })),
                 ...conversations.map((c) => ({
