@@ -496,6 +496,54 @@ describe('api.getWithMeta – conditional fetch', () => {
     expect(res.status).toBe(200)
     expect(res.etag).toBeNull()
   })
+
+  describe('a detail served from cached rows while the startup scan runs', () => {
+    function warmingMeta(status: number, headers: Record<string, string>, body: unknown) {
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        headers: new Headers(headers),
+        json: jest.fn().mockResolvedValue(body),
+      }
+    }
+    const fetchStatus = () => useServerFetchStatusStore.getState().statuses.srv_test
+
+    it('keeps the banner on a labelled 200 and still returns the body', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(
+        warmingMeta(200, { 'X-Threadbase-Warming': 'startup' }, { meta: { id: 'c1' } }),
+      )
+
+      const res = await api.getWithMeta<{ meta: { id: string } }>('/api/conversations/c1')
+
+      expect(res.body?.meta.id).toBe('c1')
+      expect(fetchStatus()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('keeps the banner on a labelled 304', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(warmingMeta(304, { 'X-Threadbase-Warming': 'startup' }, undefined))
+
+      const res = await api.getWithMeta('/api/conversations/c1')
+
+      expect(res.status).toBe(304)
+      expect(fetchStatus()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('clears the banner on an unlabelled 200', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(warmingMeta(200, {}, { meta: { id: 'c1' } }))
+      await api.getWithMeta('/api/conversations/c1')
+      expect(fetchStatus().status).toBe('ok')
+    })
+
+    it('clears the banner on an unlabelled 304', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(warmingMeta(304, {}, undefined))
+      await api.getWithMeta('/api/conversations/c1')
+      expect(fetchStatus().status).toBe('ok')
+    })
+  })
 })
 
 // Each entry point below has its OWN catch body rather than sharing

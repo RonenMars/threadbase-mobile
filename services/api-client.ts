@@ -298,6 +298,16 @@ function recordWarmupError(serverId: string, errorBody: unknown): ServerWarmupSt
   return warmupState
 }
 
+function recordWarmupOutcome(
+  serverId: string,
+  response: Response,
+  body: { warming?: string } | null,
+): void {
+  const warming = getWarmingMarker(response.headers.get(WARMING_HEADER), body)
+  if (warming) useServerFetchStatusStore.getState().recordWarmingUp(serverId, warming)
+  else useServerFetchStatusStore.getState().recordReady(serverId)
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -441,12 +451,7 @@ async function request<T>(
   const json = await readApiJson<T>(response, path)
   if (traced) traceMark('parsed')
   if (isWarmupFetchEndpoint(method, path)) {
-    const warming = getWarmingMarker(
-      response.headers.get(WARMING_HEADER),
-      json as { warming?: string } | null,
-    )
-    if (warming) useServerFetchStatusStore.getState().recordWarmingUp(serverId, warming)
-    else useServerFetchStatusStore.getState().recordReady(serverId)
+    recordWarmupOutcome(serverId, response, json as { warming?: string } | null)
   }
   if (isStartSession) {
     const keys = json && typeof json === 'object' ? Object.keys(json as object) : []
@@ -599,7 +604,7 @@ async function requestWithMeta<T>(
   // 304: the cached copy is current. fetch() resolves (does not throw); the
   // body is empty, so don't call response.json().
   if (response.status === 304) {
-    useServerFetchStatusStore.getState().recordReady(serverId)
+    recordWarmupOutcome(serverId, response, null)
     if (traced) {
       traceMark('response', 'HTTP 304')
       traceMark('parsed', 'no body — cached page reused')
@@ -624,7 +629,7 @@ async function requestWithMeta<T>(
     throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState, response.status)
   }
 
-  useServerFetchStatusStore.getState().recordReady(serverId)
+  recordWarmupOutcome(serverId, response, null)
   if (traced) traceMark('response', `HTTP ${response.status}`)
   const parsed = await readApiJson<T>(response, path)
   if (traced) traceMark('parsed')
