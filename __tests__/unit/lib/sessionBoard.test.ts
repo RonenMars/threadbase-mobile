@@ -22,8 +22,8 @@ describe('sessionLastActivityMs', () => {
     expect(sessionLastActivityMs(session({ completedAt: '2026-10-10T13:00:00Z' }))).toBe(Date.parse('2026-10-10T13:00:00Z'))
   })
 
-  it('uses the start time, not start plus elapsed, when nothing newer is known', () => {
-    expect(sessionLastActivityMs(session({}))).toBe(Date.parse('2026-10-10T12:00:00Z'))
+  it('falls back to start plus elapsed for a running session with no lastActivityAt', () => {
+    expect(sessionLastActivityMs(session({ status: 'running' }))).toBe(Date.parse('2026-10-10T12:00:00Z') + 5_000)
   })
 
   it('keeps a resumable session dated by its activity as elapsed time increases', () => {

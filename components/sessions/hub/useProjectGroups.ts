@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { MultiSession } from '../../../types/api'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
+import { sessionLastActivityMs } from '@/lib/sessionBoard'
 import type { SortBy, SortOrder } from '../../../types/ui'
 
 export interface ProjectGroup {
@@ -58,9 +59,7 @@ export function useProjectGroups(
       group.sessions.push(session)
 
       const startMs = toMs(session.startedAt)
-      const activityMs = session.completedAt
-        ? toMs(session.completedAt)
-        : startMs + (session.elapsedMs ?? 0)
+      const activityMs = sessionLastActivityMs(session)
 
       if (activityMs > group.latestActivityMs) {
         group.latestActivityMs = activityMs
