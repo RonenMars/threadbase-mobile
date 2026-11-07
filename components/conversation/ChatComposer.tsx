@@ -376,7 +376,7 @@ export function ChatComposer({
             <TextInput
               ref={inputRef}
               testID="chat-message-input"
-              style={[styles.input, inputDirection, disabled && styles.disabled]}
+              style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
@@ -405,7 +405,7 @@ export function ChatComposer({
             <TextInput
               ref={inputRef}
               testID="chat-message-input"
-              style={[styles.input, inputDirection, disabled && styles.disabled]}
+              style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, inputDirection, disabled && styles.disabled]}
               value={disabled ? '' : value}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
@@ -567,6 +567,8 @@ function makeStyles(theme: Theme) {
       maxHeight: 160,
       minHeight: 44,
     },
+    // Pin the empty height: native multiline sizing can retain the sent draft's height.
+    inputEmpty: { height: 44 },
     inputExpandedField: {
       flex: 1,
       backgroundColor: theme.bg.card,
