@@ -61,6 +61,23 @@ async function renderComposer(overrides?: Partial<ChatComposerProps>) {
 }
 
 describe('ChatComposer', () => {
+  it.each(['ios', 'android'] as const)('shrinks the cleared inline input on %s without remounting it', async (os) => {
+    jest.replaceProperty(Platform, 'OS', os)
+    function Composer() {
+      const [value, setValue] = React.useState('A long message\n'.repeat(20))
+      return <ChatComposer {...makeProps()} value={value} onChangeText={setValue} onSend={() => setValue('')} />
+    }
+    await renderWithI18n(<Composer />)
+    const input = screen.getByTestId('chat-message-input')
+    expect(StyleSheet.flatten(input.props.style).height).toBeUndefined()
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
+    expect(screen.getByTestId('chat-message-input')).toBe(input)
+    expect(input.props.value).toBe('')
+    expect(StyleSheet.flatten(input.props.style).height).toBe(44)
+    await fireEvent.changeText(input, 'Next message\n'.repeat(20))
+    expect(StyleSheet.flatten(input.props.style).height).toBeUndefined()
+  })
+
   beforeEach(() => {
     appStateListeners = []
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, cb) => {
