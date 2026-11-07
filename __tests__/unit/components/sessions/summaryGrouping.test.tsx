@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react-native'
 import { basename } from '@/components/sessions/shared/pathTail'
-import { buildTree, compactTree, hasLiveSession, activeSessionColor } from '@/components/sessions/tree/treeUtils'
+import { buildTree, compactTree, hasLiveSession, activeSessionColor, latestActivityMs } from '@/components/sessions/tree/treeUtils'
 import { useProjectGroups } from '@/components/sessions/hub/useProjectGroups'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { MultiSession } from '@/types/api'
@@ -56,6 +56,22 @@ describe('tree built from project summaries', () => {
     const node = tree.children.get('C:')!.children.get('dev')!.children.get('app')!
     expect(node.fullPath).toBe('/C:/dev/app')
     expect(node.projectPath).toBe('C:\\dev\\app')
+  })
+})
+
+// An idle, resumable session: startedAt + elapsedMs reads as a day later than
+// its real last activity.
+const resumable: MultiSession = { ...session, status: 'idle', elapsedMs: 86_400_000, lastActivityAt: '2026-08-08T10:05:00.000Z' }
+
+describe('session recency in the tree and project groups', () => {
+  it('dates a tree node by the session\'s last activity', () => {
+    const node = buildTree([resumable], []).children.get('dev')!.children.get('tb-mobile')!
+    expect(latestActivityMs(node)).toBe(Date.parse('2026-08-08T10:05:00.000Z'))
+  })
+
+  it('dates a project group by the session\'s last activity', async () => {
+    const { result } = await renderHook(() => useProjectGroups([resumable], [], 'lastActivity', 'desc'))
+    expect(result.current[0].latestActivityMs).toBe(Date.parse('2026-08-08T10:05:00.000Z'))
   })
 })
 

@@ -150,6 +150,20 @@ describe('ProjectHubCard', () => {
     expect(queryByText('session:s1')).toBeNull()
   })
 
+  it('orders the preview by the session\'s last activity, not start plus elapsed', async () => {
+    // startedAt + elapsedMs lands at 11:00, after the 10:01 conversation; the
+    // session was last active at 10:00:30, before it.
+    const idle: ProjectGroup = {
+      ...group,
+      sessions: [{ ...session, elapsedMs: 3_600_000, lastActivityAt: '2026-07-13T10:00:30.000Z' }],
+    }
+    const { getAllByText } = await renderCard(true, idle)
+    expect(getAllByText(/^(session|conversation):/).map((n) => n.props.children)).toEqual([
+      'conversation:shared-id',
+      'session:shared-id',
+    ])
+  })
+
   it('opens the project screen on the card\'s own server', async () => {
     const push = jest.fn()
     ;(useRouter as jest.Mock).mockReturnValue({ push })
