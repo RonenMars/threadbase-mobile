@@ -3,7 +3,7 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
 import { clientLog } from '@/lib/clientLog'
-import { getServerWarmupState } from './server-warmup'
+import { getServerWarmupState, getWarmingMarker, WARMING_HEADER } from './server-warmup'
 import { mark as traceMark, isTracing } from '@/lib/openTrace'
 import { isProviderName, type ProviderName } from '@/constants/providers'
 import type {
@@ -441,7 +441,12 @@ async function request<T>(
   const json = await readApiJson<T>(response, path)
   if (traced) traceMark('parsed')
   if (isWarmupFetchEndpoint(method, path)) {
-    useServerFetchStatusStore.getState().recordReady(serverId)
+    const warming = getWarmingMarker(
+      response.headers.get(WARMING_HEADER),
+      json as { warming?: string } | null,
+    )
+    if (warming) useServerFetchStatusStore.getState().recordWarmingUp(serverId, warming)
+    else useServerFetchStatusStore.getState().recordReady(serverId)
   }
   if (isStartSession) {
     const keys = json && typeof json === 'object' ? Object.keys(json as object) : []
