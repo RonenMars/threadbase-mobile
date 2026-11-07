@@ -17,11 +17,13 @@
  * over Sentry when present, for a future developer-operated backend.
  */
 
+import { Alert, Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import * as MailComposer from 'expo-mail-composer'
 import { submitFeedbackViaSentry } from './sentry'
 import { diagnosticsToRows } from './feedback-diagnostics'
 import { sanitize } from './sanitize'
+import i18n from '@/lib/i18n'
 import type {
   FeedbackReport,
   FeedbackSubmitResult,
@@ -153,6 +155,31 @@ async function tryEmail(report: FeedbackReport): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+/**
+ * Open the mail app addressed to support. `Linking.openURL` rejects when the
+ * device has no `mailto:` handler (Mail removed, no account), so fall back to
+ * copying the address and showing it rather than failing silently.
+ */
+export async function openSupportEmail(subject: string): Promise<void> {
+  try {
+    await Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`)
+    return
+  } catch {
+    // no mail handler: fall through to the copy fallback
+  }
+  let copied = false
+  try {
+    await Clipboard.setStringAsync(SUPPORT_EMAIL)
+    copied = true
+  } catch {
+    // the address is still shown below
+  }
+  const message = copied
+    ? i18n.t('feedback:supportEmail.noMailCopied', { email: SUPPORT_EMAIL })
+    : i18n.t('feedback:supportEmail.noMailShown', { email: SUPPORT_EMAIL })
+  Alert.alert(i18n.t('feedback:supportEmail.noMailTitle'), message)
 }
 
 /**

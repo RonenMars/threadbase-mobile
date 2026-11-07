@@ -41,7 +41,7 @@ import {
   submitFeedback,
   copyReportToClipboard,
   FEEDBACK_PAGE_URL,
-  SUPPORT_EMAIL,
+  openSupportEmail,
 } from '@/services/feedback-transport'
 import { pickAndPrepareScreenshot } from '@/services/feedback-screenshot'
 import { addSafeBreadcrumb } from '@/services/sentry'
@@ -387,7 +387,7 @@ export default function HelpFeedbackScreen() {
             <LandingRow
               icon={<Envelope size={22} color={theme.text.secondary} />}
               label={t('landing.supportEmail')}
-              onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Support`)}
+              onPress={() => void openSupportEmail('Threadbase Support')}
               testID="feedback-landing-support"
               theme={theme}
               isLast

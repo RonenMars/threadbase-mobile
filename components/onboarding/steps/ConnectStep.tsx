@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react'
 import {
-  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -20,7 +19,7 @@ import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { ServerFormFields } from '@/components/servers/ServerFormFields'
 import { classifyPairCredential, parsePairUri, type ExchangeResult } from '@/services/pair-exchange'
 import { isServerUrlAlreadyAdded } from '@/stores/servers'
-import { SUPPORT_EMAIL } from '@/services/feedback-transport'
+import { openSupportEmail } from '@/services/feedback-transport'
 import { isValidHttpServerUrl } from '@/lib/serverUrl'
 import { layoutDirectionStyle, textDirectionStyle as makeTextDirectionStyle } from '@/lib/rtl'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -377,9 +376,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           <TouchableOpacity
             testID="onboarding-connect-support"
             onPress={() => {
-              void Linking.openURL(
-                `mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`,
-              )
+              void openSupportEmail('Threadbase Pairing Help')
             }}
             style={styles.supportLink}
             accessibilityRole="link"

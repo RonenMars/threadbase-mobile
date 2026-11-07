@@ -88,5 +88,10 @@
     "body": "Optional diagnostics include crash reports, stability data, and API route templates with response sizes, without request or response contents.",
     "enable": "Enable anonymous diagnostics",
     "notNow": "Not now"
+  },
+  "supportEmail": {
+    "noMailTitle": "No mail app found",
+    "noMailCopied": "We copied {{email}} to your clipboard. Send us a message from any mail app.",
+    "noMailShown": "No mail app is set up on this device. Write to us at {{email}}."
   }
 }
