@@ -204,4 +204,11 @@ describe('home inline-first failures', () => {
 
     expect(mockHubRenders).toBe(baseline)
   })
+
+  it('hides the New session FAB while the server picker is open', async () => {
+    const { getByTestId, queryByTestId } = await render(<ProjectsHub />, { wrapper: createWrapper() })
+    await fireEvent.press(getByTestId('fab-new-session'))
+    expect(getByTestId('new-session-server-0')).toBeTruthy()
+    expect(queryByTestId('fab-new-session')).toBeNull()
+  })
 })
