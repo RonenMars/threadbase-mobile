@@ -34,7 +34,7 @@ import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
-import { sessionLastActivityMs as lastActivityMs } from '@/lib/sessionBoard'
+import { sessionActivityMs } from '@/lib/sessionActivity'
 import { ServerErrorModal } from '@/components/servers/ServerErrorModal'
 import { isServerFetchErrorVisible, useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { FAB } from '@/components/ui/FAB'
@@ -211,7 +211,7 @@ export default function ProjectsHub() {
   const filteredSessions = useMemo(
     () =>
       applyListFilters(
-        visibleSessions.map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s })),
+        visibleSessions.map((s) => ({ kind: 'session' as const, ms: sessionActivityMs(s), item: s })),
         filters,
       ).map((it) => it.item as MultiSession),
     [visibleSessions, filters],
@@ -315,12 +315,12 @@ export default function ProjectsHub() {
 
     const liveSessions = visibleSessions
       .filter(isLive)
-      .map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s }))
+      .map((s) => ({ kind: 'session' as const, ms: sessionActivityMs(s), item: s }))
       .sort((a, b) => b.ms - a.ms)
 
     const idleSessions = visibleSessions
       .filter((s) => !isLive(s))
-      .map((s) => ({ kind: 'session' as const, ms: lastActivityMs(s), item: s }))
+      .map((s) => ({ kind: 'session' as const, ms: sessionActivityMs(s), item: s }))
       .sort((a, b) => b.ms - a.ms)
 
     // While a search is active, take conversations from the server rather than
