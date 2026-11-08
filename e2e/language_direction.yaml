@@ -27,6 +27,17 @@ appId: com.ronenmars.threadbase
     # Stopping at the first sliver leaves the row under the sticky header,
     # where the tap does not land.
     centerElement: true
+# iOS reports the row as visible while it is still under the sticky header,
+# and centerElement does not always move it clear. Drag the content down a
+# fixed distance so the tap lands on the row, not the header.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - swipe:
+          start: 50%, 40%
+          end: 50%, 60%
+          duration: 1000
 - takeScreenshot: e2e/_artifacts/screenshots/language-direction-ltr
 
 # 3. Switch to Hebrew.
