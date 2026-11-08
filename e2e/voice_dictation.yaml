@@ -11,6 +11,16 @@
 
 appId: com.ronenmars.threadbase
 ---
+# The composer swaps the mic for send whenever it holds text, and drafts live in
+# SecureStore (useDraftsStore), which survives setup.yaml's launchApp clearState
+# on iOS. A draft left on session-abc123 by any earlier flow or suite run
+# (05_chat_flow types into it) is restored on mount and hides the mic. Wipe the
+# keychain first so the empty-composer precondition holds; setup.yaml then
+# re-pairs from scratch.
+- launchApp:
+    clearState: true
+    clearKeychain: true
+
 - runFlow: setup.yaml
 
 # Hub chrome is mounted
