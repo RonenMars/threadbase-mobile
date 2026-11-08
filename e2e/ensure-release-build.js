@@ -343,7 +343,8 @@ function main() {
         `Error: existing Release build is stale (${freshness.reason}).`,
         'Refusing to reuse it silently.',
         '',
-        'Fix: rebuild it — `npm run ios -- --configuration Release` — then re-run this script.',
+        'Fix: re-run with E2E_REBUILD_STALE=1 — it rebuilds with xcodebuild, stamps the build and installs it.',
+        '(An expo rebuild writes no stamp, so it leaves this check failing. A dirty tree needs the flag on every run.)',
         'Escape hatch: set E2E_ALLOW_STALE_BUILD=1 to reuse the existing build anyway.',
       ].join('\n'),
     )
