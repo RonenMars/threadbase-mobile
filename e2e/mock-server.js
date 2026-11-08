@@ -77,6 +77,7 @@ let nextAnswerReply = { status: 200, reason: null }
 // long turn produces — so the client has to fall back to the transcript for
 // everything before the frame. Both branches of the join get exercised.
 const SCROLLBACK_SESSION_ID = 'session-scrollback'
+let termSeq = 1000
 const SCROLLBACK_CLEAR_DELAY_MS = 2500
 const SCROLLBACK_REPLAY = {
   type: 'terminal_replay',
@@ -181,6 +182,36 @@ async function handleRequest(req, res) {
   if (method === 'OPTIONS') {
     res.writeHead(204)
     return res.end()
+  }
+
+  // `pt_` pair-token exchange: unauthenticated by design (no credential exists
+  // yet) and answered with the api key sealed to the client's ephemeral key.
+  if (method === 'POST' && p === '/api/pair/exchange') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    if (typeof body?.token !== 'string' || !body.token.startsWith('pt_') || body.token.startsWith('pt_bad')) {
+      return json(res, 401, { error: 'Pair token rejected' })
+    }
+    const nacl = require('tweetnacl')
+    const util = require('tweetnacl-util')
+    const eph = nacl.box.keyPair()
+    const nonce = nacl.randomBytes(nacl.box.nonceLength)
+    const sealed = nacl.box(
+      util.decodeUTF8('mock-key-123'),
+      nonce,
+      util.decodeBase64(body.clientPublicKey),
+      eph.secretKey,
+    )
+    return json(res, 200, {
+      ciphertext: util.encodeBase64(sealed),
+      nonce: util.encodeBase64(nonce),
+      ephemeralPublicKey: util.encodeBase64(eph.publicKey),
+      machineName: 'Mock Mac',
+    })
   }
 
   const auth = req.headers['authorization'] ?? ''
@@ -300,6 +331,9 @@ async function handleRequest(req, res) {
   // - Unknown ids get an empty body — the screen renders the empty-state copy.
   const conversationMatch = p.match(/^\/api\/conversations\/([^/]+)$/)
   if (method === 'GET' && conversationMatch) {
+    if (conversationMatch[1] === 'conv-q1152') {
+      return json(res, 200, readFixture('conv-q1152.json'))
+    }
     if (conversationMatch[1] === 'conv-scrollback') {
       return json(res, 200, readFixture('conv-scrollback.json'))
     }
@@ -430,6 +464,9 @@ async function handleRequest(req, res) {
     // terminal-scrollback flow (see the subscribe_session handler below).
     if (sessionMatch[1] === SCROLLBACK_SESSION_ID) {
       return json(res, 200, readFixture('session-scrollback.json'))
+    }
+    if (sessionMatch[1] === 'session-q1152') {
+      return json(res, 200, readFixture('session-q1152.json'))
     }
     return json(res, 200, readFixture('session-detail.json'))
   }
@@ -686,6 +723,19 @@ async function handleRequest(req, res) {
     return json(res, 200, { ok: true, toolUseId })
   }
 
+  if (method === 'POST' && p === '/__test__/terminal') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    const sessionId = body?.sessionId ?? 'session-q1152'
+    termSeq += 1
+    broadcast({ type: 'terminal_output', sessionId, data: body?.data ?? '', seq: termSeq })
+    return json(res, 200, { ok: true, seq: termSeq })
+  }
+
   // Arms the next /permission/answer reply, e.g. { status: 409, reason: 'gate_mismatch' }.
   if (method === 'POST' && p === '/__test__/answer-reply') {
     let body
@@ -770,6 +820,17 @@ for (const port of PORTS) {
         }
         if (msg?.type === 'subscribe_session' && msg.sessionId === SCROLLBACK_SESSION_ID) {
           handleSubscribeScrollback(ws)
+        }
+        if (msg?.type === 'subscribe_session' && msg.sessionId === 'session-q1152') {
+          ws.send(JSON.stringify({
+            type: 'terminal_replay',
+            sessionId: 'session-q1152',
+            lines: ['❯ tidy the checkout retry code', '⏺ Looking at the retry helper.'],
+            userMessages: [{ text: 'tidy the checkout retry code', ts: 1 }],
+            seq: 1,
+            cols: 120,
+            rows: 40,
+          }))
         }
       })
     })
