@@ -1,0 +1,40 @@
+name: Skills mirror
+
+# `.agents/skills` carries a copy of the shared skills published by the
+# threadbase umbrella's `threadbase-skills` plugin, so Codex can read them.
+# The copy is only trustworthy while it matches the pinned umbrella commit.
+# To move the pin: check out RonenMars/threadbase at the new commit, run
+# `scripts/sync-agents-skills.sh <this repo>/.agents/skills`, commit the result,
+# and change UMBRELLA_REF below in the same PR.
+
+on:
+  pull_request:
+    paths:
+      - '.agents/skills/**'
+      - '.github/workflows/skills-mirror.yml'
+  workflow_dispatch:
+
+env:
+  UMBRELLA_REF: fd78ac8ad601371d10c023f33bb5ebb2bf82324b
+
+jobs:
+  mirror:
+    name: Shared skills mirror
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: RonenMars/threadbase
+          ref: ${{ env.UMBRELLA_REF }}
+          path: umbrella
+      - name: Mirror matches the pinned umbrella commit
+        run: |
+          set -euo pipefail
+          want=$(sh umbrella/scripts/sync-agents-skills.sh --hash)
+          have=$(sh umbrella/scripts/sync-agents-skills.sh --hash .agents/skills)
+          echo "umbrella ${UMBRELLA_REF}: ${want}"
+          echo ".agents/skills:           ${have}"
+          # An empty hash would make two broken sides compare equal.
+          [ -n "$want" ] || { echo "::error::umbrella hash is empty"; exit 1; }
+          [ "$want" = "$have" ] || { echo "::error::.agents/skills drifted from the pinned umbrella skills"; exit 1; }
