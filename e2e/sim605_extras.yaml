@@ -1,0 +1,55 @@
+appId: com.ronenmars.threadbase
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-language-cta"
+    timeout: 30000
+- tapOn:
+    id: "onboarding-language-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-welcome-cta"
+- waitForAnimationToEnd
+- tapOn:
+    id: "onboarding-connect-qr-card"
+- waitForAnimationToEnd
+- takeScreenshot: sim605x_01_qr_entry
+- tapOn:
+    id: "onboarding-connect-back-to-choose"
+    optional: true
+- waitForAnimationToEnd
+- takeScreenshot: sim605x_02_after_back
+- tapOn:
+    id: "onboarding-connect-paste-card"
+- waitForAnimationToEnd
+- takeScreenshot: sim605x_03_paste_defaults
+- tapOn:
+    id: "onboarding-connect-url-input"
+- inputText: "http://localhost:7071"
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
+- tapOn:
+    id: "onboarding-connect-token-input"
+- inputText: "pt_badtoken"
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 45%
+    end: 50%, 25%
+    duration: 300
+- waitForAnimationToEnd
+- tapOn:
+    point: "86%,34%"
+- takeScreenshot: sim605x_04a_form_filled
+- tapOn:
+    id: "onboarding-connect-handshake-cta"
+- waitForAnimationToEnd
+- takeScreenshot: sim605x_04_bad_token

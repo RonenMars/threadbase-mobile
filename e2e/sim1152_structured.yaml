@@ -1,0 +1,64 @@
+# #1152 simulator check (structured card, one-message transcript, keyboard up).
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+- assertVisible:
+    id: "hub-screen"
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-q1152"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 12000
+- extendedWaitUntil:
+    visible:
+      id: "session-view-mode-chip"
+    timeout: 15000
+- runFlow:
+    when:
+      notVisible:
+        id: "live-conversation-list"
+    commands:
+      - tapOn:
+          id: "session-view-mode-chip"
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "live-conversation-list"
+    timeout: 10000
+- takeScreenshot: sim1152_structured_01_chat
+- tapOn:
+    id: "chat-message-input"
+- waitForAnimationToEnd
+- takeScreenshot: sim1152_structured_02_keyboard_up
+- runScript:
+    file: scripts/trigger-1152.js
+    env:
+      KIND: structured
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      id: "question-card"
+    timeout: 10000
+    optional: true
+- takeScreenshot: sim1152_structured_03_card_arrived
+- assertVisible: "Extract the retry policy.*"
+- assertVisible: "Patch withRetry in place.*"
+- assertVisible: "Run npx jest.*"
+- assertVisible: "Inline the helper.*"
+- assertVisible: "Leave the retry code alone.*"
+- tapOn:
+    id: "question-fullscreen-minimize"
+- waitForAnimationToEnd
+- takeScreenshot: sim1152_structured_04_minimized
+- tapOn:
+    id: "chat-message-input"
+- waitForAnimationToEnd
+- takeScreenshot: sim1152_structured_05_minimized_composer_tapped
+- assertVisible: "Extract the retry policy.*"
+- assertVisible: "Patch withRetry in place.*"
+- assertVisible: "Run npx jest.*"
+- assertVisible: "Inline the helper.*"
+- assertVisible: "Leave the retry code alone.*"
