@@ -135,6 +135,7 @@ describe('NowList', () => {
   it('keeps Needs you above every server group when two servers are active', async () => {
     useServersStore.setState({
       activeServerIds: ['server-1', 'server-2'],
+      displayedServerIds: ['server-1', 'server-2'],
       servers: {
         'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
         'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
@@ -150,7 +151,7 @@ describe('NowList', () => {
       expect(keys.indexOf('server-server-1')).toBeLessThan(keys.indexOf('server-server-2'))
       expect(keys.indexOf('session:server-2::w')).toBeLessThan(keys.indexOf('server-server-1'))
     } finally {
-      useServersStore.setState({ activeServerIds: [], servers: {} })
+      useServersStore.setState({ activeServerIds: [], displayedServerIds: [], servers: {} })
     }
   })
 
@@ -255,7 +256,7 @@ describe('NowList', () => {
   it('keeps live cards and shows history skeletons while a server is warming', async () => {
     const waiting = session({ id: 'w', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', sessionName: 'Why sessions open in terminal view' })
     const history = asConv(conversation({ id: 'old', sessionName: 'Fix the resume collision copy' }))
-    useServersStore.setState({ activeServerIds: ['server-1'] })
+    useServersStore.setState({ activeServerIds: ['server-1'], displayedServerIds: ['server-1'] })
     useServerFetchStatusStore.getState().recordWarmingUp('server-1', 'startup')
     try {
       const { getByTestId, getAllByTestId, queryByTestId } = await renderList([asItem(waiting), history], 'state')
@@ -264,7 +265,7 @@ describe('NowList', () => {
       expect(getAllByTestId('history-skeleton', { includeHiddenElements: true })).toHaveLength(2)
     } finally {
       useServerFetchStatusStore.getState().reset()
-      useServersStore.setState({ activeServerIds: [] })
+      useServersStore.setState({ activeServerIds: [], displayedServerIds: [] })
     }
   })
 
@@ -300,6 +301,7 @@ describe('NowList', () => {
   it('puts a failure panel on a down server and keeps the other host healthy', async () => {
     useServersStore.setState({
       activeServerIds: ['server-1', 'server-2'],
+      displayedServerIds: ['server-1', 'server-2'],
       servers: {
         'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
         'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
@@ -317,7 +319,7 @@ describe('NowList', () => {
       expect(getByTestId('conversation-row-c1')).toBeTruthy()
     } finally {
       useServerFetchStatusStore.getState().reset()
-      useServersStore.setState({ activeServerIds: [], servers: {} })
+      useServersStore.setState({ activeServerIds: [], displayedServerIds: [], servers: {} })
     }
   })
 
@@ -350,6 +352,7 @@ describe('NowList', () => {
   it('does not paint per-server failure panels when every host is down', async () => {
     useServersStore.setState({
       activeServerIds: ['server-1', 'server-2'],
+      displayedServerIds: ['server-1', 'server-2'],
       servers: {
         'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
         'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
@@ -367,7 +370,36 @@ describe('NowList', () => {
       expect(getByTestId('now-list-scroll')).toBeTruthy()
     } finally {
       useServerFetchStatusStore.getState().reset()
-      useServersStore.setState({ activeServerIds: [], servers: {} })
+      useServersStore.setState({ activeServerIds: [], displayedServerIds: [], servers: {} })
     }
+  })
+
+  describe('with servers filtered out', () => {
+    const twoServers = {
+      'server-1': { id: 'server-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
+      'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+    }
+    afterEach(() => {
+      useServersStore.setState({ activeServerIds: [], displayedServerIds: [], servers: {} })
+    })
+
+    it('does not group by server when only one of two paired servers is shown', async () => {
+      useServersStore.setState({ activeServerIds: ['server-1', 'server-2'], displayedServerIds: ['server-1'], servers: twoServers })
+      const c1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
+      const { getByTestId, queryByTestId } = await renderList([c1])
+      const keys = (getByTestId('now-list-scroll').props.data as { key: string }[]).map((f) => f.key)
+      expect(keys.some((k) => k.startsWith('server-'))).toBe(false)
+      expect(queryByTestId('server-header-server-1')).toBeNull()
+      expect(getByTestId('conversation-row-c1')).toBeTruthy()
+    })
+
+    it('shows a lone server header without a toggle when the other shown server has no rows', async () => {
+      useServersStore.setState({ activeServerIds: ['server-1', 'server-2'], displayedServerIds: ['server-1', 'server-2'], servers: twoServers })
+      const c1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
+      const { getByTestId } = await renderList([c1])
+      const header = (getByTestId('now-list-scroll').props.data as { key: string; collapsible?: boolean }[]).find((f) => f.key === 'server-server-1')
+      expect(header?.collapsible).toBe(false)
+      expect(getByTestId('conversation-row-c1')).toBeTruthy()
+    })
   })
 })

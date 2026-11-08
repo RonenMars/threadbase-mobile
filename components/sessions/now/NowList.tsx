@@ -62,7 +62,7 @@ type Entry = NowEntry
 
 type FlatItem =
   | { kind: 'eyebrow'; key: string; label: string; tone: SectionTone; count?: number; bucketKey?: string }
-  | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number; failed: boolean }
+  | { kind: 'serverHeader'; key: string; serverId: string; serverLabel: string; totalCount: number; failed: boolean; collapsible: boolean }
   | { kind: 'row'; key: string; entry: Entry; isFirst: boolean }
   | { kind: 'skeleton'; key: string }
 
@@ -199,7 +199,7 @@ export const NowList = React.memo(function NowList({
   const inset = listTopInset(topInset)
   const { t } = useTranslation('sessions')
   const router = useRouter()
-  const activeServerIds = useServersStore((s) => s.activeServerIds)
+  const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
   const names = useSessionNamesStore((s) => s.names)
   const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
@@ -212,10 +212,10 @@ export const NowList = React.memo(function NowList({
   const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
   const { favorites, pinItem, unpinItem } = useQuickAccessStore()
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
-  const multiServer = activeServerIds.length > 1
+  const multiServer = displayedServerIds.length > 1
   const warming = useMemo(
-    () => new Set(activeServerIds.filter((id) => fetchStatuses[id]?.status === 'warming_up')),
-    [activeServerIds, fetchStatuses],
+    () => new Set(displayedServerIds.filter((id) => fetchStatuses[id]?.status === 'warming_up')),
+    [displayedServerIds, fetchStatuses],
   )
 
   const entries = useMemo(
@@ -256,9 +256,9 @@ export const NowList = React.memo(function NowList({
     if (multiServer) {
       const visibleError = (id: string) =>
         isServerFetchErrorVisible(fetchStatuses[id], dismissedFailureAt[id])
-      const allFailed = activeServerIds.length > 0
-        && activeServerIds.every((id) => visibleError(id))
-      const withRows = activeServerIds.filter((id) =>
+      const allFailed = displayedServerIds.length > 0
+        && displayedServerIds.every((id) => visibleError(id))
+      const withRows = displayedServerIds.filter((id) =>
         earlier.some((e) => e.item.item.serverId === id)
         || warming.has(id)
         || (!allFailed && visibleError(id)),
@@ -273,6 +273,7 @@ export const NowList = React.memo(function NowList({
           serverLabel: servers[id]?.label ?? id,
           totalCount: bucket.length,
           failed: !allFailed && visibleError(id),
+          collapsible,
         })
         if (collapsible && collapsedServers.includes(id)) continue
         out.push(...bucket.map(toRow))
@@ -301,7 +302,7 @@ export const NowList = React.memo(function NowList({
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, activeServerIds, servers, collapsedServers, collapsedDayBuckets, warming, fetchStatuses, dismissedFailureAt, t])
+  }, [entries, order, sortDirection, multiServer, displayedServerIds, servers, collapsedServers, collapsedDayBuckets, warming, fetchStatuses, dismissedFailureAt, t])
 
   const highlight = searchQuery.trim() || undefined
 
@@ -325,8 +326,8 @@ export const NowList = React.memo(function NowList({
             serverId={item.serverId}
             serverLabel={item.serverLabel}
             totalCount={item.totalCount}
-            collapsible
-            isExpanded={!collapsedServers.includes(item.serverId)}
+            collapsible={item.collapsible}
+            isExpanded={item.collapsible ? !collapsedServers.includes(item.serverId) : undefined}
             onToggle={() => toggleServer(item.serverId)}
             isRefreshing={isBackgroundRefreshing}
             failed={item.failed}
