@@ -31,7 +31,7 @@ appId: com.ronenmars.threadbase
     id: "onboarding-connect-paste-card"
 - waitForAnimationToEnd
 
-# --- Attempt 1: reachable URL, invalid token -> expect "token rejected" ---
+# --- Attempt 1: reachable URL, invalid token -> expect "The server rejected this API key" ---
 - tapOn:
     id: "onboarding-connect-url-input"
 - inputText: "http://localhost:7071"
@@ -58,7 +58,7 @@ appId: com.ronenmars.threadbase
       - tapOn: "Not Now"
 
 - extendedWaitUntil:
-    visible: ".*token rejected.*"
+    visible: ".*rejected this API key.*"
     timeout: 8000
 
 - takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-02-token-rejected
@@ -67,7 +67,7 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     id: "onboarding-connect-handshake-cta"
 
-# --- Attempt 2: correct token, unreachable URL -> expect "connection refused" ---
+# --- Attempt 2: correct token, unreachable URL -> expect "Could not reach that server" ---
 - tapOn:
     id: "onboarding-connect-url-input"
 - eraseText
@@ -98,10 +98,10 @@ appId: com.ronenmars.threadbase
       - tapOn: "Not Now"
 
 - extendedWaitUntil:
-    visible: ".*connection refused.*"
+    visible: ".*Could not reach that server.*"
     timeout: 8000
 
-- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-04-connection-refused
+- takeScreenshot: e2e/_artifacts/screenshots/ts1-invalid-04-unreachable
 
 - assertVisible:
     id: "onboarding-connect-handshake-cta"
