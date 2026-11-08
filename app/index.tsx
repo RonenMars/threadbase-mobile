@@ -4,7 +4,6 @@ import { useDebounce } from 'use-debounce'
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -28,6 +27,7 @@ import { TreeSessionsList } from '@/components/sessions/tree/TreeSessionsList'
 import { NowList } from '@/components/sessions/now/NowList'
 import { ChromeBackdrop } from '@/components/sessions/shared/ChromeBackdrop'
 import { SearchInput } from '@/components/shared/SearchInput'
+import { HeaderBrandMark } from '@/components/shared/HeaderBrandMark'
 import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyles'
 import { FilterPresets } from '@/components/servers/FilterPresets'
 import { useAppDirection } from '@/lib/rtl'
@@ -444,8 +444,8 @@ export default function ProjectsHub() {
       <ChromeBackdrop />
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Image source={require('../assets/icon.png')} style={styles.headerIcon} />
-          {screenWidth >= HEADER_TITLE_MIN_WIDTH ? <Text style={styles.headerTitle}>{t('shared:app.title')}</Text> : null}
+          <HeaderBrandMark />
+          {screenWidth >= HEADER_TITLE_MIN_WIDTH ? <Text style={styles.headerTitle} numberOfLines={1}>{t('shared:app.title')}</Text> : null}
         </View>
 
         {/* Right: search, filter, settings */}
@@ -789,15 +789,11 @@ function makeStyles(theme: Theme) {
     alignItems: 'center',
     gap: spacing.xs,
   },
-  headerIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 5,
-  },
   headerTitle: {
     color: theme.text.primary,
     fontSize: font.lg,
     fontWeight: '600',
+    flexShrink: 1,
   },
   headerRight: {
     flexDirection: 'row',
