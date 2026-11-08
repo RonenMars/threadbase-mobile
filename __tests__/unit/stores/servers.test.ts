@@ -15,6 +15,7 @@ import {
 import * as authedFetchModule from '@/services/authed-fetch'
 import * as restSession from '@/services/e2ee/rest-session'
 import * as SecureStore from '@/services/secure-store'
+import { loadOrCreateDeviceStaticKey } from '@/services/e2ee/device-key'
 
 // Mock SecureStore so tests don't hit the keychain
 jest.mock('expo-secure-store', () => ({
@@ -666,13 +667,52 @@ describe('addServer – e2ee material', () => {
     expect(entry?.requireEncryption).toBeFalsy()
   })
 
-  it('forgets this device static key when the server is removed', async () => {
+  it('keeps this device static key when the server is removed', async () => {
+    // Delete-then-re-add of the same URL must present the same e2ee_static_pub,
+    // or the streamer's repair path (design §4.4) can never restore a revoked row.
     const id = String(await useServersStore.getState().addServer(URL, 'key-abc'))
     deleteItemAsync.mockClear()
 
     await useServersStore.getState().removeServer(id)
 
+    expect(deleteItemAsync).not.toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+  })
+
+  it('presents the same static public key when the same URL is re-added after removal', async () => {
+    // Stateful SecureStore so the real device-key module writes and reads back.
+    const mem = new Map<string, string>()
+    setItemAsync.mockImplementation(async (k, v) => { mem.set(k, v) })
+    ;(SecureStore.getItemAsync as jest.Mock).mockImplementation(async (k: string) => mem.get(k) ?? null)
+    deleteItemAsync.mockImplementation(async (k) => { mem.delete(k) })
+    try {
+      const id = String(await useServersStore.getState().addServer(URL, 'key-abc'))
+      const first = await loadOrCreateDeviceStaticKey(id)
+
+      await useServersStore.getState().removeServer(id)
+      const reAddedId = String(await useServersStore.getState().addServer(URL, 'key-abc'))
+      const second = await loadOrCreateDeviceStaticKey(reAddedId)
+
+      expect(reAddedId).toBe(id)
+      expect(Array.from(second.publicKey)).toEqual(Array.from(first.publicKey))
+    } finally {
+      setItemAsync.mockReset().mockResolvedValue(undefined)
+      ;(SecureStore.getItemAsync as jest.Mock).mockReset().mockResolvedValue(null)
+      deleteItemAsync.mockReset().mockResolvedValue(undefined)
+    }
+  })
+
+  it('forgetDevice clears the device static key and drops the live REST context, leaving the server listed', async () => {
+    const id = await addPinnedServer()
+    deleteItemAsync.mockClear()
+    const invalidate = jest.spyOn(restSession, 'invalidateRestContext')
+
+    await useServersStore.getState().forgetDevice(id)
+
     expect(deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+    expect(invalidate).toHaveBeenCalledWith(id)
+    expect(useServersStore.getState().getServer(id)).toBeDefined()
+    expect(deleteItemAsync).not.toHaveBeenCalledWith(`threadbase_api_key_${id}`)
+    invalidate.mockRestore()
   })
 
   async function addPinnedServer(): Promise<string> {
@@ -741,11 +781,13 @@ describe('addServer – e2ee material', () => {
   it.each([
     ['a new api key', { url: URL, apiKey: 'key-different' }],
     ['a new url', { url: 'http://192.168.68.126:8766', apiKey: 'key-abc' }],
-  ])('clears device key, server key and pin together on %s', async (_label, patch) => {
-    // The three describe one pairing, so they move as one. A pin left behind
-    // after the identity it was proved against is gone points at nothing, and a
+  ])('clears server key and pin but keeps the device key on %s', async (_label, patch) => {
+    // The server key and pin describe one pairing, so they move as one. A pin left
+    // behind after the identity it was proved against is gone points at nothing, and a
     // pinned key left behind after the URL moved claims a machine never reached.
     // Replacing the identity by hand is itself the deliberate act §6.1 requires.
+    // The device key is deliberately not part of that: only an explicit
+    // forgetDevice drops it, so re-pairing can restore a revoked row.
     const id = await addPinnedServer()
     deleteItemAsync.mockClear()
 
@@ -756,7 +798,8 @@ describe('addServer – e2ee material', () => {
     expect(server?.serverPublicKey).toBeUndefined()
     expect(server?.requireEncryption).toBeUndefined()
     expect(server?.deviceToken).toBeUndefined()
-    expect(deleteItemAsync).toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+    expect(deleteItemAsync).not.toHaveBeenCalledWith(`threadbase_e2ee_device_key_${id}`)
+    expect(deleteItemAsync).not.toHaveBeenCalledWith(`threadbase_e2ee_device_key_${newId}`)
   })
 })
 

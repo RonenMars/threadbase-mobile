@@ -17,7 +17,10 @@
   "dialog": {
     "removeTitle": "إزالة الخادم",
     "removeMessage": "قطع الاتصال بـ {{server}}؟",
-    "removeConfirm": "إزالة"
+    "removeConfirm": "إزالة",
+    "forgetTitle": "نسيان هذا الجهاز",
+    "forgetMessage": "نسيان هذا الجهاز لدى {{server}}؟ سيقدّم هذا الهاتف هوية جديدة في المرة القادمة التي يقترن فيها بهذا الخادم، ولن تتم استعادة السجل الملغى لهذا الهاتف على الخادم. ستحتاج إلى الاقتران مرة أخرى.",
+    "forgetConfirm": "نسيان"
   },
   "form": {
     "labelOptional": "التسمية (اختياري)",
@@ -111,6 +114,7 @@
     "menuEdit": "تعديل",
     "menuRefresh": "تحديث",
     "menuDelete": "حذف",
+    "menuForget": "نسيان هذا الجهاز",
     "optionsLabel": "خيارات الخادم",
     "titleSingle": "حالة الخادم",
     "titleMultiple": "حالة الخوادم"
