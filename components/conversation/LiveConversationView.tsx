@@ -40,7 +40,7 @@ import { SlashCommandBoard } from '@/components/shared/SlashCommandBoard'
 import { SlashCommandArgModal } from '@/components/shared/SlashCommandArgModal'
 import { wsManager } from '@/services/ws-client'
 import { markSessionUsed } from '@/lib/sessionUsage'
-import type { Message } from '@/types/api'
+import type { Message, Session } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { spacing, type Theme } from '@/constants/theme'
 import type { ProviderName } from '@/constants/providers'
@@ -214,7 +214,12 @@ export function LiveConversationView({
     if (!client) return
     return client.on('session_update', (msg) => {
       if (msg.type !== 'session_update' || msg.session.id !== sessionId) return
-      qc.setQueryData(['session', serverId, sessionId], msg.session)
+      // Merge, never replace: effort/permissionMode/model are REST-only and absent from
+      // every frame. Merging also makes a field latch when a frame omits it, so a field
+      // that must clear needs an explicit null from the server (threadbase-streamer#538).
+      qc.setQueryData<Session>(['session', serverId, sessionId], (prev) =>
+        prev ? { ...prev, ...msg.session } : msg.session,
+      )
     })
   }, [serverId, sessionId, qc])
 
