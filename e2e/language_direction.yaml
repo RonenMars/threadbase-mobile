@@ -24,6 +24,9 @@ appId: com.ronenmars.threadbase
 - scrollUntilVisible:
     element:
       id: "settings-language-he"
+    # Stopping at the first sliver leaves the row under the sticky header,
+    # where the tap does not land.
+    centerElement: true
 - takeScreenshot: e2e/_artifacts/screenshots/language-direction-ltr
 
 # 3. Switch to Hebrew.
