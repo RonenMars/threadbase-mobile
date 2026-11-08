@@ -4,6 +4,7 @@ import ProjectsHub from '@/app/index'
 import { useAlertStore } from '@/stores/alerts'
 import { useErrorSheetStore } from '@/stores/errorSheet'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { seedServerFailure } from '@/test-utils/serverFailure'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { createWrapper } from '@/test-utils'
@@ -115,7 +116,7 @@ describe('home inline-first failures', () => {
   })
 
   it('keeps the list and omits the old offline banner when some servers fail', async () => {
-    useServerFetchStatusStore.getState().recordFailure('srv-1', new Error('offline'))
+    seedServerFailure('srv-1')
     const { getByTestId, queryByTestId } = await render(<ProjectsHub />, { wrapper: createWrapper() })
     expect(queryByTestId('server-offline-banner')).toBeNull()
     expect(queryByTestId('stale-scope-banner')).toBeNull()
@@ -127,7 +128,7 @@ describe('home inline-first failures', () => {
   // error and the status sheet stays shut. Without a fallback the button is a
   // silent no-op — the whole point of offering it.
   it('opens the servers modal from a failed server banner', async () => {
-    useServerFetchStatusStore.getState().recordFailure('srv-1', new Error('offline'))
+    seedServerFailure('srv-1')
     useAlertStore.getState().upsert({
       id: 'srv-1',
       cause: serverCause('srv-1'),
@@ -147,8 +148,8 @@ describe('home inline-first failures', () => {
   })
 
   it('shows the stale-scope banner, keeps the list, and hides the pill when every server is down', async () => {
-    useServerFetchStatusStore.getState().recordFailure('srv-1', new Error('offline'))
-    useServerFetchStatusStore.getState().recordFailure('srv-2', new Error('offline'))
+    seedServerFailure('srv-1')
+    seedServerFailure('srv-2')
     useAlertStore.getState().upsert({
       id: 'srv-1',
       cause: serverCause('srv-1'),

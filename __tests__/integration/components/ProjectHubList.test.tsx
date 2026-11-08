@@ -5,6 +5,7 @@ import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import { renderWithI18n } from '@/test-utils/render'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { seedServerFailure } from '@/test-utils/serverFailure'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiSession } from '@/types/api'
 
@@ -109,7 +110,7 @@ describe('ProjectHubList server failure', () => {
         'srv-2': { id: 'srv-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
       },
     })
-    useServerFetchStatusStore.getState().recordFailure('srv-2', new Error('offline'))
+    seedServerFailure('srv-2')
     const { getByTestId, queryByTestId } = await renderHub(
       [liveSession],
       [
@@ -131,8 +132,8 @@ describe('ProjectHubList server failure', () => {
         'srv-2': { id: 'srv-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
       },
     })
-    useServerFetchStatusStore.getState().recordFailure('srv-1', new Error('offline'))
-    useServerFetchStatusStore.getState().recordFailure('srv-2', new Error('offline'))
+    seedServerFailure('srv-1')
+    seedServerFailure('srv-2')
     const { getByTestId, queryByTestId } = await renderHub(
       [liveSession],
       [

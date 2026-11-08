@@ -91,6 +91,9 @@ beforeEach(() => {
   useServerFetchStatusStore.getState().reset()
 })
 
+// error banners are held back FAILURE_BANNER_DELAY_MS, on top of the retry waits
+jest.setTimeout(15_000)
+
 describe('useEagerSessions', () => {
   it('drains a single server across multiple pages', async () => {
     setActiveServers([{ id: 'srv-A', label: 'Server A' }])
@@ -209,7 +212,11 @@ describe('useEagerSessions', () => {
     await waitFor(() => expect(result.current.isDone).toBe(true), { timeout: 6000 })
 
     expect(result.current.sessions.map((s) => s.id)).toEqual(['a1'])
-    expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error')
+    // the banner failure is held back FAILURE_BANNER_DELAY_MS before it lands
+    await waitFor(
+      () => expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error'),
+      { timeout: 6000 },
+    )
   })
 
   it('uses the short initial timeout and retries a failed server silently before reporting it', async () => {
@@ -226,10 +233,13 @@ describe('useEagerSessions', () => {
       timeoutMs: 12_000,
       retry: false,
     }))
-    expect(useServerFetchStatusStore.getState().statuses['srv-A']).toMatchObject({
-      status: 'error',
-      error: 'offline',
-    })
+    await waitFor(
+      () => expect(useServerFetchStatusStore.getState().statuses['srv-A']).toMatchObject({
+        status: 'error',
+        error: 'offline',
+      }),
+      { timeout: 6000 },
+    )
   })
 
   // An explicit user retry is one of the few events allowed to forget a
