@@ -84,8 +84,11 @@ const NUMBERED_PREFIX_RE = /^\d+\.\s+/
 const QUESTION_SUFFIX_RE = /\?$/
 // A Codex picker row: optional `>`/`›`/`❯` cursor, then `1. label`.
 const NUMBERED_OPTION_RE = /^([>›❯])?\s*(\d+)\.\s+(.+?)$/
-// The footer a real picker paints under its options. Prose never carries it.
-const MENU_FOOTER_RE = /Enter to select|to navigate|Esc to cancel/i
+// The footer a real picker paints under its options. Each hint must open a
+// `·`-separated segment (the box gutter is already stripped), so a sentence that
+// merely quotes "Esc to cancel" or "to navigate" is not mistaken for chrome.
+const MENU_FOOTER_RE =
+  /(?:^|·)\s*(?:Enter to select|Esc to cancel|(?:[↑↓/]+|(?:Tab\/)?Arrow keys)\s*to navigate)/i
 
 // Permission-gate option labels (Yes / No …). A Claude gate is handled by the
 // structured `permission` WS event, not as a radio QuestionCard — reject it
@@ -189,7 +192,7 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
     // you like next? 1. … 2. … 3. …" enumerates 1..n too, and tapping an option
     // sends Enter to an idle prompt (observed 2026-09-19, nothing happened, card
     // stayed). A live picker always paints a ❯ cursor or its Enter/Esc footer.
-    const hasMenuChrome = sawCursor || inner.slice(q + 1).some((l) => MENU_FOOTER_RE.test(l))
+    const hasMenuChrome = sawCursor || inner.slice(q + 1).some((l) => MENU_FOOTER_RE.test(l.trim()))
     if (options.length >= 2 && hasMenuChrome && optionNumbers.every((n, i) => n === i + 1)) {
       return {
         source: 'pty',

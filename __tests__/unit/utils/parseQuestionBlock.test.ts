@@ -399,4 +399,24 @@ describe('parseQuestionBlock', () => {
     ]
     expect(parseQuestionBlock(lines)!.questions[0].options.map(o => o.label)).toEqual(['macOS', 'iOS'])
   })
+
+  it('returns null when a footer phrase is only quoted inside prose after a 1..n list', () => {
+    for (const quoted of [
+      'The footer reads: Esc to cancel · Tab to amend',
+      'Use the arrows to navigate between the options',
+    ]) {
+      const lines = ['What would you like next?', '  1. Fix it', '  2. Ship it', quoted]
+      expect(parseQuestionBlock(lines)).toBeNull()
+    }
+  })
+
+  it('still parses a boxed real footer and a bare navigate footer without a cursor', () => {
+    for (const footer of [
+      '│ Enter to select · Tab/Arrow keys to navigate · Esc to cancel │',
+      'Enter to select  ↑/↓ to navigate · Esc to cancel',
+    ]) {
+      const lines = ['Which area?', '  1. macOS', '  2. iOS', footer]
+      expect(parseQuestionBlock(lines)!.questions[0].options).toHaveLength(2)
+    }
+  })
 })
