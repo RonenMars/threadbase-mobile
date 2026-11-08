@@ -38,6 +38,42 @@ describe('sessionActivityMs', () => {
     expect(sessionActivityMs(live)).toBe(STARTED + 5_000)
   })
 
+  it('uses lastActivityAt for a live session waiting for input', () => {
+    const waiting = session({
+      status: 'waiting_input',
+      ptyAttached: true,
+      lifecycle: 'attached',
+      lastActivityAt: new Date(LAST).toISOString(),
+    })
+    expect(sessionActivityMs(waiting)).toBe(LAST)
+  })
+
+  it('uses lastActivityAt for an external session whose process is alive but idle', () => {
+    const external = session({
+      status: 'idle',
+      ownership: 'external',
+      processLiveness: 'alive',
+      lastActivityAt: new Date(LAST).toISOString(),
+    })
+    expect(sessionActivityMs(external)).toBe(LAST)
+  })
+
+  it('counts elapsedMs for a live session whose server sends no lastActivityAt', () => {
+    const old = session({ status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', elapsedMs: 5_000 })
+    expect(sessionActivityMs(old)).toBe(STARTED + 5_000)
+  })
+
+  it('counts elapsedMs for a running session even when lastActivityAt is older', () => {
+    const running = session({
+      status: 'running',
+      ptyAttached: true,
+      lifecycle: 'attached',
+      elapsedMs: 5_000,
+      lastActivityAt: new Date(STARTED - 60_000).toISOString(),
+    })
+    expect(sessionActivityMs(running)).toBe(STARTED + 5_000)
+  })
+
   it('prefers completedAt when the server stamped one', () => {
     const done = session({ lifecycle: 'completed', completedAt: new Date(LAST).toISOString() })
     expect(sessionActivityMs(done)).toBe(LAST)
