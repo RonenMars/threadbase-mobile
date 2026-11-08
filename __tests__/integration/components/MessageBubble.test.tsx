@@ -281,3 +281,22 @@ describe("MessageBubble – markdown links", () => {
     openURL.mockRestore();
   });
 });
+
+describe("MessageBubble – markdown lists", () => {
+  it("sizes list item text to its content so a list-only reply is not squeezed to zero width", async () => {
+    const { getByText } = await render(
+      <MessageBubble
+        message={makeMessage({
+          role: "assistant",
+          content: [{ type: "text", text: "1. first item\n2. second item" }],
+        })}
+      />,
+    );
+    // text -> paragraph View -> list-content View
+    const content = getByText("first item").parent?.parent;
+    const style = StyleSheet.flatten(content?.props.style);
+    expect(style.flex).toBeUndefined();
+    expect(style.flexGrow).toBe(0);
+    expect(style.flexShrink).toBe(1);
+  });
+});

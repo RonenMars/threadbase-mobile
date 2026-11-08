@@ -316,6 +316,11 @@ function makeMarkdownStyles(theme: Theme) {
     },
     bullet_list: { marginStart: spacing.sm },
     ordered_list: { marginStart: spacing.sm },
+    // The library default is flex: 1 (basis 0), which adds nothing to a
+    // shrink-wrapped bubble's width — a reply that is only a list collapses
+    // to one character per line. flexShrink sizes to the text, capped by maxWidth.
+    bullet_list_content: { flex: undefined, flexGrow: 0, flexShrink: 1, flexBasis: 'auto' as const },
+    ordered_list_content: { flex: undefined, flexGrow: 0, flexShrink: 1, flexBasis: 'auto' as const },
     hr: { backgroundColor: theme.border, height: 1, marginVertical: spacing.xs },
   }
 }
