@@ -38,7 +38,14 @@ appId: com.ronenmars.threadbase
 - inputText: "idempotency"
 
 # The fixture conversation is old, so the Now list files it under the
-# EARLIER day bucket, which starts collapsed.
+# EARLIER day bucket, which starts collapsed. Match that bucket exactly:
+# a `day-bucket-.*` regex would hit the expanded last-7-days header first
+# and collapse it.
+- extendedWaitUntil:
+    visible:
+      id: "day-bucket-earlier"
+    timeout: 8000
+
 - runFlow:
     when:
       notVisible:

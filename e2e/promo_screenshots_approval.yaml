@@ -94,6 +94,14 @@ appId: com.ronenmars.threadbase
 
 - waitForAnimationToEnd
 
+# Sending leaves the composer focused, so the keyboard stays up over the gate
+# card. Tap blank terminal space to blur it — not hideKeyboard, which fails on
+# iOS 26.x (see tb-mobile CLAUDE.md).
+- tapOn:
+    point: "50%, 30%"
+
+- waitForAnimationToEnd
+
 # --- hero-approval-card: the gate next to the terminal session it belongs to
 - runScript: scripts/trigger-gate-build.js
 
