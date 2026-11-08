@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
@@ -15,6 +14,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
+import { SearchInput } from '@/components/shared/SearchInput'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
@@ -197,7 +197,8 @@ export function ConversationList({
     <View style={styles.container}>
       {searchOpen ? (
         <View style={styles.searchBar}>
-          <TextInput
+          <SearchInput
+            containerStyle={styles.searchInputWrap}
             style={[styles.searchInput, searchDirection]}
             value={searchQuery}
             onChangeText={onSearchChange}
@@ -205,7 +206,6 @@ export function ConversationList({
             placeholderTextColor={theme.text.secondary}
             autoFocus
             returnKeyType="search"
-            clearButtonMode="while-editing"
           />
           {headerRight}
         </View>
@@ -289,8 +289,10 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       minHeight: 44,
     },
-    searchInput: {
+    searchInputWrap: {
       flex: 1,
+    },
+    searchInput: {
       color: theme.text.primary,
       fontSize: font.base,
       paddingVertical: spacing.sm,
