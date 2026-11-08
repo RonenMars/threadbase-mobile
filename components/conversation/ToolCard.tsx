@@ -113,9 +113,12 @@ function summarizeToolInput(name: string, input: Record<string, unknown>): strin
   return key ? nonEmpty(input[key]) : null
 }
 
-// Codex custom tools carry source text in a single string field; show it as-is
-// rather than as a JSON-escaped string. Null for anything else (caller uses JSON).
+const COMMAND_TOOLS = new Set(['Bash', 'Shell', 'exec_command'])
+
+// Shell and Codex custom tools carry source text in a single string field; show it
+// as-is rather than as a JSON-escaped string. Null for anything else (caller uses JSON).
 function toolSourceText(name: string, input: Record<string, unknown>): string | null {
+  if (COMMAND_TOOLS.has(name)) return nonEmpty(input[SUMMARY_KEYS[name]])
   const source = name === 'exec' || name === 'apply_patch' ? input.input : name === 'js' ? input.code : null
   return typeof source === 'string' ? source : null
 }
@@ -155,11 +158,11 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
       ? summarizeAskUserQuestion(block.input)
       : null
 
+  const sourceText = block.type === 'tool_use' ? toolSourceText(block.name, block.input) : null
+  const caption = sourceText && block.type === 'tool_use' && COMMAND_TOOLS.has(block.name) ? nonEmpty(block.input.description) : null
+
   const bodyText =
-    askSummary ??
-    (block.type === 'tool_use'
-      ? (toolSourceText(block.name, block.input) ?? JSON.stringify(block.input, null, 2))
-      : block.content)
+    askSummary ?? (block.type === 'tool_use' ? (sourceText ?? JSON.stringify(block.input, null, 2)) : block.content)
 
   const hasContent =
     block.type === 'tool_result'
@@ -226,6 +229,7 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
               {bodyText}
             </Text>
           )}
+          {caption ? <Text style={styles.caption}>{caption}</Text> : null}
         </View>
       ) : null}
     </TouchableOpacity>
@@ -282,6 +286,11 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontFamily: 'monospace',
       fontSize: font.xs,
+    },
+    caption: {
+      color: theme.text.secondary,
+      fontSize: font.xs,
+      marginTop: spacing.xs,
     },
     // Solid high-contrast highlighter fill — shared per-theme token.
     match: {

@@ -93,10 +93,11 @@ describe('ToolCard – expand / collapse', () => {
     expect(getByText('total 8\ndrwxr-xr-x 5 user group')).toBeTruthy()
   })
 
-  it('expands to show JSON input for tool_use', async () => {
-    const { getByRole, getByText } = await render(<ToolCard block={bashUse} />)
+  it('expands a tool_use to its command, not the JSON input', async () => {
+    const { getByRole, getAllByText, queryByText } = await render(<ToolCard block={bashUse} />)
     await fireEvent.press(getByRole('button'))
-    expect(getByText(JSON.stringify({ command: 'ls -la' }, null, 2))).toBeTruthy()
+    expect(getAllByText('ls -la')).toHaveLength(2)
+    expect(queryByText(/"command"/)).toBeNull()
   })
 
   it('toggles chevron from ▼ to ▲ on expand', async () => {
@@ -180,6 +181,34 @@ describe('ToolCard – Codex and Cursor inputs', () => {
     )
     await fireEvent.press(getByLabelText('exec tool expand'))
     expect(getByText(source)).toBeTruthy()
+  })
+
+  const command = 'cd /c/work && test -d cf-test-025748 && rm -rf cf-test-025748'
+  const description = 'Delete cf-test-025748 folder and verify removal'
+  const commandTools: [string, Record<string, unknown>][] = [
+    ['Bash', { command, description }],
+    ['Shell', { command, description }],
+    ['exec_command', { cmd: command, description }],
+  ]
+
+  test.each(commandTools)('expands %s to the command with the description as a caption', async (name, input) => {
+    const { getByLabelText, getAllByText, getByText, queryByText } = await render(
+      <ToolCard block={{ type: 'tool_use', name, input }} />,
+    )
+    await fireEvent.press(getByLabelText(`${name} tool expand`))
+    // The header summary also shows the command; the body's copy renders last.
+    expect(getAllByText(command)).toHaveLength(2)
+    expect(getByText(description)).toBeTruthy()
+    expect(queryByText(/"description"/)).toBeNull()
+  })
+
+  it('falls back to JSON for a command tool whose input has no command', async () => {
+    const input = { description }
+    const { getByText, getByLabelText } = await render(
+      <ToolCard block={{ type: 'tool_use', name: 'Bash', input }} />,
+    )
+    await fireEvent.press(getByLabelText('Bash tool expand'))
+    expect(getByText(JSON.stringify(input, null, 2))).toBeTruthy()
   })
 
   it('falls back to JSON for an unknown tool', async () => {
