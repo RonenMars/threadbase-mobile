@@ -1,11 +1,14 @@
 import React from 'react'
 import { cleanup, fireEvent } from '@testing-library/react-native'
+import type { screen } from '@testing-library/react-native'
 import { ServersStatusModal } from '@/components/servers/ServersStatusModal'
 import { wsManager } from '@/services/ws-client'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
+
+type TestNode = ReturnType<typeof screen.getByText>
 
 const FETCH_ONLY = 'fetch-only'
 const HEALTHY = 'healthy'
@@ -94,5 +97,42 @@ describe('ServersStatusModal error drill-in', () => {
 
     // A healthy server's label stays inert, same as its row.
     expect(queryByTestId('status-label-view-error-http://ok.example')).toBeNull()
+  })
+})
+
+// On iOS a view with accessible=true swallows its whole subtree into one
+// VoiceOver element, so a control is only reachable when no ancestor is one.
+// The control's own accessible host is skipped; anything above it is a merger.
+function accessibleAncestors(node: TestNode): string[] {
+  const found: string[] = []
+  let ownHostSeen = false
+  for (let p: TestNode | null = node; p; p = p.parent) {
+    if (typeof p.type !== 'string' || p.props.accessible !== true) continue
+    if (ownHostSeen) found.push(String(p.props.testID ?? p.type))
+    ownHostSeen = true
+  }
+  return found
+}
+
+describe('ServersStatusModal accessibility tree', () => {
+  it('keeps the close, row, options and add-server controls out of a merged element', async () => {
+    const { getByText, getByTestId, getAllByTestId, getByLabelText } = await renderWithI18n(
+      <ServersStatusModal visible onClose={() => {}} />,
+    )
+
+    expect(accessibleAncestors(getByText('✕'))).toEqual([])
+    expect(accessibleAncestors(getByTestId('status-row-view-error-http://tb-ak.example'))).toEqual([])
+    expect(accessibleAncestors(getAllByTestId('server-row-dots-btn')[0])).toEqual([])
+    expect(accessibleAncestors(getByLabelText('Add Server'))).toEqual([])
+  })
+
+  it('keeps the per-server menu items out of a merged element', async () => {
+    const { getAllByTestId, findByText } = await renderWithI18n(
+      <ServersStatusModal visible onClose={() => {}} />,
+    )
+    fireEvent.press(getAllByTestId('server-row-dots-btn')[0])
+
+    expect(accessibleAncestors(await findByText('Edit'))).toEqual([])
+    expect(accessibleAncestors(await findByText('Delete'))).toEqual([])
   })
 })
