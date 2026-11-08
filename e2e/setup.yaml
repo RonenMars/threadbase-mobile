@@ -255,7 +255,10 @@ appId: com.ronenmars.threadbase
       - tapOn:
           id: "onboarding-done-cta"
 
+# Generous on purpose: on a cold CI simulator the done-CTA tap alone took 9 s
+# (run 42430347281, server_drag_reorder) and an 8 s wait expired with the app
+# still mid-transition. A paired run satisfies this immediately.
 - extendedWaitUntil:
     visible:
       id: "hub-screen"
-    timeout: 8000
+    timeout: 30000
