@@ -23,6 +23,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [shipped] Multi-provider support — Claude Code and Codex CLI sessions side by side, with per-provider health and capability differences shown.
 - [shipped] Session rename — rename manually, or auto-name a session from its first message.
 - [shipped] Favorites and quick access — pin sessions, conversations, or project chats for one-tap access.
+- [shipped] Favorites sync — saved sessions, conversations, and project chats are also kept on the streamer, so every phone paired with it shows the same list; needs a streamer that serves `/api/saved-items`.
 - [shipped] Export conversation — share a full transcript as Markdown.
 - [shipped] Draft persistence — unsent composer text is saved per session.
 - [shipped] Attach photos and files to a prompt — camera, photo library, or file picker, with HEIC converted to JPEG.

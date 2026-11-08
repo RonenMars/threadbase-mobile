@@ -88,6 +88,8 @@ export type WSMessage =
       os?: string
     }
   | { type: 'host_pressure_cleared'; updatedAt: string }
+  // The server's shared saved-items list changed. Additive.
+  | { type: 'saved_items_changed'; revision: number }
   | { type: 'conversation_event'; sessionId: string; line: string }
   // Additive batched variant (streamer #202): one frame carries all lines from
   // a single watcher read. `seqs`, when present, is parallel to `lines` —

@@ -17,6 +17,7 @@ export type AlertCause =
   | `host-pressure:${string}`
   | `cache:${string}`
   | `session:${string}`
+  | `saved-items:${string}`
   | 'servers:summary'
 
 export const CAUSE_SERVERS_SUMMARY: AlertCause = 'servers:summary'
@@ -27,6 +28,11 @@ export function serverCause(id: string): AlertCause {
 
 export function queryCause(category: string): AlertCause {
   return `query:${category}`
+}
+
+/** A favorite that could not be written to this server; separate from reachability. */
+export function savedItemsCause(id: string): AlertCause {
+  return `saved-items:${id}`
 }
 
 export function hostPressureCause(id: string): AlertCause {
