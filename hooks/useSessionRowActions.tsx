@@ -3,33 +3,73 @@ import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowSquareOut, CopySimple, HourglassMedium, Lightning, Power, Trash } from 'phosphor-react-native'
+import { ArrowSquareOut, CopySimple, HourglassMedium, Lightning, PencilSimple, Power, Star, Trash } from 'phosphor-react-native'
 import { EndSessionDialogs } from '@/components/sessions/EndSessionDialogs'
+import { NameSessionModal } from '@/components/sessions/NameSessionModal'
 import { SessionActionSheet, type SessionActionItem } from '@/components/sessions/SessionActionSheet'
 import { getSessionTierLabel } from '@/components/sessions/StateBadge'
 import { getProviderLabel } from '@/components/sessions/providerLabel'
+import type { SwipeAction } from '@/components/sessions/shared/SwipeableRow'
+import { useTheme } from '@/contexts/ThemeContext'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession } from '@/lib/externalSession'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useEndSession } from '@/hooks/useEndSession'
+import { useRenameSession } from '@/hooks/useSessionName'
 import { useNavLockStore } from '@/stores/navLock'
+import { buildFavoriteId, useQuickAccessStore } from '@/stores/quickAccess'
 import type { MultiSession } from '@/types/api'
+
+/** Mounted only while open, so a row carries no rename mutation until asked. */
+function RenameSessionOverlay({ session, currentName, onClose }: {
+  session: MultiSession
+  currentName: string
+  onClose: () => void
+}) {
+  const renameSession = useRenameSession(session.serverId)
+  return (
+    <NameSessionModal
+      visible
+      mode="rename"
+      currentName={currentName}
+      onSave={(name) => {
+        renameSession.mutate({ sessionId: session.id, name })
+        onClose()
+      }}
+      onCancel={onClose}
+    />
+  )
+}
 
 /**
  * Tap, long-press and ⋮ behaviour shared by every session row and card: an
  * external (observed) session opens the read-only conversation, a managed one
  * opens the PTY screen. Long-press and ⋮ open the action sheet on managed
  * sessions only; its End session group appears while the PTY is live.
+ * `swipe` carries the same actions for a `SwipeableRow`.
  * Render `overlays` once next to the row.
  */
 export function useSessionRowActions(session: MultiSession, title: string) {
   const router = useRouter()
-  const { t } = useTranslation('sessions')
+  const { t } = useTranslation(['sessions', 'common'])
+  const theme = useTheme()
   const isExternal = isExternalSession(session)
   const presentation = deriveSessionPresentation(session)
   const canEnd = presentation.live && presentation.capabilities.canCancel
   const end = useEndSession(session.serverId, session.id, canEnd)
   const [menuVisible, setMenuVisible] = useState(false)
+  const [renameVisible, setRenameVisible] = useState(false)
+  const favoriteId = buildFavoriteId(session.serverId, 'session', session.id)
+  const isFavorite = useQuickAccessStore((s) => s.favorites.some((f) => f.id === favoriteId))
+
+  const toggleFavorite = useCallback(() => {
+    const { pinItem, unpinItem } = useQuickAccessStore.getState()
+    if (isFavorite) {
+      unpinItem(favoriteId)
+      return
+    }
+    pinItem({ type: 'session', id: favoriteId, label: title, serverId: session.serverId, sessionId: session.id })
+  }, [isFavorite, favoriteId, title, session.serverId, session.id])
 
   const open = useCallback(() => {
     useNavLockStore.getState().lock()
@@ -67,6 +107,20 @@ export function useSessionRowActions(session: MultiSession, title: string) {
       icon: CopySimple,
       onPress: () => void Clipboard.setStringAsync(session.id),
       testID: 'session-action-copy-id',
+    },
+    {
+      key: 'rename',
+      label: t('swipe.rename'),
+      icon: PencilSimple,
+      onPress: () => setRenameVisible(true),
+      testID: 'session-action-rename',
+    },
+    {
+      key: 'favorite',
+      label: isFavorite ? t('common:favorite.remove') : t('common:favorite.add'),
+      icon: Star,
+      onPress: toggleFavorite,
+      testID: 'session-action-favorite',
     },
   ]
   if (canEnd) {
@@ -118,6 +172,22 @@ export function useSessionRowActions(session: MultiSession, title: string) {
     items.push(...endItems)
   }
 
+  const favoriteLabel = isFavorite ? t('swipe.unfavorite') : t('swipe.favorite')
+  const leading: SwipeAction[] = [
+    { key: 'favorite', label: favoriteLabel, icon: Star, color: theme.status.waiting, onPress: toggleFavorite, testID: 'session-swipe-favorite' },
+  ]
+  const trailing: SwipeAction[] = [
+    { key: 'rename', label: t('swipe.rename'), icon: PencilSimple, color: theme.text.accent, onPress: () => setRenameVisible(true), testID: 'session-swipe-rename' },
+  ]
+  if (canEnd) {
+    trailing.push({ key: 'terminate', label: t('swipe.terminate'), icon: Power, color: theme.status.idle, onPress: end.terminate, testID: 'session-swipe-terminate' })
+    if (end.supported) {
+      trailing.push({ key: 'delete', label: t('swipe.delete'), icon: Trash, color: theme.status.failed, onPress: end.requestDelete, testID: 'session-swipe-delete' })
+    }
+  }
+  // External sessions are read-only — no swipe actions either.
+  const swipe = isExternal ? { leading: [], trailing: [] } : { leading, trailing }
+
   const overlays = isExternal ? null : (
     <>
       <SessionActionSheet
@@ -135,6 +205,9 @@ export function useSessionRowActions(session: MultiSession, title: string) {
         onConfirmWatchers={end.confirmWatchers}
         onDismiss={end.dismissDialog}
       />
+      {renameVisible ? (
+        <RenameSessionOverlay session={session} currentName={title} onClose={() => setRenameVisible(false)} />
+      ) : null}
     </>
   )
 
@@ -151,5 +224,6 @@ export function useSessionRowActions(session: MultiSession, title: string) {
     isExternal,
     overlays,
     endStatus,
+    swipe,
   }
 }

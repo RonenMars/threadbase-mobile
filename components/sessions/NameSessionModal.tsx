@@ -12,14 +12,27 @@ import {
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 interface Props {
   visible: boolean
-  mode: 'create' | 'exit'
+  /** `rename` starts from `currentName`; the others start empty. */
+  mode: 'create' | 'exit' | 'rename'
   currentName?: string
   onSave: (name: string) => void
   onCancel: () => void
+}
+
+function getTitle(mode: Props['mode'], t: TFunction<'sessions'>): string {
+  switch (mode) {
+    case 'create':
+      return t('nameSession.createTitle')
+    case 'exit':
+      return t('nameSession.exitTitle')
+    case 'rename':
+      return t('nameSession.renameTitle')
+  }
 }
 
 export function NameSessionModal({ visible, mode, currentName, onSave, onCancel }: Props) {
@@ -34,12 +47,12 @@ export function NameSessionModal({ visible, mode, currentName, onSave, onCancel 
   useEffect(() => {
     if (visible) {
       queueMicrotask(() => {
-        setName('')
+        setName(mode === 'rename' ? (currentName ?? '') : '')
       })
     }
-  }, [visible])
+  }, [visible, mode, currentName])
 
-  const title = mode === 'create' ? t('nameSession.createTitle') : t('nameSession.exitTitle')
+  const title = getTitle(mode, t)
   const saveLabel = mode === 'create' ? t('nameSession.start') : t('common:button.save')
 
   function handleSave() {
