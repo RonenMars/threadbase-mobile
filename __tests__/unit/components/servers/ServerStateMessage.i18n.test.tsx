@@ -4,6 +4,7 @@ import { HomeStatusStrip } from '@/components/alerts/StatusStrip'
 import { ServerStateMessage } from '@/components/servers/ServerStateMessage'
 import { wsManager } from '@/services/ws-client'
 import { useAlertStore } from '@/stores/alerts'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
 import type { ServerConfig } from '@/types/api'
@@ -20,6 +21,7 @@ const server: ServerConfig = {
 beforeEach(async () => {
   await cleanup()
   useAlertStore.getState().reset()
+  useServerFetchStatusStore.getState().reset()
   await i18n.changeLanguage('he')
   jest.spyOn(wsManager, 'status').mockReturnValue('disconnected')
 })
@@ -30,15 +32,12 @@ afterEach(() => {
 
 describe('ServerStateMessage localization', () => {
   it('renders an unreachable-server message in the active locale', async () => {
+    useServerFetchStatusStore.setState({ statuses: { [server.id]: { status: 'error', lastCheckedAt: Date.now() } } })
     const { getByText, queryByText } = await renderWithI18n(
       <>
         <ServerStateMessage
           activeServerIds={[server.id]}
           servers={{ [server.id]: server }}
-          fetchStatuses={{
-            [server.id]: { status: 'error', lastCheckedAt: Date.now() },
-          }}
-          wsConnectedCount={0}
           onRetryFailed={() => {}}
           isRetrying={false}
         />
@@ -53,15 +52,12 @@ describe('ServerStateMessage localization', () => {
   it('names a protocol mismatch instead of a generic disconnected', async () => {
     await i18n.changeLanguage('en')
     jest.spyOn(wsManager, 'lastError').mockReturnValue('e2ee_protocol_mismatch')
+    useServerFetchStatusStore.setState({ statuses: { [server.id]: { status: 'ok', lastCheckedAt: Date.now() } } })
     const { getByText, queryByText } = await renderWithI18n(
       <>
         <ServerStateMessage
           activeServerIds={[server.id]}
           servers={{ [server.id]: server }}
-          fetchStatuses={{
-            [server.id]: { status: 'ok', lastCheckedAt: Date.now() },
-          }}
-          wsConnectedCount={0}
           onRetryFailed={() => {}}
           isRetrying={false}
         />
