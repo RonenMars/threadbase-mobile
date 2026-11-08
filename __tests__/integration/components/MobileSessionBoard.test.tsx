@@ -217,6 +217,32 @@ describe('SessionBoard cards', () => {
     expect(r.getAllByText('Sub-agents of other sessions')).toHaveLength(2)
   })
 
+  const terminal = session({ id: 'e', status: 'running', ownership: 'external', processLiveness: 'alive', sessionName: 'From the terminal' })
+
+  it('moves an observed session to Working while one of its sub-agents runs', async () => {
+    mockGet.mockResolvedValue({ conversations: [sub('a1', 'e', true), sub('a2', 'e', false)], hasMore: false, offset: 0, total: 2 })
+    const r = await renderBoard([row(terminal)])
+    await waitFor(() => expect(r.getByTestId('board-column-working')).toHaveTextContent('Working1'))
+    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed0')
+    expect(r.queryByText('Sub-agents of other sessions')).toBeNull()
+  })
+
+  it('keeps an observed session in Observed when none of its sub-agents runs', async () => {
+    mockGet.mockResolvedValue({ conversations: [sub('a1', 'e', false)], hasMore: false, offset: 0, total: 1 })
+    const r = await renderBoard([row(terminal)])
+    await waitFor(() => expect(r.getByTestId('board-toggle-e')).toHaveTextContent('1'))
+    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed1')
+    expect(r.getByTestId('board-column-working')).toHaveTextContent('Working0')
+  })
+
+  it('keeps a waiting session in Needs you while its sub-agents run', async () => {
+    mockGet.mockResolvedValue({ conversations: [sub('a1', 'w', true)], hasMore: false, offset: 0, total: 1 })
+    const r = await renderBoard([row(waiting())])
+    await waitFor(() => expect(r.getByTestId('board-toggle-w')).toHaveTextContent('1'))
+    expect(r.getByTestId('board-column-needsYou')).toHaveTextContent('Needs you1')
+    expect(r.getByTestId('board-column-working')).toHaveTextContent('Working0')
+  })
+
   it('searches orphan sub-agents by their label', async () => {
     mockGet.mockResolvedValue({ conversations: [sub('x', 'elsewhere', true), sub('y', 'gone', true)], hasMore: false, offset: 0, total: 2 })
     const r = await renderBoard([], undefined, 'sub y')
