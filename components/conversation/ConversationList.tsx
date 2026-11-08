@@ -24,6 +24,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
+import { conversationTier } from '@/lib/externalSession'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import type { MultiConversation } from '@/types/api'
 import { conversationHref } from '@/lib/conversationHref'
@@ -76,6 +77,7 @@ const ConversationRow = React.memo(function ConversationRow({
       lastMessage={c.lastMessage}
       preview={c.preview}
       matches={c.matches}
+      tier={conversationTier(c)}
       serverLabel={c.serverLabel}
       serverColor={serverColor}
       activeServerCount={activeServerCount}
