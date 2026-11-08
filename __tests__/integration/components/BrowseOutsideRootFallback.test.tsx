@@ -3,6 +3,7 @@ import { render, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import BrowseScreen from '@/app/browse'
+import { NotFoundError } from '@/services/api-client'
 
 // ─── Module mocks (localized to this test file) ─────────────────────────────
 
@@ -53,7 +54,7 @@ jest.mock('react-native-reanimated', () => ({
 
 // useBrowse — root ('') always succeeds; any other path fails with the
 // per-test error message in mockSubdirError.
-const mockSubdirError = { current: 'Path outside browse root' }
+const mockSubdirError = { current: new Error('Path outside browse root') }
 jest.mock('@/hooks/useBrowse', () => ({
   useBrowse: (_serverId: string, path: string) =>
     path === ''
@@ -62,7 +63,7 @@ jest.mock('@/hooks/useBrowse', () => ({
           data: undefined,
           isLoading: false,
           isError: true,
-          error: new Error(mockSubdirError.current),
+          error: mockSubdirError.current,
         },
   useCreateDirectory: () => ({ mutate: jest.fn(), isPending: false }),
   useStartSession: () => ({ mutate: jest.fn(), isPending: false }),
@@ -87,7 +88,7 @@ async function renderScreen() {
 
 beforeEach(() => {
   mockPathParam.current = undefined
-  mockSubdirError.current = 'Path outside browse root'
+  mockSubdirError.current = new Error('Path outside browse root')
 })
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -102,9 +103,19 @@ describe('BrowseScreen — outside-browse-root prefill fallback', () => {
     expect(getByText('projectA')).toBeTruthy()
   })
 
+  it('falls back to the browse root when the prefilled directory no longer exists', async () => {
+    mockPathParam.current = '/home/demo/projects/deleted-project'
+    mockSubdirError.current = new NotFoundError('/api/browse?path=%2Fhome%2Fdemo%2Fprojects%2Fdeleted-project')
+    const { getByTestId, getByText } = await renderScreen()
+    await waitFor(() => {
+      expect(getByTestId('browse-cwd-~')).toBeTruthy()
+    })
+    expect(getByText('projectA')).toBeTruthy()
+  })
+
   it('does not fall back on unrelated errors — surfaces them instead', async () => {
     mockPathParam.current = '/home/demo/projects/threadbase-mobile'
-    mockSubdirError.current = 'Server returned 500'
+    mockSubdirError.current = new Error('Server returned 500')
     const { getByTestId, getByText, queryByTestId } = await renderScreen()
     expect(getByTestId('browse-cwd-/home/demo/projects/threadbase-mobile')).toBeTruthy()
     expect(queryByTestId('browse-cwd-~')).toBeNull()
