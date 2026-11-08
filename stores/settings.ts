@@ -199,7 +199,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   onboardingDiagnosticsExperimentVariant: null,
   postFeedbackDiagnosticsSuggestionImpressions: [],
   autoNameFromMessage: true,
-  sessionView: 'terminal',
+  sessionView: 'chat',
 
   // Conversation row defaults (locked in plan §13).
   rowPreviewMode: 'auto',
@@ -297,7 +297,10 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
           parsed.postFeedbackDiagnosticsSuggestionImpressions ??
           state.postFeedbackDiagnosticsSuggestionImpressions,
         autoNameFromMessage: parsed.autoNameFromMessage ?? state.autoNameFromMessage,
-        sessionView: parsed.sessionView === 'chat' ? 'chat' : state.sessionView,
+        sessionView:
+          parsed.sessionView === 'chat' || parsed.sessionView === 'terminal'
+            ? parsed.sessionView
+            : state.sessionView,
         rowPreviewMode: parsed.rowPreviewMode ?? state.rowPreviewMode,
         rowPathDisplay: parsed.rowPathDisplay ?? state.rowPathDisplay,
         rowServerIndicator: parsed.rowServerIndicator ?? state.rowServerIndicator,

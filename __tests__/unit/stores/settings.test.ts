@@ -478,3 +478,16 @@ describe('SettingsStore – showProviderVersionWarning', () => {
     expect(useSettingsStore.getState().showProviderVersionWarning).toBe(true)
   })
 })
+
+describe('SettingsStore – sessionView', () => {
+  it('defaults to chat', () => {
+    expect(useSettingsStore.getInitialState().sessionView).toBe('chat')
+  })
+
+  it.each(['chat', 'terminal'] as const)('keeps a saved %s choice on hydrate', async (saved) => {
+    useSettingsStore.setState({ sessionView: saved === 'chat' ? 'terminal' : 'chat' })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(JSON.stringify({ sessionView: saved }))
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().sessionView).toBe(saved)
+  })
+})

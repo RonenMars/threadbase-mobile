@@ -18,8 +18,7 @@
   },
   "session": {
     "chatView": "תצוגת צ'אט",
-    "chatViewNote": "הצג סשנים חיים כבועות צ'אט במקום פלט טרמינל RAW. בטא — ייתכנו באגים והתכונה לא תמיד תעבוד.",
-    "betaBadge": "בטא",
+    "chatViewNote": "הצג סשנים חיים כבועות צ'אט במקום פלט טרמינל RAW.",
     "leaveAction": "כשיוצאים מסשן חי",
     "leaveActionAsk": "שאל אותי",
     "leaveActionKill": "סיים מיד",
