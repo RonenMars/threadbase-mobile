@@ -6,7 +6,7 @@
  * cannot drift.
  */
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
-import { classifyPairCredential, parsePairUri } from '@/services/pair-exchange'
+import { classifyPairCredential } from '@/services/pair-exchange'
 import type { PendingPairTarget } from '@/components/pair/PairConfirmGate'
 
 export function pendingTargetFromExchange(result: {
@@ -36,9 +36,9 @@ export function pendingTargetFromApiKey(url: string): PendingPairTarget {
 
 /**
  * Paste path: a `threadbase://` URI, a bare `pt_` token, or a long-lived key.
- * A proved `serverPublicKey` from the handshake wins; otherwise a pair URI's
- * own `spk` still selects the e2ee kind so a mocked/dev success with the
- * same QR still shows the fingerprint the user is meant to compare.
+ * Only a `serverPublicKey` the handshake proved selects the e2ee kind. A pair
+ * URI's own `spk` is pasted text, so a result without a proved key (a mocked
+ * dev success) is `no-spk` rather than a fingerprint nobody verified.
  */
 export function pendingTargetFromPaste(
   token: string,
@@ -54,19 +54,6 @@ export function pendingTargetFromPaste(
       machineName,
       serverPublicKey: result.serverPublicKey,
     })
-  }
-  if (classifyPairCredential(token) === 'pair-uri') {
-    try {
-      const parsed = parsePairUri(token)
-      return pendingTargetFromExchange({
-        url: parsed.url,
-        machineName,
-        serverPublicKey: parsed.spk ?? null,
-      })
-    } catch {
-      // The paste exchange already succeeded; an unparsable token here is a
-      // display fallback, not a reason to invent an api-key warning.
-    }
   }
   return pendingTargetFromExchange({
     url: result.url,
