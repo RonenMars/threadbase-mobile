@@ -1,13 +1,10 @@
 import React from 'react'
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import type { Theme } from '@/constants/theme'
+import { useThemedStyles } from '@/hooks/useThemedStyles'
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 const BACKDROP = 'rgba(0,0,0,0.72)'
-const CARD_BG = '#161f2e'
-const CARD_BORDER = '#2a3650'
-const TEXT_PRIMARY = '#e6edf3'
-const TEXT_SECONDARY = '#8b949e'
-const BLUE = '#3b82f6'
 const MONO = 'Menlo'
 
 export interface TourTarget {
@@ -26,6 +23,7 @@ interface Props {
 }
 
 export function TourOverlay({ target, text, onGotIt, onSkip, stepLabel }: Props) {
+  const { styles } = useThemedStyles(makeStyles)
   const PADDING = 8
   const holeX = target.x - PADDING
   const holeY = target.y - PADDING
@@ -100,54 +98,56 @@ export function TourOverlay({ target, text, onGotIt, onSkip, stepLabel }: Props)
   )
 }
 
-const styles = StyleSheet.create({
-  strip: {
-    position: 'absolute',
-    backgroundColor: BACKDROP,
-  },
-  card: {
-    position: 'absolute',
-    backgroundColor: CARD_BG,
-    borderWidth: 1,
-    borderColor: CARD_BORDER,
-    borderRadius: 12,
-    padding: 14,
-  },
-  stepLabel: {
-    color: TEXT_SECONDARY,
-    fontFamily: MONO,
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  text: {
-    color: TEXT_PRIMARY,
-    fontSize: 14,
-    lineHeight: 21,
-    marginBottom: 12,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  skip: {
-    color: TEXT_SECONDARY,
-    fontFamily: MONO,
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  gotItBtn: {
-    backgroundColor: BLUE,
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  gotItText: {
-    color: '#fff',
-    fontFamily: MONO,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-})
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    strip: {
+      position: 'absolute',
+      backgroundColor: BACKDROP,
+    },
+    card: {
+      position: 'absolute',
+      backgroundColor: theme.bg.secondary,
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 12,
+      padding: 14,
+    },
+    stepLabel: {
+      color: theme.text.secondary,
+      fontFamily: MONO,
+      fontSize: 10,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+      marginBottom: 6,
+    },
+    text: {
+      color: theme.text.primary,
+      fontSize: 14,
+      lineHeight: 21,
+      marginBottom: 12,
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    skip: {
+      color: theme.text.secondary,
+      fontFamily: MONO,
+      fontSize: 11,
+      fontWeight: '500',
+    },
+    gotItBtn: {
+      backgroundColor: theme.text.accent,
+      borderRadius: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    gotItText: {
+      color: theme.text.onAccent,
+      fontFamily: MONO,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+  })
+}

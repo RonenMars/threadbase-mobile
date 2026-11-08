@@ -72,11 +72,12 @@ const LineText = memo(function LineText({
   line: string
   userMessageTexts?: Set<string>
 }) {
+  const { styles: chrome } = useThemedStyles(makeChromeStyles)
   const clean = stripAnsi(line)
   const userOwned = isUserLine(clean, userMessageTexts)
   return (
     <Text
-      style={userOwned ? [styles.lineText, styles.lineTextUser] : styles.lineText}
+      style={userOwned ? [styles.lineText, chrome.lineText, styles.lineTextUser, chrome.lineTextUser] : [styles.lineText, chrome.lineText]}
       selectable
       maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
     >
@@ -310,15 +311,15 @@ export function TerminalOutput({
       case 'divider':
         return (
           <View style={styles.divider} testID="terminal-live-divider">
-            <View style={styles.dividerRule} />
-            <Text style={styles.dividerLabel}>{liveDividerLabel}</Text>
-            <View style={styles.dividerRule} />
+            <View style={[styles.dividerRule, chrome.dividerRule]} />
+            <Text style={[styles.dividerLabel, chrome.dividerLabel]}>{liveDividerLabel}</Text>
+            <View style={[styles.dividerRule, chrome.dividerRule]} />
           </View>
         )
       case 'line':
         return <LineRow line={item.line} userMessageTexts={userMessageTexts} />
     }
-  }, [liveDividerLabel, userMessageTexts])
+  }, [chrome, liveDividerLabel, userMessageTexts])
 
   // Stable keys: a message by id; a PTY row by content + per-content occurrence.
   // Positional keys broke memoisation: every WS frame's `.slice(-maxLines)`
@@ -399,14 +400,14 @@ export function TerminalOutput({
     ].join(' ')
     return (
       <View
-        style={styles.resumedNotice}
+        style={[styles.resumedNotice, chrome.resumedNotice]}
         accessibilityLabel={`${tTerminal('session.resumedEmptyScrollback')} ${linkA11y}`}
         testID="terminal-resumed-scrollback-notice"
       >
         <Text style={chrome.resumedNoticeText}>{tTerminal('session.resumedEmptyScrollback')}</Text>
         <Text style={chrome.resumedNoticeLinkRow}>
           <Text
-            style={styles.resumedNoticeLink}
+            style={[styles.resumedNoticeLink, chrome.resumedNoticeLink]}
             onPress={onViewResumedConversation}
             accessibilityRole="link"
             accessibilityLabel={tTerminal('session.resumedHistoryLinkView')}
@@ -414,9 +415,9 @@ export function TerminalOutput({
           >
             {tTerminal('session.resumedHistoryLinkView')}
           </Text>
-          <Text style={styles.resumedNoticePlain}>{tTerminal('session.resumedHistoryLinkOr')}</Text>
+          <Text style={[styles.resumedNoticePlain, chrome.resumedNoticePlain]}>{tTerminal('session.resumedHistoryLinkOr')}</Text>
           <Text
-            style={styles.resumedNoticeLink}
+            style={[styles.resumedNoticeLink, chrome.resumedNoticeLink]}
             onPress={onSearch}
             accessibilityRole="link"
             accessibilityLabel={tTerminal('session.resumedHistoryLinkSearch')}
@@ -424,9 +425,9 @@ export function TerminalOutput({
           >
             {tTerminal('session.resumedHistoryLinkSearch')}
           </Text>
-          <Text style={styles.resumedNoticePlain}>{tTerminal('session.resumedHistoryLinkIn')}</Text>
+          <Text style={[styles.resumedNoticePlain, chrome.resumedNoticePlain]}>{tTerminal('session.resumedHistoryLinkIn')}</Text>
           <Text
-            style={styles.resumedNoticeLink}
+            style={[styles.resumedNoticeLink, chrome.resumedNoticeLink]}
             onPress={onViewResumedConversation}
             accessibilityRole="link"
             accessibilityLabel={tTerminal('session.resumedHistoryLinkTail')}
@@ -440,7 +441,7 @@ export function TerminalOutput({
   }, [chrome, hasOlder, isFetchingOlder, onSearchResumedConversation, onViewResumedConversation, tTerminal, transcript.length])
 
   return (
-    <View style={styles.container} onLayout={handleContainerLayout} testID="terminal-output">
+    <View style={[styles.container, chrome.container]} onLayout={handleContainerLayout} testID="terminal-output">
       <View style={styles.listArea}>
         <FlashList
           ref={listRef}
@@ -473,7 +474,7 @@ export function TerminalOutput({
           <TouchableOpacity
             onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
             accessibilityLabel={t('nav.scrollToTop')}
-            style={styles.jumpBtnInner}
+            style={[styles.jumpBtnInner, chrome.jumpBtnInner]}
           >
             <Text style={chrome.jumpBtnText}>{t('nav.top')}</Text>
           </TouchableOpacity>
@@ -483,7 +484,7 @@ export function TerminalOutput({
           <TouchableOpacity
             onPress={jumpToBottom}
             accessibilityLabel={t('nav.scrollToBottom')}
-            style={styles.jumpBtnInner}
+            style={[styles.jumpBtnInner, chrome.jumpBtnInner]}
           >
             <Text style={chrome.jumpBtnText}>{t('nav.bottom')}</Text>
           </TouchableOpacity>
@@ -515,11 +516,9 @@ const styles = StyleSheet.create({
     // container inherits the app direction so QuestionCard, jump labels
     // and the resumed-history notice follow the selected language.
     flex: 1,
-    backgroundColor: '#0d1117',
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#21262d',
   },
   // Anchors the jump pills to the list only, so they never float over the
   // QuestionCard rendered beneath it.
@@ -535,19 +534,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#21262d',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#30363d',
     gap: 4,
   },
   resumedNoticePlain: {
-    color: '#8b949e',
     fontSize: 12,
     lineHeight: 16,
   },
   resumedNoticeLink: {
-    color: '#58a6ff',
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '500',
@@ -562,10 +557,8 @@ const styles = StyleSheet.create({
   dividerRule: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#30363d',
   },
   dividerLabel: {
-    color: '#8b949e',
     fontSize: 10,
     fontFamily: 'monospace',
     letterSpacing: 1,
@@ -580,14 +573,12 @@ const styles = StyleSheet.create({
   },
   lineText: {
     ...ltrContentStyle,
-    color: '#e6edf3',
     fontSize: 12,
     fontFamily: 'monospace',
     flex: 1,
     lineHeight: 18,
   },
   lineTextUser: {
-    color: '#58a6ff',
     fontWeight: '600',
   },
   jumpBtn: {
@@ -600,10 +591,8 @@ const styles = StyleSheet.create({
     top: spacing.md,
   },
   jumpBtnInner: {
-    backgroundColor: 'rgba(31, 111, 235, 0.18)',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(88, 166, 255, 0.25)',
     paddingHorizontal: 14,
     paddingVertical: 6,
     minHeight: MIN_TOUCH_TARGET,
@@ -611,22 +600,40 @@ const styles = StyleSheet.create({
   },
 })
 
-function makeChromeStyles(_theme: Theme, rtl: RtlStyleKit) {
+function makeChromeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
+    container: {
+      backgroundColor: theme.bg.primary,
+      borderColor: theme.bg.card,
+    },
+    resumedNotice: {
+      backgroundColor: theme.bg.card,
+      borderColor: theme.border,
+    },
+    resumedNoticePlain: { color: theme.text.secondary },
+    resumedNoticeLink: { color: theme.text.accent },
+    dividerRule: { backgroundColor: theme.border },
+    dividerLabel: { color: theme.text.secondary },
+    lineText: { color: theme.text.primary },
+    lineTextUser: { color: theme.text.accent },
+    jumpBtnInner: {
+      backgroundColor: `${theme.text.accent}2e`,
+      borderColor: `${theme.text.accent}40`,
+    },
     resumedNoticeText: {
-      color: '#8b949e',
+      color: theme.text.secondary,
       fontSize: 12,
       lineHeight: 16,
       ...rtl.copy,
     },
     resumedNoticeLinkRow: {
-      color: '#8b949e',
+      color: theme.text.secondary,
       fontSize: 12,
       lineHeight: 16,
       ...rtl.copy,
     },
     jumpBtnText: {
-      color: 'rgba(255, 255, 255, 0.7)',
+      color: theme.text.primary,
       fontSize: 12,
       fontWeight: '500',
       ...rtl.copy,
