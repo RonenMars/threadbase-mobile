@@ -10,23 +10,14 @@
 
 'use strict';
 
-const { execFileSync } = require('child_process');
 const path = require('path');
+
+const { runScript: run } = require('./_runScript');
 
 const SCRIPT = path.resolve(__dirname, '../../../scripts/ship-ios.sh');
 
-function runScript(args) {
-  try {
-    const stdout = execFileSync('bash', [SCRIPT, ...args], {
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 10000,
-    });
-    return { stdout, stderr: '', code: 0 };
-  } catch (err) {
-    return { stdout: err.stdout || '', stderr: err.stderr || '', code: err.status ?? 1 };
-  }
-}
+// git: ship-ios.sh reads `git rev-parse HEAD` before it validates --release-type.
+const runScript = args => run(SCRIPT, args, { git: true });
 
 describe('ship-ios.sh — --target validation', () => {
   it('rejects an unknown target', () => {
