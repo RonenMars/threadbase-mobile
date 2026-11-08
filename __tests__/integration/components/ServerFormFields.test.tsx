@@ -1,5 +1,5 @@
 import React from 'react'
-import { StyleSheet } from 'react-native'
+import { Platform, StyleSheet } from 'react-native'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import * as Clipboard from 'expo-clipboard'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
@@ -117,6 +117,35 @@ describe('ServerFormFields', () => {
     expect(StyleSheet.flatten(getByTestId('key-input').props.style)).toEqual(
       expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr' }),
     )
+  })
+
+  describe('API key AutoFill opt-out (#977)', () => {
+    const originalOS = Platform.OS
+
+    afterEach(() => {
+      Platform.OS = originalOS
+    })
+
+    it('opts the key field out of the iOS Save Password prompt, masked or revealed', async () => {
+      Platform.OS = 'ios'
+      const { getByTestId } = await renderFields()
+
+      expect(getByTestId('key-input').props.textContentType).toBe('oneTimeCode')
+      expect(getByTestId('key-input').props.secureTextEntry).toBe(true)
+
+      await fireEvent.press(getByTestId('server-form-toggle-api-key'))
+
+      expect(getByTestId('key-input').props.textContentType).toBe('oneTimeCode')
+      expect(getByTestId('key-input').props.secureTextEntry).toBe(false)
+    })
+
+    it('opts the key field out of Android autofill', async () => {
+      Platform.OS = 'android'
+      const { getByTestId } = await renderFields()
+
+      expect(getByTestId('key-input').props.autoComplete).toBe('off')
+      expect(getByTestId('key-input').props.importantForAutofill).toBe('no')
+    })
   })
 })
 
