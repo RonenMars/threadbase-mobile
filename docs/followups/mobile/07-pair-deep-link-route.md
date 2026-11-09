@@ -1,4 +1,4 @@
-# 08 — `threadbase://pair` deep links hit "Unmatched Route"
+# 07 — `threadbase://pair` deep links hit "Unmatched Route"
 
 **Repo:** tb-mobile · **Base:** `main` · independent of the ADR work
 **Owns:** a new Expo Router route · reads `services/pair-exchange.ts`
