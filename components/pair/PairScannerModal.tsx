@@ -21,7 +21,7 @@ import {
 } from '@/services/pair-exchange'
 import { resolvePairFailureMessage } from '@/services/pair-failure-message'
 import { defaultPairDeviceName } from '@/services/pair-device-name'
-import { SUPPORT_EMAIL } from '@/services/feedback-transport'
+import { openSupportEmail } from '@/services/feedback-transport'
 import { isServerUrlAlreadyAdded } from '@/stores/servers'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { RtlStyleKit } from '@/lib/rtl'
@@ -169,9 +169,7 @@ export function PairScannerModal({ visible, onClose, onSuccess }: Props) {
           <TouchableOpacity
             testID="pair-scanner-support"
             onPress={() => {
-              void Linking.openURL(
-                `mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`,
-              )
+              void openSupportEmail('Threadbase Pairing Help')
             }}
           >
             <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>

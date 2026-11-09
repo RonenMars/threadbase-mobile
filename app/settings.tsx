@@ -33,7 +33,7 @@ import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode, CaretRight } from 'phosphor-react-native'
 import { captureHandledError, isSentryTrackingEnforced } from '@/services/sentry'
-import { SUPPORT_EMAIL } from '@/services/feedback-transport'
+import { openSupportEmail } from '@/services/feedback-transport'
 import { THEMES, font, radius, spacing } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -935,7 +935,7 @@ await refreshServerInfo(serverId)
             <Text style={s.rowLabel}>{t('help.restartOnboarding')}</Text>
             <SettingsChevron />
           </TouchableOpacity>
-          <TouchableOpacity style={s.row} onPress={() => Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Support`)}>
+          <TouchableOpacity style={s.row} onPress={() => void openSupportEmail('Threadbase Support')}>
             <Text style={s.rowLabel}>{t('help.helpSupport')}</Text>
             <SettingsChevron />
           </TouchableOpacity>

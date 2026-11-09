@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
@@ -19,7 +19,7 @@ import { defaultPairDeviceName } from '@/services/pair-device-name'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
 import { ScreenHeader } from '@/components/shared/ScreenHeader'
 import { pendingTargetFromExchange } from '@/services/pair-confirm-target'
-import { SUPPORT_EMAIL } from '@/services/feedback-transport'
+import { openSupportEmail } from '@/services/feedback-transport'
 import { isServerUrlAlreadyAdded, useServersStore } from '@/stores/servers'
 import { clientLog } from '@/lib/clientLog'
 
@@ -200,7 +200,7 @@ export default function PairDeepLinkScreen() {
             <TouchableOpacity
               testID="pair-deep-link-support"
               onPress={() => {
-                void Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`)
+                void openSupportEmail('Threadbase Pairing Help')
               }}
             >
               <Text style={styles.supportLink}>{t('scanner.contactSupport')}</Text>

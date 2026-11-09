@@ -1,3 +1,4 @@
+import { Alert, Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import * as MailComposer from 'expo-mail-composer'
 import {
@@ -5,6 +6,8 @@ import {
   submitFeedback,
   copyReportToClipboard,
   FEEDBACK_EMAIL,
+  SUPPORT_EMAIL,
+  openSupportEmail,
 } from '@/services/feedback-transport'
 import { submitFeedbackViaSentry } from '@/services/sentry'
 import type { FeedbackReport } from '@/types/feedback'
@@ -129,5 +132,47 @@ describe('copyReportToClipboard', () => {
     expect(ok).toBe(true)
     const written = (Clipboard.setStringAsync as jest.Mock).mock.calls[0][0]
     expect(written).toContain('The hub flickers on cold launch.')
+  })
+})
+
+describe('openSupportEmail', () => {
+  let openURL: jest.SpyInstance
+  let alertSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true)
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    openURL.mockRestore()
+    alertSpy.mockRestore()
+  })
+
+  it('opens a mailto URL with the encoded subject and shows no alert', async () => {
+    await openSupportEmail('Threadbase Pairing Help')
+    expect(openURL).toHaveBeenCalledWith(
+      `mailto:${SUPPORT_EMAIL}?subject=Threadbase%20Pairing%20Help`,
+    )
+    expect(alertSpy).not.toHaveBeenCalled()
+    expect(Clipboard.setStringAsync).not.toHaveBeenCalled()
+  })
+
+  it('copies the address and alerts when there is no mail handler', async () => {
+    openURL.mockRejectedValue(new Error('Unable to open URL: mailto:'))
+    await expect(openSupportEmail('Threadbase Support')).resolves.toBeUndefined()
+    expect(Clipboard.setStringAsync).toHaveBeenCalledWith(SUPPORT_EMAIL)
+    expect(alertSpy).toHaveBeenCalledTimes(1)
+    expect(alertSpy.mock.calls[0][1]).toContain(SUPPORT_EMAIL)
+    expect(alertSpy.mock.calls[0][1]).toContain('clipboard')
+  })
+
+  it('still shows the address when the clipboard write also fails', async () => {
+    openURL.mockRejectedValue(new Error('no handler'))
+    ;(Clipboard.setStringAsync as jest.Mock).mockRejectedValueOnce(new Error('denied'))
+    await expect(openSupportEmail('Threadbase Support')).resolves.toBeUndefined()
+    expect(alertSpy).toHaveBeenCalledTimes(1)
+    expect(alertSpy.mock.calls[0][1]).toContain(SUPPORT_EMAIL)
+    expect(alertSpy.mock.calls[0][1]).not.toContain('clipboard')
   })
 })
