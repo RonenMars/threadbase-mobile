@@ -16,6 +16,7 @@ import { useProjectConversations } from '@/hooks/useProjectConversations'
 import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { makeStyles } from '@/components/sessions/base/CollapsibleCard.styles'
+import { omitConversationsCoveredByLiveSessions } from '@/components/sessions/now/mergedItems'
 import type { ProjectHubCardProps } from './types'
 import type { MultiConversation } from '@/types/api'
 import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
@@ -137,18 +138,24 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     >
             {(() => {
               const previewLimit = 3
-              const merged = [
-                ...group.sessions.map((s) => ({
-                  key: `s-${s.serverId}::${s.id}`,
-                  ms: sessionActivityMs(s),
-                  node: <SessionRow key={`s-${s.serverId}::${s.id}`} session={s} forceServerChip={forceServerChip} />,
-                })),
-                ...conversations.map((c) => ({
-                  key: `c-${c.serverId}::${c.id}`,
-                  ms: Date.parse(c.lastActivity) || 0,
-                  node: <ConvRow key={`c-${c.serverId}::${c.id}`} conv={c} forceServerChip={forceServerChip} />,
-                })),
-              ].sort((a, b) => b.ms - a.ms)
+              const merged = omitConversationsCoveredByLiveSessions([
+                ...group.sessions.map((s) => ({ kind: 'session' as const, ms: 0, item: s })),
+                ...conversations.map((c) => ({ kind: 'conversation' as const, ms: 0, item: c })),
+              ])
+                .map((m) =>
+                  m.kind === 'session'
+                    ? {
+                        key: `s-${m.item.serverId}::${m.item.id}`,
+                        ms: sessionActivityMs(m.item),
+                        node: <SessionRow key={`s-${m.item.serverId}::${m.item.id}`} session={m.item} forceServerChip={forceServerChip} />,
+                      }
+                    : {
+                        key: `c-${m.item.serverId}::${m.item.id}`,
+                        ms: Date.parse(m.item.lastActivity) || 0,
+                        node: <ConvRow key={`c-${m.item.serverId}::${m.item.id}`} conv={m.item} forceServerChip={forceServerChip} />,
+                      },
+                )
+                .sort((a, b) => b.ms - a.ms)
               const hasMore = merged.length > previewLimit || convCount > conversations.length
               return (
                 <>
