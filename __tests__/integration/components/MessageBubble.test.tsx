@@ -284,6 +284,43 @@ describe("MessageBubble – markdown links", () => {
   });
 });
 
+describe("MessageBubble – markdown bare URLs and selection", () => {
+  const render_ = (text: string) =>
+    render(<MessageBubble message={makeMessage({ role: "assistant", content: [{ type: "text", text }] })} />);
+
+  it("turns a bare https URL into a pressable link", async () => {
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const url = "https://macsources.com/category/featured/apps/";
+    const { getByText } = await render_(`see ${url} for more`);
+    await fireEvent.press(getByText(url));
+    expect(openURL).toHaveBeenCalledWith(url);
+    openURL.mockRestore();
+  });
+
+  it("does not link file names that look like domains", async () => {
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const { getByText } = await render_("edit README.md or main.rs");
+    await fireEvent.press(getByText(/README\.md/));
+    expect(openURL).not.toHaveBeenCalled();
+    openURL.mockRestore();
+  });
+
+  it("renders prose selectable", async () => {
+    const { getByText } = await render_("a sentence to copy");
+    expect(getByText("a sentence to copy").parent?.props.selectable).toBe(true);
+  });
+
+  it("keeps prose selectable while a search highlight is active", async () => {
+    const { getByText } = await render(
+      <MessageBubble
+        message={makeMessage({ role: "assistant", content: [{ type: "text", text: "a sentence to copy" }] })}
+        highlight="sentence"
+      />,
+    );
+    expect(getByText("sentence").parent?.parent?.props.selectable).toBe(true);
+  });
+});
+
 describe("MessageBubble – markdown lists", () => {
   it("sizes list item text to its content so a list-only reply is not squeezed to zero width", async () => {
     const { getByText } = await render(

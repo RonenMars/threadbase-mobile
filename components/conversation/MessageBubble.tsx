@@ -7,6 +7,7 @@ import {
   Linking,
 } from 'react-native'
 import Markdown from 'react-native-markdown-display'
+import MarkdownIt from 'markdown-it'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
@@ -345,6 +346,20 @@ function renderHighlightedRun(content: string, needle: string, style: object) {
   )
 }
 
+// The library's default parser has linkify off, so bare URLs stay plain text.
+// fuzzyLink off keeps `README.md` / `main.rs` from becoming links, at the cost
+// of `www.` without a scheme: only explicit scheme:// URLs link.
+const markdownIt = MarkdownIt({ typographer: true, linkify: true })
+markdownIt.linkify.set({ fuzzyLink: false })
+
+// The textgroup Text is the outermost Text of each inline run, which is what
+// iOS/Android make selectable; the library renders none of its Text selectable.
+const selectableTextgroup = (node: { key: string }, children: React.ReactNode, _parent: unknown, mdStyles: { textgroup?: object }) => (
+  <Text key={node.key} style={mdStyles.textgroup} selectable>
+    {children}
+  </Text>
+)
+
 function MarkdownProse({ text, highlight, activeMatch }: { text: string; highlight?: string; activeMatch?: boolean }) {
   const { styles, theme } = useBubbleStyles()
   const mdStyle = useMemo(() => makeMarkdownStyles(theme), [theme])
@@ -358,17 +373,18 @@ function MarkdownProse({ text, highlight, activeMatch }: { text: string; highlig
     () =>
       needle
         ? {
+            textgroup: selectableTextgroup,
             text: (node: { key: string; content: string }, _children: unknown, _parent: unknown, mdStyles: { text?: object }, inherited: object = {}) => (
               <Text key={node.key} style={[inherited, mdStyles.text]}>
                 {renderHighlightedRun(node.content, needle, markStyle)}
               </Text>
             ),
           }
-        : undefined,
+        : { textgroup: selectableTextgroup },
     [needle, markStyle],
   )
   return (
-    <Markdown style={mdStyle} onLinkPress={onLinkPress} mergeStyle rules={rules}>
+    <Markdown style={mdStyle} markdownit={markdownIt} onLinkPress={onLinkPress} mergeStyle rules={rules}>
       {text}
     </Markdown>
   )
