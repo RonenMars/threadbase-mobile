@@ -489,6 +489,7 @@ export default function SessionDetailScreen() {
   const serverId = server || fallbackServerId
   const { sessionView, setSessionView } = useSettingsStore()
   const [forceRawTerminal, setForceRawTerminal] = useState(false)
+  const [viewOverride, setViewOverride] = useState<'chat' | 'terminal' | null>(null)
 
   useEffect(() => {
     useNavLockStore.getState().clear()
@@ -1248,8 +1249,12 @@ export default function SessionDetailScreen() {
   // for REST so history resolves; fall back to conversationId for Claude / pre-bind.
   const historyConversationId = session.boundConversationId ?? session.conversationId
   const hasConversationId = !!historyConversationId
+  // Cursor opens in Terminal; its toggle is local to this screen so it never rewrites the
+  // global preference that governs every other provider.
+  const isCursor = session.provider === 'cursor'
+  const effectiveView = viewOverride ?? (isCursor ? 'terminal' : sessionView)
   const renderMode = preferRawTerminal({
-    sessionView: forceRawTerminal ? 'terminal' : sessionView,
+    sessionView: forceRawTerminal ? 'terminal' : effectiveView,
     hasConversationId,
     // Message count is owned by LiveConversationView; session-level routing
     // only gates on preference, conversation id, and parse confidence.
@@ -1258,7 +1263,7 @@ export default function SessionDetailScreen() {
     parseConfidence,
   })
   const showTerminalSurface =
-    sessionView === 'terminal' ||
+    effectiveView === 'terminal' ||
     !hasConversationId ||
     forceRawTerminal ||
     parseConfidence === 'low' ||
@@ -1328,7 +1333,8 @@ export default function SessionDetailScreen() {
                   const next = showTerminalSurface ? 'chat' : 'terminal'
                   if (!hasConversationId && next === 'chat') return
                   setForceRawTerminal(false)
-                  setSessionView(next)
+                  if (isCursor) setViewOverride(next)
+                  else setSessionView(next)
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={viewModeLabel}

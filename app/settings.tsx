@@ -651,7 +651,6 @@ await refreshServerInfo(serverId)
           label={t('session.chatView')}
           value={sessionView === 'chat'}
           onValueChange={(v) => setSessionView(v ? 'chat' : 'terminal')}
-          badge={t('session.betaBadge')}
         />
         <Text style={s.rowNote}>{t('session.chatViewNote')}</Text>
         {__DEV__ ? (
