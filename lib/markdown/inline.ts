@@ -15,9 +15,24 @@ import type { InlineSpan } from '@/lib/markdown/types'
  * keeps its literal asterisks.
  */
 const INLINE_RE =
-  /`([^`\n]+)`|\[([^\]\n]*)\]\(([^)\s]+)\)|\*\*\*(?=\S)([^\n]*?\S)\*\*\*|___(?=\S)([^\n]*?\S)___|\*\*(?=\S)([^\n]*?\S)\*\*|__(?=\S)([^\n]*?\S)__|~~(?=\S)([^\n]*?\S)~~|\*(?=\S)([^*\n]*?\S)\*|_(?=\S)([^_\n]*?\S)_/g
+  /`([^`\n]+)`|\[([^\]\n]*)\]\(([^)\s]+)\)|\*\*\*(?=\S)([^\n]*?\S)\*\*\*|___(?=\S)([^\n]*?\S)___|\*\*(?=\S)([^\n]*?\S)\*\*|__(?=\S)([^\n]*?\S)__|~~(?=\S)([^\n]*?\S)~~|\*(?=\S)([^*\n]*?\S)\*|_(?=\S)([^_\n]*?\S)_|(https?:\/\/[^\s<>]+)/g
 
 const WORD_RE = /\w/
+
+// A bare URL ends where the sentence around it does: "see https://x.test/a."
+// must not swallow the full stop, nor a ")" that closes a parenthesis opened
+// outside the URL. Only explicit http(s):// links — no `www.` or bare domains,
+// which would turn README.md and main.rs into links.
+const TRAILING_PUNCT_RE = /[.,;:!?'"\]]$/
+
+function trimBareUrl(url: string): string {
+  let out = url
+  for (;;) {
+    if (TRAILING_PUNCT_RE.test(out)) out = out.slice(0, -1)
+    else if (out.endsWith(')') && out.split('(').length < out.split(')').length) out = out.slice(0, -1)
+    else return out
+  }
+}
 
 function isWordChar(ch: string | undefined): boolean {
   return ch !== undefined && WORD_RE.test(ch)
@@ -37,7 +52,7 @@ export function parseInline(text: string): InlineSpan[] {
   let m: RegExpExecArray | null
   while ((m = INLINE_RE.exec(text)) !== null) {
     const start = m.index
-    const end = start + m[0].length
+    let end = start + m[0].length
 
     // Defensive: a zero-length match would spin forever. No alternative above
     // can produce one, so this only guards future edits to the pattern.
@@ -56,6 +71,16 @@ export function parseInline(text: string): InlineSpan[] {
       continue
     }
 
+    let bareUrl: string | undefined
+    if (m[11] !== undefined) {
+      bareUrl = trimBareUrl(m[11])
+      if (!/^https?:\/\/./.test(bareUrl)) {
+        INLINE_RE.lastIndex = start + 1
+        continue
+      }
+      end = start + bareUrl.length
+    }
+
     pending += text.slice(cursor, start)
     if (pending.length > 0) {
       spans.push({ kind: 'text', text: pending })
@@ -71,6 +96,7 @@ export function parseInline(text: string): InlineSpan[] {
     else if (m[8] !== undefined) spans.push({ kind: 'strike', text: m[8] })
     else if (m[9] !== undefined) spans.push({ kind: 'em', text: m[9] })
     else if (m[10] !== undefined) spans.push({ kind: 'em', text: m[10] })
+    else if (bareUrl !== undefined) spans.push({ kind: 'link', text: bareUrl, href: bareUrl, bare: true })
 
     cursor = end
   }
@@ -95,6 +121,6 @@ export function spanSource(span: InlineSpan): string {
     case 'strike':
       return `~~${span.text}~~`
     case 'link':
-      return `[${span.text}](${span.href})`
+      return span.bare ? span.href : `[${span.text}](${span.href})`
   }
 }

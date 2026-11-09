@@ -13,7 +13,8 @@ export type InlineSpan =
   | { kind: 'em'; text: string }
   | { kind: 'code'; text: string }
   | { kind: 'strike'; text: string }
-  | { kind: 'link'; text: string; href: string }
+  /** `bare` marks a URL written without `[text](…)`, so its source is the URL alone. */
+  | { kind: 'link'; text: string; href: string; bare?: boolean }
 
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
 
