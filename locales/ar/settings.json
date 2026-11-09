@@ -19,6 +19,8 @@
   "session": {
     "chatView": "عرض الدردشة",
     "chatViewNote": "أظهر الجلسات المباشرة كفقاعات دردشة بدلًا من مخرجات طرفية RAW.",
+    "terminalMarkdown": "تنسيق markdown",
+    "terminalMarkdownNote": "نسّق مخرجات الوكيل في عرض الطرفية — العناوين والقوائم والخط العريض. أوقفه لرؤية ما أنتجه الوكيل بالضبط.",
     "leaveAction": "عند مغادرة جلسة مباشرة",
     "leaveActionAsk": "اسألني",
     "leaveActionKill": "إنهاء فورًا",

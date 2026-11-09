@@ -29,3 +29,5 @@ components/sessions/board/DesktopBoard.tsx
 components/sessions/board/BoardColumnList.tsx
 components/sessions/board/ColumnPager.tsx
 components/sessions/board/ColumnPager.web.tsx
+# Screen-sized list composition over the settings store, FlashList recycling and scroll anchoring — the pieces (TranscriptRow, TerminalMarkdown, QuestionCard) have stories.
+components/terminal/TerminalOutput.tsx

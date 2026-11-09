@@ -19,6 +19,8 @@
   "session": {
     "chatView": "Chat view",
     "chatViewNote": "Show live sessions as chat bubbles instead of RAW terminal output.",
+    "terminalMarkdown": "Render markdown",
+    "terminalMarkdownNote": "Format agent output in the terminal view — headings, lists and bold. Turn off to read exactly what the agent emitted.",
     "leaveAction": "When you leave a live session",
     "leaveActionAsk": "Ask me",
     "leaveActionKill": "Terminate right away",

@@ -294,8 +294,8 @@ describe("MessageBubble – markdown lists", () => {
         })}
       />,
     );
-    // text -> paragraph View -> list-content View
-    const content = getByText("first item").parent?.parent;
+    // text -> list item body View
+    const content = getByText("first item").parent;
     const style = StyleSheet.flatten(content?.props.style);
     expect(style.flex).toBeUndefined();
     expect(style.flexGrow).toBe(0);
