@@ -176,12 +176,11 @@ they cannot coexist on the device. Installing one replaces the other.
 
 What survives a swap (same bundle id):
 
-- **API keys** — stored in iOS Keychain via `SecureStore`; persists across reinstalls of the same bundle id by the same signing team.
+- **Paired servers, API keys, device tokens** — the server list (URL, label) and its credentials are stored in iOS Keychain via `SecureStore`; they persist across reinstalls of the same bundle id by the same signing team. To clear them, remove each server in the app first: [troubleshooting.md](troubleshooting.md) → "I reinstalled the app and my paired servers are still there".
 
 What's wiped:
 
-- **Server URLs and labels** — `AsyncStorage` (`stores/servers`); re-add after a swap.
-- **Favorites, settings, session names** — `AsyncStorage` (`threadbase_settings`, `threadbase_quick_access`, `threadbase_session_names`); wiped on reinstall.
+- **Favorites, settings** — `AsyncStorage` (`threadbase_settings`, `threadbase_quick_access`); wiped on reinstall.
 
 To go back to TestFlight: open the TestFlight app on the phone and reinstall
 Threadbase from there.
