@@ -32,7 +32,7 @@ import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { wsManager } from '@/services/ws-client'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { QrCode, CaretRight } from 'phosphor-react-native'
-import { captureHandledError } from '@/services/sentry'
+import { captureHandledError, isSentryTrackingEnforced } from '@/services/sentry'
 import { SUPPORT_EMAIL } from '@/services/feedback-transport'
 import { THEMES, font, radius, spacing } from '@/constants/theme'
 import type { ThemeId } from '@/constants/theme'
@@ -289,6 +289,8 @@ export default function SettingsScreen() {
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [isLeaveActionOpen, setIsLeaveActionOpen] = React.useState(false)
   const [throwOnRender, setThrowOnRender] = useState(false)
+  // Enforced-tracking builds are QA/testing distributions, never TestFlight or a store.
+  const showCrashTestRows = __DEV__ || isSentryTrackingEnforced()
   const [refreshingServerIds, setRefreshingServerIds] = useState<Set<string>>(new Set())
   const [isPullRefreshing, setIsPullRefreshing] = useState(false)
   const [errorServerId, setErrorServerId] = useState<string | null>(null)
@@ -822,7 +824,7 @@ await refreshServerInfo(serverId)
             <Text style={s.rowLabel}>{t('anonymousDiagnostics.privacyPolicy')}</Text>
             <SettingsChevron />
           </TouchableOpacity>
-          {__DEV__ ? (
+          {showCrashTestRows ? (
             <TouchableOpacity
               style={s.row}
               onPress={handleTestCrash}
@@ -834,7 +836,7 @@ await refreshServerInfo(serverId)
               <SettingsChevron />
             </TouchableOpacity>
           ) : null}
-          {__DEV__ ? (
+          {showCrashTestRows ? (
             <TouchableOpacity
               style={[s.row, { borderBottomWidth: 0 }]}
               onPress={handleThrowUncaught}
