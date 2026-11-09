@@ -52,10 +52,14 @@ function Line({ spans, style }: { spans: InlineSpan[]; style?: Text['props']['st
   )
 }
 
-function Block({ block }: { block: MarkdownBlock }) {
+function Block({ block, first }: { block: MarkdownBlock; first: boolean }) {
   switch (block.kind) {
     case 'paragraph':
-      return <Line spans={block.spans} />
+      // The parser drops blank lines, so "two paragraphs in a row" is the only
+      // surviving trace of an author's blank line. Without the extra lead they
+      // render at the same 2pt gap as wrapped lines inside one paragraph, and
+      // the break the agent wrote disappears.
+      return <Line spans={block.spans} style={first ? undefined : styles.paragraphLead} />
 
     case 'heading':
       return <Line spans={block.spans} style={block.level <= 2 ? styles.headingMajor : styles.headingMinor} />
@@ -114,7 +118,7 @@ export const TerminalMarkdown = memo(function TerminalMarkdown({
   return (
     <View style={styles.container} testID="terminal-markdown">
       {blocks.map((block, i) => (
-        <Block key={i} block={block} />
+        <Block key={i} block={block} first={i === 0} />
       ))}
     </View>
   )
@@ -153,6 +157,9 @@ const styles = StyleSheet.create({
   dim: {
     color: '#8b949e',
   },
+  paragraphLead: {
+    marginTop: 5,
+  },
   // Weight and color only — see the component note on why not fontSize.
   headingMajor: {
     color: '#ffffff',
@@ -165,8 +172,13 @@ const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
   },
+  // `minWidth`, not `width`: a bullet sits in a 14pt column so nesting lines up,
+  // but an ordinal has to be free to size to its own content. `1.` is ~14.4pt at
+  // 12pt monospace, so a fixed 14 wrapped the dot onto its own line, and `10.`
+  // would have wrapped further.
   marker: {
-    width: 14,
+    minWidth: 14,
+    paddingEnd: 4,
     color: '#8b949e',
   },
   itemBody: {
