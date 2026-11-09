@@ -1,0 +1,122 @@
+# Maestro E2E — question-card lifecycle (#808)
+# Three promises that live in the gap between two renders, which unit tests mock
+# away. The mock server's /__test__/gate trigger pushes the gates; it never
+# sends permission_cancelled in this flow, so nothing but the tap itself can
+# change the card.
+#
+#   1. Card lifetime on answer: a tap swaps the tappable `question-card` for the
+#      inert `question-card-ghost` straight away, without waiting for the server
+#      to notice the gate closed. (Since #814 the answered card stands as a
+#      ghost until the gate closes; it no longer vanishes outright.)
+#   2. Stale selection: a second gate with different text arrives while the
+#      first answer's highlight is still on the card. No option of the new gate
+#      may render selected.
+#   3. No stray input: a gate answer goes over POST /permission/answer. Anything
+#      reaching POST /input would be raw keystrokes typed at Claude's prompt, so
+#      the mock's input log must stay empty and the composer must stay empty.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node e2e/run-maestro.js test e2e/question_card_lifecycle.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-abc123"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 12000
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 8000
+
+# Earlier flows share this mock process; start the log from empty.
+- runScript:
+    file: scripts/inputs-log.js
+    env:
+      MODE: "reset"
+
+# --- gate A: answer its second option ----------------------------------------
+- runScript:
+    file: scripts/trigger-gate-env.js
+    env:
+      GATE_PROMPT: "Run the migration script?"
+      GATE_DETAIL: "Bash command\npnpm db:migrate"
+      GATE_LABELS: "Allow once,Allow for this session,Deny"
+
+- extendedWaitUntil:
+    visible:
+      id: "question-card"
+    timeout: 8000
+
+- tapOn: "Allow for this session"
+
+# 1. Card lifetime: the tappable card is gone and the ghost shows the choice,
+#    with no permission_cancelled ever sent.
+- extendedWaitUntil:
+    visible:
+      id: "question-card-ghost"
+    timeout: 8000
+
+- assertNotVisible:
+    id: "question-card"
+
+# Positive control for the `selected` selector used below: if iOS did not
+# expose selection, the not-selected assertion on gate B would pass vacuously.
+- assertVisible:
+    text: "Allow for this session"
+    selected: true
+
+# --- gate B: different text, same option count ---------------------------------
+- runScript:
+    file: scripts/trigger-gate-env.js
+    env:
+      GATE_PROMPT: "Delete the build output?"
+      GATE_DETAIL: "Bash command\nrm -rf ./dist"
+      GATE_LABELS: "Delete it,Keep it,Ask me later"
+
+- extendedWaitUntil:
+    visible:
+      id: "question-card"
+    timeout: 8000
+
+- assertVisible: "Keep it"
+
+# 2. Stale selection: index 1 was picked on gate A; it must not carry over.
+- assertNotVisible:
+    text: "Delete it"
+    selected: true
+- assertNotVisible:
+    text: "Keep it"
+    selected: true
+- assertNotVisible:
+    text: "Ask me later"
+    selected: true
+
+# Answer gate B too, then check nothing else was ever typed.
+- tapOn: "Keep it"
+
+- extendedWaitUntil:
+    visible:
+      id: "question-card-ghost"
+    timeout: 8000
+
+# 3. No stray input: nothing reached /input, and nothing sits in the composer.
+- runScript:
+    file: scripts/inputs-log.js
+    env:
+      MODE: "assert-empty"
+
+- assertNotVisible:
+    id: "chat-message-input"
+    text: ".*[0-9a-zA-Z].*"
