@@ -14,6 +14,10 @@ on:
     - cron: '17 6 * * 1'
   workflow_dispatch:
 
+concurrency:
+  group: link-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   umbrella-links:
     name: Umbrella doc links
