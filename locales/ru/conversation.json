@@ -80,7 +80,8 @@
     "tokens_many": "{{count}} токенов",
     "tokens_other": "{{count}} токенов",
     "errorBadge": "Ошибка",
-    "toolFallback": "Инструмент"
+    "toolFallback": "Инструмент",
+    "queued": "В очереди"
   },
   "thinking": {
     "label": "Рассуждение",

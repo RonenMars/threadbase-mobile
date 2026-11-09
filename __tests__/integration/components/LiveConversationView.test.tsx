@@ -29,13 +29,18 @@ const mockRawKeyMutate = jest.fn()
 // testIDs for the last/search-anchor rows), so render order can't be asserted
 // against the real component. Mock it to surface the first text block directly.
 jest.mock('@/components/conversation/MessageItem', () => ({
-  MessageItem: ({ message }: { message: Message }) => {
+  MessageItem: ({ message, queued }: { message: Message; queued?: boolean }) => {
     const { Text: RNText } = jest.requireActual('react-native')
     const textBlock = message.content.find((b: { type: string }) => b.type === 'text') as
       | { type: 'text'; text: string }
       | undefined
     if (!textBlock) return null
-    return <RNText testID="message-text">{textBlock.text}</RNText>
+    return (
+      <>
+        <RNText testID="message-text">{textBlock.text}</RNText>
+        {queued ? <RNText testID="message-queued">queued</RNText> : null}
+      </>
+    )
   },
 }))
 
@@ -525,6 +530,114 @@ describe('LiveConversationView — optimistic sent message', () => {
 
     const texts = screen.getAllByTestId('message-text').map((n) => n.props.children)
     expect(texts).toEqual(['first', 'second', 'live-third'])
+  })
+})
+
+const ASSISTANT_LIVE: Message = {
+  id: 'L-stream',
+  uuid: 'L-stream',
+  role: 'assistant',
+  content: [{ type: 'text', text: 'streaming reply' }],
+  timestamp: '',
+  is_sidechain: false,
+  parent_uuid: null,
+}
+
+function userEcho(text: string): Message {
+  return {
+    id: 'echo-q',
+    uuid: 'echo-q',
+    role: 'user',
+    content: [{ type: 'text', text }],
+    timestamp: '2026-06-18T10:00:00Z',
+    is_sidechain: false,
+    parent_uuid: null,
+  }
+}
+
+function rerenderView(view: Awaited<ReturnType<typeof renderView>>) {
+  return act(async () => {
+    view.rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
+  })
+}
+
+async function sendText(text: string) {
+  await fireEvent.changeText(screen.getByTestId('chat-message-input'), text)
+  await fireEvent.press(screen.getByTestId('chat-send-button'))
+}
+
+const renderedTexts = () => screen.getAllByTestId('message-text').map((n) => n.props.children)
+
+describe('LiveConversationView — queued send during a turn', () => {
+  beforeEach(() => {
+    mockHistorical = []
+    mockLive = [ASSISTANT_LIVE]
+    mockPtyLines = []
+    mockHistoryLoading = false
+    mockSessionStatus = 'running'
+  })
+
+  it('places a message sent mid-turn after the streaming reply, labelled queued', async () => {
+    await renderView()
+    await sendText('and also this')
+
+    expect(renderedTexts()).toEqual(['streaming reply', 'and also this'])
+    expect(screen.getAllByTestId('message-queued')).toHaveLength(1)
+  })
+
+  it('keeps the first message of a turn in its usual place when status flips to running after it', async () => {
+    mockSessionStatus = 'waiting_input'
+    mockLive = []
+    const view = await renderView()
+    await sendText('kick off')
+
+    mockSessionStatus = 'running'
+    mockLive = [ASSISTANT_LIVE]
+    await rerenderView(view)
+
+    expect(renderedTexts()).toEqual(['kick off', 'streaming reply'])
+    expect(screen.queryByTestId('message-queued')).toBeNull()
+  })
+
+  it('sends on an idle session exactly as before: same slot, no label', async () => {
+    mockSessionStatus = 'waiting_input'
+    await renderView()
+    await sendText('idle send')
+
+    expect(renderedTexts()).toEqual(['idle send', 'streaming reply'])
+    expect(screen.queryByTestId('message-queued')).toBeNull()
+  })
+
+  it('drops the queued label and uses the real message once its echo lands', async () => {
+    const view = await renderView()
+    await sendText('and also this')
+
+    mockLive = [ASSISTANT_LIVE, userEcho('and also this')]
+    await rerenderView(view)
+
+    expect(renderedTexts()).toEqual(['streaming reply', 'and also this'])
+    expect(screen.queryByTestId('message-queued')).toBeNull()
+  })
+
+  it('stops showing the label when the turn ends before the echo lands', async () => {
+    const view = await renderView()
+    await sendText('and also this')
+    expect(screen.getAllByTestId('message-queued')).toHaveLength(1)
+
+    mockSessionStatus = 'waiting_input'
+    await rerenderView(view)
+
+    expect(renderedTexts()).toEqual(['and also this', 'streaming reply'])
+    expect(screen.queryByTestId('message-queued')).toBeNull()
+  })
+
+  it('keeps queued sends in send order below the reply', async () => {
+    await renderView()
+    await sendText('first queued')
+    await sendText('second queued')
+
+    expect(renderedTexts()).toEqual(['streaming reply', 'first queued', 'second queued'])
+    expect(screen.getAllByTestId('message-queued')).toHaveLength(2)
   })
 })
 
