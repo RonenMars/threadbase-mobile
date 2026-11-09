@@ -152,6 +152,9 @@ function rawAnchoredPage(
   }
 }
 
+// error banners are held back FAILURE_BANNER_DELAY_MS, on top of the retry waits
+jest.setTimeout(15_000)
+
 describe('useConversation — ETag conditional fetch (Task C)', () => {
   it('fetches the first page via getWithMeta and renders messages', async () => {
     setActiveServers(['srv_a'])
@@ -765,10 +768,12 @@ describe('useConversations — partial failure (Bug 32)', () => {
     const { result } = await renderHook(() => useConversations(), { wrapper: createWrapper() })
     await waitFor(() => expect(result.current.data).toBeDefined(), { timeout: 6000 })
 
-    const statuses = useServerFetchStatusStore.getState().statuses
-    expect(statuses['srv-A']?.status).toBe('ok')
-    expect(statuses['srv-B']?.status).toBe('error')
-    expect(statuses['srv-B']?.error).toContain('host unreachable')
+    expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('ok')
+    await waitFor(() => {
+      const b = useServerFetchStatusStore.getState().statuses['srv-B']
+      expect(b?.status).toBe('error')
+      expect(b?.error).toContain('host unreachable')
+    }, { timeout: 6000 })
   })
 
   it('preserves an explicit warm-up response instead of recording a fetch error', async () => {
@@ -819,8 +824,12 @@ describe('useConversations — partial failure (Bug 32)', () => {
     const statuses = useServerFetchStatusStore.getState().statuses
     expect(statuses['srv-healthy']?.status).toBe('ok')
     expect(statuses['srv-slow']?.status).toBe('ok')
-    expect(statuses['srv-offline']?.status).toBe('error')
-    expect(statuses['srv-malformed']?.status).toBe('error')
+    // failures are held back FAILURE_BANNER_DELAY_MS before they land
+    await waitFor(() => {
+      const st = useServerFetchStatusStore.getState().statuses
+      expect(st['srv-offline']?.status).toBe('error')
+      expect(st['srv-malformed']?.status).toBe('error')
+    }, { timeout: 6000 })
   })
 })
 

@@ -7,6 +7,7 @@ import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { renderWithI18n } from '@/test-utils/render'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import { seedServerFailure } from '@/test-utils/serverFailure'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -304,7 +305,7 @@ describe('NowList', () => {
         'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
       },
     })
-    useServerFetchStatusStore.getState().recordFailure('server-1', new Error('offline'))
+    seedServerFailure('server-1')
     try {
       const older1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
       const older2 = asConv(conversation({ id: 'c2', serverId: 'server-2', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 1000)
@@ -354,8 +355,8 @@ describe('NowList', () => {
         'server-2': { id: 'server-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
       },
     })
-    useServerFetchStatusStore.getState().recordFailure('server-1', new Error('offline'))
-    useServerFetchStatusStore.getState().recordFailure('server-2', new Error('offline'))
+    seedServerFailure('server-1')
+    seedServerFailure('server-2')
     try {
       const older1 = asConv(conversation({ id: 'c1', serverId: 'server-1', sessionName: 'Report slow streamer requests' }), NOW - 5000)
       const older2 = asConv(conversation({ id: 'c2', serverId: 'server-2', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 1000)

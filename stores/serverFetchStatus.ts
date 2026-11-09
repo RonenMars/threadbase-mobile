@@ -49,6 +49,22 @@ export function isServerFetchErrorVisible(
   return dismissedAt !== entry.lastCheckedAt
 }
 
+/**
+ * How long a first failure stays unpublished. A success or ready inside the
+ * window cancels it, so a single timeout or a connection blip never raises the
+ * banner. Failures on a server already showing an error apply immediately.
+ */
+export const FAILURE_BANNER_DELAY_MS = 3000
+
+const pendingFailures = new Map<string, ReturnType<typeof setTimeout>>()
+
+function cancelPendingFailure(serverId: string) {
+  const timer = pendingFailures.get(serverId)
+  if (timer === undefined) return
+  clearTimeout(timer)
+  pendingFailures.delete(serverId)
+}
+
 function describeError(error: unknown): string {
   if (error instanceof Error) return error.message
   if (typeof error === 'string') return error
@@ -59,10 +75,11 @@ function describeError(error: unknown): string {
   }
 }
 
-export const useServerFetchStatusStore = create<State & Actions>((set) => ({
+export const useServerFetchStatusStore = create<State & Actions>((set, get) => ({
   statuses: {},
   dismissedFailureAt: {},
-  recordSuccess: (serverId) =>
+  recordSuccess: (serverId) => {
+    cancelPendingFailure(serverId)
     // No-op when nothing changes: a warming server stays warming, and a server
     // already 'ok' keeps its entry. Returning the same state means zustand does
     // not notify subscribers, so a successful response for an already-healthy
@@ -79,8 +96,10 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
         },
         dismissedFailureAt,
       }
-    }),
-  recordReady: (serverId) =>
+    })
+  },
+  recordReady: (serverId) => {
+    cancelPendingFailure(serverId)
     // Same identity-stability guard, but recordReady is also the transition out
     // of 'warming_up', so it only short-circuits when already 'ok'.
     set((s) => {
@@ -93,24 +112,38 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
         },
         dismissedFailureAt,
       }
-    }),
-  recordFailure: (serverId, error) =>
-    set((s) => ({
-      statuses: {
-        ...s.statuses,
-        [serverId]: {
-          status: 'error',
-          error: describeError(error),
-          httpStatus: error && typeof error === 'object' && 'status' in error
-            ? (error as { status?: number }).status
-            : undefined,
-          code: error && typeof error === 'object' && 'code' in error
-            ? (error as { code?: string }).code
-            : undefined,
-          lastCheckedAt: Date.now(),
+    })
+  },
+  recordFailure: (serverId, error) => {
+    const publish = () => {
+      pendingFailures.delete(serverId)
+      set((s) => ({
+        statuses: {
+          ...s.statuses,
+          [serverId]: {
+            status: 'error',
+            error: describeError(error),
+            httpStatus: error && typeof error === 'object' && 'status' in error
+              ? (error as { status?: number }).status
+              : undefined,
+            code: error && typeof error === 'object' && 'code' in error
+              ? (error as { code?: string }).code
+              : undefined,
+            lastCheckedAt: Date.now(),
+          },
         },
-      },
-    })),
+      }))
+    }
+    if (get().statuses[serverId]?.status === 'error') {
+      cancelPendingFailure(serverId)
+      publish()
+      return
+    }
+    // Keep the first pending failure: repeated failures must not push the
+    // banner out indefinitely.
+    if (pendingFailures.has(serverId)) return
+    pendingFailures.set(serverId, setTimeout(publish, FAILURE_BANNER_DELAY_MS))
+  },
   dismissFailure: (serverId) =>
     set((s) => {
       const entry = s.statuses[serverId]
@@ -123,23 +156,30 @@ export const useServerFetchStatusStore = create<State & Actions>((set) => ({
         },
       }
     }),
-  recordWarmingUp: (serverId, warmupState) =>
+  recordWarmingUp: (serverId, warmupState) => {
+    cancelPendingFailure(serverId)
     set((s) => ({
       statuses: {
         ...s.statuses,
         [serverId]: { status: 'warming_up', warmupState, lastCheckedAt: Date.now() },
       },
-    })),
+    }))
+  },
   // Removing a server must drop its status with it. A left-behind 'error' entry
   // outlives the ServerConfig it names, and anything keyed off these ids then
   // renders a row for a server it cannot resolve.
-  clearServer: (serverId) =>
+  clearServer: (serverId) => {
+    cancelPendingFailure(serverId)
     set((s) => {
       if (!s.statuses[serverId] && !s.dismissedFailureAt[serverId]) return s
       const { [serverId]: _removed, ...statuses } = s.statuses
       const { [serverId]: _dismissed, ...dismissedFailureAt } = s.dismissedFailureAt
       return { statuses, dismissedFailureAt }
-    }),
+    })
+  },
 
-  reset: () => set({ statuses: {}, dismissedFailureAt: {} }),
+  reset: () => {
+    for (const serverId of [...pendingFailures.keys()]) cancelPendingFailure(serverId)
+    set({ statuses: {}, dismissedFailureAt: {} })
+  },
 }))

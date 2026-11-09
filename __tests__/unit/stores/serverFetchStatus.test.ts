@@ -1,8 +1,25 @@
-import { isServerFetchErrorVisible, useServerFetchStatusStore } from '@/stores/serverFetchStatus'
+import {
+  FAILURE_BANNER_DELAY_MS,
+  isServerFetchErrorVisible,
+  useServerFetchStatusStore,
+} from '@/stores/serverFetchStatus'
 
 beforeEach(() => {
+  jest.useFakeTimers()
   useServerFetchStatusStore.getState().reset()
 })
+
+afterEach(() => {
+  useServerFetchStatusStore.getState().reset()
+  jest.useRealTimers()
+})
+
+function recordPublishedFailure(serverId: string, error: unknown) {
+  useServerFetchStatusStore.getState().recordFailure(serverId, error)
+  jest.advanceTimersByTime(FAILURE_BANNER_DELAY_MS)
+}
+
+const status = (id: string) => useServerFetchStatusStore.getState().statuses[id]?.status
 
 describe('useServerFetchStatusStore', () => {
   it('records success with timestamp', () => {
@@ -15,22 +32,22 @@ describe('useServerFetchStatusStore', () => {
   })
 
   it('records failure with stringified error message', () => {
-    useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('host unreachable'))
+    recordPublishedFailure('srv-A', new Error('host unreachable'))
     const entry = useServerFetchStatusStore.getState().statuses['srv-A']
     expect(entry?.status).toBe('error')
     expect(entry?.error).toBe('host unreachable')
   })
 
   it('handles non-Error rejection reasons (string, object)', () => {
-    useServerFetchStatusStore.getState().recordFailure('srv-A', 'plain string')
+    recordPublishedFailure('srv-A', 'plain string')
     expect(useServerFetchStatusStore.getState().statuses['srv-A']?.error).toBe('plain string')
 
-    useServerFetchStatusStore.getState().recordFailure('srv-B', { code: 'ETIMEDOUT' })
+    recordPublishedFailure('srv-B', { code: 'ETIMEDOUT' })
     expect(useServerFetchStatusStore.getState().statuses['srv-B']?.error).toContain('ETIMEDOUT')
   })
 
   it('a later success clears a prior failure for the same server', () => {
-    useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('boom'))
+    recordPublishedFailure('srv-A', new Error('boom'))
     expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('error')
     useServerFetchStatusStore.getState().recordSuccess('srv-A')
     const entry = useServerFetchStatusStore.getState().statuses['srv-A']
@@ -39,7 +56,7 @@ describe('useServerFetchStatusStore', () => {
   })
 
   it('dismissFailure hides only the current failure episode', () => {
-    useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('boom'))
+    recordPublishedFailure('srv-A', new Error('boom'))
     const first = useServerFetchStatusStore.getState().statuses['srv-A']!
     expect(isServerFetchErrorVisible(first, undefined)).toBe(true)
 
@@ -77,5 +94,57 @@ describe('useServerFetchStatusStore', () => {
     expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('warming_up')
     useServerFetchStatusStore.getState().recordReady('srv-A')
     expect(useServerFetchStatusStore.getState().statuses['srv-A']?.status).toBe('ok')
+  })
+  describe('failure delay', () => {
+    it('publishes nothing until the delay has passed', () => {
+      useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('boom'))
+      jest.advanceTimersByTime(FAILURE_BANNER_DELAY_MS - 1)
+      expect(status('srv-A')).toBeUndefined()
+      jest.advanceTimersByTime(1)
+      expect(status('srv-A')).toBe('error')
+    })
+
+    it.each([
+      ['recordSuccess', (id: string) => useServerFetchStatusStore.getState().recordSuccess(id), 'ok'],
+      ['recordReady', (id: string) => useServerFetchStatusStore.getState().recordReady(id), 'ok'],
+      ['recordWarmingUp', (id: string) => useServerFetchStatusStore.getState().recordWarmingUp(id, 'startup'), 'warming_up'],
+    ] as const)('%s inside the window cancels the pending failure', (_name, act, expected) => {
+      useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('blip'))
+      jest.advanceTimersByTime(FAILURE_BANNER_DELAY_MS - 1)
+      act('srv-A')
+      jest.advanceTimersByTime(FAILURE_BANNER_DELAY_MS)
+      expect(status('srv-A')).toBe(expected)
+    })
+
+    it('clearServer and reset drop a pending failure', () => {
+      useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('x'))
+      useServerFetchStatusStore.getState().recordFailure('srv-B', new Error('y'))
+      useServerFetchStatusStore.getState().clearServer('srv-A')
+      useServerFetchStatusStore.getState().reset()
+      jest.advanceTimersByTime(FAILURE_BANNER_DELAY_MS)
+      expect(useServerFetchStatusStore.getState().statuses).toEqual({})
+    })
+
+    it('a repeat failure does not push the pending one out', () => {
+      useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('first'))
+      jest.advanceTimersByTime(FAILURE_BANNER_DELAY_MS - 1000)
+      useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('second'))
+      jest.advanceTimersByTime(1000)
+      expect(useServerFetchStatusStore.getState().statuses['srv-A']?.error).toBe('first')
+    })
+
+    it('a server already in error takes a new failure immediately', () => {
+      recordPublishedFailure('srv-A', new Error('first'))
+      useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('second'))
+      expect(useServerFetchStatusStore.getState().statuses['srv-A']?.error).toBe('second')
+    })
+
+    it('delays only the failing server', () => {
+      useServerFetchStatusStore.getState().recordFailure('srv-A', new Error('x'))
+      useServerFetchStatusStore.getState().recordSuccess('srv-B')
+      jest.advanceTimersByTime(FAILURE_BANNER_DELAY_MS)
+      expect(status('srv-A')).toBe('error')
+      expect(status('srv-B')).toBe('ok')
+    })
   })
 })
