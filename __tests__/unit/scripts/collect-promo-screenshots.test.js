@@ -23,7 +23,6 @@ const SHOTS = [
   ['card-search', '03-search-results.png'],
   ['hero-approval-card', '04-approval-request.png'],
   ['card-approve', '05-approval-response.png'],
-  ['card-multi-machine', '06-multi-machine-projects.png'],
 ]
 
 function yamlScreenshotStems() {
@@ -136,7 +135,7 @@ describe('collect-promo-screenshots.sh', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'promo-shots-partial-'))
     const dest = path.join(dir, 'out')
     fs.mkdirSync(path.join(dir, 'search'), { recursive: true })
-    fs.writeFileSync(path.join(dir, 'search', 'card-multi-machine.png'), 'only-multi')
+    fs.writeFileSync(path.join(dir, 'search', 'card-approve.png'), 'only-approve')
 
     const result = spawnSync('bash', [COLLECT, 'ios', dest], {
       encoding: 'utf8',
@@ -148,8 +147,8 @@ describe('collect-promo-screenshots.sh', () => {
     })
 
     expect(result.status).toBe(0)
-    expect(fs.readFileSync(path.join(dest, '06-multi-machine-projects.png'), 'utf8')).toBe(
-      'only-multi',
+    expect(fs.readFileSync(path.join(dest, '05-approval-response.png'), 'utf8')).toBe(
+      'only-approve',
     )
     expect(fs.existsSync(path.join(dest, '01-start-session.png'))).toBe(false)
     fs.rmSync(dir, { recursive: true, force: true })
