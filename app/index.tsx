@@ -721,11 +721,13 @@ export default function ProjectsHub() {
           <Text style={styles.fabToastText}>{cacheAlertToast}</Text>
         </View>
       )}
-      <FAB
-        ref={fabRef}
-        onPress={handleFABPress}
-        collapsed={fabCollapsed}
-      />
+      {!pickerVisible && (
+        <FAB
+          ref={fabRef}
+          onPress={handleFABPress}
+          collapsed={fabCollapsed}
+        />
+      )}
 
       {/* Modals & Sheets */}
       <FilterSortSheet
