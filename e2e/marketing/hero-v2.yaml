@@ -1,0 +1,78 @@
+# Hero video v2 captures — search across machines and the Observed row.
+#
+# Two demo-data conversations exist for these shots (Home Mac): a Claude
+# session in /code/acme-web (~3 weeks old) and a Codex session in
+# /code/demo-ios (~7 weeks old).
+#
+# Run through e2e/marketing/run.sh with MARKETING_FLOWS=e2e/marketing/hero-v2.yaml
+# (default demo profile). Screenshots are named without a section folder.
+# Not a regression test.
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+# --- S4: a terminal-started session, observed ---------------------------------
+- extendedWaitUntil:
+    visible:
+      id: "session-row-wm-claude-persistence"
+    timeout: 15000
+- assertVisible: ".*Observed.*"
+- assertNotVisible:
+    id: "status-pill"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: S4-observed-row
+
+# --- S1: one phrase, three machines' history, two providers -------------------
+- runFlow:
+    file: search.yaml
+    env:
+      QUERY: "callback per environment"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-wm-auth0"
+    timeout: 10000
+- assertVisible:
+    id: "conversation-row-conv-wm-auth-callback"
+- assertVisible:
+    id: "conversation-row-conv-hm-storefront-redirect"
+# Marks only appear on rows that differ from the result set's majority provider.
+- assertVisible:
+    id: "provider-mark"
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: S1-search-callback
+
+# --- S2: the exact matching message -------------------------------------------
+- tapOn:
+    id: "conversation-row-conv-wm-auth0"
+- extendedWaitUntil:
+    visible:
+      id: "search-match-count"
+    timeout: 10000
+- assertVisible: ".*callback per environment.*"
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: S2-anchored-auth0
+
+- tapOn:
+    id: "screen-header-back-button"
+- extendedWaitUntil:
+    visible:
+      id: "hub-search-input"
+    timeout: 10000
+
+# --- S3: an old Codex conversation, found by four loose words -----------------
+- runFlow:
+    file: search.yaml
+    env:
+      QUERY: "provisioning profile time sensitive"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-conv-hm-ios-profile"
+    timeout: 10000
+- pressKey: Enter
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: S3-search-provisioning
