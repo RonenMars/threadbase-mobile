@@ -70,6 +70,12 @@ interface SettingsStore {
   sessionsTreeView: boolean
   boardOpen: boolean
   boardColumn: BoardColumnId | null
+  /**
+   * Renders agent markdown in the terminal transcript instead of its source.
+   * On by default; off is the debugging view, where seeing exactly what the
+   * agent emitted matters more than reading it comfortably.
+   */
+  terminalRenderMarkdown: boolean
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
   locale: SupportedLocale
@@ -110,6 +116,7 @@ interface SettingsStore {
   setSessionsTreeView: (v: boolean) => void
   setBoardOpen: (v: boolean) => void
   setBoardColumn: (v: BoardColumnId) => void
+  setTerminalRenderMarkdown: (v: boolean) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
   setBiometricLock: (v: boolean) => void
@@ -153,6 +160,7 @@ interface PersistedSettings {
   sessionsTreeView: boolean
   boardOpen: boolean
   boardColumn: BoardColumnId | null
+  terminalRenderMarkdown: boolean
   showProviderVersionWarning: boolean
   locale: SupportedLocale
   biometricLock: boolean
@@ -189,6 +197,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   sessionsTreeView: false,
   boardOpen: false,
   boardColumn: null,
+  terminalRenderMarkdown: true,
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
   biometricLock: false,
@@ -223,6 +232,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setSessionsTreeView: (sessionsTreeView) => set({ sessionsTreeView }),
   setBoardOpen: (boardOpen) => set({ boardOpen }),
   setBoardColumn: (boardColumn) => set({ boardColumn }),
+  setTerminalRenderMarkdown: (terminalRenderMarkdown) => set({ terminalRenderMarkdown }),
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
   setLocale: (locale) => set({ locale }),
@@ -266,6 +276,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         sessionsTreeView: parsed.sessionsTreeView ?? state.sessionsTreeView,
         boardOpen: parsed.boardOpen ?? state.boardOpen,
         boardColumn: parsed.boardColumn ?? state.boardColumn,
+        terminalRenderMarkdown: parsed.terminalRenderMarkdown ?? state.terminalRenderMarkdown,
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,
         locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
@@ -327,6 +338,7 @@ export function persistSettingsNow(): Promise<void> {
     sessionsTreeView: state.sessionsTreeView,
     boardOpen: state.boardOpen,
     boardColumn: state.boardColumn,
+    terminalRenderMarkdown: state.terminalRenderMarkdown,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
     biometricLock: state.biometricLock,
