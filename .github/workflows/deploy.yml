@@ -45,7 +45,7 @@ on:
         required: false
         type: string
       deploy_ref:
-        description: 'Branch, tag, or commit SHA to build (default: main)'
+        description: 'Branch, tag, or commit SHA to build (default: main). For an Android-only recovery, use the exact ref/SHA of the original release.'
         required: false
         default: main
         type: string
