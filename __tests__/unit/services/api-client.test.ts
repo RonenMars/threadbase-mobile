@@ -44,7 +44,7 @@ global.fetch = mockFetch
 const api = createApiForServer('srv_test')
 
 function mockOkResponse(body: unknown) {
-  return { ok: true, status: 200, json: jest.fn().mockResolvedValue(body) }
+  return { ok: true, status: 200, headers: new Headers(), json: jest.fn().mockResolvedValue(body) }
 }
 
 function mockErrorResponse(status: number) {
@@ -170,6 +170,80 @@ describe('api.get', () => {
     await api.get('/api/conversations/count')
 
     expect(useServerFetchStatusStore.getState().statuses.srv_test.status).toBe('ok')
+  })
+
+  describe('200 served from cached rows while the startup scan runs', () => {
+    const WARMING_HEADER = 'X-Threadbase-Warming'
+
+    function mockWarmingResponse(body: unknown, headers: Record<string, string>) {
+      return { ...mockOkResponse(body), headers: new Headers(headers) }
+    }
+
+    const status = () => useServerFetchStatusStore.getState().statuses.srv_test
+
+    it('keeps the banner up and returns the rows when the header carries the marker', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(
+        mockWarmingResponse({ total: 3 }, { [WARMING_HEADER]: 'startup' }),
+      )
+
+      await expect(api.get('/api/conversations/count')).resolves.toEqual({ total: 3 })
+
+      expect(status()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('enters the warming state on a first labelled 200, with no 503 before it', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockWarmingResponse({ total: 3 }, { [WARMING_HEADER]: 'startup' }),
+      )
+      await api.get('/api/conversations/count')
+      expect(status()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('reads the body field when an e2ee relay dropped the header', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockWarmingResponse({ total: 3, warming: 'startup' }, {}),
+      )
+      await api.get('/api/conversations/count')
+      expect(status()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('reads the header alone for the bare /api/sessions array', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockWarmingResponse([{ id: 's1' }], { [WARMING_HEADER]: 'startup' }),
+      )
+      await expect(api.get('/api/sessions')).resolves.toEqual([{ id: 's1' }])
+      expect(status()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('treats an unrecognised marker value as no marker', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockWarmingResponse({ total: 3, warming: 'sideways' }, { [WARMING_HEADER]: 'sideways' }),
+      )
+      await api.get('/api/conversations/count')
+      expect(status().status).toBe('ok')
+    })
+
+    it('clears the banner on the next 200 without the marker (a missed cache_ready)', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockWarmingResponse({ total: 3 }, { [WARMING_HEADER]: 'startup' }),
+      )
+      await api.get('/api/conversations/count')
+      expect(status().status).toBe('warming_up')
+
+      mockFetch.mockResolvedValueOnce(mockWarmingResponse({ total: 40 }, {}))
+      await api.get('/api/conversations/count')
+
+      expect(status().status).toBe('ok')
+    })
+
+    it('ignores a marker on an endpoint the banner does not track', async () => {
+      mockFetch.mockResolvedValueOnce(
+        mockWarmingResponse({ ok: true }, { [WARMING_HEADER]: 'startup' }),
+      )
+      await api.get('/api/info')
+      expect(status()).toBeUndefined()
+    })
   })
 
   it('retries once on network failure then throws NetworkError', async () => {
@@ -421,6 +495,54 @@ describe('api.getWithMeta – conditional fetch', () => {
     const res = await api.getWithMeta('/api/conversations/c1')
     expect(res.status).toBe(200)
     expect(res.etag).toBeNull()
+  })
+
+  describe('a detail served from cached rows while the startup scan runs', () => {
+    function warmingMeta(status: number, headers: Record<string, string>, body: unknown) {
+      return {
+        ok: status >= 200 && status < 300,
+        status,
+        headers: new Headers(headers),
+        json: jest.fn().mockResolvedValue(body),
+      }
+    }
+    const fetchStatus = () => useServerFetchStatusStore.getState().statuses.srv_test
+
+    it('keeps the banner on a labelled 200 and still returns the body', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(
+        warmingMeta(200, { 'X-Threadbase-Warming': 'startup' }, { meta: { id: 'c1' } }),
+      )
+
+      const res = await api.getWithMeta<{ meta: { id: string } }>('/api/conversations/c1')
+
+      expect(res.body?.meta.id).toBe('c1')
+      expect(fetchStatus()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('keeps the banner on a labelled 304', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(warmingMeta(304, { 'X-Threadbase-Warming': 'startup' }, undefined))
+
+      const res = await api.getWithMeta('/api/conversations/c1')
+
+      expect(res.status).toBe(304)
+      expect(fetchStatus()).toMatchObject({ status: 'warming_up', warmupState: 'startup' })
+    })
+
+    it('clears the banner on an unlabelled 200', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(warmingMeta(200, {}, { meta: { id: 'c1' } }))
+      await api.getWithMeta('/api/conversations/c1')
+      expect(fetchStatus().status).toBe('ok')
+    })
+
+    it('clears the banner on an unlabelled 304', async () => {
+      useServerFetchStatusStore.getState().recordWarmingUp('srv_test', 'startup')
+      mockFetch.mockResolvedValueOnce(warmingMeta(304, {}, undefined))
+      await api.getWithMeta('/api/conversations/c1')
+      expect(fetchStatus().status).toBe('ok')
+    })
   })
 })
 

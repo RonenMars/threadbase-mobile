@@ -4,6 +4,8 @@ import { act, render, waitFor } from '@testing-library/react-native'
 import * as Notifications from 'expo-notifications'
 import { AuthGate } from '@/app/_layout'
 import { wsManager } from '@/services/ws-client'
+import { queryClient } from '@/services/query-client'
+import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Session } from '@/types/api'
 
 const mockReplace = jest.fn()
@@ -148,5 +150,40 @@ describe('AuthGate session_ready broadcast', () => {
     })
 
     expect(mockPush).toHaveBeenCalledWith('/session/sess_tap?server=server-1')
+  })
+})
+
+// A 200 served from cached rows during the startup scan keeps the indexing
+// banner up; cache_ready is the signal that ends it.
+describe('AuthGate cache_ready', () => {
+  type OnAllHandler = Parameters<typeof wsManager.onAll>[1]
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
+    useServerFetchStatusStore.getState().reset()
+  })
+
+  async function deliverCacheReady(serverId: string) {
+    await render(<AuthGate><></></AuthGate>)
+    const call = (wsManager.onAll as jest.Mock).mock.calls.find(([type]) => type === 'cache_ready')
+    if (!call) throw new Error('AuthGate did not subscribe to cache_ready')
+    await act(async () => {
+      ;(call[1] as OnAllHandler)({ type: 'cache_ready', serverId })
+    })
+  }
+
+  it('clears the indexing banner for the server that finished and refetches its lists', async () => {
+    const invalidate = jest.spyOn(queryClient, 'invalidateQueries').mockResolvedValue()
+    useServerFetchStatusStore.getState().recordWarmingUp('server-1', 'startup')
+    useServerFetchStatusStore.getState().recordWarmingUp('server-2', 'startup')
+
+    await deliverCacheReady('server-1')
+
+    const { statuses } = useServerFetchStatusStore.getState()
+    expect(statuses['server-1'].status).toBe('ok')
+    expect(statuses['server-2'].status).toBe('warming_up')
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['conversations'] })
+    invalidate.mockRestore()
   })
 })

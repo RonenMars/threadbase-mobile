@@ -20,3 +20,18 @@ export function getServerWarmupState(value: unknown): ServerWarmupState | null {
   }
   return candidate.warmupState as ServerWarmupState
 }
+
+export const WARMING_HEADER = 'X-Threadbase-Warming'
+
+function toWarmupState(value: string | null | undefined): ServerWarmupState | null {
+  return value && WARMUP_STATES.has(value) ? (value as ServerWarmupState) : null
+}
+
+// A 200 the streamer served from cached rows mid-scan. The header can be dropped
+// by an e2ee relay and a bare array has no room for a field, so read both.
+export function getWarmingMarker(
+  headerValue: string | null,
+  body: { warming?: string } | null,
+): ServerWarmupState | null {
+  return toWarmupState(headerValue) ?? toWarmupState(body?.warming)
+}
