@@ -21,11 +21,10 @@ describe('mapAskQuestionToBlock', () => {
     expect(block.questions[0].options[1].preview).toBe('x\ny')
   })
 
-  it('fails closed on a multiSelect question: unsupportedShape and no options', () => {
-    const block = mapAskQuestionToBlock('toolu_2', [{ ...qs[0], multiSelect: true }])
-    expect(block.unsupportedShape).toBe('multi')
-    expect(block.questions[0].multiSelect).toBe(true)
-    expect(block.questions[0].options).toEqual([])
+  it('carries an unreadable-checkbox flag through, and omits it otherwise', () => {
+    const flagged = mapAskQuestionToBlock('toolu_2', [{ ...qs[0], multiSelect: true, multiSelectUnverified: true }])
+    expect(flagged.questions[0].multiSelectUnverified).toBe(true)
+    expect(mapAskQuestionToBlock('toolu_3', qs).questions[0]).not.toHaveProperty('multiSelectUnverified')
   })
 
   it('leaves a single-select question without unsupportedShape', () => {

@@ -108,6 +108,12 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
     onAnswer(activeQuestion.toolUseId, { [q.question]: q.options[optionIndex].label })
   }, [activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt])
 
+  const handleStructuredSubmitMulti = useCallback((questionIndex: number, optionIndexes: number[]) => {
+    if (!activeQuestion?.toolUseId || !onAnswer) return
+    const q = activeQuestion.questions[questionIndex]
+    onAnswer(activeQuestion.toolUseId, { [q.question]: optionIndexes.map(i => q.options[i].label) })
+  }, [activeQuestion, onAnswer])
+
   useEffect(() => {
     // setValue also stops a fade already running. The status flip and the card
     // are separate frames, so the fade can start a beat before the card lands,
@@ -146,6 +152,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
       <QuestionCard
         block={activeQuestion}
         onSelect={handleStructuredSelect}
+        onSubmitMulti={handleStructuredSubmitMulti}
         busy={answerBusy}
         ghost={ghost}
         onCancel={onCancelQuestion}
