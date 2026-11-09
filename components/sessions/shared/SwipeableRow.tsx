@@ -24,16 +24,19 @@ interface Props {
   trailing?: SwipeAction[]
   children: ReactNode
   testID?: string
+  /** For short rows: a smaller circle and no visible label, so the panel fits the row height. */
+  compact?: boolean
 }
 
 const ACTION_WIDTH = 68
 const BUTTON_SIZE = 46
+const COMPACT_BUTTON_SIZE = 32
 
 /**
  * Messages-style swipe actions around a list row. With no actions the row is
  * rendered bare, so callers can pass whatever the session allows.
  */
-export function SwipeableRow({ leading = [], trailing = [], children, testID }: Props) {
+export function SwipeableRow({ leading = [], trailing = [], children, testID, compact = false }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const { direction, isRTL } = useAppDirection()
@@ -62,10 +65,10 @@ export function SwipeableRow({ leading = [], trailing = [], children, testID }: 
             }}
             style={({ pressed }) => [styles.action, { opacity: pressed ? 0.6 : 1 }]}
           >
-            <View style={[styles.button, { backgroundColor: action.color }]}>
-              <action.icon size={22} color={theme.text.onAccent} weight="fill" />
+            <View style={[styles.button, compact && styles.compactButton, { backgroundColor: action.color }]}>
+              <action.icon size={compact ? 18 : 22} color={theme.text.onAccent} weight="fill" />
             </View>
-            <Text style={styles.label} numberOfLines={1}>{action.label}</Text>
+            {!compact && <Text style={styles.label} numberOfLines={1}>{action.label}</Text>}
           </Pressable>
         ))}
       </View>
@@ -84,13 +87,17 @@ export function SwipeableRow({ leading = [], trailing = [], children, testID }: 
       renderLeftActions={left.length > 0 ? (_p, _t, methods) => renderPanel(left, 'left', methods) : undefined}
       renderRightActions={right.length > 0 ? (_p, _t, methods) => renderPanel(right, 'right', methods) : undefined}
     >
-      <View style={layoutDirectionStyle(direction)}>{children}</View>
+      <View style={[layoutDirectionStyle(direction), styles.surface]}>{children}</View>
     </Swipeable>
   )
 }
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
+    // Rows are transparent over the list, so without this the panel underneath shows through them.
+    surface: {
+      backgroundColor: theme.bg.primary,
+    },
     panel: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -107,6 +114,11 @@ function makeStyles(theme: Theme) {
       borderRadius: BUTTON_SIZE / 2,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    compactButton: {
+      width: COMPACT_BUTTON_SIZE,
+      height: COMPACT_BUTTON_SIZE,
+      borderRadius: COMPACT_BUTTON_SIZE / 2,
     },
     label: {
       color: theme.text.secondary,
