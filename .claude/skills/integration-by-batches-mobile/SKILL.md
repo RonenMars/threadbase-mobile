@@ -31,7 +31,20 @@ gh workflow run qa.yml -f deploy_ref=<tag> -f platform=<ios|android> -f groups=q
 
 - Ask which platform(s) before dispatching. Never assume both. `block-multi-platform-deploy.js` enforces this.
 - Use the full SHA if you dispatch by SHA. A short SHA dies at `actions/checkout`.
-- Pin the run id, ref and release ids to the batch in the log. A QA checkpoint can span days.
+- Pin the run id, ref and release ids to the batch in the log, with one `qa_head` line per PR (shared Step 5). A QA checkpoint can span days.
+- **The tag is the QA'd tree.** A fix found in QA goes on its PR branch; then re-cut the batch, push a new tag and dispatch again. Never cherry-pick a fix onto the batch past the tag: what lands would then differ from what was tested (shared hard rule 10).
+- **Confirm the release reached Firebase** before telling the user a build is ready. A green `qa.yml` is not the proof. The `firebase-tools` CLI has no releases-list command, so call the API with its cached token, and never print the token:
+
+```bash
+npx -y firebase-tools appdistribution:groups:list --project threadbase-10d42 >/dev/null  # refreshes the cached token; run from the scratchpad
+APP=$(gh variable get FIREBASE_APP_ID_IOS --repo RonenMars/threadbase-mobile); P=$(echo "$APP" | cut -d: -f2)
+TOKEN=$(jq -r .tokens.access_token ~/.config/configstore/firebase-tools.json)
+curl -s -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: threadbase-10d42" \
+  "https://firebaseappdistribution.googleapis.com/v1/projects/$P/apps/$APP/releases?pageSize=3" \
+  | jq -r '.releases[] | "\(.name|split("/")[-1]) \(.displayVersion) (\(.buildVersion)) \(.createTime)"'
+```
+
+  Use `FIREBASE_APP_ID_ANDROID` for Android. Record the release id beside the `qa_head` lines; the user's `qa_verdict` names that build.
 
 ## Pairing with the streamer
 
@@ -43,12 +56,18 @@ gh workflow run qa.yml -f deploy_ref=<tag> -f platform=<ios|android> -f groups=q
 
 ## Landing
 
-`main` is protected by the `main protection` ruleset, strict status checks. See `CLAUDE.md`, "Merging PRs".
+`main` is protected by the `main protection` ruleset, strict status checks. See `CLAUDE.md`, "Merging PRs". Land each PR with the shared `land-pr.sh`, one at a time in plan order, from the PR's worktree after a real `npm ci` there:
 
-- After a squash-merge the next PR is `BEHIND`: rebase now.
-- The repo auto-deletes merged branches. `--delete-branch` only on a leaf. `gh pr merge --delete-branch` also removes a clean local worktree and branch, so delete the remote ref through the API when the worktree matters.
-- At least ~20 checks present and zero pending before a merge.
-- Stuck cap: ~4 minutes, then stop and report. Re-run a flaky red once.
+```bash
+<skill-dir>/land-pr.sh <pr> --log <log> --min-checks 20 \
+  --test 'npx tsc --noEmit --pretty false && npx jest --ci --findRelatedTests $(git diff --name-only origin/main...HEAD)'
+```
+
+- `--min-checks 20`: the PR rollup carries about 20 checks, so a partial rollup never reads as done.
+- The single quotes matter: the file list is computed after the rebase, inside the script.
+- After a squash-merge the next PR is `BEHIND`; the next `land-pr.sh` run rebases it.
+- The repo auto-deletes merged branches, so merging a parent closes its stacked children. The script refuses with `CHILDREN`; retarget them to `main` first.
+- `gh pr merge --delete-branch` also removes a clean local worktree and branch. The script never passes it.
 
 ## Traps seen on this repo
 
@@ -60,3 +79,5 @@ gh workflow run qa.yml -f deploy_ref=<tag> -f platform=<ios|android> -f groups=q
 | New script test not in `ci-script-test-shards.json` | register it or CI goes red twice |
 | Module-scope constant reading `process.env` | tests mutate env per case, keep it inside the component |
 | A local branch looks like the PR | compare to `origin/<branch>` before rebasing |
+| A green `qa.yml` reported as "the build is on Firebase" | the release list above, quoted |
+| A worktree `node_modules` borrowed from another branch | a real `npm ci` before `--test` |

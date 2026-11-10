@@ -21,6 +21,9 @@ Each repo's own `integration-by-batches` skill holds its QA targets, build and g
 6. **Never commit the plan or the log.** They are working notes. Keep them outside any repo.
 7. **Preserve each PR's own history.** Land PRs individually; the batch branch is a test artifact only.
 8. **Evidence over assumption.** Repo, CI and test output decide. Say "not verified" when it is not.
+9. **Approval is a record, not a reading.** "QA passed", "land it" and "push" are three separate signals; each is the user's answer to its own question. A batch lands only after its `qa_verdict` line is in the log (Step 5), and `land-pr.sh` refuses without it.
+10. **The tree QA saw is the tree that lands.** Every fix lives on its PR's branch before the batch is deployed. A fix that exists only on the integration branch, a cherry-pick past the tag, or a deploy run with `--force`, `--skip-tests` or a dirty tree is not QA of what will merge.
+11. **Every decision for the user goes through the question tool** (`AskUserQuestion`), with options and a recommendation: drafts, QA target, J-calls, freeze, push. A question in prose is missed between status lines.
 
 ## Step 0 — Read the world, in both repos
 
@@ -33,6 +36,8 @@ gh pr list --state open --json number,title,headRefName,baseRefName,isDraft,head
 - **Read the counterpart repo's open PRs too.** A cross-repo dependency is often declared on *one* side ("Land this streamer PR first"). Pair across repos by the **endpoint or field actually called**, never by feature name.
 - Capture each PR's file set: `gh pr diff <n> --name-only`. Overlaps drive the grouping.
 - **Re-scan before acting.** A plan older than a day is a hypothesis; `main` moves and the open-PR count changes.
+- **Read the plans and logs already in the plan directory first.** An earlier run may own batches, worktrees or a verdict for some of these PRs; continue it, or say why it is superseded.
+- **Build the cross-repo pairing table before grouping,** not after the user asks for it: counterpart PR, the call that links them, which side lands first.
 
 ## Step 1 — Group
 
@@ -54,9 +59,11 @@ Group by **subsystem + shared files**, then check each group against four questi
 
 ## Step 2 — Write the plan, then wait
 
-Write `<date>-batched-qa-plan.md` **outside any repo** with: the PR table (PR, title, subsystem, key files), the overlap list, the ordering constraints, one block per batch (**goal · PRs in order · why together · order rationale · QA scenarios · risks**), the execution table (batch, PRs, QA deploy?, cross-repo dependency, blocking?), and the stop-and-ask list. Open with the decisions the user must answer (drafts, QA target). **Send it and stop.** A local rehearsal is neither a deploy nor a merge and may start early; the deploy may not.
+Write `<date>-batched-qa-plan.md` **outside any repo** with: the PR table (PR, title, subsystem, key files), the overlap list, the ordering constraints, one block per batch (**goal · PRs in order · why together · order rationale · QA scenarios · risks**), the execution table (batch, PRs, QA deploy?, cross-repo dependency, blocking?), and the stop-and-ask list. Open with the decisions the user must answer (drafts, QA target), a legend for every abbreviation the plan uses, and the batch table first. **Each QA scenario names the PR and the changed file it exercises**; a scenario with no line in the diff behind it is invented, so cut it. **Send it and stop.** A local rehearsal is neither a deploy nor a merge and may start early; the deploy may not.
 
 Keep a second file, the **engineering log** (`<date>-batched-qa-log.md`): §1 artifacts (every worktree, branch, ref, tag, with created/removed), §2 baseline, §3 scope, §4 order/constraints, §5 timestamped actions, §6 per-PR records (head before → rebased to → tip after), §7 conflicts (M mechanical / J judgment), §8 sweeps, §9 obstacles & numbered findings, §10 checkpoints, §11 decisions (who, why). Append after every action; obstacles are the first thing memory loses. Concise facts, no chain-of-thought.
+
+Create the log and a `HANDOFF.md` (goal, current step, next exact command) **before the first build command**, not after the first compaction. A batch run spans days and several context resets; the files are the only state that survives them.
 
 ## Step 3 — Build the batch (local)
 
@@ -81,6 +88,25 @@ Typecheck, lint, and the full test suite on the baseline and on the batch; compa
 - **Pairs.** A pair is a server half plus a client half behind a capability flag, so the client is inert until the flag appears. QA the pair **both ways** — new client on old server, old client on new server. For paired fixes, QA the **degrade-gracefully half first, against the unfixed counterpart**; against the fixed one the symptom is gone before the guard runs. Land the server half afterwards.
 - **One checkpoint per pair batch, one approval for both halves.** Do not land one half while the other is untested.
 - Report: batch, target, tip SHA, PRs, what to test (the plan's scenarios), caveats. **Stop and wait.**
+- **Record the heads at deploy time,** one line per PR in log §10, full SHAs (`land-pr.sh` reads them):
+
+  ```
+  qa_head: B2 #1320 3f9c...<40 hex>
+  ```
+
+  A PR whose head moves after this line needs a redeploy and a new line, or it is held.
+
+### Closing QA: the freeze
+
+QA ends with one `AskUserQuestion`, never with an inference from a quiet user or a "looks good" about one item:
+
+| Option | Effect |
+|---|---|
+| **Freeze and land** (record the verdict) | append `qa_verdict: <batch> approved <ISO time> build <run id/version> "<the user's words>"` to log §10, then Step 7 |
+| **Fix first** | Step 6; the fix goes on its PR's branch, then rebuild, redeploy, new `qa_head` lines |
+| **Add a PR** | it goes to the **next** batch; a frozen batch takes nothing new |
+
+Scope the verdict to what was tested. "Yes, it works" about one flow approves that flow; ask about the rest.
 
 ## Step 6 — Handling QA findings
 
@@ -93,20 +119,30 @@ Typecheck, lint, and the full test suite on the baseline and on the batch; compa
 
 ## Step 7 — Land the batch (only on explicit approval)
 
-`main` is protected with strict status checks: **every merge makes every remaining PR `BEHIND`**, and another session may merge in the gap, so green-and-current can go stale *during CI*. Per PR, in plan order, one at a time:
+`main` is protected with strict status checks: **every merge makes every remaining PR `BEHIND`**, and another session may merge in the gap, so green-and-current can go stale *during CI*. Land with **`land-pr.sh`, beside this file**, one PR at a time in plan order, from the PR's own worktree. The script is the procedure; its header lists every flag and `RESULT=` word. Hand-rolled landing loops were rewritten four times and pushed `main`'s tip onto a PR branch once, closing the PR.
 
-1. Confirm `OPEN`, not draft, and that the head SHA equals the recorded one. A moved head is **held**, not merged.
-2. Rebase onto the *current* `origin/main` in the PR's own worktree, re-run the PR's own tests, push with `--force-with-lease=refs/heads/<b>:<old-sha>` and an explicit refspec. Confirm with the user before pushing a PR branch.
-3. **Wait and merge in ONE loop iteration:** poll `gh pr checks <n> --json name,bucket` until **0 pending and every expected check is present** (a queued check has a null conclusion *and* a null state: unknown counts as pending; absent rows read as "done"). Refuse on any fail or cancel. Read `gh api repos/<o>/<r>/pulls/<n> --jq .mergeable_state`, and if `behind` exit `STALE` (rebase again). Otherwise `gh pr merge <n> --squash [--match-head-commit <sha>]` immediately. Splitting "green" and "merge" into two steps lost the race twice in one night. A green `security/snyk` alone is not a passing suite. Re-run a flaky red **once**, then stop.
-4. **Verify the merge, not the exit code:** `gh pr view <n> --json state,mergedAt` and `gh api repos/<o>/<r>/pulls/<n> --jq '"merged=\(.merged) \(.merge_commit_sha)"'`. `gh pr merge` can print an error and have merged anyway, or the reverse.
+1. **Preflight once before the first PR, and again before leaving any run unattended:** `land-pr.sh --preflight` (gh auth, SSH, a signed test commit, disk). A signer that needs a human stalls an overnight loop for hours; ask the user to unlock it before they leave, or stop the run.
+2. **Stacks:** retarget every child PR to `main` before its parent merges (`gh pr edit <child> --base main`). The script refuses with `CHILDREN` while any open PR is based on the branch.
+3. **First pass without `--yes`:** guards, `git fetch`, rebase, the PR's tests, then `RESULT=READY`. Show the user the result and ask before the push. Then re-run with `--yes`: it pushes with a lease pinned to the checked head, waits and merges in one loop (`--match-head-commit`), and reads the PR state rather than `gh`'s exit code.
+4. **Act on the result word:**
+
+   | `RESULT=` | Next |
+   |---|---|
+   | `MERGED` | log the squash SHA in §6; next PR |
+   | `STALE` | another merge moved `main`; run the script again |
+   | `HELD` | no verdict, a draft, or a head that changed since QA; report it |
+   | `RED` | re-run a flaky check **once**, then stop and report |
+   | `CONFLICT`, `EMPTY`, `TESTS`, `DIRTY`, `TIMEOUT`, `NOT_MERGED` | stop and report; nothing to retry blindly |
+
 5. **Squash defeats ancestry checks.** `--is-ancestor <branch>` reads "unmerged" for every landed branch and `--is-ancestor <squash>` is tautological. Test content with `git diff --numstat origin/main <branch>`.
-6. **Branch delete:** never unasked. Where the repo auto-deletes merged heads, do nothing. Otherwise gate any manual delete on `gh pr view <n> --json state` = `MERGED` (deleting after a *refused* merge **closes the open PR**), and check `gh pr list --state open --json number,baseRefName` for PRs based on the branch first (deleting a base closes its children with `mergedAt=null`).
-7. Stop and report (don't retry blindly) on: red CI, a conflict with no recorded resolution, a moved head, a step hanging past ~4 minutes, any unexpected error. A red check with a fixer inside the batch is a forced order, not a stop.
-8. After the last PR: verify `main` is green, delete the batch's test tag if one was pushed, log it, then clean up (Step 9).
+6. **Branch delete:** never unasked. Where the repo auto-deletes merged heads, do nothing. Otherwise gate any manual delete on `gh pr view <n> --json state` = `MERGED` (deleting after a *refused* merge **closes the open PR**).
+7. After the last PR: verify `main` is green, delete the batch's test tag if one was pushed, log it, then clean up (Step 9).
+
+**Unattended landing** (a background agent or a loop): one unnamed background agent, checked for first output within a few minutes; a named teammate that never started reads exactly like a slow one. Report on change only, never on a timer, and put one line in every status: `CI red on main: <check> since <time>` or `CI red on main: none`.
 
 For a pair, land in the pair's order and record both PR numbers, both squash SHAs and the running QA build in one log row.
 
-The dependabot trap: after `main` moves, a bot may rewrite its branch and retarget a newer or major version. Compare head, net changed lines and version strings; **hold** on any difference.
+The dependabot trap: after `main` moves, a bot may rewrite its branch and retarget a newer or major version. `land-pr.sh` compares the PR's patch with the QA'd one and returns `HELD` on any difference; that hold is the answer, not something to route around.
 
 ## Step 8 — Next batch
 
@@ -114,7 +150,7 @@ Re-fetch `main`, **re-scan open PRs in both repos**, re-validate the next batch'
 
 ## Step 9 — Cleanup (list first, approval, then delete)
 
-Inventory from log §1 + `git worktree list`: worktrees, local integration/scratch branches, `refs/integration/pr/*`, test tags (local and remote), untracked docs (ask). Exclude any worktree with uncommitted or unpushed work and any this run did not create. `git worktree remove` (never `rm -rf`), `git branch -D` only for approved branches, `git update-ref -d`, `git worktree prune`. Verify `git ls-remote --heads origin "integration/*"` → `0`, and that no QA target is left running an integration build.
+Cleanup closes every session that built anything, including one that landed nothing or stopped mid-batch. Inventory from log §1 + `git worktree list`: worktrees, local integration/scratch branches, `refs/integration/pr/*`, test tags (local and remote), untracked docs (ask). Exclude any worktree with uncommitted or unpushed work and any this run did not create. `git worktree remove` (never `rm -rf`), `git branch -D` only for approved branches, `git update-ref -d`, `git worktree prune`. Verify `git ls-remote --heads origin "integration/*"` → `0`, and that no QA target is left running an integration build.
 
 ## Traps that recurred
 
@@ -126,6 +162,9 @@ Inventory from log §1 + `git worktree list`: worktrees, local integration/scrat
 | `gh` exit status ≠ merge landed | read PR state |
 | Squash commit is tautologically an ancestor | content diff, not `--is-ancestor` |
 | zsh does not word-split unquoted vars | run multi-item logic as a `bash` script |
+| `rebase && push` in one command after a conflict pushes `main`'s tip and closes the PR | `land-pr.sh` aborts the rebase and refuses an empty branch |
+| A signing agent waiting for a human stalls an overnight loop | `land-pr.sh --preflight` before leaving it |
+| A worktree borrowing another checkout's `node_modules` reports phantom type errors | a real install in every worktree |
 | Re-keying a plan by PR number across days | PR numbers are stable; heads and `main` are not — re-scan |
 
 ## Report format (every checkpoint)
