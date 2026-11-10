@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 env:
-  UMBRELLA_REF: fd78ac8ad601371d10c023f33bb5ebb2bf82324b
+  UMBRELLA_REF: e5e8c8adda5223e1308a52dad6f29e09df726a67
 
 jobs:
   mirror:
