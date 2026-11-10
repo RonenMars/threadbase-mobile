@@ -87,13 +87,20 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
 
     qaUpdateCheckInFlight = true
     lastQAUpdateCheck = Date()
-    AppDistribution.appDistribution().checkForUpdate { [weak self] release, _ in
+    AppDistribution.appDistribution().checkForUpdate { [weak self] release, error in
       DispatchQueue.main.async {
         guard let self else { return }
         self.qaUpdateCheckInFlight = false
-        guard let release, self.qaUpdateAlert == nil,
-              let presenter = self.qaUpdatePresenter()
-        else { return }
+        if let error {
+          NSLog("[QA update] check failed: %@", String(describing: error))
+        } else if release == nil {
+          NSLog("[QA update] no newer release")
+        }
+        guard let release else { return }
+        guard self.qaUpdateAlert == nil, let presenter = self.qaUpdatePresenter() else {
+          NSLog("[QA update] release \(release.buildVersion) found but no eligible presenter")
+          return
+        }
 
         let releaseID = "\(release.displayVersion) (\(release.buildVersion))"
         let defaults = UserDefaults.standard
