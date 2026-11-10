@@ -75,6 +75,54 @@ describe('parseInline', () => {
   })
 })
 
+describe('bare URLs', () => {
+  const link = (url: string) => ({ kind: 'link', text: url, href: url, bare: true })
+
+  it('links a bare http(s) URL in running text', () => {
+    expect(parseInline('see https://macsources.com/category/featured/apps/ now')).toEqual([
+      { kind: 'text', text: 'see ' },
+      link('https://macsources.com/category/featured/apps/'),
+      { kind: 'text', text: ' now' },
+    ])
+  })
+
+  it('leaves sentence punctuation and an outer closing paren out of the URL', () => {
+    expect(parseInline('go to https://x.test/a.')).toEqual([
+      { kind: 'text', text: 'go to ' },
+      link('https://x.test/a'),
+      { kind: 'text', text: '.' },
+    ])
+    expect(parseInline('(see https://x.test/a)')).toEqual([
+      { kind: 'text', text: '(see ' },
+      link('https://x.test/a'),
+      { kind: 'text', text: ')' },
+    ])
+  })
+
+  it('keeps a paren that balances one inside the URL', () => {
+    expect(parseInline('https://x.test/a_(b)')).toEqual([link('https://x.test/a_(b)')])
+  })
+
+  it('does not link file names, www. hosts or a bare scheme', () => {
+    for (const text of ['edit README.md or main.rs', 'www.example.com', 'https://', 'https://.']) {
+      expect(parseInline(text)).toEqual([{ kind: 'text', text }])
+    }
+  })
+
+  it('does not double-link a markdown link or touch a code span', () => {
+    expect(parseInline('[docs](https://x.test/a)')).toEqual([
+      { kind: 'link', text: 'docs', href: 'https://x.test/a' },
+    ])
+    expect(parseInline('`https://x.test/a`')).toEqual([{ kind: 'code', text: 'https://x.test/a' }])
+  })
+
+  it('round-trips to the URL as written', () => {
+    for (const source of ['https://x.test/a', 'open https://x.test/a_b_c today']) {
+      expect(parseInline(source).map(spanSource).join('')).toBe(source)
+    }
+  })
+})
+
 describe('spanSource', () => {
   it('round-trips every span kind back to markdown', () => {
     const cases = ['plain', '**bold**', '*em*', '`code`', '~~gone~~', '[t](https://x.test)']
