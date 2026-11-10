@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
+import { AppState } from 'react-native'
 import { useSettingsStore } from '@/stores/settings'
 import {
   currentDiagnosticsTermsKey,
   isSentryTrackingEnforced,
+  reportQAUpdateCheck,
   setAnonymousDiagnosticsEnabled,
 } from '@/services/sentry'
 
@@ -32,6 +34,14 @@ export function useCrashReportingSync(): void {
     const forced = accepted && isSentryTrackingEnforced()
     if (forced && !enabled) useSettingsStore.getState().setAnonymousDiagnosticsEnabled(true)
     if (__DEV__) console.log('[sentry] consent sync fired, anonymousDiagnosticsEnabled =', enabled, forced ? '(enforced)' : '', accepted ? '' : '(terms not answered)')
-    void setAnonymousDiagnosticsEnabled(accepted && (enabled || forced))
+    void setAnonymousDiagnosticsEnabled(accepted && (enabled || forced)).then(reportQAUpdateCheck)
   }, [enabled, hydrated, accepted])
+
+  // The iOS update check finishes after launch, so its result is picked up on each foreground.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') reportQAUpdateCheck()
+    })
+    return () => sub.remove()
+  }, [])
 }

@@ -54,7 +54,7 @@ import {
   type ConnectionMode,
 } from './safe-metadata'
 import { getSentryInstallId, clearSentryInstallId } from './sentry-install-id'
-import { getDistribution } from '../modules/app-distribution'
+import { getDistribution, takeUpdateCheckResult } from '../modules/app-distribution'
 
 /** Public runtime env var for the DSN. Never a secret token — the DSN is safe
  * to embed in a client bundle by design. Auth tokens (source-map upload) live
@@ -549,6 +549,17 @@ export function addSafeBreadcrumb(event: string, data?: Record<string, unknown>)
   } catch {
     // ignore
   }
+}
+
+/**
+ * Report the last QA update-check outcome the iOS app recorded (a safe token such as
+ * `none` or `failed:<error domain>:<code>`). Enforced-tracking builds only. Nothing is
+ * read until the SDK can send, so a result recorded before then is kept for the next call.
+ */
+export function reportQAUpdateCheck(): void {
+  if (!sdkReady || !diagnosticsEnabled || !isSentryTrackingEnforced()) return
+  const result = takeUpdateCheckResult()
+  if (result) captureSafeMessage(`qa_update:${result}`.slice(0, 64))
 }
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'

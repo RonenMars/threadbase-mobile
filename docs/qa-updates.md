@@ -24,6 +24,14 @@ The existing Podfile adds the pinned Swift package only for `TB_QA_APP_DISTRIBUT
 `ship-qa.sh` supplies that switch and the Firebase plist build settings only when QA credentials are available.
 Signing, provisioning, authentication, workflow configuration, and dependencies are unchanged by this improvement.
 
+### Diagnosing a missing prompt
+
+Each update check records one token in `UserDefaults` (`qaUpdateCheckResult`): `none`, `prompted`, `no_presenter` or `failed:<error domain>:<code>`.
+The JS layer reads it through `AppDistribution.takeUpdateCheckResult` on launch and on each foreground, and `reportQAUpdateCheck` (`services/sentry.ts`) sends it to Sentry as the message `qa_update:<token>`.
+It goes through the normal consent gate and sanitizer, and only in enforced-tracking (QA) builds, so a store build neither records nor sends anything.
+The result of a check shows up on the next foreground, not at the moment it finishes.
+The same lines are also written to the device log with `NSLog` under `[QA update]`.
+
 ### Physical-device acceptance checks
 
 - Cold launch with a newer build: finish Google sign-in if needed; verify one alert, version/build, full release notes, guidance, and both actions.
