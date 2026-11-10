@@ -1,11 +1,17 @@
 import { act, renderHook } from '@testing-library/react-native'
 import { useCrashReportingSync } from '@/hooks/useCrashReportingSync'
-import { currentDiagnosticsTermsKey, isSentryTrackingEnforced, setAnonymousDiagnosticsEnabled } from '@/services/sentry'
+import {
+  currentDiagnosticsTermsKey,
+  isSentryTrackingEnforced,
+  reportQAUpdateCheck,
+  setAnonymousDiagnosticsEnabled,
+} from '@/services/sentry'
 import { useSettingsStore } from '@/stores/settings'
 
 jest.mock('@/services/sentry', () => ({
   currentDiagnosticsTermsKey: jest.fn(() => 'standard-1'),
   isSentryTrackingEnforced: jest.fn(() => false),
+  reportQAUpdateCheck: jest.fn(),
   setAnonymousDiagnosticsEnabled: jest.fn(async () => {}),
 }))
 
@@ -45,6 +51,12 @@ describe('useCrashReportingSync', () => {
   })
 })
 
+
+it('reports the QA update-check result once consent has been applied', async () => {
+  useSettingsStore.setState({ hydrated: true, anonymousDiagnosticsEnabled: true, diagnosticsTermsAccepted: 'standard-1' })
+  await renderHook(() => useCrashReportingSync())
+  expect(reportQAUpdateCheck).toHaveBeenCalled()
+})
 
 it('requires a fresh answer when diagnostics terms expand from version 1 to version 2', async () => {
   jest.mocked(currentDiagnosticsTermsKey).mockReturnValue('standard-2')

@@ -30,3 +30,23 @@ describe('getDistribution', () => {
     expect(load('android', null)).toBe('production')
   })
 })
+
+describe('takeUpdateCheckResult', () => {
+  function loadTake(os: 'ios' | 'android', result: string | null) {
+    let mod: typeof import('../../../modules/app-distribution') | undefined
+    jest.isolateModules(() => {
+      jest.doMock('react-native', () => ({ Platform: { OS: os } }))
+      jest.doMock('expo', () => ({ requireOptionalNativeModule: () => ({ takeUpdateCheckResult: () => result }) }))
+      mod = require('../../../modules/app-distribution')
+    })
+    return mod!.takeUpdateCheckResult()
+  }
+
+  it('returns the recorded result on iOS', () => {
+    expect(loadTake('ios', 'failed:FIRAppDistributionErrorDomain:2')).toBe('failed:FIRAppDistributionErrorDomain:2')
+  })
+
+  it('is null on Android even if a native module answers', () => {
+    expect(loadTake('android', 'none')).toBeNull()
+  })
+})

@@ -61,6 +61,12 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
     return controller
   }
 
+  // The JS layer reads this through AppDistribution.takeUpdateCheckResult and reports it
+  // to Sentry, so the consent gate and sanitizer apply. Tokens only, never free text.
+  private func recordQAUpdateResult(_ token: String) {
+    UserDefaults.standard.set(token, forKey: "qaUpdateCheckResult")
+  }
+
   // QA builds only: ship-qa.sh links the package and supplies the plist values.
   // All state and UIKit access stay on the main queue, including SDK callbacks.
   private func checkForQAUpdate() {
@@ -87,13 +93,25 @@ class AppDelegate: ExpoAppDelegate, ExpoReactNativeFactoryProvider {
 
     qaUpdateCheckInFlight = true
     lastQAUpdateCheck = Date()
-    AppDistribution.appDistribution().checkForUpdate { [weak self] release, _ in
+    AppDistribution.appDistribution().checkForUpdate { [weak self] release, error in
       DispatchQueue.main.async {
         guard let self else { return }
         self.qaUpdateCheckInFlight = false
-        guard let release, self.qaUpdateAlert == nil,
-              let presenter = self.qaUpdatePresenter()
-        else { return }
+        if let error {
+          let nsError = error as NSError
+          NSLog("[QA update] check failed: %@", String(describing: error))
+          self.recordQAUpdateResult("failed:\(nsError.domain):\(nsError.code)")
+        } else if release == nil {
+          NSLog("[QA update] no newer release")
+          self.recordQAUpdateResult("none")
+        }
+        guard let release else { return }
+        guard self.qaUpdateAlert == nil, let presenter = self.qaUpdatePresenter() else {
+          NSLog("[QA update] release \(release.buildVersion) found but no eligible presenter")
+          self.recordQAUpdateResult("no_presenter")
+          return
+        }
+        self.recordQAUpdateResult("prompted")
 
         let releaseID = "\(release.displayVersion) (\(release.buildVersion))"
         let defaults = UserDefaults.standard

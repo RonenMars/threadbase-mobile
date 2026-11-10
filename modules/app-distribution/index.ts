@@ -5,7 +5,10 @@ export type Distribution = 'development' | 'staging' | 'production'
 
 // eslint-disable-next-line i18next/no-literal-string -- native module name, not copy
 const MODULE_NAME = 'AppDistribution'
-const native = requireOptionalNativeModule<{ getDistribution(): Distribution }>(MODULE_NAME)
+const native = requireOptionalNativeModule<{
+  getDistribution(): Distribution
+  takeUpdateCheckResult(): string | null
+}>(MODULE_NAME)
 
 /**
  * Where this binary was installed from. iOS asks the native module (TestFlight is
@@ -17,4 +20,9 @@ export function getDistribution(): Distribution {
   const track = process.env.EXPO_PUBLIC_ANDROID_PLAY_TRACK
   if (track && track !== 'production') return 'staging'
   return 'production'
+}
+
+/** The last QA update-check outcome the iOS app recorded, once; null elsewhere or when none is pending. */
+export function takeUpdateCheckResult(): string | null {
+  return Platform.OS === 'ios' ? (native?.takeUpdateCheckResult() ?? null) : null
 }

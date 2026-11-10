@@ -19,5 +19,13 @@ public class AppDistributionModule: Module {
       return "production"
       #endif
     }
+
+    // Written by AppDelegate's QA update check; read once, then cleared.
+    Function("takeUpdateCheckResult") { () -> String? in
+      let defaults = UserDefaults.standard
+      let result = defaults.string(forKey: "qaUpdateCheckResult")
+      defaults.removeObject(forKey: "qaUpdateCheckResult")
+      return result
+    }
   }
 }
