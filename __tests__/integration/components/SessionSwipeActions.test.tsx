@@ -1,5 +1,6 @@
 import React from 'react'
 import { fireEvent, screen } from '@testing-library/react-native'
+import { Alert, type AlertButton } from 'react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NeedsYouCard } from '@/components/sessions/now/NeedsYouCard'
 import { renderWithI18n } from '@/test-utils/render'
@@ -10,6 +11,7 @@ import type { MultiSession } from '@/types/api'
 
 const mockStop = jest.fn<Promise<void>, [{ force?: boolean; delete?: boolean }]>().mockResolvedValue(undefined)
 const mockPatch = jest.fn<Promise<void>, [string, { name: string }]>().mockResolvedValue(undefined)
+const mockPost = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
 
 jest.mock('@/hooks/useSessionActions', () => ({
   useSessionActions: () => ({
@@ -20,7 +22,10 @@ jest.mock('@/hooks/useSessionActions', () => ({
 
 jest.mock('@/services/api-client', () => ({
   ...jest.requireActual('@/services/api-client'),
-  createApiForServer: () => ({ patch: (path: string, body: { name: string }) => mockPatch(path, body) }),
+  createApiForServer: () => ({
+    patch: (path: string, body: { name: string }) => mockPatch(path, body),
+    post: (path: string) => mockPost(path),
+  }),
 }))
 
 declare global {
@@ -127,6 +132,21 @@ describe('session swipe actions', () => {
     await renderCard(session())
     expect(screen.getByTestId('session-swipe-terminate')).toBeTruthy()
     expect(screen.queryByTestId('session-swipe-delete')).toBeNull()
+  })
+
+  it('confirms before terminating an external session whose process is alive', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+    await renderCard(session({ ownership: 'external', processLiveness: 'alive' }))
+    expect(screen.getByTestId('session-swipe-rename')).toBeTruthy()
+    expect(screen.queryByTestId('session-swipe-delete')).toBeNull()
+    await fireEvent.press(screen.getByTestId('session-swipe-terminate'))
+    expect(mockPost).not.toHaveBeenCalled()
+    expect(alertSpy.mock.calls[0][0]).toBe('Terminate this session?')
+    const buttons: AlertButton[] = alertSpy.mock.calls[0][2] ?? []
+    await buttons.find((b) => b.style === 'destructive')?.onPress?.()
+    expect(mockPost).toHaveBeenCalledWith('/api/sessions/sid/terminate')
+    expect(mockStop).not.toHaveBeenCalled()
+    alertSpy.mockRestore()
   })
 
   it('lets an external session be favorited and renamed but never ended', async () => {
