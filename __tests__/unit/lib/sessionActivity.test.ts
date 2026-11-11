@@ -74,6 +74,28 @@ describe('sessionActivityMs', () => {
     expect(sessionActivityMs(running)).toBe(STARTED + 5_000)
   })
 
+  it('uses activity.lastEventAt for a running external session instead of elapsedMs', () => {
+    const external = session({
+      status: 'running',
+      ownership: 'external',
+      processLiveness: 'alive',
+      elapsedMs: ELAPSED_TO_NOW,
+      activity: { state: 'quiet', lastEventAt: new Date(LAST).toISOString(), source: 'jsonl' },
+    })
+    expect(sessionActivityMs(external)).toBe(LAST)
+  })
+
+  it('reads an external session with no activity data as its start time, not now', () => {
+    const external = session({
+      status: 'idle',
+      ownership: 'external',
+      processLiveness: 'alive',
+      lifecycle: 'detached',
+      elapsedMs: ELAPSED_TO_NOW,
+    })
+    expect(sessionActivityMs(external)).toBe(STARTED)
+  })
+
   it('prefers completedAt when the server stamped one', () => {
     const done = session({ lifecycle: 'completed', completedAt: new Date(LAST).toISOString() })
     expect(sessionActivityMs(done)).toBe(LAST)

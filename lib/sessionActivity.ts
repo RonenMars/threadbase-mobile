@@ -15,13 +15,21 @@ function parseMs(iso: string | null | undefined): number {
  * (Windows service restarts never stamp `completedAt`), or a live one that is
  * waiting or an external one sitting idle, would otherwise read as active
  * "now" on every fetch, so only a running session counts `elapsedMs`.
+ *
+ * An externally owned session carries `activity.lastEventAt`, the time of its
+ * last transcript write, which is the real answer and wins over `elapsedMs`.
+ * An external session has no PTY and no turn clock, so `elapsedMs` never
+ * counts for it: with no activity data it reads as its start time, not "now".
  */
 export function sessionActivityMs(session: Session): number {
   let ms = parseMs(session.completedAt)
   if (!Number.isFinite(ms)) {
     const startMs = parseMs(session.startedAt)
     const lastMs = parseMs(session.lastActivityAt)
-    if (isPresentationLive(session) && (session.status === 'running' || !Number.isFinite(lastMs))) {
+    const eventMs = parseMs(session.activity?.lastEventAt)
+    if (Number.isFinite(eventMs)) {
+      ms = eventMs
+    } else if (session.ownership !== 'external' && isPresentationLive(session) && (session.status === 'running' || !Number.isFinite(lastMs))) {
       ms = startMs + (session.elapsedMs ?? 0)
     } else {
       ms = Number.isFinite(lastMs) ? lastMs : startMs
