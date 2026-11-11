@@ -62,10 +62,11 @@ describe('swipe on drill rows', () => {
     expect(screen.getByTestId('session-swipe-rename')).toBeTruthy()
   })
 
-  it('limits an external session to favorite', async () => {
+  it('limits an external session to favorite and rename', async () => {
     await renderRow({ ...base, key: 'session:server-1::sid', session: session({ ownership: 'external' }) })
     expect(screen.getByTestId('session-swipe-favorite')).toBeTruthy()
-    expect(screen.queryByTestId('session-swipe-rename')).toBeNull()
+    expect(screen.getByTestId('session-swipe-rename')).toBeTruthy()
+    expect(screen.queryByTestId('session-swipe-terminate')).toBeNull()
   })
 
   it('favorites a conversation under the drill label', async () => {

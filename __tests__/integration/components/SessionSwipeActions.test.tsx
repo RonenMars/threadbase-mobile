@@ -129,12 +129,16 @@ describe('session swipe actions', () => {
     expect(screen.queryByTestId('session-swipe-delete')).toBeNull()
   })
 
-  it('lets an external session be favorited but never renamed or ended', async () => {
+  it('lets an external session be favorited and renamed but never ended', async () => {
     await renderCard(session({ ownership: 'external' }))
     expect(screen.getByTestId('session-swipe-favorite')).toBeTruthy()
-    expect(screen.queryByTestId('session-swipe-rename')).toBeNull()
     expect(screen.queryByTestId('session-swipe-terminate')).toBeNull()
     expect(screen.queryByTestId('session-swipe-delete')).toBeNull()
+    await fireEvent.press(screen.getByTestId('session-swipe-rename'))
+    const input = screen.getByDisplayValue('Fix login redirect')
+    await fireEvent.changeText(input, 'External run')
+    await fireEvent(input, 'submitEditing')
+    expect(mockPatch).toHaveBeenCalledWith('/api/sessions/sid/name', { name: 'External run' })
   })
 })
 

@@ -176,19 +176,22 @@ export function useSessionRowActions(session: MultiSession, title: string) {
   const leading: SwipeAction[] = [
     { key: 'favorite', label: favoriteLabel, icon: Star, color: theme.status.waiting, onPress: toggleFavorite, testID: 'session-swipe-favorite' },
   ]
-  const trailing: SwipeAction[] = [
-    { key: 'rename', label: t('swipe.rename'), icon: PencilSimple, color: theme.text.accent, onPress: () => setRenameVisible(true), testID: 'session-swipe-rename' },
-  ]
+  const rename: SwipeAction = { key: 'rename', label: t('swipe.rename'), icon: PencilSimple, color: theme.text.accent, onPress: () => setRenameVisible(true), testID: 'session-swipe-rename' }
+  const trailing: SwipeAction[] = [rename]
   if (canEnd) {
     trailing.push({ key: 'terminate', label: t('swipe.terminate'), icon: Power, color: theme.status.idle, onPress: end.terminate, testID: 'session-swipe-terminate' })
     if (end.supported) {
       trailing.push({ key: 'delete', label: t('swipe.delete'), icon: Trash, color: theme.status.failed, onPress: end.requestDelete, testID: 'session-swipe-delete' })
     }
   }
-  // External sessions are read-only: favoriting stays local, so it is the only swipe action.
-  const swipe = isExternal ? { leading, trailing: [] } : { leading, trailing }
+  // External sessions are read-only: the display name lives in the streamer's own store, so only favorite and rename apply.
+  const swipe = isExternal ? { leading, trailing: [rename] } : { leading, trailing }
 
-  const overlays = isExternal ? null : (
+  const renameOverlay = renameVisible ? (
+    <RenameSessionOverlay session={session} currentName={title} onClose={() => setRenameVisible(false)} />
+  ) : null
+
+  const overlays = isExternal ? renameOverlay : (
     <>
       <SessionActionSheet
         visible={menuVisible}
@@ -205,9 +208,7 @@ export function useSessionRowActions(session: MultiSession, title: string) {
         onConfirmWatchers={end.confirmWatchers}
         onDismiss={end.dismissDialog}
       />
-      {renameVisible ? (
-        <RenameSessionOverlay session={session} currentName={title} onClose={() => setRenameVisible(false)} />
-      ) : null}
+      {renameOverlay}
     </>
   )
 
