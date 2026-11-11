@@ -7,6 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { StateBadge, getSessionTierLabel } from '@/components/sessions/StateBadge'
 import { formatWaitSince, waitSinceIso } from '@/components/sessions/shared/formatCoarseElapsed'
 import { shortPath } from '@/components/sessions/shared/pathTail'
+import { stripAnsi } from '@/utils/stripAnsi'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
@@ -50,6 +51,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const qualifier = wait ? t('row.waitingFor', { elapsed: wait }) : undefined
   const tierLabel = getSessionTierLabel('needsYou', t)
   const accessibilityLabel = qualifier ? `${title}, ${tierLabel}, ${qualifier}` : `${title}, ${tierLabel}`
+  const output = stripAnsi(session.lastOutput ?? '').trim()
   const projectLabel = shortPath(session.projectPath)
 
   return (
@@ -70,8 +72,8 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         isFirst={isFirst}
       >
         <StateBadge tier="needsYou" qualifier={qualifier} />
-        {session.lastOutput ? (
-          <Text style={styles.output} numberOfLines={1}>{session.lastOutput}</Text>
+        {output ? (
+          <Text style={styles.output} numberOfLines={1}>{output}</Text>
         ) : null}
         <View style={styles.footer}>
           {projectLabel ? (
