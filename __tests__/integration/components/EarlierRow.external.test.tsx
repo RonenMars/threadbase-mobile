@@ -35,9 +35,9 @@ beforeEach(async () => {
 })
 
 describe('EarlierRow — conversation', () => {
-  it('marks a live-outside conversation as External', async () => {
-    const { getByText } = await renderRow(conv({ ownership: 'external', processLiveness: 'alive' }))
-    expect(getByText('External')).toBeTruthy()
+  it('shows no External badge on a live-outside conversation', async () => {
+    const { queryByText } = await renderRow(conv({ ownership: 'external', processLiveness: 'alive' }))
+    expect(queryByText('External')).toBeNull()
   })
 
   it('renders as before without the fields', async () => {
