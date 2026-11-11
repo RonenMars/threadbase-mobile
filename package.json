@@ -124,7 +124,7 @@
     "expo-localization": "~57.0.1",
     "expo-mail-composer": "~57.0.1",
     "expo-notifications": "~57.0.7",
-    "expo-router": "~57.0.17",
+    "expo-router": "~58.0.31",
     "expo-secure-store": "~57.0.1",
     "expo-speech-recognition": "57.1.0",
     "expo-splash-screen": "~57.0.8",
@@ -181,11 +181,11 @@
     "postcss": "^8.5.26",
     "react-refresh": "^0.18.0",
     "react-test-renderer": "19.2.8",
-    "storybook": "10.5.10",
+    "storybook": "10.6.7",
     "tailwindcss": "^4.3.3",
     "test-renderer": "^1.2.0",
     "typescript": "~6.0.3",
-    "vite": "8.2.2",
+    "vite": "8.3.8",
     "ws": "^8.21.1"
   },
   "expo": {
