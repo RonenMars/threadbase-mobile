@@ -47,7 +47,7 @@ export type SessionColorToken = 'running' | 'waiting' | 'completed' | 'idle' | '
  * The five words a list row may render (docs/design/session-list). The 15
  * `SessionStatusLabel` values remain for filter sheets and other 15-word copy.
  */
-export type SessionTier = 'needsYou' | 'working' | 'resumable' | 'cantResume' | 'observed'
+export type SessionTier = 'needsYou' | 'working' | 'resumable' | 'cantResume' | 'external'
 
 export type SessionConfidence = 'process' | 'jsonl' | 'status' | 'unknown'
 
@@ -216,7 +216,7 @@ export function deriveSessionPresentation(
 function tierFor(
   p: Pick<SessionPresentation, 'kind' | 'live' | 'externalLive' | 'colorToken'>,
 ): SessionTier {
-  if (p.externalLive) return 'observed'
+  if (p.externalLive) return 'external'
   if (p.kind === 'unavailable' || p.colorToken === 'failed') return 'cantResume'
   if (p.live) return p.colorToken === 'waiting' ? 'needsYou' : 'working'
   // Pre-attach: the process is being spawned, so it belongs with Working.
@@ -230,7 +230,7 @@ export function tierColorToken(tier: SessionTier): SessionColorToken {
       return 'waiting'
     case 'working':
       return 'running'
-    case 'observed':
+    case 'external':
       return 'completed'
     case 'cantResume':
       return 'failed'

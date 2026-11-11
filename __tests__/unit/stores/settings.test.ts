@@ -170,6 +170,19 @@ describe('SettingsStore – colorScheme', () => {
     await useSettingsStore.getState().hydrate()
     expect(useSettingsStore.getState().sessionsLayout).toBe(expected)
   })
+
+  it.each([
+    ['observed', 'external'],
+    ['external', 'external'],
+    ['working', 'working'],
+    ['bogus', 'earlier'],
+  ])('reads a persisted boardColumn of %s as %s', async (stored, expected) => {
+    const raw = JSON.stringify({ boardColumn: stored, notifications: DEFAULT_NOTIFICATIONS })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(raw)
+    useSettingsStore.setState({ boardColumn: 'earlier' })
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().boardColumn).toBe(expected)
+  })
 })
 
 describe('SettingsStore – completedSessionFadeMs', () => {

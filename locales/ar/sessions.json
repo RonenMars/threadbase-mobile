@@ -183,7 +183,7 @@
     "working": "يعمل",
     "resumable": "قابل للاستئناف",
     "cantResume": "لا يمكن الاستئناف",
-    "observed": "مُراقَب"
+    "external": "خارجي"
   },
   "phase": {
     "thinking": "يفكر",
@@ -193,7 +193,7 @@
     "working": "يعمل"
   },
   "capability": {
-    "observeOnly": "للمشاهدة فقط",
+    "observeOnly": "للعرض فقط",
     "liveControl": "تحكم مباشر"
   },
   "timeBucket": {
@@ -339,7 +339,7 @@
     "subagentsFailed": "تعذّر تحميل الوكلاء الفرعيين.",
     "emptyNeedsYou": "تظهر هنا الجلسات التي تنتظر إجابتك.",
     "emptyWorking": "تظهر هنا الجلسات الجارية الآن.",
-    "emptyObserved": "تظهر هنا الجلسات التي تتابعها ولم تبدأها.",
+    "emptyExternal": "تظهر هنا الجلسات التي شُغِّلت خارج Threadbase.",
     "emptyEarlier": "تظهر هنا الجلسات المنتهية."
   }
 }

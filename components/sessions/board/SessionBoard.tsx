@@ -92,7 +92,7 @@ export function SessionBoard({
     const out: Record<BoardColumnId, BoardCardModel[]> = {
       needsYou: buckets.needsYou.map(toCard),
       working: buckets.working.map(toCard),
-      observed: buckets.observed.map(toCard),
+      external: buckets.external.map(toCard),
       earlier: buckets.earlier.map(toCard),
     }
     const q = searchQuery.trim().toLowerCase()
@@ -110,7 +110,7 @@ export function SessionBoard({
   }, [entries, groups, serverByRowId, searchQuery, activeServerIds, order, direction, t])
 
   const counts = useMemo(
-    () => ({ needsYou: board.needsYou.length, working: board.working.length, observed: board.observed.length, earlier: board.earlier.length }),
+    () => ({ needsYou: board.needsYou.length, working: board.working.length, external: board.external.length, earlier: board.earlier.length }),
     [board],
   )
 

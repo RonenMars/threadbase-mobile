@@ -148,7 +148,7 @@ describe('SessionBoard columns', () => {
     expect(selected(r, 'working')).toBe(true)
     expect(r.getByTestId('board-column-working')).toHaveTextContent('Working1')
     expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1')
-    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed0')
+    expect(r.getByTestId('board-column-external')).toHaveTextContent('External0')
   })
 
   it('starts on Needs you when something waits, whatever was remembered', async () => {
@@ -158,9 +158,9 @@ describe('SessionBoard columns', () => {
   })
 
   it('starts on the remembered column when nothing waits, even an empty one', async () => {
-    useSettingsStore.setState({ boardColumn: 'observed' })
+    useSettingsStore.setState({ boardColumn: 'external' })
     const r = await renderBoard()
-    expect(selected(r, 'observed')).toBe(true)
+    expect(selected(r, 'external')).toBe(true)
     expect(r.getByTestId('board-pager')).toBeTruthy()
   })
 
@@ -177,7 +177,7 @@ describe('SessionBoard columns', () => {
 
   it('tells an empty column apart with its own hint', async () => {
     const r = await renderBoard()
-    expect(r.getByText('Sessions you watch but did not start show in this column.')).toBeTruthy()
+    expect(r.getByText('Sessions started outside Threadbase show in this column.')).toBeTruthy()
   })
 
   it('refetches when the set of open prompts changes, not on first paint', async () => {
@@ -219,19 +219,19 @@ describe('SessionBoard cards', () => {
 
   const terminal = session({ id: 'e', status: 'running', ownership: 'external', processLiveness: 'alive', sessionName: 'From the terminal' })
 
-  it('moves an observed session to Working while one of its sub-agents runs', async () => {
+  it('moves an external session to Working while one of its sub-agents runs', async () => {
     mockGet.mockResolvedValue({ conversations: [sub('a1', 'e', true), sub('a2', 'e', false)], hasMore: false, offset: 0, total: 2 })
     const r = await renderBoard([row(terminal)])
     await waitFor(() => expect(r.getByTestId('board-column-working')).toHaveTextContent('Working1'))
-    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed0')
+    expect(r.getByTestId('board-column-external')).toHaveTextContent('External0')
     expect(r.queryByText('Sub-agents of other sessions')).toBeNull()
   })
 
-  it('keeps an observed session in Observed when none of its sub-agents runs', async () => {
+  it('keeps an external session in External when none of its sub-agents runs', async () => {
     mockGet.mockResolvedValue({ conversations: [sub('a1', 'e', false)], hasMore: false, offset: 0, total: 1 })
     const r = await renderBoard([row(terminal)])
     await waitFor(() => expect(r.getByTestId('board-toggle-e')).toHaveTextContent('1'))
-    expect(r.getByTestId('board-column-observed')).toHaveTextContent('Observed1')
+    expect(r.getByTestId('board-column-external')).toHaveTextContent('External1')
     expect(r.getByTestId('board-column-working')).toHaveTextContent('Working0')
   })
 
@@ -375,7 +375,7 @@ describe('SessionBoard from 768 up', () => {
       fireEvent(track, 'contentSizeChange', 1200, 600)
     })
     await fireEvent.press(r.getByTestId('board-arrow-next'))
-    expect(selected(r, 'observed')).toBe(true)
+    expect(selected(r, 'external')).toBe(true)
     await fireEvent.press(r.getByTestId('board-arrow-previous'))
     expect(selected(r, 'working')).toBe(true)
   })

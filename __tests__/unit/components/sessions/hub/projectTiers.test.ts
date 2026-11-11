@@ -72,7 +72,7 @@ describe('projectRailToken', () => {
     expect(projectRailToken(group('a', { sessions: [held] }))).toBeNull()
   })
 
-  it('falls back to the observed colour for external conversations only', () => {
+  it('falls back to the external colour for external conversations only', () => {
     expect(projectRailToken(group('a', { liveExternalCount: 2 }))).toBe('completed')
     const running = session({ id: 'r', status: 'running', ptyAttached: true, lifecycle: 'attached' })
     expect(projectRailToken(group('a', { sessions: [running], liveExternalCount: 2 }))).toBe('running')

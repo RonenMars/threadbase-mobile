@@ -16,8 +16,8 @@ export function columnLabel(id: BoardColumnId, t: TFunction<'sessions'>): string
       return t('status.needsYou')
     case 'working':
       return t('status.working')
-    case 'observed':
-      return t('status.observed')
+    case 'external':
+      return t('status.external')
     case 'earlier':
       return t('boardTab.earlier')
   }
@@ -29,7 +29,7 @@ export function columnToken(id: BoardColumnId): SessionColorToken {
       return 'waiting'
     case 'working':
       return 'running'
-    case 'observed':
+    case 'external':
       return 'completed'
     case 'earlier':
       return 'idle'

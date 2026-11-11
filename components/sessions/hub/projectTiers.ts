@@ -34,6 +34,6 @@ export function projectRailToken(group: ProjectGroup): SessionColorToken | null 
     if (presentation.tier === 'working') token = 'running'
     else if (token == null) token = presentation.colorToken
   }
-  if (token == null && group.liveExternalCount > 0) token = tierColorToken('observed')
+  if (token == null && group.liveExternalCount > 0) token = tierColorToken('external')
   return token
 }

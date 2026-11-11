@@ -68,7 +68,7 @@ describe('swipe on project hub rows', () => {
     expect(screen.getByTestId('session-swipe-rename')).toBeTruthy()
   })
 
-  it('limits an observed session row to favorite', async () => {
+  it('limits an external session row to favorite', async () => {
     await renderRow(<SessionRow session={session({ ownership: 'external' })} />)
     expect(screen.getByTestId('session-swipe-favorite')).toBeTruthy()
     expect(screen.queryByTestId('session-swipe-rename')).toBeNull()

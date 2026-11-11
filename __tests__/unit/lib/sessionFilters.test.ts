@@ -100,7 +100,7 @@ describe('applyListFilters', () => {
 
 describe('counts and presets', () => {
   it('counts live rows per tier on the unfiltered set', () => {
-    expect(countByTier(items)).toEqual({ needsYou: 1, working: 1, resumable: 2, cantResume: 1, observed: 0 })
+    expect(countByTier(items)).toEqual({ needsYou: 1, working: 1, resumable: 2, cantResume: 1, external: 0 })
   })
 
   it('counts rows per agent', () => {
@@ -126,7 +126,7 @@ describe('counts and presets', () => {
 
     expect(displayed.map((item) => item.item.id)).toEqual(['live', 'older'])
     expect(countByProvider(displayed)).toEqual({ 'claude-code': 0, 'codex-cli': 2, cursor: 0, copilot: 0 })
-    expect(countByTier(displayed)).toEqual({ needsYou: 1, working: 0, resumable: 1, cantResume: 0, observed: 0 })
+    expect(countByTier(displayed)).toEqual({ needsYou: 1, working: 0, resumable: 1, cantResume: 0, external: 0 })
   })
 
   it('recognises the defaults regardless of tier order', () => {

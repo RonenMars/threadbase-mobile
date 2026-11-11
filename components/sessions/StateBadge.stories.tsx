@@ -33,6 +33,6 @@ export const CantResume: Story = {
   args: { tier: 'cantResume' },
 }
 
-export const Observed: Story = {
-  args: { tier: 'observed' },
+export const External: Story = {
+  args: { tier: 'external' },
 }

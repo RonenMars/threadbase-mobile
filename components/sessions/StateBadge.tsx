@@ -18,14 +18,14 @@ export function getSessionTierLabel(tier: SessionTier, t: TFunction<'sessions'>)
       return t('status.resumable')
     case 'cantResume':
       return t('status.cantResume')
-    case 'observed':
-      return t('status.observed')
+    case 'external':
+      return t('status.external')
   }
 }
 
 /** Tiers backed by a live process, which pulse and colour the rail. */
 export function isLiveTier(tier: SessionTier): boolean {
-  return tier === 'needsYou' || tier === 'working' || tier === 'observed'
+  return tier === 'needsYou' || tier === 'working' || tier === 'external'
 }
 
 interface Props {

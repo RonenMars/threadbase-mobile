@@ -6,6 +6,7 @@ import {
   sessionMessageCount,
   sessionOpensAsHistory,
   sessionPhase,
+  tierColorToken,
 } from '@/lib/sessionPresentation'
 
 function base(
@@ -384,7 +385,7 @@ describe('tier', () => {
     ).toBe('working')
     expect(
       deriveSessionPresentation({ status: 'idle', ownership: 'external', processLiveness: 'alive' }).tier,
-    ).toBe('observed')
+    ).toBe('external')
     expect(
       deriveSessionPresentation(base({ status: 'idle', lifecycle: 'failed' })).tier,
     ).toBe('cantResume')
@@ -415,5 +416,11 @@ describe('sessionMessageCount', () => {
 
   it('falls back to the prompt count when the server sends no total', () => {
     expect(sessionMessageCount({ promptCount: 2 })).toBe(2)
+  })
+})
+
+describe('tierColorToken', () => {
+  it('colors an external session as completed', () => {
+    expect(tierColorToken('external')).toBe('completed')
   })
 })

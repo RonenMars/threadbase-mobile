@@ -4,9 +4,9 @@ import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import type { SessionTier } from '@/lib/sessionPresentation'
 import type { SortBy, SortOrder } from '@/types/ui'
 
-export type BoardColumnId = 'needsYou' | 'working' | 'observed' | 'earlier'
+export type BoardColumnId = 'needsYou' | 'working' | 'external' | 'earlier'
 
-export const BOARD_COLUMNS: readonly BoardColumnId[] = ['needsYou', 'working', 'observed', 'earlier']
+export const BOARD_COLUMNS: readonly BoardColumnId[] = ['needsYou', 'working', 'external', 'earlier']
 
 /** Resumable, can't-resume and tierless history all land in Earlier. */
 export function boardColumnFor(tier: SessionTier | null): BoardColumnId {
@@ -15,8 +15,8 @@ export function boardColumnFor(tier: SessionTier | null): BoardColumnId {
       return 'needsYou'
     case 'working':
       return 'working'
-    case 'observed':
-      return 'observed'
+    case 'external':
+      return 'external'
     case 'resumable':
     case 'cantResume':
     case null:
@@ -40,7 +40,7 @@ export function bucketBoard<E extends { item: MergedItem; tier: SessionTier | nu
   order: SortBy = 'state',
   direction: SortOrder = 'desc',
 ): Record<BoardColumnId, E[]> {
-  const board: Record<BoardColumnId, E[]> = { needsYou: [], working: [], observed: [], earlier: [] }
+  const board: Record<BoardColumnId, E[]> = { needsYou: [], working: [], external: [], earlier: [] }
   for (const e of entries) board[boardColumnFor(e.tier)].push(e)
   const sign = direction === 'asc' ? -1 : 1
   const byRecent = (a: E, b: E) => sign * (b.item.ms - a.item.ms)
@@ -49,7 +49,7 @@ export function bucketBoard<E extends { item: MergedItem; tier: SessionTier | nu
   const byWait = (a: E, b: E) => sign * (waitStartMs(a.item) - waitStartMs(b.item)) || byRecent(a, b)
   board.needsYou.sort(order === 'state' ? byWait : inColumn)
   board.working.sort(inColumn)
-  board.observed.sort(inColumn)
+  board.external.sort(inColumn)
   board.earlier.sort(inColumn)
   return board
 }

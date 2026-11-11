@@ -46,13 +46,13 @@ export function narrowConversationLiveness(raw: {
 }
 
 /**
- * Tier for a conversation row: `observed` (the existing external-live styling)
+ * Tier for a conversation row: `external` (the existing external-live styling)
  * while its CLI runs outside Threadbase, otherwise none so the row is untouched.
  */
 export function conversationTier(
   c: Pick<Conversation, 'ownership' | 'processLiveness'>,
 ): SessionTier | undefined {
-  return c.processLiveness === 'alive' ? 'observed' : undefined
+  return c.processLiveness === 'alive' ? 'external' : undefined
 }
 
 /** A summary's live-outside count; a missing or malformed value is 0. */

@@ -184,6 +184,21 @@ function coerceSessionsLayout(value: string | undefined): SessionsLayout {
   return value === 'projects' || value === 'hub' || value === 'tree' ? 'projects' : 'now'
 }
 
+// The board column was persisted as 'observed' before it was renamed 'external'.
+function coerceBoardColumn(value: string | null | undefined): BoardColumnId | null {
+  switch (value) {
+    case 'needsYou':
+    case 'working':
+    case 'external':
+    case 'earlier':
+      return value
+    case 'observed':
+      return 'external'
+    default:
+      return null
+  }
+}
+
 export const useSettingsStore = create<SettingsStore>((set) => ({
   colorScheme: 'dark',
   completedSessionFadeMs: 60000,
@@ -275,7 +290,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         sessionsLayout: coerceSessionsLayout(parsed.sessionsLayout),
         sessionsTreeView: parsed.sessionsTreeView ?? state.sessionsTreeView,
         boardOpen: parsed.boardOpen ?? state.boardOpen,
-        boardColumn: parsed.boardColumn ?? state.boardColumn,
+        boardColumn: coerceBoardColumn(parsed.boardColumn) ?? state.boardColumn,
         terminalRenderMarkdown: parsed.terminalRenderMarkdown ?? state.terminalRenderMarkdown,
         showProviderVersionWarning:
           parsed.showProviderVersionWarning ?? state.showProviderVersionWarning,

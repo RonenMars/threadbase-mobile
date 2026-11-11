@@ -30,8 +30,8 @@ function emptyHint(id: BoardColumnId, t: TFunction<'sessions'>): string {
       return t('boardTab.emptyNeedsYou')
     case 'working':
       return t('boardTab.emptyWorking')
-    case 'observed':
-      return t('boardTab.emptyObserved')
+    case 'external':
+      return t('boardTab.emptyExternal')
     case 'earlier':
       return t('boardTab.emptyEarlier')
   }
