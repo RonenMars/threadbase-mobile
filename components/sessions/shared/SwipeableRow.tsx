@@ -24,7 +24,7 @@ interface Props {
   trailing?: SwipeAction[]
   children: ReactNode
   testID?: string
-  /** For short rows: a smaller circle and no visible label, so the panel fits the row height. */
+  /** For short rows: a smaller circle, so the panel fits the row height. */
   compact?: boolean
 }
 
@@ -68,7 +68,7 @@ export function SwipeableRow({ leading = [], trailing = [], children, testID, co
             <View style={[styles.button, compact && styles.compactButton, { backgroundColor: action.color }]}>
               <action.icon size={compact ? 18 : 22} color={theme.text.onAccent} weight="fill" />
             </View>
-            {!compact && <Text style={styles.label} numberOfLines={1}>{action.label}</Text>}
+            <Text style={styles.label} numberOfLines={1}>{action.label}</Text>
           </Pressable>
         ))}
       </View>

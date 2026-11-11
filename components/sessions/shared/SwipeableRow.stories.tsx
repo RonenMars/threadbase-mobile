@@ -35,3 +35,5 @@ type Story = StoryObj<typeof SwipeableRow>
 export const Default: Story = {}
 
 export const TrailingOnly: Story = { args: { leading: [] } }
+
+export const Compact: Story = { args: { compact: true } }
