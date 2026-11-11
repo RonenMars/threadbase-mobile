@@ -410,7 +410,7 @@ export const NowList = React.memo(function NowList({
         {...inset.props}
         ListHeaderComponent={
           // The header is full-bleed; undo the row gutter around it.
-          ListHeaderComponent ? <View style={{ marginHorizontal: -(spacing.sm + 2), paddingTop: spacing.xs }}>{ListHeaderComponent}</View> : null
+          ListHeaderComponent ? <View style={{ marginHorizontal: -(spacing.sm + 2), paddingTop: spacing.xs }}>{ListHeaderComponent}</View> : undefined
         }
         contentContainerStyle={[
           {

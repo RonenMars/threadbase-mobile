@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react'
-import { Pressable, StyleSheet, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native'
+import { Pressable, StyleSheet, TextInput, View, type StyleProp, type TextInputInstance, type TextInputProps, type ViewStyle } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { X } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -20,14 +20,14 @@ interface SearchInputProps extends Omit<TextInputProps, 'value' | 'onChangeText'
  * hides the X while the field is unfocused, so this draws the X itself:
  * identical on both platforms and visible whenever there is text.
  */
-export const SearchInput = forwardRef<TextInput, SearchInputProps>(function SearchInput(
+export const SearchInput = forwardRef<TextInputInstance, SearchInputProps>(function SearchInput(
   { value, onChangeText, containerStyle, style, ...rest },
   ref,
 ) {
   const { t } = useTranslation('conversation')
   const theme = useTheme()
-  const inputRef = useRef<TextInput>(null)
-  useImperativeHandle(ref, () => inputRef.current as TextInput)
+  const inputRef = useRef<TextInputInstance>(null)
+  useImperativeHandle(ref, () => inputRef.current as TextInputInstance)
 
   const clear = () => {
     onChangeText('')

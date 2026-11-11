@@ -181,7 +181,7 @@ export function DrillView({ node, serverId, onBack, topInset = 0, onScroll }: Pr
         color={theme.text.secondary}
         testID="drill-conversations-loading"
       />
-    ) : null
+    ) : undefined
 
   return (
     <View style={[styles.drill, { paddingTop: topInset }]} testID={`drill-cwd-${current.fullPath}`}>

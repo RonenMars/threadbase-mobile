@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { AppState, Keyboard, type TextInput } from 'react-native'
+import { AppState, Keyboard, type TextInputInstance } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import {
   composerFocus,
@@ -30,8 +30,8 @@ export function returnComposerFocus(overlay: Overlay) {
 }
 
 interface Options {
-  inlineRef: React.RefObject<TextInput | null>
-  expandedRef: React.RefObject<TextInput | null>
+  inlineRef: React.RefObject<TextInputInstance | null>
+  expandedRef: React.RefObject<TextInputInstance | null>
   disabled: boolean
 }
 
