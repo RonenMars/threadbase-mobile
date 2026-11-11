@@ -42,6 +42,10 @@ export const WorkingSession: Story = {
   args: { ...base, messageCount: 42, tier: 'working', previewMode: 'auto' },
 }
 
+export const ExternalSession: Story = {
+  args: { ...base, messageCount: 42, tier: 'external', previewMode: 'auto' },
+}
+
 export const NoPreview: Story = {
   args: { ...base, messageCount: 42, previewMode: 'none' },
 }

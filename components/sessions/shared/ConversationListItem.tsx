@@ -160,6 +160,8 @@ export function ConversationListItem(props: ConversationListItemProps) {
 
   const tierColor = tier ? colorForToken(theme, tierColorToken(tier)) : null
   const liveRow = tier ? isLiveTier(tier) : false
+  // Rows drop the External word; the rail colour still marks the row as live.
+  const badgeTier = tier === 'external' ? undefined : tier
   const serverVisible = shouldShowServer(
     showServer,
     activeServerCount,
@@ -256,7 +258,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
       {leading === 'dot' && !isChip && (
         <View style={styles.dotSlot}>
           {/* The meta-line StateBadge draws its own dot; the empty slot keeps titles aligned. */}
-          {tier ? null : <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />}
+          {badgeTier ? null : <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />}
         </View>
       )}
       {leading === 'depth' && !isChip && (
@@ -286,9 +288,9 @@ export function ConversationListItem(props: ConversationListItemProps) {
           />
         ) : null}
 
-        {!isChip && (tier || metaText) ? (
+        {!isChip && (badgeTier || metaText) ? (
           <View style={styles.metaRow}>
-            {tier ? <StateBadge tier={tier} /> : null}
+            {badgeTier ? <StateBadge tier={badgeTier} /> : null}
             {metaText ? (
               <Text style={styles.meta} numberOfLines={1}>{metaText}</Text>
             ) : null}

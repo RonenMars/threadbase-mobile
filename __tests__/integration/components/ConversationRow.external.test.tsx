@@ -2,7 +2,7 @@
  * Conversation rows — "live outside Threadbase" indicator.
  *
  * A conversation whose CLI is running outside the app (processLiveness
- * 'alive') reuses the External tier of an external session. Tapping it still
+ * 'alive') reuses the External tier of an external session, without the badge. Tapping it still
  * opens the read-only conversation screen — never the Overtake/session route.
  */
 import React from 'react'
@@ -37,13 +37,13 @@ beforeEach(async () => {
 })
 
 describe('ConvRow (project hub, drill)', () => {
-  it('marks a live-outside conversation as External', async () => {
-    const { getByText } = await render(
+  it('shows no External badge on a live-outside conversation', async () => {
+    const { queryByText } = await render(
       <ThemeProvider>
         <ConvRow conv={makeConv(external)} />
       </ThemeProvider>,
     )
-    expect(getByText('External')).toBeTruthy()
+    expect(queryByText('External')).toBeNull()
   })
 
   it('renders exactly as before without the fields', async () => {
@@ -82,12 +82,12 @@ describe('ConversationList (project screen, search results)', () => {
       </ThemeProvider>,
     )
 
-  it('marks only the live-outside row', async () => {
-    const { getAllByText, getByTestId } = await renderList([
+  it('badges no row as External, the live-outside one included', async () => {
+    const { queryByText, getByTestId } = await renderList([
       makeConv({ id: 'live', ...external }),
       makeConv({ id: 'plain' }),
     ])
-    expect(getAllByText('External')).toHaveLength(1)
+    expect(queryByText('External')).toBeNull()
     expect(getByTestId('conversation-row-live')).toBeTruthy()
   })
 
