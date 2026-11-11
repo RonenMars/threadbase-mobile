@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import type { Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export function TourOverlay({ target, text, onGotIt, onSkip, stepLabel }: Props) {
+  const { t } = useTranslation('sessions')
   const { styles } = useThemedStyles(makeStyles)
   const PADDING = 8
   const holeX = target.x - PADDING
@@ -80,8 +82,7 @@ export function TourOverlay({ target, text, onGotIt, onSkip, stepLabel }: Props)
         <Text style={styles.text}>{text}</Text>
         <View style={styles.actions}>
           <TouchableOpacity testID="tour-skip" onPress={onSkip} hitSlop={8}>
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.skip}>Skip tour</Text>
+            <Text style={styles.skip}>{t('tour.skip')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             testID="tour-got-it"
@@ -89,8 +90,7 @@ export function TourOverlay({ target, text, onGotIt, onSkip, stepLabel }: Props)
             style={styles.gotItBtn}
             activeOpacity={0.75}
           >
-            {/* eslint-disable-next-line i18next/no-literal-string */}
-            <Text style={styles.gotItText}>Got it →</Text>
+            <Text style={styles.gotItText}>{t('tour.gotIt')}</Text>
           </TouchableOpacity>
         </View>
       </View>
