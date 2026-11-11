@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ArrowsOut, CaretDown, Question } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +13,9 @@ import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
+
+/** Releases a held present if iOS never reports the previous dismiss finished. */
+export const MODAL_DISMISS_FALLBACK_MS = 1000
 
 interface Props {
   lines: string[]
@@ -147,6 +150,26 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
   // A ghost blocks nothing, so it never takes over the screen.
   const fullScreen = hasCard && !ghost && minimizedKey !== promptKey
 
+  // iOS presents a Modal as a view controller, and a present issued while the
+  // previous dismiss is still animating left the whole app on a black window
+  // that took no touches: an answer took the card down, and the next card
+  // landed 67ms later. The Modal therefore stays mounted across every branch
+  // below, and a new present waits for the dismiss to finish. onDismiss is
+  // iOS-only (RN Modal.js); the timer covers a dismiss that never completes,
+  // e.g. one whose present was never shown.
+  const [dismissing, setDismissing] = useState(false)
+  const [prevFullScreen, setPrevFullScreen] = useState(fullScreen)
+  if (prevFullScreen !== fullScreen) {
+    setPrevFullScreen(fullScreen)
+    if (!fullScreen && Platform.OS === 'ios') setDismissing(true)
+  }
+  useEffect(() => {
+    if (!dismissing) return
+    const timer = setTimeout(() => setDismissing(false), MODAL_DISMISS_FALLBACK_MS)
+    return () => clearTimeout(timer)
+  }, [dismissing])
+  const modalVisible = fullScreen && !dismissing
+
   const renderCard = (large: boolean) => activeQuestion
     ? (
       <QuestionCard
@@ -170,41 +193,45 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
       )
       : null
 
+  const modal = (
+    <Modal
+      visible={modalVisible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={() => setMinimizedKey(promptKey)}
+      onDismiss={() => setDismissing(false)}
+    >
+      {/* A Modal is its own native window: without a provider the insets read 0 and the header sits under the status bar. */}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+      <SafeAreaView style={styles.fullScreen} edges={['top', 'bottom']} testID="question-fullscreen">
+        <View style={styles.fullScreenHeader}>
+          <Question size={18} color={theme.text.accent} weight="bold" />
+          <Text style={styles.fullScreenTitle}>{tc('question.waiting')}</Text>
+          <TouchableOpacity
+            onPress={() => setMinimizedKey(promptKey)}
+            style={styles.headerButton}
+            accessibilityRole="button"
+            accessibilityLabel={tc('question.minimize')}
+            testID="question-fullscreen-minimize"
+          >
+            <CaretDown size={20} color={theme.text.secondary} weight="bold" />
+          </TouchableOpacity>
+        </View>
+        <ScrollView contentContainerStyle={styles.fullScreenBody}>
+          {renderCard(true)}
+        </ScrollView>
+      </SafeAreaView>
+      </SafeAreaProvider>
+    </Modal>
+  )
+
   // Once a card is showing, hide the live-terminal text + dots entirely and
   // show only the card — the raw TUI frame is exactly what the card replaces.
   if (hasCard) {
     return (
       <Animated.View style={[styles.cardWrapper, { opacity }]} testID="thinking-bubble">
-        {fullScreen ? (
-          <Modal
-            visible
-            animationType="slide"
-            presentationStyle="fullScreen"
-            onRequestClose={() => setMinimizedKey(promptKey)}
-          >
-            {/* A Modal is its own native window: without a provider the insets read 0 and the header sits under the status bar. */}
-            <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-            <SafeAreaView style={styles.fullScreen} edges={['top', 'bottom']} testID="question-fullscreen">
-              <View style={styles.fullScreenHeader}>
-                <Question size={18} color={theme.text.accent} weight="bold" />
-                <Text style={styles.fullScreenTitle}>{tc('question.waiting')}</Text>
-                <TouchableOpacity
-                  onPress={() => setMinimizedKey(promptKey)}
-                  style={styles.headerButton}
-                  accessibilityRole="button"
-                  accessibilityLabel={tc('question.minimize')}
-                  testID="question-fullscreen-minimize"
-                >
-                  <CaretDown size={20} color={theme.text.secondary} weight="bold" />
-                </TouchableOpacity>
-              </View>
-              <ScrollView contentContainerStyle={styles.fullScreenBody}>
-                {renderCard(true)}
-              </ScrollView>
-            </SafeAreaView>
-            </SafeAreaProvider>
-          </Modal>
-        ) : (
+        {modal}
+        {modalVisible ? null : (
           <>
             {!ghost ? (
               <TouchableOpacity
@@ -234,6 +261,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
 
   return (
     <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
+      {modal}
       <View style={styles.bubble}>
         {hasLines ? (
           <ScrollView

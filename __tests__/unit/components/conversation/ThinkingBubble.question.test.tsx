@@ -1,6 +1,6 @@
-import { render, fireEvent } from '@testing-library/react-native'
+import { act, render, fireEvent } from '@testing-library/react-native'
 import React from 'react'
-import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
+import { MODAL_DISMISS_FALLBACK_MS, ThinkingBubble } from '@/components/conversation/ThinkingBubble'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 // The global mock renders the provider as a bare View; tag it so the test can see where it sits.
@@ -15,6 +15,10 @@ jest.mock('react-native-safe-area-context', () => {
     initialWindowMetrics: null,
   }
 })
+
+// The next present waits for the previous dismiss; jest's Modal never fires
+// onDismiss, so release the hold through the fallback timer.
+const finishDismiss = () => act(() => jest.advanceTimersByTime(MODAL_DISMISS_FALLBACK_MS))
 
 const aq: QuestionBlock = {
   source: 'structured', toolUseId: 't1',
@@ -59,6 +63,9 @@ describe('ThinkingBubble multi-select structured question', () => {
 })
 
 describe('ThinkingBubble full-screen question', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
   it('gives the modal its own SafeAreaProvider so insets are not 0 inside the native window', async () => {
     const { getByTestId } = await render(
       <ThinkingBubble lines={[]} activeQuestion={aq} onAnswer={jest.fn()} />,
@@ -75,6 +82,7 @@ describe('ThinkingBubble full-screen question', () => {
     await fireEvent.press(getByTestId('question-fullscreen-minimize'))
     expect(queryByTestId('question-fullscreen')).toBeNull()
     expect(getByTestId('question-card')).toBeTruthy()
+    await finishDismiss()
 
     await fireEvent.press(getByTestId('question-open-fullscreen'))
     expect(getByTestId('question-fullscreen')).toBeTruthy()
@@ -85,6 +93,7 @@ describe('ThinkingBubble full-screen question', () => {
       <ThinkingBubble lines={[]} activeQuestion={aq} onAnswer={jest.fn()} />,
     )
     await fireEvent.press(getByTestId('question-fullscreen-minimize'))
+    await finishDismiss()
     const next: QuestionBlock = { ...aq, toolUseId: 't2', questions: [{ ...aq.questions[0], question: 'Next?' }] }
     await rerender(<ThinkingBubble lines={[]} activeQuestion={next} onAnswer={jest.fn()} />)
     expect(getByTestId('question-fullscreen')).toBeTruthy()
