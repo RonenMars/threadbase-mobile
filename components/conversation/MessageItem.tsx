@@ -1,5 +1,5 @@
 import React, { useRef } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, type HostInstance } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { useTranslation } from 'react-i18next'
 import { MessageBubble, type MatchAnchor } from '@/components/conversation/MessageBubble'
@@ -80,7 +80,7 @@ export const MessageItem = React.memo(function MessageItem({
   const theme = useTheme()
   const styles = makeStyles(theme)
   const reduceMotion = useReducedMotion()
-  const rowRef = useRef<View>(null)
+  const rowRef = useRef<HostInstance>(null)
   const messageIndex = message.messageIndex
   const matchAnchor: MatchAnchor | undefined =
     isActiveMatch && onMatchLayout && messageIndex != null

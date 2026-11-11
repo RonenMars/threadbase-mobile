@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { CaretLeft, CaretRight } from 'phosphor-react-native'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
@@ -31,7 +31,7 @@ export function DesktopBoard({ counts, column, onSelect, renderColumn }: Props) 
   const styles = useMemo(() => makeStyles(theme), [theme])
   const reduceMotion = useReduceMotion()
   const { isRTL } = useAppDirection()
-  const track = useRef<ScrollView>(null)
+  const track = useRef<ScrollViewInstance>(null)
   const columnX = useRef<Partial<Record<BoardColumnId, number>>>({})
   const [content, setContent] = useState(0)
   const [viewport, setViewport] = useState(0)

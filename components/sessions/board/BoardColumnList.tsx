@@ -131,8 +131,8 @@ export function BoardColumnList({
       data={rows}
       keyExtractor={(r) => r.key}
       renderItem={renderItem}
-      ListEmptyComponent={showFailure ? null : empty}
-      ListFooterComponent={showFailure ? <Text style={styles.failure}>{t('boardTab.subagentsFailed')}</Text> : null}
+      ListEmptyComponent={showFailure ? undefined : empty}
+      ListFooterComponent={showFailure ? <Text style={styles.failure}>{t('boardTab.subagentsFailed')}</Text> : undefined}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
       onScroll={onScroll}

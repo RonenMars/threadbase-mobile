@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Animated, Modal, Platform, ScrollView, type ScrollViewInstance, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context'
 import { ArrowsOut, CaretDown, Question } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
@@ -52,7 +52,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
   const styles = makeStyles(theme)
   // useMemo so the Animated.Value is stable and not re-created on re-render
   const opacity = useMemo(() => new Animated.Value(1), [])
-  const scrollRef = useRef<ScrollView>(null)
+  const scrollRef = useRef<ScrollViewInstance>(null)
   const hasLines = lines.length > 0
 
   const questionBlock = useMemo(

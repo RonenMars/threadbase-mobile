@@ -1,5 +1,5 @@
 import type React from 'react'
-import type { View } from 'react-native'
+import type { HostInstance } from 'react-native'
 
 /**
  * How a row reports where its search match sits, so the conversation screen can
@@ -11,7 +11,7 @@ import type { View } from 'react-native'
  */
 export interface MatchAnchor {
   /** The row's outer View — the match's y is measured relative to it. */
-  rowRef: React.RefObject<View | null>
+  rowRef: React.RefObject<HostInstance | null>
   /** Receives the matched line's y offset within the row once text lays out. */
   onLayout: (y: number) => void
 }

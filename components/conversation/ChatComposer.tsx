@@ -4,8 +4,8 @@ import {
   View,
   Text,
   TextInput,
-  type NativeSyntheticEvent,
-  type TextInputSelectionChangeEventData,
+  type TextInputInstance,
+  type TextInputSelectionChangeEvent,
   TouchableOpacity,
   ScrollView,
   Image,
@@ -82,7 +82,7 @@ export interface ChatComposerProps {
   mention?: ComposerMention | null
   /** Caret to apply once, after a mention is inserted. */
   selection?: { start: number; end: number }
-  onSelectionChange?: (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void
+  onSelectionChange?: (e: TextInputSelectionChangeEvent) => void
 }
 
 const CHIP_THUMB_SIZE = 20
@@ -161,8 +161,8 @@ export function ChatComposer({
   // cycle even though the TextInput never lost first-responder state, so
   // nothing else tells it to resurface. That restore, and the ones an overlay
   // owes when it closes, are decided by the focus machine.
-  const inputRef = useRef<TextInput>(null)
-  const expandedInputRef = useRef<TextInput>(null)
+  const inputRef = useRef<TextInputInstance>(null)
+  const expandedInputRef = useRef<TextInputInstance>(null)
   const { onInputFocus, onInputBlur, onExpand, onMinimize } = useComposerFocus({
     inlineRef: inputRef,
     expandedRef: expandedInputRef,

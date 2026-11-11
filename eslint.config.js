@@ -20,6 +20,11 @@ module.exports = defineConfig([
       react: {
         version: reactVersion,
       },
+      // expo-notifications 58 compiles `export var X` mid-line after a doc
+      // comment, which eslint-plugin-import's module sniffing misses, so it
+      // reports real enums like AndroidImportance as missing. tsc checks these.
+      // This replaces eslint-config-expo's list, so its react-native entry is repeated.
+      "import/ignore": ["node_modules[\\\\/]+@?react-native", "node_modules[\\\\/]+expo-notifications[\\\\/]"],
     },
     linterOptions: {
       reportUnusedDisableDirectives: "off",

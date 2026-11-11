@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { NativeSyntheticEvent, TextInputSelectionChangeEventData } from 'react-native'
+import type { TextInputSelectionChangeEvent } from 'react-native'
 import { CLAUDE_CODE_PROVIDER, canonicalizeProviderName } from '@/constants/providers'
 import { applyMention, findMentionToken, type MentionEntry, type MentionToken } from '@/lib/mentionToken'
 
@@ -27,7 +27,7 @@ export interface UseFileMentionsOptions {
 export interface FileMentions {
   /** Set for one render after an insert so the caret lands after it; undefined otherwise. */
   selection: Selection | undefined
-  onSelectionChange: (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void
+  onSelectionChange: (e: TextInputSelectionChangeEvent) => void
   mention: ComposerMention | null
 }
 
@@ -55,7 +55,7 @@ export function useFileMentions({
   const token = enabled ? findMentionToken(text, cursor) : null
 
   const onSelectionChange = useCallback(
-    (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+    (e: TextInputSelectionChangeEvent) => {
       const { start, end } = e.nativeEvent.selection
       setCursor(start === end ? start : -1)
       // Hand the caret back to the input once it has applied the insert.

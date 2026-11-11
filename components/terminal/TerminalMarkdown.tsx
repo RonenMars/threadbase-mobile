@@ -1,5 +1,5 @@
 import React, { memo } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View, type TextProps } from 'react-native'
 import { MAX_FONT_SIZE_MULTIPLIER_MONO } from '@/constants/a11y'
 import { ltrContentStyle, layoutDirectionStyle } from '@/lib/rtl'
 import type { InlineSpan, MarkdownBlock } from '@/lib/markdown'
@@ -44,7 +44,7 @@ function Spans({ spans }: { spans: InlineSpan[] }) {
   )
 }
 
-function Line({ spans, style }: { spans: InlineSpan[]; style?: Text['props']['style'] }) {
+function Line({ spans, style }: { spans: InlineSpan[]; style?: TextProps['style'] }) {
   return (
     <Text
       style={style ? [styles.text, style] : styles.text}
