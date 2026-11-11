@@ -90,6 +90,28 @@ describe('ThinkingBubble full-screen question', () => {
     expect(getByTestId('question-fullscreen')).toBeTruthy()
   })
 
+  // The full-screen key is the card's content, so a scraped card whose option
+  // list changes between repaints is a "new prompt" every time and re-opens
+  // after a minimize. The echoed numbered user message (#1424) was such a card:
+  // the agent's "Ran 1 shell command" row came and went under it.
+  it('never opens a full-screen card for an echoed numbered message while agent chrome repaints under it', async () => {
+    const echo = [
+      '✻ Churned for 1m 56s · done 3:57 PM',
+      '',
+      '❯ 1. After work hours page and open PR.',
+      '  2. Write a prompt to fix it in the streamer',
+    ]
+    const frames = [[...echo, '  Ran 1 shell command'], echo, [...echo, '  Ran 1 shell command'], echo]
+    const { queryByTestId, rerender } = await render(
+      <ThinkingBubble lines={frames[0]} onSendKeys={jest.fn()} />,
+    )
+    for (const lines of frames) {
+      await rerender(<ThinkingBubble lines={lines} onSendKeys={jest.fn()} />)
+      expect(queryByTestId('question-fullscreen')).toBeNull()
+      expect(queryByTestId('question-card')).toBeNull()
+    }
+  })
+
   it('keeps a pending (ghost) answer inline', async () => {
     const { queryByTestId, getByTestId } = await render(
       <ThinkingBubble lines={[]} activeQuestion={aq} answerPhase="pending" onAnswer={jest.fn()} />,
