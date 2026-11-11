@@ -321,6 +321,13 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
   // A picker always offers a choice. One row is the user's own numbered reply
   // echoed as `❯ 1. …` while the agent works (observed 2026-10-07), not a menu.
   if (options.length < 2) return null
+  // The `❯ 1.` cursor alone proves nothing: a user message that opens with a
+  // numbered list echoes the same way, and the agent's indented chrome under it
+  // ("Ran 1 shell command") is swallowed as more options (#1424). A live picker
+  // paints its Enter/Esc footer, so require it, as Format 3 does for a cursorless menu.
+  if (!stripped.slice(selectedLineIndex + 1).some((l) => MENU_FOOTER_RE.test(stripBoxGutter(l)))) {
+    return null
+  }
   // A permission gate ("Do you want to proceed? / ❯ 1. Yes / 2. No …") reaches
   // here via its ❯ cursor. It's handled by the structured `permission` WS event,
   // not as a radio card — reject so it doesn't become a fake picker.

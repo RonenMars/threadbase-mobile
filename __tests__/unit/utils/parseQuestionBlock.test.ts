@@ -206,6 +206,46 @@ describe('parseQuestionBlock', () => {
     expect(parseQuestionBlock(lines)).toBeNull()
   })
 
+  // #1424: a user message that opens with a numbered list echoes as `❯ 1. …`
+  // plus indented `2. …` rows, and the agent's own indented chrome underneath
+  // ("Ran 1 shell command") used to be swallowed as further options. Observed
+  // 2026-11-11, session 0df1e60d: the card header was the "Churned for" line.
+  it('does not build a card from a numbered user message echoed above agent chrome (#1424)', () => {
+    const lines = [
+      '✻ Churned for 1m 56s · done 3:57 PM',
+      '',
+      '❯ 1. After work hours page and open PR.',
+      '  2. Write a prompt to fix it in the streamer',
+      '  Ran 1 shell command',
+    ]
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('does not build a card from a bare numbered user message echo (#1424)', () => {
+    const lines = [
+      '✻ Churned for 1m 56s · done 3:57 PM',
+      '',
+      '❯ 1. After work hours page and open PR.',
+      '  2. Write a prompt to fix it in the streamer',
+    ]
+    expect(parseQuestionBlock(lines)).toBeNull()
+  })
+
+  it('still builds a card from the same two numbered rows when the picker footer is painted', () => {
+    // Positive control for the two cases above: only the footer differs.
+    const lines = [
+      '✻ Churned for 1m 56s · done 3:57 PM',
+      '',
+      '❯ 1. After work hours page and open PR.',
+      '  2. Write a prompt to fix it in the streamer',
+      'Enter to select · ↑/↓ to navigate · Esc to cancel',
+    ]
+    expect(parseQuestionBlock(lines)!.questions[0].options.map(o => o.label)).toEqual([
+      'After work hours page and open PR.',
+      'Write a prompt to fix it in the streamer',
+    ])
+  })
+
   it('does not build a card from transcript + status bar lines', () => {
     const lines = [
       '✳ Cogitated for 9s',
