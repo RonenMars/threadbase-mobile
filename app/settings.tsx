@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Linking,
 } from 'react-native'
+import * as Application from 'expo-application'
 import Constants from 'expo-constants'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -250,6 +251,10 @@ export default function SettingsScreen() {
     .filter(Boolean)
     .join(' · ')
   const aboutSubtext = buildStamp || t('about.subtitle')
+  // QA builds stamp the native build (e.g. 240.2611040945) after the config is read, so the config alone shows a stale number.
+  const nativeBuild = Application.nativeBuildVersion
+    ?? (Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber : Constants.expoConfig?.android?.versionCode)
+    ?? '—'
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, addServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
@@ -893,11 +898,7 @@ await refreshServerInfo(serverId)
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill material />
           <Text style={s.aboutText}>
-            {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${
-              Platform.OS === 'ios'
-                ? (Constants.expoConfig?.ios?.buildNumber ?? '—')
-                : (Constants.expoConfig?.android?.versionCode ?? '—')
-            })`}
+            {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${nativeBuild})`}
           </Text>
           <Text style={s.aboutSubtext} testID="settings-build-stamp">
             {aboutSubtext}
