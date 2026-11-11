@@ -10,7 +10,7 @@ export interface ListFilters {
   activeWithin: ActiveWithin
 }
 
-export const ALL_TIERS: SessionTier[] = ['needsYou', 'working', 'resumable', 'cantResume', 'observed']
+export const ALL_TIERS: SessionTier[] = ['needsYou', 'working', 'resumable', 'cantResume', 'external']
 export const ALL_PROVIDERS: ProviderName[] = [...PROVIDER_NAMES]
 
 export const DEFAULT_FILTERS: ListFilters = {
@@ -73,7 +73,7 @@ export function displayedListItems(items: MergedItem[], filters: ListFilters, no
 }
 
 export function countByTier(items: MergedItem[]): Record<SessionTier, number> {
-  const counts: Record<SessionTier, number> = { needsYou: 0, working: 0, resumable: 0, cantResume: 0, observed: 0 }
+  const counts: Record<SessionTier, number> = { needsYou: 0, working: 0, resumable: 0, cantResume: 0, external: 0 }
   for (const item of items) counts[itemTier(item)] += 1
   return counts
 }

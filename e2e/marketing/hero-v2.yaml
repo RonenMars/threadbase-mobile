@@ -1,4 +1,4 @@
-# Hero video v2 captures — search across machines and the Observed row.
+# Hero video v2 captures — search across machines and the External row.
 #
 # Two demo-data conversations exist for these shots (Home Mac): a Claude
 # session in /code/acme-web (~3 weeks old) and a Codex session in
@@ -11,17 +11,17 @@ appId: com.ronenmars.threadbase
 ---
 - runFlow: setup.yaml
 
-# --- S4: a terminal-started session, observed ---------------------------------
+# --- S4: a terminal-started session, external ---------------------------------
 - extendedWaitUntil:
     visible:
       id: "session-row-wm-claude-persistence"
     timeout: 15000
-- assertVisible: ".*Observed.*"
+- assertVisible: ".*External.*"
 - assertNotVisible:
     id: "status-pill"
 - waitForAnimationToEnd:
     timeout: 2000
-- takeScreenshot: S4-observed-row
+- takeScreenshot: S4-external-row
 
 # --- S1: one phrase, three machines' history, two providers -------------------
 - runFlow:

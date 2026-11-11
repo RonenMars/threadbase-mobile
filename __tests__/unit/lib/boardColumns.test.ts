@@ -38,7 +38,7 @@ describe('boardColumnFor', () => {
   it.each([
     ['needsYou', 'needsYou'],
     ['working', 'working'],
-    ['observed', 'observed'],
+    ['external', 'external'],
     ['resumable', 'earlier'],
     ['cantResume', 'earlier'],
     [null, 'earlier'],
@@ -60,15 +60,15 @@ describe('bucketBoard', () => {
     ])
     expect(board.needsYou.map((e) => e.item.item.id)).toEqual(['long-wait', 'short-wait', 'no-wait-stamp'])
     expect(board.working.map((e) => e.item.item.id)).toEqual(['new', 'old'])
-    expect(board.observed).toEqual([])
+    expect(board.external).toEqual([])
     expect(board.earlier.map((e) => e.item.item.id)).toEqual(['hist-new', 'hist-old'])
   })
 })
 
 describe('firstNonEmptyColumn', () => {
   it('skips empty columns and falls back to Needs you', () => {
-    expect(firstNonEmptyColumn({ needsYou: [], working: [], observed: [1], earlier: [2] })).toBe('observed')
-    expect(firstNonEmptyColumn({ needsYou: [], working: [], observed: [], earlier: [] })).toBe('needsYou')
+    expect(firstNonEmptyColumn({ needsYou: [], working: [], external: [1], earlier: [2] })).toBe('external')
+    expect(firstNonEmptyColumn({ needsYou: [], working: [], external: [], earlier: [] })).toBe('needsYou')
   })
 })
 
@@ -114,14 +114,14 @@ describe('bucketBoard order', () => {
 })
 
 describe('startingColumn', () => {
-  const empty = { needsYou: [], working: [], observed: [], earlier: [] }
+  const empty = { needsYou: [], working: [], external: [], earlier: [] }
 
   it('starts on Needs you when anything waits, whatever was remembered', () => {
     expect(startingColumn({ ...empty, needsYou: [1], earlier: [2] }, 'earlier')).toBe('needsYou')
   })
 
   it('otherwise returns to the remembered column, even an empty one', () => {
-    expect(startingColumn({ ...empty, working: [1] }, 'observed')).toBe('observed')
+    expect(startingColumn({ ...empty, working: [1] }, 'external')).toBe('external')
   })
 
   it('falls back to the first column with something in it on first use', () => {

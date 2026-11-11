@@ -7,7 +7,7 @@ Twenty-eight screenshots from four flows (three demos and onboarding), captured 
 - **App:** the real Release build of Threadbase on an iOS 26 simulator, dark theme, one device for every image.
 - **Backend:** `e2e/marketing/demo-streamer.js`, a deterministic stand-in that speaks the streamer wire contract on three ports, one per machine. Each machine is paired through the real pairing deep link, so the app holds three separate server records. Nothing in the UI is painted or edited.
 - **Not real agents.** No Claude Code or Codex process ran. Session state, transcripts and the reply that streams after a prompt come from `e2e/marketing/demo-data.js`. A caption that says "the agent replied" describes the app's behaviour against that contract, not a model's output.
-- **"Started outside Threadbase"** is the streamer's `ownership: external` session, which the app shows as *Observed*. Taking it over is the app's own Resume → Take over path.
+- **"Started outside Threadbase"** is the streamer's `ownership: external` session, which the app shows as *External*. Taking it over is the app's own Resume → Take over path.
 - All names, paths (`/code/...`) and URLs are demo data. No real hostnames, keys or personal paths appear.
 
 ## Devices
@@ -91,7 +91,7 @@ Story: keep using Claude Code and Codex the way you already do → Threadbase re
 
 **Supporting**
 
-- `01-…/01-session-discovered.png` — *Observed* is the proof the session was not launched by the app.
+- `01-…/01-session-discovered.png` — *External* is the proof the session was not launched by the app.
 - `01-…/05-agent-resumed-remotely.png` — prompt from the phone and the agent's response in one frame.
 - `02-…/03-recovered-old-solution.png` — the recovered answer itself; the most concrete "memory" image.
 - `02-…/05-cross-provider-memory.png` — Codex and Claude Code results in one list.

@@ -1,12 +1,12 @@
 import { conversationTier } from '@/lib/externalSession'
 
 describe('conversationTier', () => {
-  it('is observed for a conversation running outside Threadbase', () => {
-    expect(conversationTier({ ownership: 'external', processLiveness: 'alive' })).toBe('observed')
+  it('is external for a conversation running outside Threadbase', () => {
+    expect(conversationTier({ ownership: 'external', processLiveness: 'alive' })).toBe('external')
   })
 
   it('keys on processLiveness alone, so the list-row and detail shapes agree', () => {
-    expect(conversationTier({ processLiveness: 'alive' })).toBe('observed')
+    expect(conversationTier({ processLiveness: 'alive' })).toBe('external')
   })
 
   it('is undefined for a row from a streamer without the fields', () => {

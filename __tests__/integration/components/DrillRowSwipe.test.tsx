@@ -62,7 +62,7 @@ describe('swipe on drill rows', () => {
     expect(screen.getByTestId('session-swipe-rename')).toBeTruthy()
   })
 
-  it('limits an observed session to favorite', async () => {
+  it('limits an external session to favorite', async () => {
     await renderRow({ ...base, key: 'session:server-1::sid', session: session({ ownership: 'external' }) })
     expect(screen.getByTestId('session-swipe-favorite')).toBeTruthy()
     expect(screen.queryByTestId('session-swipe-rename')).toBeNull()

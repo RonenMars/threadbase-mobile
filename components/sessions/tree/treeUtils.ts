@@ -19,12 +19,12 @@ import { liveExternalCountOf } from '@/lib/externalSession'
 const TIER_COLOR: Record<SessionTier, string> = {
   needsYou: '#d29922',
   working: '#3fb950',
-  observed: '#58a6ff',
+  external: '#58a6ff',
   cantResume: '#f85149',
   resumable: '#58a6ff',
 }
 // Most urgent first; the first tier present decides the leaf colour.
-const TIER_PRIORITY: SessionTier[] = ['needsYou', 'working', 'observed', 'cantResume', 'resumable']
+const TIER_PRIORITY: SessionTier[] = ['needsYou', 'working', 'external', 'cantResume', 'resumable']
 
 function splitPath(p: string | null | undefined): string[] {
   // Becomes a real tree node's name (TreeRow / DrillView render node.name), so
@@ -175,7 +175,7 @@ export function latestActivityLabel(node: TreeNode): string {
 export function activeSessionColor(node: TreeNode): string | null {
   if (node.sessions.length === 0 && node.liveExternalCount === 0) return null
   const tiers = new Set(node.sessions.map((s) => deriveSessionPresentation(s).tier))
-  if (node.liveExternalCount > 0) tiers.add('observed')
+  if (node.liveExternalCount > 0) tiers.add('external')
   const tier = TIER_PRIORITY.find((candidate) => tiers.has(candidate))
   return tier ? TIER_COLOR[tier] : null
 }
@@ -208,7 +208,7 @@ export function subtreeActiveColor(node: TreeNode): string | null {
   const tiers = new Set<SessionTier>()
   walkSubtree(node, (n) => {
     for (const session of n.sessions) tiers.add(deriveSessionPresentation(session).tier)
-    if (n.liveExternalCount > 0) tiers.add('observed')
+    if (n.liveExternalCount > 0) tiers.add('external')
   })
   const tier = TIER_PRIORITY.find((candidate) => tiers.has(candidate))
   return tier ? TIER_COLOR[tier] : null

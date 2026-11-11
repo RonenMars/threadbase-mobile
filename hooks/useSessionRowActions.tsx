@@ -43,7 +43,7 @@ function RenameSessionOverlay({ session, currentName, onClose }: {
 
 /**
  * Tap, long-press and ⋮ behaviour shared by every session row and card: an
- * external (observed) session opens the read-only conversation, a managed one
+ * external session opens the read-only conversation, a managed one
  * opens the PTY screen. Long-press and ⋮ open the action sheet on managed
  * sessions only; its End session group appears while the PTY is live.
  * `swipe` carries the same actions for a `SwipeableRow`.

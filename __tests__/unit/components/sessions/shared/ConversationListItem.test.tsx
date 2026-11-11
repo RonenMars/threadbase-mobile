@@ -92,9 +92,9 @@ describe('ConversationListItem', () => {
 
   it('drops the leading dot when the state badge already shows one', async () => {
     const tree = await render(
-      <ConversationListItem title="watched" density="compact" leading="dot" tier="observed" />,
+      <ConversationListItem title="watched" density="compact" leading="dot" tier="external" />,
     )
-    expect(collectText(tree.toJSON() as unknown as Json)).toContain('Observed')
+    expect(collectText(tree.toJSON() as unknown as Json)).toContain('External')
     expect((tree.root as renderer.ReactTestInstance).findAllByType(LiveDot)).toHaveLength(1)
   })
 

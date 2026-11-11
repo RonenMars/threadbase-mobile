@@ -139,7 +139,7 @@
     "working": "Working",
     "resumable": "Resumable",
     "cantResume": "Can't resume",
-    "observed": "Observed"
+    "external": "External"
   },
   "phase": {
     "thinking": "Thinking",
@@ -149,7 +149,7 @@
     "working": "Working"
   },
   "capability": {
-    "observeOnly": "Observe only",
+    "observeOnly": "View only",
     "liveControl": "Live control"
   },
   "timeBucket": {
@@ -287,7 +287,7 @@
     "subagentsFailed": "Couldn't load sub-agents.",
     "emptyNeedsYou": "Sessions waiting for your answer show in this column.",
     "emptyWorking": "Sessions running now show in this column.",
-    "emptyObserved": "Sessions you watch but did not start show in this column.",
+    "emptyExternal": "Sessions started outside Threadbase show in this column.",
     "emptyEarlier": "Finished sessions show in this column."
   }
 }

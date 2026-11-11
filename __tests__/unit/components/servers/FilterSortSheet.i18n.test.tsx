@@ -7,7 +7,7 @@ import { renderWithI18n } from '@/test-utils/render'
 import i18n from '@/test-utils/i18n-setup'
 
 const noop = () => {}
-const COUNTS = { needsYou: 1, working: 2, resumable: 41, cantResume: 3, observed: 2 }
+const COUNTS = { needsYou: 1, working: 2, resumable: 41, cantResume: 3, external: 2 }
 const PROVIDERS = { 'claude-code': 38, 'codex-cli': 11, 'cursor': 2, copilot: 0 }
 
 async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilters; resultCount?: number; onChangeFilters?: (f: ListFilters) => void; boardMode?: boolean } = {}) {
@@ -104,7 +104,7 @@ describe('FilterSortSheet selection model', () => {
     fireEvent.press(getByTestId('tier-toggle-working'))
     expect(onChangeFilters).toHaveBeenCalledWith({
       ...DEFAULT_FILTERS,
-      tiers: ['needsYou', 'resumable', 'cantResume', 'observed'],
+      tiers: ['needsYou', 'resumable', 'cantResume', 'external'],
     })
   })
 

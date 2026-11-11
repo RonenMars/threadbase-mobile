@@ -29,7 +29,7 @@ Read the HTML in a browser with the canvas zoomed out: each turn is a `<section>
 |---|---|
 | Views | Two: **Now** (default) and **Projects**. `sessionsLayout: 'tree'` is retired. |
 | State colour | Green `status.running` = **Working**; amber `status.waiting` = **Needs you**. (Option `3b`-A.) |
-| State vocabulary | 5 words: `Needs you`, `Working`, `Resumable`, `Can't resume`, `Observed`. |
+| State vocabulary | 5 words: `Needs you`, `Working`, `Resumable`, `Can't resume`, `External`. |
 | Provider marks | Real monochrome marks from **lobe-icons (MIT)**, shown **only on rows whose provider differs from the screen's dominant provider**. (Option `3c`-T3.) |
 | Titles | Client-side cleanup pipeline + fallbacks. No server summarizer. |
 | Density | Adaptive per state (4 lines / 3 / 2 / 1). |
@@ -110,7 +110,7 @@ One derivation, one place: extend `lib/sessionPresentation.ts`. The 15 `SessionS
 | **Working** | live **and** `status === 'running'` | `status.running` `#3fb950` | dot pulses; 2px indeterminate sweep | Card, 3 lines |
 | **Resumable** | no live process, resume possible | `text.secondary` dot `#484f58` | none | List row, 2 lines, hairline divider |
 | **Can't resume** | `resumable === false` + `unavailableReason`, or `failed` | `status.failed` `#f85149` | none | List row, 1–2 lines, reason in the line |
-| **Observed** | external process, `isObserveOnly` | `status.completed` `#58a6ff` | none | List row, 2 lines, read-only |
+| **External** | external process, `isObserveOnly` | `status.completed` `#58a6ff` | none | List row, 2 lines, read-only |
 
 **"Live" has exactly one gate** — this is the single highest-impact fix in the brief:
 
@@ -279,7 +279,7 @@ status.needsYou      "Needs you"
 status.working       "Working"
 status.resumable     "Resumable"
 status.cantResume    "Can't resume"
-status.observed      "Observed"
+status.external      "External"
 live.headerNeedsYou  "NEEDS YOU · {{count}}"
 live.headerWorking   "WORKING · {{count}}"
 live.headerEarlier   "EARLIER TODAY"
