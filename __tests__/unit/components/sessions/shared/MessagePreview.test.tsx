@@ -84,6 +84,11 @@ describe('MessagePreview', () => {
     expect(out).toBe('zsh: command not found')
   })
 
+  it('strips terminal control codes from lastOutput and renders nothing when only codes are left', () => {
+    expect(rendered(<MessagePreview lastOutput={'\x1b[31mzsh: command not found\x1b[0m\x1b[?25l'} />)).toBe('zsh: command not found')
+    expect(rendered(<MessagePreview lastOutput={'\x1b[?25l \n'} />)).toBe('')
+  })
+
   it('drops a first-message preview that only restates the row title', () => {
     const text = rendered(
       <MessagePreview

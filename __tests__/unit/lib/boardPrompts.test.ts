@@ -116,4 +116,8 @@ describe('terminalTailLine', () => {
     expect(terminalTailLine(' \n')).toBeUndefined()
     expect(terminalTailLine(undefined)).toBeUndefined()
   })
+
+  it('strips terminal control codes, so a cursor-hide line does not count as text', () => {
+    expect(terminalTailLine('\x1b[32mDone\x1b[0m\n\x1b[?25l')).toBe('Done')
+  })
 })

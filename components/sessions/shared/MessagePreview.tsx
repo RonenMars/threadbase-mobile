@@ -2,6 +2,7 @@ import { Text, StyleSheet } from 'react-native'
 import { font, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { cleanFirstMessage, stripMessageNoise } from '@/lib/displayTitle'
+import { stripAnsi } from '@/utils/stripAnsi'
 import type { SearchHighlight, SearchMatch } from '@/types/api'
 
 export type MessagePreviewMode = 'first' | 'last' | 'auto' | 'none'
@@ -54,7 +55,7 @@ function pickText(props: MessagePreviewProps): string | null {
 
   if (chosen) return chosen
   if (preview) return preview
-  if (lastOutput) return lastOutput
+  if (lastOutput) return stripAnsi(lastOutput)
   return null
 }
 
