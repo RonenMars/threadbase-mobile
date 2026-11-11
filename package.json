@@ -181,11 +181,11 @@
     "postcss": "^8.5.26",
     "react-refresh": "^0.18.0",
     "react-test-renderer": "19.2.8",
-    "storybook": "10.5.10",
+    "storybook": "10.6.7",
     "tailwindcss": "^4.3.3",
     "test-renderer": "^1.2.0",
     "typescript": "~6.0.3",
-    "vite": "8.2.2",
+    "vite": "8.3.8",
     "ws": "^8.21.1"
   },
   "expo": {
