@@ -1293,5 +1293,7 @@
   "terminal.json:transcript.live": "98aadb37083e",
   "terminal.json:transcript.moreLines_one": "4f8f0b95acaf",
   "terminal.json:transcript.moreLines_other": "2204a15dfb0d",
-  "terminal.json:transcript.hideLines": "93c8c96b4641"
+  "terminal.json:transcript.hideLines": "93c8c96b4641",
+  "sessions.json:tour.skip": "57bc79e3c907",
+  "sessions.json:tour.gotIt": "a53fb7e22353"
 }

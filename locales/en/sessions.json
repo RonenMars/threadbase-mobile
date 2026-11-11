@@ -295,5 +295,9 @@
     "emptyWorking": "Sessions running now show in this column.",
     "emptyExternal": "Sessions started outside Threadbase show in this column.",
     "emptyEarlier": "Finished sessions show in this column."
+  },
+  "tour": {
+    "skip": "Skip tour",
+    "gotIt": "Got it →"
   }
 }

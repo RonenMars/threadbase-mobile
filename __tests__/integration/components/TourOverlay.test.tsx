@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import { StyleSheet } from 'react-native'
+import i18n from 'i18next'
 import { TourOverlay } from '@/components/tour/TourOverlay'
 import { THEMES, type Theme } from '@/constants/theme'
 
@@ -92,5 +93,25 @@ describe('TourOverlay theming', () => {
     expect(StyleSheet.flatten(getByText('Some tip').props.style).color).toBe(theme.text.primary)
     expect(StyleSheet.flatten(getByTestId('tour-got-it').props.style).backgroundColor).toBe(theme.text.accent)
     expect(StyleSheet.flatten(getByText('Got it →').props.style).color).toBe(theme.text.onAccent)
+  })
+
+  describe('button labels', () => {
+    afterEach(async () => {
+      await i18n.changeLanguage('en')
+    })
+
+    it.each([
+      ['en', 'Skip tour', 'Got it →'],
+      ['he', 'דלג על הסיור', 'הבנתי ←'],
+      ['ar', 'تخطي الجولة', 'فهمت ←'],
+      ['ru', 'Пропустить обзор', 'Понятно →'],
+    ])('renders the %s skip and got-it labels', async (lng, skip, gotIt) => {
+      await i18n.changeLanguage(lng)
+      const { getByText } = await render(
+        <TourOverlay target={TARGET} text="Some tip" onGotIt={jest.fn()} onSkip={jest.fn()} />
+      )
+      expect(getByText(skip)).toBeTruthy()
+      expect(getByText(gotIt)).toBeTruthy()
+    })
   })
 })
