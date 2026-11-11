@@ -5,6 +5,7 @@
  */
 import React from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
+import { Alert, type AlertButton } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
 import { useServersStore } from '@/stores/servers'
@@ -33,6 +34,7 @@ function makeDetail(meta: Record<string, unknown>) {
 const mockDetailRef: { current: unknown } = { current: null }
 // null = never fetched; Error instance = throw; object = resolve
 const mockSessionRef: { current: unknown } = { current: null }
+const mockPost = jest.fn<Promise<unknown>, [string]>()
 
 jest.mock('@/services/api-client', () => {
   const { AuthError, NotFoundError } = jest.requireActual('@/services/api-client')
@@ -63,7 +65,7 @@ jest.mock('@/services/api-client', () => {
         if (v instanceof Error) return Promise.reject(v)
         return Promise.resolve({ status: 200, etag: null, body: v })
       },
-      post: () => Promise.resolve({}),
+      post: (path: string) => mockPost(path),
     }),
   }
 })
@@ -125,5 +127,58 @@ describe('conversation detail — info modal', () => {
     expect(screen.getByText(filePath)).toBeTruthy()
     expect(screen.getByText('work')).toBeTruthy()
     expect(screen.queryByText('Threadbase Session ID')).toBeNull()
+  })
+})
+
+describe('conversation detail — terminate an external session', () => {
+  let alertSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    seedServer()
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: CLAUDE_UUID, server: 'srv1' })
+    mockPost.mockReset().mockResolvedValue({ status: 'terminated' })
+    alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
+  })
+  afterEach(() => alertSpy.mockRestore())
+
+  async function openMenu() {
+    await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await screen.findByText('hi')
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('conversation-overflow-menu'))
+    })
+  }
+
+  async function confirmTerminate() {
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('conversation-terminate'))
+    })
+    const buttons: AlertButton[] = alertSpy.mock.calls[0][2]
+    await act(async () => {
+      buttons.find((b) => b.style === 'destructive')?.onPress?.()
+    })
+  }
+
+  it('confirms, then terminates the process that owns the conversation', async () => {
+    mockDetailRef.current = makeDetail({ ownership: 'external', processLiveness: 'alive' })
+    await openMenu()
+    await confirmTerminate()
+    expect(alertSpy.mock.calls[0][0]).toBe('Terminate this session?')
+    expect(alertSpy.mock.calls[0][1]).toContain('real terminal session')
+    expect(mockPost).toHaveBeenCalledWith(`/api/sessions/${CLAUDE_UUID}/terminate`)
+  })
+
+  it('says why when the server could not terminate it', async () => {
+    mockDetailRef.current = makeDetail({ ownership: 'external', processLiveness: 'alive' })
+    mockPost.mockRejectedValue(new Error('The process did not exit after SIGTERM'))
+    await openMenu()
+    await confirmTerminate()
+    expect(alertSpy).toHaveBeenLastCalledWith("Couldn't terminate the session", 'The process did not exit after SIGTERM')
+  })
+
+  it('offers nothing to terminate on a conversation with no live outside process', async () => {
+    mockDetailRef.current = makeDetail({ ownership: 'external' })
+    await openMenu()
+    expect(screen.queryByTestId('conversation-terminate')).toBeNull()
   })
 })

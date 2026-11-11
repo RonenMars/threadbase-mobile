@@ -1,0 +1,105 @@
+# Maestro E2E — swipe actions on session and conversation rows
+# Swipe right offers Favorite; swipe left on a managed row offers Rename,
+# Terminate (and Delete on a streamer that supports it); an alive External row offers Rename and Terminate but
+# never Delete; the conversation list offers Favorite.
+#
+# Requires: mock server on localhost:7071
+# Usage: node e2e/run-maestro.js test e2e/session_swipe_actions.yaml
+
+appId: com.ronenmars.threadbase
+---
+- runScript:
+    file: scripts/add-external-session.js
+
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- tapOn:
+    id: "layout-projects"
+
+- tapOn:
+    id: "hub-project-storefront"
+
+- scrollUntilVisible:
+    element:
+      id: "session-row-session-abc123"
+    timeout: 8000
+
+# --- managed row -------------------------------------------------------------
+- swipe:
+    from:
+      id: "session-row-session-abc123"
+    direction: RIGHT
+- extendedWaitUntil:
+    visible:
+      id: "session-swipe-favorite"
+    timeout: 4000
+- assertVisible: "Favorite"
+- takeScreenshot: e2e/_artifacts/screenshots/swipe-01-managed-leading
+- tapOn:
+    point: "50%,8%"
+- waitForAnimationToEnd
+
+- swipe:
+    from:
+      id: "session-row-session-abc123"
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: "session-swipe-rename"
+    timeout: 4000
+- assertVisible:
+    id: "session-swipe-terminate"
+# Delete is not asserted here: it needs a streamer version with end-session
+# actions, and the mock reports 0.0.0-mock (see supportsSessionEndActions).
+- assertVisible: "Rename"
+- assertVisible: "Terminate"
+- takeScreenshot: e2e/_artifacts/screenshots/swipe-02-managed-trailing
+- tapOn:
+    point: "50%,8%"
+- waitForAnimationToEnd
+
+# --- external row ------------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      id: "session-row-session-external"
+    timeout: 8000
+- swipe:
+    from:
+      id: "session-row-session-external"
+    direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: "session-swipe-rename"
+    timeout: 4000
+- assertVisible:
+    id: "session-swipe-terminate"
+- assertNotVisible:
+    id: "session-swipe-delete"
+- takeScreenshot: e2e/_artifacts/screenshots/swipe-03-external-trailing
+- tapOn:
+    point: "50%,8%"
+- waitForAnimationToEnd
+
+# --- conversation list -------------------------------------------------------
+- scrollUntilVisible:
+    element:
+      id: "hub-see-all-/workspace/northstar-commerce/apps/storefront"
+    timeout: 8000
+- tapOn:
+    id: "hub-see-all-/workspace/northstar-commerce/apps/storefront"
+- extendedWaitUntil:
+    visible:
+      id: "conversation-row-.*"
+    timeout: 8000
+- swipe:
+    from:
+      id: "conversation-row-.*"
+    direction: RIGHT
+- extendedWaitUntil:
+    visible:
+      id: "conversation-swipe-favorite"
+    timeout: 4000
+- takeScreenshot: e2e/_artifacts/screenshots/swipe-04-conversation-list-leading
