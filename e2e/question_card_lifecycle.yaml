@@ -117,6 +117,8 @@ appId: com.ronenmars.threadbase
     env:
       MODE: "assert-empty"
 
+# iOS reports an empty field's placeholder as its accessibility label, which
+# Maestro matches as text, so the placeholder is excluded from the pattern.
 - assertNotVisible:
     id: "chat-message-input"
-    text: ".*[0-9a-zA-Z].*"
+    text: "(?!Send a message…$).*[0-9a-zA-Z].*"
