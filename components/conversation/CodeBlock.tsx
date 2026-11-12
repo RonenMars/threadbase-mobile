@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { useTranslation } from 'react-i18next'
 import { Highlight, themes, type Language } from 'prism-react-renderer'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { layoutDirectionStyle } from '@/lib/rtl'
 
@@ -88,17 +88,9 @@ const HighlightedCode = React.memo(function HighlightedCode({ code, language }: 
 export function CodeBlock({ code, language }: { code: string; language: Language }) {
   const { t } = useTranslation('conversation')
   const { styles } = useCodeStyles()
-  const [copied, setCopied] = useState(false)
-  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => {
-    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
-  }, [])
+  const { copied, copy: copyToClipboard } = useCopyToClipboard(1500)
   const copy = async () => {
-    await Clipboard.setStringAsync(code)
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    setCopied(true)
-    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
-    copiedTimerRef.current = setTimeout(() => setCopied(false), 1500)
+    if (await copyToClipboard(code)) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
   }
 
   return (
