@@ -98,6 +98,7 @@ export default function ProjectDetailScreen() {
             onEndReached={() => { if (hasNextPage) fetchNextPage() }}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            searchOpen={false}
             isLoadingInitial={false}
             isFetchingNextPage={false}
             loadingProgress={null}
