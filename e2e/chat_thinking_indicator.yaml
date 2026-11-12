@@ -27,11 +27,8 @@ appId: com.ronenmars.threadbase
       id: "session-detail-screen"
     timeout: 8000
 
-# sessionView defaults to 'terminal'; the chip switches to chat once the
-# session has a conversationId.
-- tapOn:
-    id: "session-view-mode-chip"
-
+# sessionView defaults to 'chat' (#1418), so a session with a conversationId
+# opens on the chat surface without a tap.
 # The transcript row proves LiveConversationView mounted and loaded history.
 - extendedWaitUntil:
     visible: ".*Test added, 1 passing.*"
