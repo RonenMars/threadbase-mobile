@@ -10,7 +10,6 @@ import {
   Platform,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import {
   Heartbeat,
@@ -27,6 +26,7 @@ import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useServersStore } from '@/stores/servers'
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
 import { useServerDiagnostics } from '@/hooks/useServerDiagnostics'
 import {
   isSupportedDiagnosticsContract,
@@ -69,19 +69,17 @@ export default function ServerHealthScreen() {
 
   const { data, error, isFetching, isLoading, refetch } = useServerDiagnostics(selectedId)
 
-  const [copied, setCopied] = useState(false)
+  const { copied, copy, reset: resetCopied } = useCopyToClipboard(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const handleCopy = useCallback(async () => {
     if (!data || !selectedId) return
-    try {
-      await Clipboard.setStringAsync(serverDiagnosticsToText(serverLabel, data))
-      setCopied(true)
+    if (await copy(serverDiagnosticsToText(serverLabel, data))) {
       setActionError(null)
-    } catch {
+    } else {
       setActionError(t('servers:health.copyFailed'))
     }
-  }, [data, selectedId, serverLabel, t])
+  }, [copy, data, selectedId, serverLabel, t])
 
   const handleShare = useCallback(async () => {
     if (!data || !selectedId) return
@@ -94,10 +92,10 @@ export default function ServerHealthScreen() {
   }, [data, selectedId, serverLabel, t])
 
   const handleRetry = useCallback(() => {
-    setCopied(false)
+    resetCopied()
     setActionError(null)
     void refetch()
-  }, [refetch])
+  }, [refetch, resetCopied])
 
   const overallStatusLabel =
     data?.overall === 'ok'
@@ -139,7 +137,7 @@ export default function ServerHealthScreen() {
                   style={[s.chip, selectedChip && s.chipSelected]}
                   onPress={() => {
                     setPickedId(id)
-                    setCopied(false)
+                    resetCopied()
                     setActionError(null)
                   }}
                   accessibilityRole="button"

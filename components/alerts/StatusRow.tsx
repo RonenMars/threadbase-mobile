@@ -2,11 +2,11 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native'
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { Copy, Check, X } from 'phosphor-react-native'
+import { X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import * as Clipboard from 'expo-clipboard'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { CopyButton } from '@/components/shared/CopyButton'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { alertAppearance } from '@/lib/alertAppearance'
 import { useAlertStore } from '@/stores/alerts'
@@ -156,30 +156,13 @@ export function StatusRow({ entry }: Props) {
 function CopyRow({ label, value }: { label: string; value: string }) {
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme, theme.border), [theme])
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = useCallback(async () => {
-    await Clipboard.setStringAsync(value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }, [value])
-
   return (
     <View style={styles.copyRow}>
       <View style={styles.copyRowText}>
         <Text style={styles.copyLabel}>{label}</Text>
         <Text style={styles.copyValue} selectable>{value}</Text>
       </View>
-      <TouchableOpacity
-        onPress={handleCopy}
-        style={styles.copyBtn}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-      >
-        {copied
-          ? <Check size={16} color={theme.text.success} />
-          : <Copy size={16} color={theme.text.secondary} />}
-      </TouchableOpacity>
+      <CopyButton value={value} accessibilityLabel={label} style={styles.copyBtn} />
     </View>
   )
 }

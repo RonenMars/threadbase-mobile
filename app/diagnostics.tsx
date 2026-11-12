@@ -10,10 +10,10 @@ import {
   Platform,
 } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import * as Clipboard from 'expo-clipboard'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheck, ClipboardText, Check, Export, Prohibit } from 'phosphor-react-native'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import {
@@ -38,7 +38,7 @@ export default function DiagnosticsScreen() {
       : null
 
   const [report, setReport] = useState<DiagnosticsReport | null>(null)
-  const [copied, setCopied] = useState(false)
+  const { copied, copy } = useCopyToClipboard(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -53,14 +53,12 @@ export default function DiagnosticsScreen() {
 
   const handleCopy = useCallback(async () => {
     if (!report) return
-    try {
-      await Clipboard.setStringAsync(diagnosticsToText(report))
-      setCopied(true)
+    if (await copy(diagnosticsToText(report))) {
       setError(null)
-    } catch {
+    } else {
       setError(t('diagnostics.copyFailed'))
     }
-  }, [report, t])
+  }, [copy, report, t])
 
   const handleShare = useCallback(async () => {
     if (!report) return
