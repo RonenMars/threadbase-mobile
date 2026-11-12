@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -7,7 +7,9 @@ import {
   ScrollView,
   RefreshControl,
   Platform,
+  Pressable,
 } from 'react-native'
+import { MagnifyingGlass } from 'phosphor-react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { useDebounce } from 'use-debounce'
@@ -24,7 +26,7 @@ export default function ProjectDetailScreen() {
   const theme = useTheme()
   const isGlass = useIsGlass()
   const insets = useSafeAreaInsets()
-  const styles = makeStyles(theme)
+  const styles = useMemo(() => makeStyles(theme), [theme])
   // Transparent header (glass themes) doesn't reserve layout space, so
   // content starts under it; push it down by the header's own height.
   const headerHeight = Platform.OS === 'ios' ? 44 : 56
@@ -33,6 +35,7 @@ export default function ProjectDetailScreen() {
       ? { paddingTop: insets.top + headerHeight }
       : null
   const { t } = useTranslation('browse')
+  const { t: tSessions } = useTranslation('sessions')
   const params = useLocalSearchParams<{ id: string; path?: string; server?: string }>()
   const projectPath = params.path ? decodeURIComponent(params.path) : ''
   const projectName = basename(projectPath) ?? params.id ?? ''
@@ -43,11 +46,39 @@ export default function ProjectDetailScreen() {
   const serverLabel = servers[serverId]?.label
 
   const navigation = useNavigation()
-  useEffect(() => {
-    navigation.setOptions({ title: projectName })
-  }, [navigation, projectName])
-
+  const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+
+  const toggleSearch = useCallback(() => {
+    setSearchOpen((open) => {
+      if (open) setSearchQuery('')
+      return !open
+    })
+  }, [])
+
+  useEffect(() => {
+    navigation.setOptions({
+      title: projectName,
+      headerRight: () => (
+        <Pressable
+          onPress={toggleSearch}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.headerButton,
+            searchOpen && styles.headerButtonActive,
+            { opacity: pressed ? 0.5 : 1 },
+          ]}
+          accessibilityLabel={tSessions('search.accessibilityLabel')}
+          testID="project-search-btn"
+        >
+          <MagnifyingGlass
+            size={20}
+            color={searchOpen ? theme.text.primary : theme.text.secondary}
+          />
+        </Pressable>
+      ),
+    })
+  }, [navigation, projectName, searchOpen, toggleSearch, theme, styles, tSessions])
   const [debouncedQuery] = useDebounce(searchQuery, 300)
 
   const { conversations, isFetching, refresh, fetchNextPage, hasNextPage } =
@@ -98,6 +129,7 @@ export default function ProjectDetailScreen() {
             onEndReached={() => { if (hasNextPage) fetchNextPage() }}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
+            searchOpen={searchOpen}
             isLoadingInitial={false}
             isFetchingNextPage={false}
             loadingProgress={null}
@@ -130,6 +162,16 @@ function makeStyles(theme: Theme) {
     fontSize: font.sm,
     marginTop: spacing.sm,
     opacity: 0.6,
+  },
+  headerButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  headerButtonActive: {
+    backgroundColor: 'rgba(88,166,255,0.12)',
   },
   listWrapper: {
     flex: 1,
