@@ -26,7 +26,7 @@ appId: com.ronenmars.threadbase
     id: "hub-screen"
 
 # session-scrollback: running, ptyAttached, conversationId conv-scrollback.
-# sessionView defaults to 'terminal', so the deep link lands on TerminalView.
+# sessionView defaults to 'chat' (#1418), so the chip switches to TerminalView.
 - runFlow:
     file: open-deeplink.yaml
     env:
@@ -36,6 +36,9 @@ appId: com.ronenmars.threadbase
     visible:
       id: "session-detail-screen"
     timeout: 8000
+
+- tapOn:
+    id: "session-view-mode-chip"
 
 # 1. Transcript above, live rows below (the replay).
 - extendedWaitUntil:
