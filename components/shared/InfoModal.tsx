@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import {
   Modal,
   View,
@@ -8,11 +8,11 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native'
-import { X, Copy, Check, type IconProps } from 'phosphor-react-native'
-import * as Clipboard from 'expo-clipboard'
+import { X, type IconProps } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { CopyButton } from '@/components/shared/CopyButton'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 
 export interface InfoField {
@@ -42,13 +42,6 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
   const directionStyle = useDirectionStyle()
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
-  const [copiedLabel, setCopiedLabel] = useState<string | null>(null)
-
-  const handleCopy = async (label: string, value: string) => {
-    await Clipboard.setStringAsync(value)
-    setCopiedLabel(label)
-    setTimeout(() => setCopiedLabel(null), 1500)
-  }
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -75,7 +68,6 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
           {fields.map(({ label, value }) => {
             if (value == null || value === '') return null
-            const isCopied = copiedLabel === label
             return (
               <View key={label} style={styles.row}>
                 <View style={styles.rowLeft}>
@@ -84,16 +76,7 @@ export function InfoModal({ visible, onClose, title, fields, action }: Props) {
                     {value}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.copyBtn}
-                  onPress={() => handleCopy(label, value)}
-                  accessibilityLabel={`Copy ${label}`}
-                  hitSlop={8}
-                >
-                  {isCopied
-                    ? <Check size={16} color={theme.text.success} />
-                    : <Copy size={16} color={theme.text.secondary} />}
-                </TouchableOpacity>
+                <CopyButton value={value} accessibilityLabel={`Copy ${label}`} />
               </View>
             )
           })}
@@ -158,9 +141,6 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontSize: font.sm,
       fontFamily: 'monospace',
-    },
-    copyBtn: {
-      padding: spacing.xs,
     },
   })
 }

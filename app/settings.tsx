@@ -40,6 +40,7 @@ import type { ThemeId } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { GlassFill } from '@/components/ui/GlassFill'
 import { Badge } from '@/components/ui/Badge'
+import { CopyButton } from '@/components/shared/CopyButton'
 import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissionsStatus'
 import { removeServerAndUnregisterPush } from '@/services/server-removal'
 import { sendTestPush, serverSupportsPushPrefs } from '@/services/push'
@@ -255,6 +256,7 @@ export default function SettingsScreen() {
   const nativeBuild = Application.nativeBuildVersion
     ?? (Platform.OS === 'ios' ? Constants.expoConfig?.ios?.buildNumber : Constants.expoConfig?.android?.versionCode)
     ?? '—'
+  const aboutTitle = `Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${nativeBuild})`
   const router = useRouter()
   const { servers, activeServerIds, displayedServerIds, addServer, setDisplayedServerIds, refreshServerInfo } = useServersStore()
   const {
@@ -897,12 +899,20 @@ await refreshServerInfo(serverId)
         <SectionHeader title={t('section.about')} />
         <View style={[s.card, isGlass && s.cardGlass]}>
           <GlassFill material />
-          <Text style={s.aboutText}>
-            {`Threadbase Mobile v${Constants.expoConfig?.version ?? '—'} (${nativeBuild})`}
-          </Text>
-          <Text style={s.aboutSubtext} testID="settings-build-stamp">
-            {aboutSubtext}
-          </Text>
+          <View style={s.aboutRow}>
+            <View style={s.aboutTexts}>
+              <Text style={s.aboutText}>{aboutTitle}</Text>
+              <Text style={s.aboutSubtext} testID="settings-build-stamp">
+                {aboutSubtext}
+              </Text>
+            </View>
+            <CopyButton
+              value={`${aboutTitle}\n${aboutSubtext}`}
+              accessibilityLabel={t('about.copy')}
+              size={20}
+              testID="settings-build-copy"
+            />
+          </View>
         </View>
 
         <SectionHeader title={t('section.help')} />
@@ -1167,6 +1177,8 @@ function styles(theme: ReturnType<typeof useTheme>) {
     segmentBtnText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
     segmentBtnTextGlass: { color: theme.text.primary },
     segmentBtnTextActive: { color: theme.text.onAccent },
+    aboutRow: { flexDirection: 'row', alignItems: 'center', paddingEnd: spacing.md },
+    aboutTexts: { flex: 1 },
     aboutText: { color: theme.text.primary, fontSize: font.base, padding: spacing.md, fontWeight: '500' },
     aboutSubtext: { color: theme.text.secondary, fontSize: font.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.md },
     permissionRowLeft: { flex: 1, gap: 2 },

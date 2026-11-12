@@ -107,7 +107,8 @@
     "last": "אחרון"
   },
   "about": {
-    "subtitle": "מרכז בקרת סוכני AI"
+    "subtitle": "מרכז בקרת סוכני AI",
+    "copy": "העתקת גרסה ובנייה"
   },
   "help": {
     "restartOnboarding": "הפעל מחדש הדרכה",
