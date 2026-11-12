@@ -30,7 +30,7 @@ import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { MessageItem } from '@/components/conversation/MessageItem'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { InheritedHistoryDivider } from '@/components/conversation/InheritedHistoryDivider'
-import { ThinkingBubble } from '@/components/conversation/ThinkingBubble'
+import { ThinkingBubble, useHoldQuestionHost } from '@/components/conversation/ThinkingBubble'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { stripBoxDrawing } from '@/utils/stripBoxDrawing'
 import { foldAnsweredQuestions } from '@/utils/foldAnsweredQuestions'
@@ -343,8 +343,11 @@ export function LiveConversationView({
 
   // A question arrives on the running → waiting_input edge, which is exactly the
   // edge that retires the thinking bubble. Mount on the question too, or a card
-  // that lands a beat later has no host left to render in.
-  const showThinkingFooter = activeQuestion !== null || thinkingState !== 'hidden'
+  // that lands a beat later has no host left to render in. Stay mounted briefly
+  // after an answer too: unmounting a presented full-screen card while the next
+  // one presents left iOS on a black, untouchable window.
+  const holdQuestionHost = useHoldQuestionHost(activeQuestion)
+  const showThinkingFooter = activeQuestion !== null || holdQuestionHost || thinkingState !== 'hidden'
 
   // A question is asynchronous state: it never moves the reader. When one is
   // waiting off-screen the jump control says so instead.

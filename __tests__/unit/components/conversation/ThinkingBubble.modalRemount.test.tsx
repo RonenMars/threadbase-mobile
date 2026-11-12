@@ -1,6 +1,6 @@
 import { act, render } from '@testing-library/react-native'
 import React from 'react'
-import { MODAL_DISMISS_FALLBACK_MS, ThinkingBubble } from '@/components/conversation/ThinkingBubble'
+import { MODAL_DISMISS_FALLBACK_MS, ThinkingBubble, useHoldQuestionHost } from '@/components/conversation/ThinkingBubble'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 // On iOS a Modal going visible is a presentViewController, going hidden (or
@@ -100,5 +100,41 @@ describe('ThinkingBubble full-screen Modal across an answer and the next card', 
     const { rerender } = await render(<ThinkingBubble {...base} activeQuestion={A()} answerPhase="active" />)
     await rerender(<ThinkingBubble {...base} activeQuestion={B()} answerPhase="active" />)
     expect(modalLog).toEqual(['present'])
+  })
+})
+
+// LiveConversationView mounts the bubble as the list footer only while a
+// question or the thinking animation needs it. A question arrives on the edge
+// that retires the animation, so an answer usually unmounts the whole bubble,
+// Modal included, while that Modal is still presented, and the next card mounts
+// a fresh bubble with no memory of the dismiss in flight.
+function FooterHost({ activeQuestion }: { activeQuestion: QuestionBlock | null }) {
+  const holding = useHoldQuestionHost(activeQuestion)
+  if (activeQuestion === null && !holding) return null
+  return <ThinkingBubble {...base} activeQuestion={activeQuestion} answerPhase={activeQuestion ? 'active' : null} />
+}
+
+describe('footer host across an answer and the next card', () => {
+  it('keeps the bubble mounted so B waits for the dismiss of A', async () => {
+    const { rerender } = await render(<FooterHost activeQuestion={A()} />)
+    await rerender(<FooterHost activeQuestion={null} />)
+    await rerender(<FooterHost activeQuestion={B()} />)
+    expect(modalLog).toEqual(['present', 'dismiss'])
+    await act(() => completeDismiss?.())
+    expect(modalLog).toEqual(['present', 'dismiss', 'present'])
+  })
+
+  it('unmounts the bubble once the hold expires', async () => {
+    jest.useFakeTimers()
+    try {
+      const { rerender, queryByTestId } = await render(<FooterHost activeQuestion={A()} />)
+      await rerender(<FooterHost activeQuestion={null} />)
+      expect(queryByTestId('thinking-bubble')).toBeTruthy()
+      await act(() => jest.advanceTimersByTime(MODAL_DISMISS_FALLBACK_MS))
+      expect(queryByTestId('thinking-bubble')).toBeNull()
+      expect(modalLog).toEqual(['present', 'dismiss', 'unmount'])
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })
