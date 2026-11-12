@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, type ScrollViewInstance, StyleSheet, View } from 'react-native'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { useAppDirection } from '@/lib/rtl'
 
@@ -11,7 +11,7 @@ interface Props {
 
 /** A snapping horizontal scroller; on RTL web scrollLeft runs negative, hence the signed offset. */
 export function ColumnPager({ index, onIndexChange, children }: Props) {
-  const scroller = useRef<ScrollView>(null)
+  const scroller = useRef<ScrollViewInstance>(null)
   const shown = useRef(index)
   // Set while a chip tap scrolls, so the pages passed on the way do not reselect themselves.
   const settling = useRef<number | null>(null)

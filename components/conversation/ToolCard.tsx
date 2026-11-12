@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { useRecyclingState } from '@shopify/flash-list'
-import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
+import { HighlightText, type HighlightLayoutHandle, type MatchLayout } from 'one-more-highlight/native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme, useIsGlass } from '@/contexts/ThemeContext'
@@ -142,7 +142,7 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
   const isGlass = useIsGlass()
   const styles = makeStyles(theme)
   const [expanded, setExpanded] = useRecyclingState(false, [recycleKey])
-  const bodyRef = useRef<Text>(null)
+  const bodyRef = useRef<HighlightLayoutHandle>(null)
 
   const toolName = block.type === 'tool_use' ? block.name : block.toolName
   // Live results arrive unnamed until resolveToolNames finds their call.
@@ -184,9 +184,10 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
   const reportMatchLayout = matchAnchor
     ? (matches: readonly MatchLayout[]) => {
         const first = matches[0]
-        const row = matchAnchor.rowRef.current
-        if (!first || !row || !bodyRef.current) return
-        bodyRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + first.y))
+        if (!first || !bodyRef.current) return
+        void bodyRef.current
+          .measureMatch(first.matchIndex, matchAnchor.rowRef)
+          .then((m) => { if (m) matchAnchor.onLayout(m.y) })
       }
     : undefined
 
@@ -216,7 +217,7 @@ export function ToolCard({ block, recycleKey, highlight, matchAnchor, activeMatc
         <View style={styles.body}>
           {matchesBody ? (
             <HighlightText
-              ref={bodyRef}
+              layoutRef={bodyRef}
               text={bodyText}
               searchWords={[needle]}
               highlightStyle={activeMatch ? styles.match : styles.matchInactive}

@@ -387,7 +387,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       if (response) void answerFromNotification(response, isKnownServer)
       const target = resolveColdStartRoute(
         {
-          url,
+          url: url ?? null,
           notificationData: response
             ? (response.notification.request.content.data as {
                 sessionId?: string

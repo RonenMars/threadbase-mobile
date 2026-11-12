@@ -243,7 +243,7 @@ export function ConversationList({
               <ActivityIndicator color={theme.text.secondary} />
               <Text style={styles.listFooterText}>{t('list.loadingMore')}</Text>
             </View>
-          ) : null
+          ) : undefined
         }
       />
 

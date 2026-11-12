@@ -169,7 +169,7 @@ describe('NewSessionServerPicker', () => {
   it('right-aligns the translated title in RTL and keeps server identifiers LTR', async () => {
     function isMirrored(element: { props: { style?: ViewStyle | ViewStyle[] } }): boolean {
       const style = StyleSheet.flatten(element.props.style)
-      const transform = style.transform
+      const transform = style?.transform
       if (!Array.isArray(transform)) return false
       return transform.some((entry) => 'scaleX' in entry && entry.scaleX === -1)
     }

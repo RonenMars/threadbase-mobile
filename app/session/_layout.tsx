@@ -8,16 +8,17 @@ import { useAppDirection } from '@/lib/rtl'
 export default function SessionLayout() {
   const { isRTL } = useAppDirection()
 
-  // freezeOnBlur: a pushed-under session screen stays mounted in the native
+  // activityEnabled: a pushed-under session screen stays mounted in the native
   // stack, so without this its WS handlers keep firing on every frame and its
   // VirtualTerminal keeps growing — the app slows down linearly with the number
-  // of sessions opened in one run. Freezing suspends the hidden screen's render
-  // and effects until it's focused again.
+  // of sessions opened in one run. React Activity hides a screen once another
+  // is above it, running its effect cleanups and pausing its render until it is
+  // shown again. expo-router 58 ignores the old freezeOnBlur option.
   return (
     <Stack
+      activityEnabled
       screenOptions={{
         headerShown: false,
-        freezeOnBlur: true,
         animation: isRTL ? 'slide_from_left' : undefined,
       }}
     >
