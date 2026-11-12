@@ -7,9 +7,9 @@ import {
 } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import Animated, { FadeIn } from 'react-native-reanimated'
-import * as Clipboard from 'expo-clipboard'
 import { ArrowLeft, ArrowRight, Check } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
@@ -43,13 +43,9 @@ function colorForKind(k: PairLogKind): string {
 
 function CopyableCommand({ command }: { command: string }) {
   const { t } = useTranslation('onboarding')
-  const [copied, setCopied] = useState(false)
+  const { copied, copy } = useCopyToClipboard(2000)
 
-  const handleCopy = () => {
-    void Clipboard.setStringAsync(command)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+  const handleCopy = () => void copy(command)
 
   return (
     <TouchableOpacity
