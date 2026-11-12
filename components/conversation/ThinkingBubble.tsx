@@ -366,3 +366,24 @@ function makeStyles(theme: Theme) {
     },
   })
 }
+
+/**
+ * Whether the host should keep this bubble mounted after its question clears.
+ * The dismiss hold above lives in this component, so it only works if the
+ * component survives the answer: an unmount takes the presented Modal down with
+ * it, and the next card would mount a fresh bubble and present at once.
+ */
+export function useHoldQuestionHost(activeQuestion: QuestionBlock | null): boolean {
+  const [holding, setHolding] = useState(false)
+  const [prevQuestion, setPrevQuestion] = useState(activeQuestion)
+  if (prevQuestion !== activeQuestion) {
+    setPrevQuestion(activeQuestion)
+    if (prevQuestion !== null && activeQuestion === null && Platform.OS === 'ios') setHolding(true)
+  }
+  useEffect(() => {
+    if (!holding) return
+    const timer = setTimeout(() => setHolding(false), MODAL_DISMISS_FALLBACK_MS)
+    return () => clearTimeout(timer)
+  }, [holding])
+  return holding
+}
