@@ -94,7 +94,7 @@ Both checks have passed against the same secret value, last set 2026-10-02: QA i
 |---|---|---|
 | iOS | `com.ronenmars.threadbase` | APNs key `VP6ZKX6L6N` |
 | iOS | `com.ronenmars.threadbase.dev` | the same APNs key, added 2026-10-02 |
-| Android | both packages | FCM V1 key set |
+| Android | both packages | FCM V1 key from `threadbase-10d42` in the FCM V1 slot of each, checked 2026-11-14 |
 
 ## Open items
 
