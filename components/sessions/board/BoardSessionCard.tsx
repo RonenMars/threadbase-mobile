@@ -16,7 +16,7 @@ import { Card } from '@/components/ui/Card'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
-import { openPrompts, terminalTailLine } from '@/lib/boardPrompts'
+import { needsYouLine as getNeedsYouLine } from '@/lib/boardPrompts'
 import { conversationHref } from '@/lib/conversationHref'
 import { useAppDirection } from '@/lib/rtl'
 import { tierColorToken, type SessionTier } from '@/lib/sessionPresentation'
@@ -140,13 +140,8 @@ function SessionCard({ session, onShowQuestion, ...shared }: Shared & { session:
   const { entry } = shared
   const title = entry.title.title
   const { handlePress, handleLongPress, overlays } = useSessionRowActions(session, title)
-  const question = openPrompts(session)[0]?.questions[0]?.text
-  const tail = terminalTailLine(session.lastOutput)
-  const line = question ?? tail
-  const needsYouLine =
-    entry.tier === 'needsYou' && line
-      ? { text: line, question: question !== undefined, onPress: question !== undefined ? () => onShowQuestion(session, title) : handlePress }
-      : undefined
+  const line = entry.tier === 'needsYou' ? getNeedsYouLine(session) : undefined
+  const needsYouLine = line && { ...line, onPress: line.question ? () => onShowQuestion(session, title) : handlePress }
   return (
     <>
       <BoardCardFrame

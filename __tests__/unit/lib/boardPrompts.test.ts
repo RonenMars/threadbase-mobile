@@ -1,4 +1,4 @@
-import { boardQuestions, isAnswerableOnBoard, openPrompts, promptRefetchKey, promptResponses, terminalTailLine } from '@/lib/boardPrompts'
+import { boardQuestions, isAnswerableOnBoard, needsYouLine, openPrompts, promptRefetchKey, promptResponses, terminalTailLine } from '@/lib/boardPrompts'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import type { MultiSession, Prompt, PromptQuestion, Session } from '@/types/api'
 
@@ -119,5 +119,38 @@ describe('terminalTailLine', () => {
 
   it('strips terminal control codes, so a cursor-hide line does not count as text', () => {
     expect(terminalTailLine('\x1b[32mDone\x1b[0m\n\x1b[?25l')).toBe('Done')
+  })
+})
+
+describe('needsYouLine', () => {
+  const withOutput = (hasOpenPrompt: boolean | undefined, lastOutput: string, pendingPrompts?: Prompt[]) =>
+    ({ hasOpenPrompt, pendingPrompts, lastOutput }) as Session
+
+  it('shows the first open question when one exists', () => {
+    const session = withOutput(true, 'noise', [prompt('a', [question('1')])])
+    expect(needsYouLine(session)).toEqual({ text: 'text 1', question: true })
+  })
+
+  it('shows nothing for the captured /clear hint when the server says no question is open', () => {
+    const session = withOutput(false, '\x1b[?25l\rnew task? /clear to save 165.2k tokens ·\x1b[?25h')
+    expect(needsYouLine(session)).toBeUndefined()
+  })
+
+  it('shows nothing for a one-row partial redraw when the server says no question is open', () => {
+    expect(needsYouLine(withOutput(false, '\x1b[?25l\r25\x1b[?25h'))).toBeUndefined()
+  })
+
+  it('keeps the terminal tail on an older server that omits hasOpenPrompt', () => {
+    expect(needsYouLine(withOutput(undefined, 'Allow this edit? (y/n)'))).toEqual({
+      text: 'Allow this edit? (y/n)',
+      question: false,
+    })
+  })
+
+  it('falls back to the terminal tail when hasOpenPrompt is true but the prompts have not merged in yet', () => {
+    expect(needsYouLine(withOutput(true, 'Allow this edit? (y/n)'))).toEqual({
+      text: 'Allow this edit? (y/n)',
+      question: false,
+    })
   })
 })

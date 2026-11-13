@@ -346,6 +346,12 @@ describe('SessionBoard questions', () => {
     await fireEvent.press(r.getByTestId('board-tail-w'))
     expect(r.queryByTestId('board-question-modal')).toBeNull()
   })
+  it('renders no line, and no tap target, when the streamer says no question is open', async () => {
+    const r = await renderBoard([row(waiting({ hasOpenPrompt: false, pendingPrompts: undefined, lastOutput: '\x1b[?25l\rnew task? /clear to save 165.2k tokens ·\x1b[?25h' }))])
+    expect(r.queryByTestId('board-tail-w')).toBeNull()
+    expect(r.queryByTestId('board-question-w')).toBeNull()
+    expect(r.queryByText(/clear to save/)).toBeNull()
+  })
 })
 
 describe('SessionBoard from 768 up', () => {
