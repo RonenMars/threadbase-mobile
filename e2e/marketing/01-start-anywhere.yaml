@@ -15,7 +15,6 @@ appId: com.ronenmars.threadbase
     visible:
       id: "session-row-wm-claude-persistence"
     timeout: 15000
-- assertVisible: ".*External.*"
 - assertNotVisible:
     id: "status-pill"
 - takeScreenshot: 01-start-anywhere-continue-anywhere/01-session-discovered

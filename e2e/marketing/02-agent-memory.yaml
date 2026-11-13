@@ -23,11 +23,16 @@ appId: com.ronenmars.threadbase
 - runFlow:
     file: search.yaml
     env:
-      QUERY: "Auth0 localhost callback multiple environments"
+      QUERY: "callback environment"
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-wm-auth0"
     timeout: 10000
+# Three hits across two machines, so the shot reads as search over every session.
+- assertVisible:
+    id: "conversation-row-conv-wm-auth-callback"
+- assertVisible:
+    id: "conversation-row-conv-hm-storefront-redirect"
 - pressKey: Enter
 - waitForAnimationToEnd:
     timeout: 2000
