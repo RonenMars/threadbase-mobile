@@ -25,7 +25,27 @@ describe('cliPromptText', () => {
     )).toBe('/permissions allow Bash(npm test)')
   })
 
+  // The optimistic bubble holds what was typed, so the echo must read the same or the bubble sticks.
+  it('turns a bash-mode record back into the `!` command the user typed', () => {
+    expect(cliPromptText('<bash-input>git status</bash-input>')).toBe('!git status')
+    expect(cliPromptText('<bash-input> ( cd /tmp; ls )</bash-input>')).toBe('! ( cd /tmp; ls )')
+  })
+
+  it('shows a bash-mode result as a code block of its output', () => {
+    expect(cliPromptText('<bash-stdout>== sessions\nok</bash-stdout><bash-stderr></bash-stderr>'))
+      .toBe('```\n== sessions\nok\n```')
+    expect(cliPromptText('<bash-stdout></bash-stdout><bash-stderr>jq: error</bash-stderr>')).toBe('```\njq: error\n```')
+    expect(cliPromptText('<bash-stdout>a</bash-stdout><bash-stderr>b</bash-stderr>')).toBe('```\na\nb\n```')
+  })
+
+  it('fences bash output that itself holds a fence', () => {
+    expect(cliPromptText('<bash-stdout>```js\nx\n```</bash-stdout><bash-stderr></bash-stderr>'))
+      .toBe('````\n```js\nx\n```\n````')
+  })
+
   it('leaves prose that only mentions the tags alone', () => {
+    expect(cliPromptText('why <bash-stdout>x</bash-stdout>?')).toBe('why <bash-stdout>x</bash-stdout>?')
+    expect(cliPromptText('is <bash-input>ls</bash-input> recorded?')).toBe('is <bash-input>ls</bash-input> recorded?')
     const prose = 'why does <command-name>/doctor</command-name> show up raw?'
     expect(cliPromptText(prose)).toBe(prose)
     expect(cliPromptText('what is <pasted_content id="1">?')).toBe('what is <pasted_content id="1">?')
