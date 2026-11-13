@@ -163,6 +163,20 @@ function startMachine(port, seed) {
     const method = req.method
     console.log(`[${machine.machineName}] ${method} ${p}`)
 
+    // The web capture (e2e/marketing/web-capture.mjs) is a cross-origin caller,
+    // same as e2e/mock-server.js handles; the native app sends no Origin.
+    if (req.headers.origin) {
+      res.setHeader('Access-Control-Allow-Origin', req.headers.origin)
+      res.setHeader('Vary', 'Origin')
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+      res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] ?? 'Authorization, Content-Type')
+      res.setHeader('Access-Control-Expose-Headers', 'ETag')
+    }
+    if (method === 'OPTIONS') {
+      res.writeHead(204)
+      return res.end()
+    }
+
     // The legacy (pre-E2EE) pairing reply: the api key sealed to the key the
     // client just generated. The pair token is not checked — any deep link
     // pointing here pairs.
@@ -491,7 +505,8 @@ function startMachine(port, seed) {
     })
   })
 
-  server.listen(port, '127.0.0.1', () => {
+  // DEMO_HOST=0.0.0.0 exposes the demo machines on the LAN so a physical phone can pair.
+  server.listen(port, process.env.DEMO_HOST || '127.0.0.1', () => {
     console.log(`${seed.machineName} listening on http://localhost:${port}`)
   })
 }

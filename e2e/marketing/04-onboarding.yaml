@@ -86,6 +86,9 @@ appId: com.ronenmars.threadbase
     optional: true
 - tapOn:
     point: "43%, 57%"
+# At the largest text size the sheet is taller and "Not Now" sits lower.
+- tapOn:
+    point: "43%, 60%"
 # A typed key is never exchanged with the server, so the app asks first.
 - extendedWaitUntil:
     visible:

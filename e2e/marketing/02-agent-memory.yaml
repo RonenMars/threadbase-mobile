@@ -9,10 +9,20 @@ appId: com.ronenmars.threadbase
 - runFlow: setup.yaml
 
 # --- 01: history from three machines ----------------------------------------
-- scrollUntilVisible:
-    element:
-      id: "conversation-row-conv-ld-onboarding"
-    direction: DOWN
+# scrollUntilVisible swipes from the screen centre, which on a phone at the
+# default text size lands on a Working card and never moves the list.
+# Swipe from the history rows on the left instead.
+- repeat:
+    while:
+      notVisible:
+        id: "conversation-row-conv-ld-onboarding"
+    times: 6
+    commands:
+      - swipe:
+          start: 25%, 85%
+          end: 25%, 40%
+      - waitForAnimationToEnd:
+          timeout: 1500
 - waitForAnimationToEnd:
     timeout: 2000
 - assertNotVisible:
@@ -23,11 +33,19 @@ appId: com.ronenmars.threadbase
 - runFlow:
     file: search.yaml
     env:
-      QUERY: "Auth0 localhost callback multiple environments"
+      QUERY: "callback environment"
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-wm-auth0"
     timeout: 10000
+# Hits across two machines, so the shot reads as search over every session.
+# The auth-callback row backs the live wm-codex-auth session and does not show
+# in search, on iOS or web, so it is not required.
+- assertVisible:
+    id: "conversation-row-conv-wm-auth-callback"
+    optional: true
+- assertVisible:
+    id: "conversation-row-conv-hm-storefront-redirect"
 - pressKey: Enter
 - waitForAnimationToEnd:
     timeout: 2000
@@ -93,10 +111,13 @@ appId: com.ronenmars.threadbase
       QUERY: "session"
 # Enter first: on an Android phone the keyboard covers the Linux Devbox row.
 - pressKey: Enter
+# The ld-search row also backs a live session, so like the auth-callback row it
+# can be missing from search; wait for it, but do not fail the flow without it.
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-ld-search"
     timeout: 10000
+    optional: true
 - waitForAnimationToEnd:
     timeout: 2000
 - takeScreenshot: 02-agent-memory/07-hero
