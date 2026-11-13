@@ -56,4 +56,15 @@ describe('ServerChip', () => {
     const json = JSON.stringify(tree.toJSON())
     expect(json).toContain('Server: tb-streamer')
   })
+
+  // A handler-less Pressable claims the touch and swallows the row's tap.
+  it('is not a button when it has no handler', () => {
+    const tree = makeTree(<ServerChip label="tb-streamer" color="#63b3ff" />)
+    expect(JSON.stringify(tree.toJSON())).not.toContain('"accessibilityRole":"button"')
+  })
+
+  it('is a button when it has an onPress handler', () => {
+    const tree = makeTree(<ServerChip label="tb-streamer" color="#63b3ff" onPress={() => {}} />)
+    expect(JSON.stringify(tree.toJSON())).toContain('"accessibilityRole":"button"')
+  })
 })
