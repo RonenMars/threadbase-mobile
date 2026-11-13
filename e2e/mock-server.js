@@ -593,6 +593,28 @@ async function handleRequest(req, res) {
     return json(res, 200, { directories: [] })
   }
 
+  // One registered token, so app/notification-health.tsx has a row to render.
+  // An emulator without google-services.json cannot mint a real Expo push token,
+  // so the row is seeded here rather than created by POST /api/push/register.
+  if (method === 'GET' && p === '/api/push/health') {
+    return json(res, 200, {
+      available: true,
+      tokens: [
+        {
+          platform: 'android',
+          deviceId: 'e2e-device',
+          registeredAt: Date.parse('2026-11-01T09:00:00Z'),
+          lastSuccessAt: null,
+          lastFailureAt: null,
+          lastFailureCode: null,
+          failureStreak: 0,
+          revokedAt: null,
+          state: 'never-delivered',
+        },
+      ],
+    })
+  }
+
   // Stub paired devices — two active devices with distinct capabilities, so
   // app/paired-devices.tsx has more than one card to render (used by the
   // multi-machine promo screenshot).

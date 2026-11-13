@@ -1,0 +1,49 @@
+# Maestro E2E — Android notifications: grant in onboarding, health screen row.
+#
+# Grants notifications on the onboarding Notifications step (setup.yaml, when
+# GRANT_NOTIFICATIONS is set), then opens Settings -> Notification health and
+# checks a token row renders.
+#
+# What this does NOT prove: push delivery. An emulator without Play services and
+# a real FCM key cannot mint an Expo push token, so the row comes from the mock
+# server's /api/push/health stub, not from a registration. Delivery, icon and
+# channel behaviour are device checks (docs/android-notifications-plan.md, Phase 3).
+#
+# Android only: on iOS this flow passes without doing anything, so it can share
+# the mock-suite list with the iOS shards.
+#
+# Requires: mock server running at E2E_MOCK_SERVER_URL.
+
+appId: com.ronenmars.threadbase
+---
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - runFlow:
+          file: setup.yaml
+          env:
+            GRANT_NOTIFICATIONS: "true"
+
+      - assertVisible:
+          id: "hub-screen"
+
+      - tapOn:
+          id: "hub-settings-btn"
+
+      # The notifications section sits below the fold.
+      - scrollUntilVisible:
+          element:
+            id: "settings-notification-health-row"
+          centerElement: true
+
+      - tapOn:
+          id: "settings-notification-health-row"
+
+      # The token card's testID carries its state (notif-health-token-<state>).
+      - extendedWaitUntil:
+          visible:
+            id: "notif-health-token-.*"
+          timeout: 10000
+
+      - takeScreenshot: e2e/_artifacts/screenshots/android-notifications-health
