@@ -62,4 +62,15 @@ describe('NeedsYouCard mono line', () => {
     await renderCard(session({ hasOpenPrompt: undefined, lastOutput: 'Allow this edit? (y/n)' }))
     expect(screen.getByText('Allow this edit? (y/n)')).toBeTruthy()
   })
+
+  it('shows the last assistant reply for a finished turn', async () => {
+    await renderCard(session({ hasOpenPrompt: false, lastMessageText: 'Pushed the fix.', lastMessageRole: 'assistant' }))
+    expect(screen.getByText('Pushed the fix.')).toBeTruthy()
+    expect(screen.queryByText(/clear to save/)).toBeNull()
+  })
+
+  it('does not show the user\'s own prompt as if it were a reply', async () => {
+    await renderCard(session({ hasOpenPrompt: false, lastMessageText: 'fix it', lastMessageRole: 'user' }))
+    expect(screen.queryByText('fix it')).toBeNull()
+  })
 })

@@ -53,14 +53,18 @@ export function terminalTailLine(output: string | null | undefined): string | un
 /**
  * What a Needs you card says under its title. `lastOutput` is the last raw PTY chunk, which after a finished
  * turn is Claude Code repainting its hint row, so `hasOpenPrompt === false` means there is nothing to show.
+ * On a finished turn the last assistant reply stands in, when the streamer says who spoke.
  * The tail survives only where it is the sole signal (older streamers) or the flag says a prompt is open.
  */
 export function needsYouLine(
-  session: Pick<Session, 'hasOpenPrompt' | 'pendingPrompts' | 'lastOutput'>,
+  session: Pick<Session, 'hasOpenPrompt' | 'pendingPrompts' | 'lastOutput' | 'lastMessageText' | 'lastMessageRole'>,
 ): { text: string; question: boolean } | undefined {
   const question = openPrompts(session)[0]?.questions[0]?.text
   if (question !== undefined) return { text: question, question: true }
-  if (session.hasOpenPrompt === false) return undefined
+  if (session.hasOpenPrompt === false) {
+    const reply = session.lastMessageRole === 'assistant' ? session.lastMessageText?.replace(/\s+/g, ' ').trim() : undefined
+    return reply ? { text: reply, question: false } : undefined
+  }
   const tail = terminalTailLine(session.lastOutput)
   return tail ? { text: tail, question: false } : undefined
 }
