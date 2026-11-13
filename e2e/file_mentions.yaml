@@ -1,0 +1,123 @@
+# Maestro E2E — composer `@` file-mention picker
+# Claude session with a project path: typing `@` opens the picker over the
+# mock's /api/browse tree (MENTIONS_TREE in mock-server.js), a folder row drills
+# in, typing filters, and a file row writes `@<path>` into the composer.
+# A Codex session in the same folder must show no picker, because Codex opens
+# its own file popup on `@`.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node e2e/run-maestro.js test e2e/file_mentions.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# --- Claude Code session --------------------------------------------------------
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-mentions"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 12000
+
+# Drafts live in SecureStore, which `clearState` does not wipe, so a previous run's
+# text is still in the composer. Tap at the end of the text, then clear it.
+- tapOn:
+    id: "chat-message-input"
+    point: "95%,90%"
+
+- eraseText: 200
+
+- inputText: "@"
+
+# The cwd listing: files and folders, with the hidden `.git` filtered out.
+- extendedWaitUntil:
+    visible:
+      id: "file-mention-board"
+    timeout: 8000
+
+- assertVisible:
+    id: "file-mention-row-README.md"
+
+- assertVisible:
+    id: "file-mention-row-package.json"
+
+- assertVisible:
+    id: "file-mention-row-src"
+
+- assertNotVisible:
+    id: "file-mention-row-.git"
+
+# Drilling into a folder keeps the token open and lists that folder.
+- tapOn:
+    id: "file-mention-row-src"
+
+- extendedWaitUntil:
+    visible:
+      id: "file-mention-row-app.ts"
+    timeout: 8000
+
+- assertVisible:
+    id: "file-mention-row-components"
+
+- assertNotVisible:
+    id: "file-mention-row-README.md"
+
+# Typing narrows the rows; `ap` matches app.ts and nothing else here.
+- inputText: "ap"
+
+- assertVisible:
+    id: "file-mention-row-app.ts"
+
+- assertNotVisible:
+    id: "file-mention-row-index.ts"
+
+- assertNotVisible:
+    id: "file-mention-row-components"
+
+# Picking a file writes the path into the composer and closes the picker.
+- tapOn:
+    id: "file-mention-row-app.ts"
+
+- assertVisible:
+    id: "chat-message-input"
+    text: "@src/app.ts.*"
+
+- assertNotVisible:
+    id: "file-mention-board"
+
+# --- Codex session: no picker ------------------------------------------------------
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-mentions-codex"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 12000
+
+# Drafts live in SecureStore, which `clearState` does not wipe, so a previous run's
+# text is still in the composer. Tap at the end of the text, then clear it.
+- tapOn:
+    id: "chat-message-input"
+    point: "95%,90%"
+
+- eraseText: 200
+
+- inputText: "@"
+
+# The typed `@` is the positive control: the input took the character, so an
+# absent board is the gate working and not a keyboard that never opened.
+- assertVisible:
+    id: "chat-message-input"
+    text: "@"
+
+- assertNotVisible:
+    id: "file-mention-board"
