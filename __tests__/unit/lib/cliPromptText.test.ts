@@ -25,7 +25,14 @@ describe('cliPromptText', () => {
     )).toBe('/permissions allow Bash(npm test)')
   })
 
+  // The optimistic bubble holds what was typed, so the echo must read the same or the bubble sticks.
+  it('turns a bash-mode record back into the `!` command the user typed', () => {
+    expect(cliPromptText('<bash-input>git status</bash-input>')).toBe('!git status')
+    expect(cliPromptText('<bash-input> ( cd /tmp; ls )</bash-input>')).toBe('! ( cd /tmp; ls )')
+  })
+
   it('leaves prose that only mentions the tags alone', () => {
+    expect(cliPromptText('is <bash-input>ls</bash-input> recorded?')).toBe('is <bash-input>ls</bash-input> recorded?')
     const prose = 'why does <command-name>/doctor</command-name> show up raw?'
     expect(cliPromptText(prose)).toBe(prose)
     expect(cliPromptText('what is <pasted_content id="1">?')).toBe('what is <pasted_content id="1">?')
