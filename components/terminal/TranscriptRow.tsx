@@ -183,13 +183,14 @@ const styles = StyleSheet.create({
   text: {
     ...ltrContentStyle,
     color: '#e6edf3',
-    fontSize: 12,
+    fontSize: 15,
+    fontWeight: '600',
     fontFamily: 'monospace',
-    lineHeight: 18,
+    lineHeight: 23,
   },
   user: {
     color: '#58a6ff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   // The `⏺` as its own column, so markdown list indentation starts from the
   // body edge rather than from inside a prefixed string.

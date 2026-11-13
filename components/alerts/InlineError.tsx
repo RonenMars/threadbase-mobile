@@ -117,12 +117,13 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     message: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      lineHeight: 18,
+      fontWeight: '600',
+      lineHeight: 22,
     },
     actions: {
       flexDirection: 'row',
@@ -140,7 +141,7 @@ function makeStyles(theme: Theme) {
     retryText: {
       color: theme.text.onAccent,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     details: {
       minHeight: TARGET,
@@ -154,7 +155,7 @@ function makeStyles(theme: Theme) {
     detailsText: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

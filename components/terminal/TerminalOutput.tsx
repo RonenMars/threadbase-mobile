@@ -558,13 +558,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   resumedNoticePlain: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   resumedNoticeLink: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500',
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '700',
   },
   divider: {
     flexDirection: 'row',
@@ -578,7 +579,8 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
   },
   dividerLabel: {
-    fontSize: 10,
+    fontSize: 13,
+    fontWeight: '600',
     fontFamily: 'monospace',
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -592,13 +594,14 @@ const styles = StyleSheet.create({
   },
   lineText: {
     ...ltrContentStyle,
-    fontSize: 12,
+    fontSize: 15,
+    fontWeight: '600',
     fontFamily: 'monospace',
     flex: 1,
-    lineHeight: 18,
+    lineHeight: 23,
   },
   lineTextUser: {
-    fontWeight: '600',
+    fontWeight: '700',
   },
   jumpBtn: {
     position: 'absolute',
@@ -641,20 +644,22 @@ function makeChromeStyles(theme: Theme, rtl: RtlStyleKit) {
     },
     resumedNoticeText: {
       color: theme.text.secondary,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 15,
+      fontWeight: '600',
+      lineHeight: 20,
       ...rtl.copy,
     },
     resumedNoticeLinkRow: {
       color: theme.text.secondary,
-      fontSize: 12,
-      lineHeight: 16,
+      fontSize: 15,
+      fontWeight: '600',
+      lineHeight: 20,
       ...rtl.copy,
     },
     jumpBtnText: {
       color: theme.text.primary,
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: 15,
+      fontWeight: '700',
       ...rtl.copy,
     },
   })

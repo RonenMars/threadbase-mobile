@@ -145,7 +145,7 @@ const makeStyles = (theme: Theme) =>
     title: {
       color: theme.text.primary,
       fontSize: font.lg,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     list: {
       flexGrow: 0,
@@ -166,10 +166,12 @@ const makeStyles = (theme: Theme) =>
     rowLabel: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     rowServer: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       marginTop: 2,
     },
     needsYouDot: {

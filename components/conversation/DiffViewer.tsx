@@ -142,13 +142,14 @@ function makeStyles(theme: Theme) {
     filename: {
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
       flex: 1,
       fontFamily: 'monospace',
     },
-    added: { color: theme.status.running, fontSize: font.sm, fontWeight: '600' },
-    removed: { color: theme.status.failed, fontSize: font.sm, fontWeight: '600' },
+    added: { color: theme.status.running, fontSize: font.sm, fontWeight: '700' },
+    removed: { color: theme.status.failed, fontSize: font.sm, fontWeight: '700' },
     copyBtn: { paddingHorizontal: spacing.sm, minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET, justifyContent: 'center' },
-    copyText: { color: theme.text.secondary, fontSize: font.xs },
+    copyText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     collapseBtn: {
       padding: spacing.md,
       alignItems: 'center',
@@ -156,12 +157,14 @@ function makeStyles(theme: Theme) {
     collapseBtnText: {
       color: theme.text.accent,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     hunkHeader: {
       color: theme.status.idle,
       backgroundColor: theme.bg.card,
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
       paddingHorizontal: spacing.sm,
       paddingVertical: 2,
     },
@@ -178,12 +181,14 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
       width: 12,
     },
     lineContent: {
       color: theme.text.primary,
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
     },
   })
 }

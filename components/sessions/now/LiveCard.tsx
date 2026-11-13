@@ -123,7 +123,7 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       lineHeight: font.base + 4,
     },
   })

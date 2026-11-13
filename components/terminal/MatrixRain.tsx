@@ -98,7 +98,8 @@ const styles = StyleSheet.create({
   char: {
     position: 'absolute',
     fontFamily: 'monospace',
-    fontSize: 13,
+    fontSize: 16,
+    fontWeight: '600',
     color: GREEN,
     textShadowColor: GREEN_DIM,
     textShadowOffset: { width: 0, height: 0 },

@@ -129,8 +129,8 @@ function makeStyles(theme: Theme) {
     track: { flexGrow: 1, gap: 12, paddingStart: spacing.md },
     pane: { width: PANE_WIDTH, gap: spacing.sm },
     paneHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2, height: 28, paddingHorizontal: spacing.md },
-    paneTitle: { flexShrink: 1, color: theme.text.primary, fontSize: 13, fontWeight: '600' },
-    paneCount: { color: theme.text.secondary, fontSize: 13, opacity: 0.65, fontVariant: ['tabular-nums'] },
+    paneTitle: { flexShrink: 1, color: theme.text.primary, fontSize: 16, fontWeight: '700' },
+    paneCount: { color: theme.text.secondary, fontSize: 16, fontWeight: '600', opacity: 0.65, fontVariant: ['tabular-nums'] },
     dot: { width: 8, height: 8, borderRadius: 4 },
     strip: {
       width: STRIP_WIDTH,
@@ -146,6 +146,6 @@ function makeStyles(theme: Theme) {
       overflow: 'hidden',
     },
     // Rotated rather than writing-mode, which native layout does not have.
-    stripText: { width: 200, marginTop: 96, textAlign: 'center', color: theme.text.secondary, fontSize: 13, fontWeight: '600', transform: [{ rotate: '90deg' }] },
+    stripText: { width: 200, marginTop: 96, textAlign: 'center', color: theme.text.secondary, fontSize: 16, fontWeight: '700', transform: [{ rotate: '90deg' }] },
   })
 }

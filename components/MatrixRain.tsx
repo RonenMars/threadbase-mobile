@@ -179,6 +179,7 @@ function MatrixCharacter({
           top: startY + yOffset,
           fontFamily: 'monospace',
           fontSize: size,
+          fontWeight: '600',
           color: color,
         },
         animStyle,

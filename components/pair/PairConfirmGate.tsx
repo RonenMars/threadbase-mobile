@@ -203,22 +203,26 @@ function makeStyles(theme: Theme) {
     detailLabel: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       width: 96,
     },
     detailValue: {
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
       flex: 1,
     },
     mono: {
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
       writingDirection: 'ltr',
     },
     body: {
       color: theme.text.primary,
       fontSize: font.sm,
-      lineHeight: 19,
+      fontWeight: '600',
+      lineHeight: 23,
     },
     bodyWarning: {
       color: theme.text.warning,
@@ -246,7 +250,7 @@ function makeStyles(theme: Theme) {
     cancelText: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     confirmBtn: {
       flex: 1,

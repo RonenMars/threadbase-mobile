@@ -156,6 +156,6 @@ export const MessageItem = React.memo(function MessageItem({
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     toolContainer: { paddingHorizontal: spacing.md, gap: spacing.xs, marginVertical: spacing.xs },
-    imageBadge: { color: theme.text.secondary, fontSize: font.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+    imageBadge: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   })
 }

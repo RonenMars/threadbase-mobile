@@ -120,15 +120,15 @@ function makeStyles(theme: Theme) {
       borderBottomColor: theme.border,
       gap: 2,
     },
-    title: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
-    meta: { color: theme.text.secondary, fontSize: font.xs },
+    title: { color: theme.text.primary, fontSize: font.base, fontWeight: '700' },
+    meta: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     section: {
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.md,
       paddingBottom: spacing.xs,
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
     },
@@ -147,7 +147,7 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.sm,
     },
     itemCopy: { flex: 1, gap: 1 },
-    itemLabel: { fontSize: font.base },
-    itemHint: { color: theme.text.secondary, fontSize: font.xs },
+    itemLabel: { fontSize: font.base, fontWeight: '600' },
+    itemHint: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
   })
 }

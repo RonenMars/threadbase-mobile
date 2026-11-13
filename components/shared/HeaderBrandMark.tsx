@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   qaLabel: {
     color: GRAY,
     backgroundColor: YELLOW,
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.4,
     paddingHorizontal: 4,

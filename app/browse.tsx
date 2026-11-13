@@ -188,7 +188,7 @@ export default function BrowseScreen() {
       headerLeft: currentPath
         ? () => (
             <TouchableOpacity onPress={goBack} activeOpacity={1} style={{ marginStart: 8, paddingEnd: 16 }}>
-              <Text style={{ color: theme.text.accent, fontSize: font.base }}>{t('nav.back')}</Text>
+              <Text style={{ color: theme.text.accent, fontSize: font.base, fontWeight: '600' }}>{t('nav.back')}</Text>
             </TouchableOpacity>
           )
         : undefined,
@@ -628,17 +628,19 @@ function makeStyles(theme: Theme) {
   crumb: {
     color: theme.text.accent,
     fontSize: font.sm,
+    fontWeight: '600',
   },
   actionDisabled: {
     opacity: 0.4,
   },
   crumbActive: {
     color: theme.text.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   crumbSeparator: {
     color: theme.text.secondary,
     fontSize: font.sm,
+    fontWeight: '600',
   },
   listContainer: {
     flex: 1,
@@ -662,7 +664,7 @@ function makeStyles(theme: Theme) {
   recentsHeaderText: {
     color: theme.text.secondary,
     fontSize: font.xs,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -682,10 +684,12 @@ function makeStyles(theme: Theme) {
   recentName: {
     color: theme.text.primary,
     fontSize: font.base,
+    fontWeight: '600',
   },
   recentPath: {
     color: theme.text.secondary,
     fontSize: font.xs,
+    fontWeight: '600',
     marginTop: 2,
   },
   displayAllBtn: {
@@ -696,7 +700,7 @@ function makeStyles(theme: Theme) {
   displayAllText: {
     color: theme.text.accent,
     fontSize: font.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   skeletons: {
     padding: spacing.lg,
@@ -725,7 +729,8 @@ function makeStyles(theme: Theme) {
   providerWarningText: {
     color: theme.text.warning,
     fontSize: font.xs,
-    lineHeight: 16,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   row: {
     flexDirection: 'row',
@@ -742,6 +747,7 @@ function makeStyles(theme: Theme) {
     flex: 1,
     color: theme.text.primary,
     fontSize: font.base,
+    fontWeight: '600',
   },
   fileName: {
     color: theme.text.secondary,
@@ -754,6 +760,7 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: spacing.md,
     color: theme.text.primary,
     fontSize: font.base,
+    fontWeight: '600',
   },
   newFolderBtn: {
     paddingHorizontal: spacing.lg,
@@ -770,7 +777,7 @@ function makeStyles(theme: Theme) {
   newFolderBtnText: {
     color: theme.text.accent,
     fontSize: font.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   footer: {
     flexDirection: 'row',
@@ -787,6 +794,7 @@ function makeStyles(theme: Theme) {
   newFolderToggleText: {
     color: theme.text.accent,
     fontSize: font.sm,
+    fontWeight: '600',
   },
   startBtn: {
     flex: 1,
@@ -801,6 +809,6 @@ function makeStyles(theme: Theme) {
   startBtnText: {
     color: theme.text.onAccent,
     fontSize: font.base,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 })}

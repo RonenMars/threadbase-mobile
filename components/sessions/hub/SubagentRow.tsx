@@ -29,7 +29,7 @@ function makeStyles(theme: Theme) {
   return StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
     body: { flex: 1 },
-    tag: { color: theme.text.secondary, fontSize: font.xs - 1, backgroundColor: theme.bg.primary, borderRadius: 4, paddingHorizontal: 5, overflow: 'hidden' },
+    tag: { color: theme.text.secondary, fontSize: font.xs - 1, fontWeight: '600', backgroundColor: theme.bg.primary, borderRadius: 4, paddingHorizontal: 5, overflow: 'hidden' },
     activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.text.accent },
   })
 }

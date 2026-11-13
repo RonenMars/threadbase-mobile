@@ -186,12 +186,13 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.lg,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     message: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      lineHeight: 20,
+      fontWeight: '600',
+      lineHeight: 25,
     },
     busyRow: {
       flexDirection: 'row',

@@ -99,6 +99,7 @@ function makeStyles(theme: Theme) {
     output: {
       fontFamily: MONO_FONT,
       fontSize: font.xs,
+      fontWeight: '600',
       lineHeight: font.xs + 4,
       color: theme.text.primary,
       backgroundColor: theme.bg.primary,
@@ -117,14 +118,15 @@ function makeStyles(theme: Theme) {
       flexShrink: 1,
       fontFamily: MONO_FONT,
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
     },
-    footerSep: { color: theme.text.secondary, opacity: 0.45, fontSize: font.xs },
+    footerSep: { color: theme.text.secondary, opacity: 0.45, fontSize: font.xs, fontWeight: '600' },
     open: {
       marginStart: 'auto',
       color: theme.text.accent,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

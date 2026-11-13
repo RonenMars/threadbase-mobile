@@ -71,7 +71,7 @@ export function EndSessionStatus({ armed, terminatingAt, onForce }: Props) {
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm - 2 },
-    muted: { color: theme.text.secondary, fontSize: font.xs },
+    muted: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     strip: {
       paddingVertical: spacing.xs + 2,
       paddingHorizontal: spacing.sm,
@@ -80,7 +80,7 @@ function makeStyles(theme: Theme) {
       borderColor: `${theme.text.warning}55`,
       backgroundColor: `${theme.text.warning}14`,
     },
-    stripText: { flex: 1, color: theme.text.primary, fontSize: font.xs },
+    stripText: { flex: 1, color: theme.text.primary, fontSize: font.xs, fontWeight: '600' },
     force: {
       paddingVertical: spacing.xs,
       paddingHorizontal: spacing.sm,
@@ -96,6 +96,6 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
       borderColor: `${theme.text.warning}55`,
     },
-    chipText: { color: theme.text.warning, fontSize: font.xs, fontWeight: '600' },
+    chipText: { color: theme.text.warning, fontSize: font.xs, fontWeight: '700' },
   })
 }

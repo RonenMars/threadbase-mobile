@@ -94,10 +94,10 @@ function makeStyles(theme: Theme) {
     panel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderTopColor: theme.border, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.sm },
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingEnd: spacing.xs },
     key: { alignItems: 'center', backgroundColor: theme.bg.secondary, borderRadius: 8, justifyContent: 'center', minHeight: 40, minWidth: 48, paddingHorizontal: spacing.sm },
-    keyText: { color: theme.text.primary, fontSize: 15, fontWeight: '600' },
+    keyText: { color: theme.text.primary, fontSize: 18, fontWeight: '700' },
     close: { minHeight: 40, minWidth: 32, alignItems: 'center', justifyContent: 'center' },
     confirm: { alignItems: 'center', backgroundColor: theme.text.accent, borderRadius: 8, justifyContent: 'center', minHeight: 40, paddingHorizontal: spacing.md },
-    confirmText: { color: theme.text.onAccent, fontSize: 14, fontWeight: '600' },
+    confirmText: { color: theme.text.onAccent, fontSize: 17, fontWeight: '700' },
     disabled: { opacity: 0.45 },
   })
 }

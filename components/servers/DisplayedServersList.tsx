@@ -226,7 +226,7 @@ function makeStyles(theme: Theme) {
     quickButtonText: {
       color: theme.text.secondary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     quickButtonGlass: {
       backgroundColor: 'transparent',
@@ -262,11 +262,12 @@ function makeStyles(theme: Theme) {
     serverLabel: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     serverUrl: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
     },
   })
 }

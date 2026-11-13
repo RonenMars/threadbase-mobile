@@ -151,6 +151,7 @@ function makeStyles(theme: Theme) {
     placeholder: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       paddingVertical: spacing.md,
       textAlign: 'center',
     },
@@ -173,7 +174,7 @@ function makeStyles(theme: Theme) {
     },
     primaryLabel: {
       color: theme.text.onAccent,
-      fontWeight: '600',
+      fontWeight: '700',
       fontSize: font.base,
     },
     ghost: {
@@ -186,7 +187,7 @@ function makeStyles(theme: Theme) {
     },
     ghostLabel: {
       color: theme.text.primary,
-      fontWeight: '500',
+      fontWeight: '700',
       fontSize: font.base,
     },
   })

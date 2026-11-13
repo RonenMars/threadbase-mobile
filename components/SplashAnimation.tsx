@@ -288,7 +288,8 @@ const styles = StyleSheet.create({
   },
   brandText: {
     fontFamily: 'monospace',
-    fontSize: 16,
+    fontSize: 19,
+    fontWeight: '600',
     color: COLORS.text,
     letterSpacing: 3,
     textAlign: 'center',

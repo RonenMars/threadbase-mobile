@@ -169,11 +169,12 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.primary,
       fontSize: font.lg,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     summary: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       marginBottom: spacing.sm,
     },
     retryAll: {
@@ -188,7 +189,7 @@ function makeStyles(theme: Theme) {
     retryAllText: {
       color: theme.text.accent,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     closeBtn: {
       minHeight: TARGET,
@@ -198,6 +199,7 @@ function makeStyles(theme: Theme) {
     closeText: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
   })
 }

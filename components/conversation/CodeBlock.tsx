@@ -127,6 +127,7 @@ function makeStyles(theme: Theme) {
     codeHeaderText: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     codeCopyBtn: {
       minHeight: 44,
@@ -136,6 +137,7 @@ function makeStyles(theme: Theme) {
     codeCopyText: {
       color: theme.text.accent,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     codeBody: {
       paddingHorizontal: spacing.sm,
@@ -148,6 +150,7 @@ function makeStyles(theme: Theme) {
     codeToken: {
       fontFamily: 'monospace',
       fontSize: font.sm,
+      fontWeight: '600',
       color: theme.text.primary,
     },
     diffAdd: {

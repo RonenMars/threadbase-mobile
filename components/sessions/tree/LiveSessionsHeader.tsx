@@ -73,7 +73,7 @@ function makeStyles(_theme: Theme) {
   },
   label: {
     fontSize: font.xs,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 1.0, // ≈0.08em at 11px (eyebrow per DESIGN.md)
   },
   rule: {

@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.fg4,
     fontFamily: fonts.mono,
-    fontSize: 10,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '700',
   },
 })

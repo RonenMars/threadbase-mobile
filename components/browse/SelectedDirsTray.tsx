@@ -97,7 +97,7 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     addBtn: {
       flexDirection: 'row',
@@ -112,7 +112,7 @@ function makeStyles(theme: Theme) {
     addText: {
       color: theme.text.accent,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     disabled: {
       opacity: 0.4,
@@ -136,11 +136,13 @@ function makeStyles(theme: Theme) {
       flexShrink: 1,
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     hint: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 16,
+      fontWeight: '600',
+      lineHeight: 20,
     },
   })
 }

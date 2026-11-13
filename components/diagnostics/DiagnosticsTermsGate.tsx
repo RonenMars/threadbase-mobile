@@ -124,7 +124,8 @@ function makeStyles(theme: Theme) {
     },
     intro: {
       fontSize: font.base,
-      lineHeight: 22,
+      fontWeight: '600',
+      lineHeight: 25,
       color: theme.text.primary,
     },
     point: {
@@ -141,7 +142,8 @@ function makeStyles(theme: Theme) {
     pointText: {
       flex: 1,
       fontSize: font.sm,
-      lineHeight: 20,
+      fontWeight: '600',
+      lineHeight: 25,
       color: theme.text.secondary,
     },
     actions: {
@@ -156,7 +158,7 @@ function makeStyles(theme: Theme) {
     },
     primaryText: {
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text.onAccent,
     },
     secondary: {
@@ -168,7 +170,7 @@ function makeStyles(theme: Theme) {
     },
     secondaryText: {
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text.primary,
     },
   })

@@ -708,9 +708,10 @@ function makeStyles(theme: Theme) {
     ptyContent: { paddingVertical: 12 },
     ptyLine: {
       fontFamily: 'monospace',
-      fontSize: 11,
+      fontSize: 14,
+      fontWeight: '600',
       color: theme.text.secondary,
-      lineHeight: 16,
+      lineHeight: 20,
     },
     transcript: { flex: 1 },
     jumpToLatest: {

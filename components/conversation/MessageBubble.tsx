@@ -173,6 +173,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     queuedLabel: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       marginTop: spacing.xs,
       ...rtl.copy,
     },
@@ -188,10 +189,12 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     toolTagText: {
       color: theme.text.accent,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     tokens: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       marginTop: spacing.xs,
       alignSelf: 'flex-end',
     },

@@ -37,12 +37,13 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   label: {
     flex: 1,
     fontSize: font.sm,
+    fontWeight: '600',
     color: theme.text.secondary,
     ...rtl.ltr,
   },
   labelWithItems: {
     color: theme.text.primary,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   meta: {
     flexDirection: 'row',
@@ -60,10 +61,11 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   badgeText: {
     fontSize: font.xs,
     color: theme.text.accent,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   time: {
     fontSize: font.xs,
+    fontWeight: '600',
     color: theme.text.secondary,
     minWidth: 44,
     textAlign: 'right',

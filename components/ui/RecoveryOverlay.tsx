@@ -57,6 +57,7 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
   })
 }

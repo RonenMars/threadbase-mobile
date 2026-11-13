@@ -25,8 +25,8 @@ export function Badge({ label, color, bg, size = 'sm' }: BadgeProps) {
       <Text
         style={{
           color: color ?? theme.text.secondary,
-          fontSize: size === 'md' ? 12 : 10,
-          fontWeight: '600',
+          fontSize: size === 'md' ? 15 : 13,
+          fontWeight: '700',
         }}
         numberOfLines={1}
       >

@@ -154,6 +154,7 @@ function makeStyles(theme: Theme) {
     rememberLabel: {
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
       flex: 1,
     },
   })

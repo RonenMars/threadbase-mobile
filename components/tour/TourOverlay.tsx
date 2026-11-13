@@ -115,15 +115,16 @@ function makeStyles(theme: Theme) {
     stepLabel: {
       color: theme.text.secondary,
       fontFamily: MONO,
-      fontSize: 10,
-      fontWeight: '600',
+      fontSize: 13,
+      fontWeight: '700',
       letterSpacing: 0.5,
       marginBottom: 6,
     },
     text: {
       color: theme.text.primary,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: 17,
+      fontWeight: '600',
+      lineHeight: 26,
       marginBottom: 12,
     },
     actions: {
@@ -134,8 +135,8 @@ function makeStyles(theme: Theme) {
     skip: {
       color: theme.text.secondary,
       fontFamily: MONO,
-      fontSize: 11,
-      fontWeight: '500',
+      fontSize: 14,
+      fontWeight: '700',
     },
     gotItBtn: {
       backgroundColor: theme.text.accent,
@@ -146,8 +147,8 @@ function makeStyles(theme: Theme) {
     gotItText: {
       color: theme.text.onAccent,
       fontFamily: MONO,
-      fontSize: 12,
-      fontWeight: '600',
+      fontSize: 15,
+      fontWeight: '700',
     },
   })
 }

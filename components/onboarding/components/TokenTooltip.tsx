@@ -49,9 +49,9 @@ const styles = StyleSheet.create({
   icon: {
     color: colors.fg4,
     fontFamily: fonts.mono,
-    fontSize: 9,
-    fontWeight: '600',
-    lineHeight: 12,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 16,
   },
   tooltip: {
     position: 'absolute',
@@ -68,19 +68,21 @@ const styles = StyleSheet.create({
   text: {
     color: colors.fg2,
     fontFamily: fonts.sans,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 23,
     marginBottom: 6,
   },
   code: {
     color: colors.fg1,
     fontFamily: fonts.mono,
-    fontSize: 11,
+    fontSize: 14,
+    fontWeight: '600',
   },
   dismiss: {
     color: colors.blue400,
     fontFamily: fonts.mono,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '700',
   },
 })

@@ -154,14 +154,14 @@ const styles = StyleSheet.create({
   chromeBack: {
     color: colors.fg2,
     fontFamily: fonts.sans,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
   },
   chromeSkip: {
     color: colors.fg3,
     fontFamily: fonts.sans,
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '700',
   },
   content: { flex: 1 },
   dotsWrap: { paddingHorizontal: 16, paddingTop: 10 },

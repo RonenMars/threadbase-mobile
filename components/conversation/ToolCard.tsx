@@ -262,21 +262,24 @@ function makeStyles(theme: Theme) {
     name: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     summary: {
       color: theme.text.secondary,
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
     },
     fill: { flex: 1 },
     errorBadge: {
       color: theme.status.failed,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     chevron: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     body: {
       borderTopWidth: 1,
@@ -287,10 +290,12 @@ function makeStyles(theme: Theme) {
       color: theme.text.primary,
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
     },
     caption: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       marginTop: spacing.xs,
     },
     // Solid high-contrast highlighter fill — shared per-theme token.

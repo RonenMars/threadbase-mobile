@@ -588,7 +588,8 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
     subheading: {
       color: theme.text.secondary,
       fontSize: font.base,
-      lineHeight: 21,
+      fontWeight: '600',
+      lineHeight: 24,
       marginBottom: spacing.sm,
     },
     card: {
@@ -608,11 +609,11 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: theme.border,
     },
-    landingLabel: { flex: 1, color: theme.text.primary, fontSize: font.base, ...rtl.copy },
+    landingLabel: { flex: 1, color: theme.text.primary, fontSize: font.base, fontWeight: '600', ...rtl.copy },
     fieldLabel: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      fontWeight: '500',
+      fontWeight: '700',
       marginTop: spacing.sm,
       ...rtl.copy,
     },
@@ -626,7 +627,7 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
     },
     segmentBtn: { flex: 1, paddingVertical: spacing.sm, alignItems: 'center', minHeight: 44, justifyContent: 'center' },
     segmentBtnActive: { backgroundColor: theme.text.accent },
-    segmentText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '500' },
+    segmentText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '700' },
     segmentTextActive: { color: theme.text.onAccent },
     input: {
       backgroundColor: theme.bg.card,
@@ -635,6 +636,7 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       borderColor: theme.border,
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       minHeight: 44,
@@ -643,8 +645,8 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
     emailInput: { ...rtl.ltr },
     multiline: { minHeight: 110 },
     inputError: { borderColor: theme.text.danger },
-    errorText: { color: theme.text.danger, fontSize: font.sm },
-    helperText: { color: theme.text.secondary, fontSize: font.xs, lineHeight: 16 },
+    errorText: { color: theme.text.danger, fontSize: font.sm, fontWeight: '600' },
+    helperText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', lineHeight: 20 },
     addScreenshotBtn: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -658,11 +660,11 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       minHeight: 44,
       justifyContent: 'center',
     },
-    addScreenshotText: { color: theme.text.accent, fontSize: font.base, fontWeight: '500' },
+    addScreenshotText: { color: theme.text.accent, fontSize: font.base, fontWeight: '700' },
     attachmentRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     thumb: { width: 64, height: 64, borderRadius: radius.sm, backgroundColor: theme.bg.card },
     removeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 },
-    removeText: { color: theme.text.danger, fontSize: font.sm },
+    removeText: { color: theme.text.danger, fontSize: font.sm, fontWeight: '600' },
     checkboxRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -680,7 +682,7 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       justifyContent: 'center',
     },
     checkboxChecked: { backgroundColor: theme.text.accent, borderColor: theme.text.accent },
-    checkboxLabel: { flex: 1, color: theme.text.primary, fontSize: font.base },
+    checkboxLabel: { flex: 1, color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
     primaryBtn: {
       backgroundColor: theme.text.accent,
       borderRadius: radius.md,
@@ -696,7 +698,7 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
     // content instead, which shrink-wraps children — without this the button
     // collapses to just the label's width. Used only there.
     primaryBtnWide: { minWidth: 200, paddingHorizontal: spacing.xl },
-    primaryBtnText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '600' },
+    primaryBtnText: { color: theme.text.onAccent, fontSize: font.base, fontWeight: '700' },
     submittingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     successIcon: {
       width: 64,
@@ -709,14 +711,14 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       justifyContent: 'center',
     },
     successTitle: { color: theme.text.primary, fontSize: font.lg, fontWeight: '700', marginTop: spacing.sm },
-    successMessage: { color: theme.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 21 },
+    successMessage: { color: theme.text.secondary, fontSize: font.base, fontWeight: '600', textAlign: 'center', lineHeight: 24 },
     deliveryNote: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
       marginTop: spacing.xs,
     },
-    deliveryNoteText: { color: theme.text.secondary, fontSize: font.xs },
+    deliveryNoteText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     diagnosticsSuggestion: {
       marginTop: spacing.xl,
       padding: spacing.md,
@@ -727,8 +729,8 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       gap: spacing.xs,
       maxWidth: 320,
     },
-    diagnosticsSuggestionTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
-    diagnosticsSuggestionBody: { color: theme.text.secondary, fontSize: font.xs, lineHeight: 17 },
+    diagnosticsSuggestionTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '700' },
+    diagnosticsSuggestionBody: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', lineHeight: 22 },
     diagnosticsSuggestionActions: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -736,7 +738,7 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       gap: spacing.md,
       marginTop: spacing.xs,
     },
-    diagnosticsSuggestionNotNow: { color: theme.text.secondary, fontSize: font.sm, minHeight: 32 },
+    diagnosticsSuggestionNotNow: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', minHeight: 32 },
     diagnosticsSuggestionEnableBtn: {
       backgroundColor: theme.text.accent,
       borderRadius: radius.sm,
@@ -745,7 +747,7 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       minHeight: 32,
       justifyContent: 'center',
     },
-    diagnosticsSuggestionEnableText: { color: theme.text.onAccent, fontSize: font.sm, fontWeight: '600' },
+    diagnosticsSuggestionEnableText: { color: theme.text.onAccent, fontSize: font.sm, fontWeight: '700' },
     stepRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -767,7 +769,7 @@ function styles(theme: Theme, rtl: RtlStyleKit) {
       fontWeight: '700',
       overflow: 'hidden',
     },
-    stepText: { flex: 1, color: theme.text.primary, fontSize: font.base },
-    copiedNote: { color: theme.text.success, fontSize: font.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
+    stepText: { flex: 1, color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
+    copiedNote: { color: theme.text.success, fontSize: font.sm, fontWeight: '600', paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
   })
 }

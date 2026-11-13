@@ -30,12 +30,12 @@ module.exports = {
         },
       },
       fontSize: {
-        'font-xs':   ['11px', { lineHeight: '15px' }],
-        'font-sm':   ['13px', { lineHeight: '18px' }],
-        'font-base': ['15px', { lineHeight: '20px' }],
-        'font-lg':   ['17px', { lineHeight: '22px' }],
-        'font-xl':   ['20px', { lineHeight: '26px' }],
-        'font-xxl':  ['24px', { lineHeight: '30px' }],
+        'font-xs':   ['14px', { lineHeight: '19px' }],
+        'font-sm':   ['16px', { lineHeight: '22px' }],
+        'font-base': ['17px', { lineHeight: '23px' }],
+        'font-lg':   ['20px', { lineHeight: '26px' }],
+        'font-xl':   ['23px', { lineHeight: '30px' }],
+        'font-xxl':  ['27px', { lineHeight: '34px' }],
       },
       borderRadius: {
         'radius-sm': '6px',

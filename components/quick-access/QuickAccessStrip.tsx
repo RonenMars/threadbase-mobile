@@ -218,8 +218,8 @@ function makeStyles(theme: Theme) {
       borderColor: 'transparent',
     },
     tabActive: { borderColor: theme.text.accent },
-    tabLabel: { color: theme.text.secondary, fontSize: font.base },
-    tabLabelActive: { color: theme.text.accent, fontWeight: '600' },
+    tabLabel: { color: theme.text.secondary, fontSize: font.base, fontWeight: '600' },
+    tabLabelActive: { color: theme.text.accent, fontWeight: '700' },
     tabRight: { marginStart: 'auto', flexDirection: 'row', alignItems: 'center', paddingEnd: spacing.sm },
     iconBtn: { padding: 6 },
     chipsContainer: { paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
@@ -231,7 +231,7 @@ function makeStyles(theme: Theme) {
       borderWidth: 1,
       borderColor: theme.border,
     },
-    loadMoreText: { color: theme.text.secondary, fontSize: font.xs },
-    emptyText: { color: theme.text.secondary, fontSize: font.xs, paddingVertical: 2 },
+    loadMoreText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
+    emptyText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', paddingVertical: 2 },
   })
 }

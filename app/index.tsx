@@ -808,7 +808,7 @@ function makeStyles(theme: Theme) {
   headerTitle: {
     color: theme.text.primary,
     fontSize: font.lg,
-    fontWeight: '600',
+    fontWeight: '700',
     flexShrink: 1,
   },
   headerRight: {
@@ -886,11 +886,11 @@ function makeStyles(theme: Theme) {
   segmentText: {
     color: theme.text.secondary,
     fontSize: font.sm,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   segmentTextActive: {
     color: theme.text.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   convCardTitleMatch: {
     backgroundColor: `${theme.text.accent}38`,
@@ -932,5 +932,6 @@ function makeStyles(theme: Theme) {
   fabToastText: {
     color: theme.text.secondary,
     fontSize: font.sm,
+    fontWeight: '600',
   },
 })}

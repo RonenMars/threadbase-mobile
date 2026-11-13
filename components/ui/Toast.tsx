@@ -232,13 +232,13 @@ function makeStyles(theme: Theme) {
     },
     title: {
       fontSize: font.base,
-      fontWeight: '500',
-      lineHeight: 20,
+      fontWeight: '700',
+      lineHeight: 23,
     },
     message: {
       fontSize: font.sm,
-      fontWeight: '400',
-      lineHeight: 18,
+      fontWeight: '600',
+      lineHeight: 22,
       color: theme.text.secondary,
     },
     actionBtn: {
@@ -251,7 +251,7 @@ function makeStyles(theme: Theme) {
     },
     actionText: {
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     closeBtn: {
       width: TARGET,

@@ -100,7 +100,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
     },
-    itemText: { color: theme.text.primary, fontSize: font.sm },
+    itemText: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
     divider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.border,
@@ -112,7 +112,7 @@ function makeStyles(theme: Theme) {
       paddingBottom: 2,
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
       letterSpacing: 0.6,
       textTransform: 'uppercase',
     },

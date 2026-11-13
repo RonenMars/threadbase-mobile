@@ -183,7 +183,7 @@ function makeStyles(theme: Theme) {
     optionText: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     optionTextSelected: {
       color: theme.text.primary,

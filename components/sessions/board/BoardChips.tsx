@@ -115,9 +115,9 @@ function makeStyles(theme: Theme) {
     },
     chipSelected: { borderColor: theme.text.accent, backgroundColor: `${theme.text.accent}24` },
     chipEmpty: { opacity: 0.55 },
-    chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
+    chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '700' },
     chipTextSelected: { color: theme.text.primary },
-    chipCount: { color: theme.text.secondary, fontSize: font.xs, fontVariant: ['tabular-nums'] },
+    chipCount: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', fontVariant: ['tabular-nums'] },
     dot: { width: 8, height: 8, borderRadius: 4 },
   })
 }

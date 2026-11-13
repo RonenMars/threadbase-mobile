@@ -60,14 +60,15 @@ function makeStyles(theme: Theme) {
     text: {
       flex: 1,
       color: theme.text.secondary,
-      fontSize: 12.5,
-      lineHeight: 18,
+      fontSize: 15.5,
+      fontWeight: '600',
+      lineHeight: 22,
     },
     dismiss: {
       color: theme.text.accent,
       fontFamily: 'Menlo',
-      fontSize: 11.5,
-      fontWeight: '600',
+      fontSize: 14.5,
+      fontWeight: '700',
     },
   })
 }

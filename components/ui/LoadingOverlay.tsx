@@ -14,7 +14,7 @@ function DotsIndicator({ color }: { color: string }) {
     const id = setInterval(() => setFrame((f) => (f + 1) % DOTS.length), 400)
     return () => clearInterval(id)
   }, [])
-  return <Text style={{ color, fontSize: font.sm, letterSpacing: 1 }}>{DOTS[frame]}</Text>
+  return <Text style={{ color, fontSize: font.sm, fontWeight: '600', letterSpacing: 1 }}>{DOTS[frame]}</Text>
 }
 
 interface Props {
@@ -152,6 +152,7 @@ function makeStyles(theme: Theme) {
     marginBottom: spacing.sm,
     color: theme.text.secondary,
     fontSize: font.xs,
+    fontWeight: '600',
   },
   row: {
     width: 192,
@@ -165,11 +166,12 @@ function makeStyles(theme: Theme) {
   rowTitle: {
     color: theme.text.primary,
     fontSize: font.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   rowCount: {
     color: theme.text.secondary,
     fontSize: font.xs,
+    fontWeight: '600',
   },
   barTrack: {
     height: 6,

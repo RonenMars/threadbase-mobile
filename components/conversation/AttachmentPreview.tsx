@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   headerText: { flex: 1, paddingTop: spacing.sm },
-  title: { color: FOREGROUND, fontSize: font.sm, fontWeight: '600' },
-  counter: { color: FOREGROUND_MUTED, fontSize: font.xs, marginTop: 2 },
+  title: { color: FOREGROUND, fontSize: font.sm, fontWeight: '700' },
+  counter: { color: FOREGROUND_MUTED, fontSize: font.xs, fontWeight: '600', marginTop: 2 },
   closeBtn: { padding: spacing.xs, paddingTop: spacing.sm },
 })

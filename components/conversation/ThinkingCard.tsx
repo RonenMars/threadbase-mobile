@@ -71,11 +71,12 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     chevron: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     body: {
       paddingHorizontal: spacing.md,
@@ -84,11 +85,13 @@ function makeStyles(theme: Theme) {
     content: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       lineHeight: font.sm * 1.5,
     },
     redacted: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       fontStyle: 'italic',
     },
   })

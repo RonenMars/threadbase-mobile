@@ -574,9 +574,9 @@ function makeStyles(theme: Theme) {
       backgroundColor: theme.bg.primary,
     },
     inputAreaExpanded: { flex: 1, borderTopWidth: 0 },
-    sendError: { color: theme.status.failed, fontSize: font.sm },
-    sendErrorAction: { color: theme.text.accent, fontSize: font.sm, textDecorationLine: 'underline' },
-    sendNotice: { color: theme.text.secondary, fontSize: font.sm },
+    sendError: { color: theme.status.failed, fontSize: font.sm, fontWeight: '600' },
+    sendErrorAction: { color: theme.text.accent, fontSize: font.sm, fontWeight: '600', textDecorationLine: 'underline' },
+    sendNotice: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
     inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, ...iosComposerChrome },
     input: {
       flex: 1,
@@ -586,6 +586,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       padding: spacing.sm,
       maxHeight: 160,
       minHeight: 44,
@@ -600,6 +601,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       padding: spacing.sm,
     },
     expandBtn: { justifyContent: 'flex-end', alignSelf: 'flex-end', paddingBottom: spacing.sm, paddingHorizontal: spacing.xs },
@@ -666,7 +668,7 @@ function makeStyles(theme: Theme) {
       maxWidth: 200,
     },
     chipBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
-    chipText: { color: theme.text.primary, fontSize: font.xs, flexShrink: 1 },
+    chipText: { color: theme.text.primary, fontSize: font.xs, fontWeight: '600', flexShrink: 1 },
     suggestionChip: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -680,7 +682,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       maxWidth: '100%',
     },
-    suggestionText: { color: theme.text.secondary, fontSize: font.sm, flexShrink: 1 },
+    suggestionText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', flexShrink: 1 },
     disabled: { opacity: 0.4 },
   })
 }

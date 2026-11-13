@@ -88,8 +88,8 @@ const copyStyles = StyleSheet.create({
   command: {
     color: colors.fg1,
     fontFamily: fonts.mono,
-    fontSize: 12.5,
-    fontWeight: '500',
+    fontSize: 15.5,
+    fontWeight: '700',
   },
   badge: {
     flexDirection: 'row',
@@ -99,8 +99,8 @@ const copyStyles = StyleSheet.create({
   badgeText: {
     color: colors.blue400,
     fontFamily: fonts.mono,
-    fontSize: 10.5,
-    fontWeight: '600',
+    fontSize: 13.5,
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
 })
@@ -460,8 +460,8 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: colors.amber400,
     fontFamily: fonts.mono,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '700',
     letterSpacing: 2,
     textTransform: 'uppercase',
     marginBottom: 14,
@@ -469,17 +469,17 @@ const styles = StyleSheet.create({
   headline: {
     color: colors.fg0,
     fontFamily: fonts.sans,
-    fontSize: 26,
-    lineHeight: 29,
-    fontWeight: '600',
+    fontSize: 29,
+    lineHeight: 35,
+    fontWeight: '700',
     letterSpacing: -0.55,
     marginBottom: 14,
   },
   sectionLabel: {
     color: colors.fg3,
     fontFamily: fonts.mono,
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: 4,
@@ -487,8 +487,9 @@ const styles = StyleSheet.create({
   sectionHint: {
     color: colors.fg3,
     fontFamily: fonts.sans,
-    fontSize: 12,
-    lineHeight: 17,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 21,
   },
   form: {
     gap: 10,
@@ -504,22 +505,25 @@ const styles = StyleSheet.create({
   logRow: {},
   logLine: {
     fontFamily: fonts.mono,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 23,
   },
   logIndex: { color: colors.fg4 },
   modeBlurb: {
     color: colors.fg3,
     fontFamily: fonts.mono,
-    fontSize: 12.5,
-    lineHeight: 19,
+    fontSize: 15.5,
+    fontWeight: '600',
+    lineHeight: 24,
     marginBottom: 10,
   },
   connectivityHint: {
     color: colors.fg4,
     fontFamily: fonts.mono,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 23,
     marginBottom: 16,
   },
   modeCard: {
@@ -543,7 +547,7 @@ const styles = StyleSheet.create({
   recommendedBadge: {
     color: colors.blue400,
     fontFamily: fonts.mono,
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
@@ -551,20 +555,22 @@ const styles = StyleSheet.create({
   modeCardTitle: {
     color: colors.fg0,
     fontFamily: fonts.sans,
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     flexShrink: 1,
   },
   modeCardBody: {
     color: colors.fg3,
     fontFamily: fonts.mono,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 23,
   },
   urlError: {
     color: colors.red400,
     fontFamily: fonts.mono,
-    fontSize: 12,
+    fontSize: 15,
+    fontWeight: '600',
     marginTop: 8,
   },
   supportLink: {
@@ -574,12 +580,13 @@ const styles = StyleSheet.create({
   explainStep: {
     color: colors.fg2,
     fontFamily: fonts.mono,
-    fontSize: 12.5,
-    lineHeight: 19,
+    fontSize: 15.5,
+    fontWeight: '600',
+    lineHeight: 24,
   },
   stepNum: {
     color: colors.amber400,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   linkBtn: {
     alignItems: 'center',
@@ -596,8 +603,8 @@ const styles = StyleSheet.create({
   linkText: {
     color: colors.blue400,
     fontFamily: fonts.mono,
-    fontSize: 12.5,
-    fontWeight: '500',
+    fontSize: 15.5,
+    fontWeight: '700',
   },
   flex: { flex: 1 },
 })

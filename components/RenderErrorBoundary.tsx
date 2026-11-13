@@ -81,14 +81,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#161b22',
     gap: spacing.xs,
   },
-  title: { color: '#e6edf3', fontSize: font.sm, fontWeight: '600' },
-  body: { color: '#8b949e', fontSize: font.xs },
+  title: { color: '#e6edf3', fontSize: font.sm, fontWeight: '700' },
+  body: { color: '#8b949e', fontSize: font.xs, fontWeight: '600' },
   raw: {
     color: '#8b949e',
     fontSize: font.xs,
+    fontWeight: '600',
     fontFamily: 'monospace',
     marginTop: spacing.xs,
   },
   retry: { alignSelf: 'flex-start', marginTop: spacing.xs, paddingVertical: 4 },
-  retryText: { color: '#58a6ff', fontSize: font.sm, fontWeight: '500' },
+  retryText: { color: '#58a6ff', fontSize: font.sm, fontWeight: '700' },
 })

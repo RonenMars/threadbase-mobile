@@ -15,6 +15,7 @@ export function makeStyles(theme: Theme, direction: Direction) {
     backgroundColor: theme.bg.card,
     color: theme.text.primary,
     fontSize: font.base,
+    fontWeight: '600',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 8,
@@ -33,7 +34,7 @@ export function makeStyles(theme: Theme, direction: Direction) {
   sectionHeaderText: {
     color: theme.text.secondary,
     fontSize: font.sm,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -46,10 +47,12 @@ export function makeStyles(theme: Theme, direction: Direction) {
   resultTitle: {
     color: theme.text.primary,
     fontSize: font.base,
+    fontWeight: '600',
   },
   resultSubtitle: {
     color: theme.text.secondary,
     fontSize: font.sm,
+    fontWeight: '600',
     marginTop: 2,
   },
   })

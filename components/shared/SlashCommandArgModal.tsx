@@ -197,6 +197,7 @@ function makeStyles(theme: Theme) {
     commandDesc: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       marginTop: 1,
     },
     body: {
@@ -208,7 +209,7 @@ function makeStyles(theme: Theme) {
       fontSize: font.xs,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     input: {
       backgroundColor: theme.bg.card,
@@ -217,6 +218,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       padding: spacing.sm,
       minHeight: 44,
     },
@@ -238,6 +240,7 @@ function makeStyles(theme: Theme) {
     cancelBtnText: {
       color: theme.text.secondary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     confirmBtn: {
       flex: 2,
@@ -253,7 +256,7 @@ function makeStyles(theme: Theme) {
     confirmBtnText: {
       color: theme.text.onAccent,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

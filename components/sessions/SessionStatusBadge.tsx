@@ -65,7 +65,7 @@ function makeStyles(_theme: Theme) {
   },
   label: {
     fontSize: font.xs,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   })
 }

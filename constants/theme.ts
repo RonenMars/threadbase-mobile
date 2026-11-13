@@ -306,12 +306,12 @@ export const radius = {
 } as const
 
 export const font = {
-  xs: 11,
-  sm: 13,
-  base: 15,
-  lg: 17,
-  xl: 20,
-  xxl: 24,
+  xs: 14,
+  sm: 16,
+  base: 17,
+  lg: 20,
+  xl: 23,
+  xxl: 27,
 } as const
 
 export const TABLET_BREAKPOINT = 768

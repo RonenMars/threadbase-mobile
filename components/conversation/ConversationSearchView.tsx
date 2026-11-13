@@ -260,7 +260,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
-    matchNavCount: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', ...rtl.copy },
+    matchNavCount: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '700', ...rtl.copy },
     matchNavActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     matchNavBtn: { minWidth: 32, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   })

@@ -95,8 +95,8 @@ function makeStyles(theme: Theme) {
       backgroundColor: theme.bg.secondary,
     },
     keepsCopy: { flex: 1, gap: 2 },
-    keepsTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
-    keepsBody: { color: theme.text.secondary, fontSize: font.sm, lineHeight: 19 },
-    noUndo: { color: theme.text.secondary, fontSize: font.xs },
+    keepsTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '700' },
+    keepsBody: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', lineHeight: 23 },
+    noUndo: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
   })
 }

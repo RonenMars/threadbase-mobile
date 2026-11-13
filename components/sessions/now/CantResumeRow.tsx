@@ -75,15 +75,17 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     reason: {
       color: theme.status.failed,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     time: {
       fontFamily: MONO_FONT,
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
       fontVariant: ['tabular-nums'],
     },

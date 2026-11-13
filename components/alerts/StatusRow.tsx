@@ -192,12 +192,13 @@ function makeStyles(theme: Theme, accent: string) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     message: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      lineHeight: 18,
+      fontWeight: '600',
+      lineHeight: 22,
     },
     actions: {
       flexDirection: 'row',
@@ -220,7 +221,7 @@ function makeStyles(theme: Theme, accent: string) {
     actionText: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     retryText: {
       color: theme.text.onAccent,
@@ -244,12 +245,14 @@ function makeStyles(theme: Theme, accent: string) {
     },
     copyLabel: {
       color: theme.text.secondary,
-      fontSize: 11,
+      fontSize: 14,
+      fontWeight: '600',
       textTransform: 'uppercase',
     },
     copyValue: {
       color: theme.text.primary,
-      fontSize: 12,
+      fontSize: 15,
+      fontWeight: '600',
       fontFamily: 'monospace',
       marginTop: 2,
     },

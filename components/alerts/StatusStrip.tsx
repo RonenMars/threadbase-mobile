@@ -89,7 +89,7 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
   })
 }

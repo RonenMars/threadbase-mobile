@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: font.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   glow: {
     position: 'absolute',

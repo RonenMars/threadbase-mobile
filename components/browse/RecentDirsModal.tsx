@@ -140,7 +140,7 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.primary,
       fontSize: font.lg,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     closeBtn: {
       minWidth: MIN_TOUCH_TARGET,
@@ -165,10 +165,12 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.sm,
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     empty: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       textAlign: 'center',
       paddingVertical: spacing.xl,
       paddingHorizontal: spacing.lg,
@@ -188,10 +190,12 @@ function makeStyles(theme: Theme) {
     name: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     path: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       marginTop: 2,
     },
   })

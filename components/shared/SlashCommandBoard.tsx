@@ -158,7 +158,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     headerTitle: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
       ...rtl.copy,
@@ -167,6 +167,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       ...rtl.ltr,
       color: theme.text.accent,
       fontSize: font.xs,
+      fontWeight: '600',
       fontFamily: 'monospace',
       backgroundColor: `${theme.text.accent}18`,
       paddingHorizontal: spacing.sm,
@@ -182,6 +183,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     emptyText: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       ...rtl.copy,
     },
     row: {
@@ -214,18 +216,19 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     commandSlash: {
       color: theme.text.accent,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       fontFamily: 'monospace',
     },
     commandTitle: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       ...rtl.ltr,
     },
     argsBadge: {
       color: theme.text.warning,
       fontSize: font.xs,
+      fontWeight: '600',
       marginStart: spacing.xs,
       backgroundColor: `${theme.text.warning}18`,
       paddingHorizontal: spacing.xs,
@@ -236,6 +239,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     commandDesc: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       ...rtl.copy,
     },
   })

@@ -155,11 +155,12 @@ function makeStyles(theme: Theme) {
   errorText: {
     color: theme.text.primary,
     fontSize: font.base,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   errorHint: {
     color: theme.text.secondary,
     fontSize: font.sm,
+    fontWeight: '600',
     marginTop: spacing.sm,
     opacity: 0.6,
   },

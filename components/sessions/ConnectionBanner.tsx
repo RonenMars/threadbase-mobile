@@ -63,12 +63,13 @@ function makeStyles(theme: Theme) {
     },
     title: {
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     subtitle: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 15,
+      fontWeight: '600',
+      lineHeight: 19,
     },
   })
 }

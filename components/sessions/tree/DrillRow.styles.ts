@@ -25,15 +25,17 @@ export function makeStyles(theme: Theme) {
   drillLabel: {
     fontSize: font.base,
     color: theme.text.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   drillStatus: {
     fontSize: font.xs,
+    fontWeight: '600',
     marginTop: 2,
     textTransform: 'capitalize',
   },
   drillTime: {
     fontSize: font.xs,
+    fontWeight: '600',
     color: theme.text.secondary,
     flexShrink: 0,
   },

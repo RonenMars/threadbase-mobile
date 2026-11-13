@@ -96,7 +96,7 @@ export function Banner({ title, message, accent, icon, action, secondaryAction, 
               style={s.detailsToggle}
               onPress={() => setDetailsOpen((v) => !v)}
             >
-              <Text style={{ color: accent, fontSize: 12 }}>{t('banner.moreInfo')}</Text>
+              <Text style={{ color: accent, fontSize: 15, fontWeight: '600' }}>{t('banner.moreInfo')}</Text>
               {detailsOpen
                 ? <CaretUp size={12} color={accent} />
                 : <CaretDown size={12} color={accent} />}
@@ -178,7 +178,7 @@ function styles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     rowBody: {
       gap: 8,
@@ -198,14 +198,15 @@ function styles(theme: Theme) {
     title: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       textAlign: 'center',
       marginTop: 4,
     },
     message: {
       fontSize: font.sm,
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 19,
+      lineHeight: 23,
     },
     detailsContainer: {
       width: '100%',
@@ -217,7 +218,8 @@ function styles(theme: Theme) {
       gap: 4,
     },
     detailsText: {
-      fontSize: 11,
+      fontSize: 14,
+      fontWeight: '600',
       textAlign: 'center',
       marginTop: 8,
       opacity: 0.75,
@@ -240,8 +242,8 @@ function styles(theme: Theme) {
     },
     actionLabel: {
       color: theme.text.primary,
-      fontSize: 13,
-      fontWeight: '600',
+      fontSize: 16,
+      fontWeight: '700',
     },
   })
 }

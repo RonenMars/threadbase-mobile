@@ -227,7 +227,8 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     text: {
       color: theme.text.primary,
       fontSize: font.base,
-      lineHeight: 22,
+      fontWeight: '600',
+      lineHeight: 25,
       ...rtl.copy,
     },
     strong: {
@@ -243,6 +244,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     inlineCode: {
       fontFamily: 'monospace',
       fontSize: font.sm,
+      fontWeight: '600',
       color: theme.text.accent,
     },
     link: {
@@ -254,12 +256,12 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     // widen the spread FlashList averages per item type.
     h1: {
       fontSize: font.xl,
-      lineHeight: 26,
+      lineHeight: 30,
       fontWeight: '700',
     },
     h2: {
       fontSize: font.lg,
-      lineHeight: 23,
+      lineHeight: 27,
       fontWeight: '700',
     },
     h3: {

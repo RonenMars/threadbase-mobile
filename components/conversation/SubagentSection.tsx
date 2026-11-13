@@ -118,22 +118,23 @@ function makeStyles(theme: Theme) {
   return StyleSheet.create({
     wrap: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.bg.card },
     header: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2, paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-    headerText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
+    headerText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '700' },
     pad: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md },
-    note: { color: theme.text.secondary, fontSize: font.xs },
+    note: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     row: { paddingVertical: spacing.xs + 2, paddingStart: spacing.lg + spacing.md, paddingEnd: spacing.md, gap: 2 },
     rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
-    label: { flexShrink: 1, color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
+    label: { flexShrink: 1, color: theme.text.primary, fontSize: font.sm, fontWeight: '700' },
     tag: {
       color: theme.text.secondary,
       fontSize: font.xs - 1,
+      fontWeight: '600',
       backgroundColor: theme.bg.card,
       borderRadius: 4,
       paddingHorizontal: 5,
       overflow: 'hidden',
     },
-    meta: { color: theme.text.secondary, fontSize: font.xs },
-    more: { color: theme.text.accent, fontSize: font.xs, fontWeight: '600' },
+    meta: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
+    more: { color: theme.text.accent, fontSize: font.xs, fontWeight: '700' },
     activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.text.accent },
   })
 }

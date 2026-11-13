@@ -224,7 +224,7 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       flex: 1,
     },
     iconGroup: {
@@ -246,6 +246,7 @@ function makeStyles(theme: Theme) {
     url: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       fontFamily: 'monospace',
       paddingStart: 16,
       marginBottom: 2,
@@ -253,6 +254,7 @@ function makeStyles(theme: Theme) {
     meta: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       paddingStart: 16,
       paddingBottom: spacing.xs,
     },

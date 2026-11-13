@@ -72,17 +72,18 @@ function makeStyles(theme: Theme) {
     },
     title: {
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text.primary,
     },
     subtitle: {
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
-      lineHeight: 16,
+      lineHeight: 20,
     },
     learnMore: {
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text.accent,
       marginTop: 2,
     },

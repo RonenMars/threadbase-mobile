@@ -284,6 +284,7 @@ function makeStyles(theme: Theme) {
     listFooterText: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     searchBar: {
       flexDirection: 'row',
@@ -302,6 +303,7 @@ function makeStyles(theme: Theme) {
     searchInput: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       paddingVertical: spacing.sm,
     },
     skeletonRow: {
@@ -335,8 +337,8 @@ function makeStyles(theme: Theme) {
     },
     scrollBtnText: {
       color: 'rgba(230, 237, 243, 0.6)',
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: 15,
+      fontWeight: '700',
     },
   })
 }

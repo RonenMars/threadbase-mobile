@@ -122,16 +122,18 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     value: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     hint: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 16,
+      fontWeight: '600',
+      lineHeight: 20,
     },
   })
 }

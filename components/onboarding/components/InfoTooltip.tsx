@@ -60,9 +60,9 @@ const styles = StyleSheet.create({
   icon: {
     color: colors.fg4,
     fontFamily: fonts.mono,
-    fontSize: 10,
-    fontWeight: '600',
-    lineHeight: 13,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 17,
   },
   tooltip: {
     position: 'absolute',
@@ -79,8 +79,9 @@ const styles = StyleSheet.create({
   text: {
     color: colors.fg2,
     fontFamily: fonts.sans,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 23,
     marginBottom: 8,
   },
   linkRow: {
@@ -92,14 +93,14 @@ const styles = StyleSheet.create({
   link: {
     color: colors.blue400,
     fontFamily: fonts.sans,
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '700',
   },
   dismissRow: { alignSelf: 'flex-start' },
   dismiss: {
     color: colors.fg3,
     fontFamily: fonts.mono,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '700',
   },
 })

@@ -55,6 +55,7 @@ function makeStyles(theme: Theme) {
       minWidth: 0,
       fontFamily: MONO_FONT,
       fontSize: font.sm,
+      fontWeight: '600',
       color: theme.text.primary,
     },
     pill: {
@@ -67,12 +68,14 @@ function makeStyles(theme: Theme) {
     pillText: {
       fontFamily: MONO_FONT,
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
       fontVariant: ['tabular-nums'],
     },
     time: {
       fontFamily: MONO_FONT,
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
       fontVariant: ['tabular-nums'],
     },

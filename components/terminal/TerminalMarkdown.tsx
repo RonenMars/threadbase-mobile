@@ -136,9 +136,10 @@ const styles = StyleSheet.create({
   text: {
     ...ltrContentStyle,
     color: '#e6edf3',
-    fontSize: 12,
+    fontSize: 15,
+    fontWeight: '600',
     fontFamily: 'monospace',
-    lineHeight: 18,
+    lineHeight: 23,
   },
   strong: {
     fontWeight: '700',
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
   },
   headingMinor: {
     color: '#d2a8ff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   itemRow: {
     flexDirection: 'row',

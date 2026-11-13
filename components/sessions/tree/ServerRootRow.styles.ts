@@ -26,11 +26,12 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   drillLabel: {
     fontSize: font.base,
     color: theme.text.primary,
-    fontWeight: '600',
+    fontWeight: '700',
     ...rtl.ltr,
   },
   drillStatus: {
     fontSize: font.xs,
+    fontWeight: '600',
     marginTop: 2,
     textTransform: 'capitalize',
     color: theme.text.secondary,
@@ -45,7 +46,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   badgeText: {
     fontSize: font.xs,
     color: theme.text.accent,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   })
 }

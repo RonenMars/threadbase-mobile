@@ -227,6 +227,7 @@ function makeStyles(theme: Theme) {
     preview: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       lineHeight: font.xs + 4,
     },
     match: {

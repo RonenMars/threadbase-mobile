@@ -199,13 +199,14 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     title: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       ...rtl.block,
     },
     subtitle: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 16,
+      fontWeight: '600',
+      lineHeight: 20,
       ...rtl.block,
     },
     serverList: {
@@ -224,7 +225,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
       ...rtl.ltr,
     },
     dotsRow: {

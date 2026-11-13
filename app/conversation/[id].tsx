@@ -1116,9 +1116,9 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
     },
-    unavailableBannerText: { color: theme.text.secondary, fontSize: font.sm },
+    unavailableBannerText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
     resumeWrapper: { flex: 1, gap: spacing.xs },
-    resumeError: { color: '#ef4444', fontSize: font.xs, textAlign: 'center' },
+    resumeError: { color: '#ef4444', fontSize: font.xs, fontWeight: '600', textAlign: 'center' },
     resumeBtn: {
       backgroundColor: theme.text.accent,
       borderRadius: 10,
@@ -1137,9 +1137,9 @@ function makeStyles(theme: Theme) {
       padding: spacing.lg,
       gap: spacing.sm,
     },
-    errorTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
-    errorMessage: { color: theme.text.secondary, fontSize: font.sm, textAlign: 'center' },
-    emptyText: { color: theme.text.secondary, fontSize: font.sm },
+    errorTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '700' },
+    errorMessage: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', textAlign: 'center' },
+    emptyText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
     retryBtn: {
       marginTop: spacing.md,
       backgroundColor: theme.bg.card,
@@ -1151,6 +1151,6 @@ function makeStyles(theme: Theme) {
       justifyContent: 'center',
       alignItems: 'center',
     },
-    retryBtnText: { color: theme.text.primary, fontSize: font.base },
+    retryBtnText: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
   })
 }

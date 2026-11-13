@@ -88,8 +88,9 @@ function makeStyles(theme: Theme) {
     desc: {
       color: theme.text.secondary,
       fontSize: font.base,
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 23,
     },
     descGlass: {
       color: theme.text.primary,
@@ -97,6 +98,7 @@ function makeStyles(theme: Theme) {
     link: {
       color: theme.text.accent,
       fontSize: font.base,
+      fontWeight: '600',
       textDecorationLine: 'underline',
     },
     btn: {
@@ -112,7 +114,7 @@ function makeStyles(theme: Theme) {
     btnText: {
       color: theme.text.onAccent,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

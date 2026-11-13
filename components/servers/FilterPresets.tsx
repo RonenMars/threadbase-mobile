@@ -64,7 +64,7 @@ function makeStyles(theme: Theme) {
     presetNeedsMeOn: { backgroundColor: `${theme.status.waiting}29`, borderColor: theme.status.waiting },
     presetOn: { borderColor: theme.text.accent, backgroundColor: theme.bg.primary },
     dot: { width: 8, height: 8, borderRadius: radius.full },
-    text: { color: theme.text.secondary, fontSize: font.sm + 1, fontWeight: '600' },
+    text: { color: theme.text.secondary, fontSize: font.sm + 1, fontWeight: '700' },
     textOn: { color: theme.text.primary },
   })
 }

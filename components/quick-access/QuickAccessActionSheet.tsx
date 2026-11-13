@@ -77,6 +77,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     title: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm + 2,
       borderBottomWidth: 1,
@@ -92,7 +93,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       borderBottomWidth: 1,
       borderColor: theme.bg.secondary,
     },
-    rowText: { color: theme.text.primary, fontSize: font.base, ...rtl.copy },
+    rowText: { color: theme.text.primary, fontSize: font.base, fontWeight: '600', ...rtl.copy },
     rowTextPrimary: { color: theme.text.accent },
     rowCancel: { borderBottomWidth: 0 },
     rowTextCancel: { color: theme.status.failed },

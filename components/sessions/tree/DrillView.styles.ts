@@ -26,11 +26,12 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   },
   backCrumb: {
     fontSize: font.xs,
+    fontWeight: '600',
     color: theme.text.secondary,
   },
   backLabel: {
     fontSize: font.base,
-    fontWeight: '600',
+    fontWeight: '700',
     color: theme.text.primary,
     fontFamily: MONO_FONT,
     ...rtl.ltr,

@@ -221,9 +221,9 @@ function makeStyles(theme: Theme) {
     handle: { backgroundColor: theme.border },
     content: { flex: 1, padding: spacing.md, gap: spacing.md },
     titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '700' },
     closeButton: { padding: spacing.xs },
-    closeButtonText: { color: theme.text.secondary, fontSize: font.lg, lineHeight: font.lg },
+    closeButtonText: { color: theme.text.secondary, fontSize: font.lg, fontWeight: '600', lineHeight: font.lg },
     section: { gap: spacing.sm },
     sectionHeader: {
       flexDirection: 'row',
@@ -233,7 +233,7 @@ function makeStyles(theme: Theme) {
     sectionTitle: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     chipRow: {
       flexDirection: 'row',
@@ -264,7 +264,7 @@ function makeStyles(theme: Theme) {
     chipText: {
       color: theme.text.secondary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     chipTextSelected: {
       color: theme.text.primary,
@@ -286,7 +286,7 @@ function makeStyles(theme: Theme) {
     quickButtonText: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     actions: {
       flexDirection: 'row',
@@ -303,6 +303,7 @@ function makeStyles(theme: Theme) {
     cancelText: {
       color: theme.text.secondary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     applyButton: {
       minHeight: 44,
@@ -312,7 +313,7 @@ function makeStyles(theme: Theme) {
     applyText: {
       color: theme.text.accent,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

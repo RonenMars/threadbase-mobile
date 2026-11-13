@@ -40,7 +40,7 @@ function makeStyles(theme: Theme) {
     text: {
       color: theme.text.accent,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
   })
 }

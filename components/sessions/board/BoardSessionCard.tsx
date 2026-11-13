@@ -204,13 +204,13 @@ function makeStyles(theme: Theme) {
     head: { flexDirection: 'row', alignItems: 'stretch' },
     open: { flex: 1, minWidth: 0, minHeight: 64, justifyContent: 'center', gap: 2, paddingHorizontal: 12, paddingVertical: 10 },
     openStacked: { minHeight: 50, paddingBottom: 3 },
-    title: { color: theme.text.primary, fontSize: font.base, lineHeight: 20, fontWeight: '600' },
+    title: { color: theme.text.primary, fontSize: font.base, lineHeight: 23, fontWeight: '700' },
     toggle: { minWidth: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingStart: 4, paddingEnd: 12 },
     counter: { minWidth: 24, alignItems: 'center', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 999, backgroundColor: theme.bg.secondary },
     mirrored: { transform: [{ scaleX: -1 }] },
     snippet: { paddingHorizontal: 12, paddingBottom: 9 },
     askRow: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 27, paddingHorizontal: 12, paddingBottom: 9 },
-    ask: { flex: 1, color: theme.status.waiting, fontSize: 12, lineHeight: 16, fontWeight: '600' },
-    tail: { flex: 1, color: theme.text.secondary, fontSize: 12, lineHeight: 16 },
+    ask: { flex: 1, color: theme.status.waiting, fontSize: 15, lineHeight: 20, fontWeight: '700' },
+    tail: { flex: 1, color: theme.text.secondary, fontSize: 15, fontWeight: '600', lineHeight: 20 },
   })
 }

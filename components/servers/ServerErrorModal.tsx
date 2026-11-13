@@ -153,7 +153,7 @@ function makeStyles(theme: Theme) {
     serverName: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       flex: 1,
     },
     closeBtn: {
@@ -171,16 +171,19 @@ function makeStyles(theme: Theme) {
     detailLabel: {
       color: theme.text.secondary,
       fontSize: font.base,
+      fontWeight: '600',
       width: 64,
     },
     detailValue: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       flex: 1,
     },
     mono: {
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
     },
     errorBox: {
       marginHorizontal: spacing.md,
@@ -203,8 +206,9 @@ function makeStyles(theme: Theme) {
     errorText: {
       color: theme.text.danger,
       fontSize: font.xs,
+      fontWeight: '600',
       flex: 1,
-      lineHeight: 18,
+      lineHeight: 23,
     },
     closeFooterBtn: {
       borderTopWidth: StyleSheet.hairlineWidth,
@@ -217,7 +221,7 @@ function makeStyles(theme: Theme) {
     closeFooterText: {
       color: theme.text.accent,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
   })
 }

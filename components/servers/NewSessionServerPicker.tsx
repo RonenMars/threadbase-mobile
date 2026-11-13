@@ -118,7 +118,7 @@ function makeStyles(theme: Theme) {
     sheetBgGlass: { backgroundColor: 'transparent' },
     handle: { backgroundColor: theme.border },
     content: { flex: 1, padding: spacing.md, gap: spacing.md },
-    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '700' },
     list: { gap: spacing.sm },
     row: {
       minHeight: 44,
@@ -146,15 +146,17 @@ function makeStyles(theme: Theme) {
     serverUnreachable: {
       color: theme.status.failed,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     serverLabel: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     serverUrl: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     actions: {
       flexDirection: 'row',
@@ -171,6 +173,7 @@ function makeStyles(theme: Theme) {
     cancelText: {
       color: theme.text.secondary,
       fontSize: font.base,
+      fontWeight: '600',
     },
   })
 }

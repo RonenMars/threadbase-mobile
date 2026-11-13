@@ -295,8 +295,8 @@ function makePendingStyles(theme: Theme) {
     container: { flex: 1, backgroundColor: theme.bg.primary },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.lg, gap: spacing.md },
     spinner: { marginBottom: spacing.md },
-    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600', textAlign: 'center' },
-    phrase: { color: theme.text.secondary, fontSize: font.base, textAlign: 'center', lineHeight: 24 },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '700', textAlign: 'center' },
+    phrase: { color: theme.text.secondary, fontSize: font.base, fontWeight: '600', textAlign: 'center', lineHeight: 27 },
     progressTrack: { width: '100%', maxWidth: 240 },
     footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
     stuckActions: { gap: spacing.sm },
@@ -307,7 +307,7 @@ function makePendingStyles(theme: Theme) {
       paddingVertical: spacing.md,
       alignItems: 'center',
     },
-    cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '500' },
+    cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '700' },
     waitButton: {
       borderWidth: 1,
       borderColor: theme.border,
@@ -315,14 +315,14 @@ function makePendingStyles(theme: Theme) {
       paddingVertical: spacing.md,
       alignItems: 'center',
     },
-    waitText: { color: theme.text.primary, fontSize: font.base, fontWeight: '500' },
+    waitText: { color: theme.text.primary, fontSize: font.base, fontWeight: '700' },
     viewConsoleButton: {
       backgroundColor: theme.text.accent,
       borderRadius: radius.md,
       paddingVertical: spacing.md,
       alignItems: 'center',
     },
-    viewConsoleText: { color: theme.bg.primary, fontSize: font.base, fontWeight: '600' },
+    viewConsoleText: { color: theme.bg.primary, fontSize: font.base, fontWeight: '700' },
   })
 }
 
@@ -408,12 +408,13 @@ function makeDiscStyles(theme: Theme) {
     warningTitle: {
       color: theme.text.warning,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     warningBody: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      lineHeight: 20,
+      fontWeight: '600',
+      lineHeight: 25,
     },
     buttons: {
       width: '100%',
@@ -443,7 +444,7 @@ function makeDiscStyles(theme: Theme) {
     },
     backBtnText: {
       color: theme.text.primary,
-      fontWeight: '600',
+      fontWeight: '700',
       fontSize: font.base,
     },
   })
@@ -1562,9 +1563,9 @@ function makeStyles(theme: Theme) {
       borderBottomWidth: 1,
       borderBottomColor: theme.border,
     },
-    elapsed: { color: theme.text.secondary, fontSize: font.sm },
-    messages: { color: theme.text.secondary, fontSize: font.sm },
-    metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
+    elapsed: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
+    messages: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600' },
+    metaChip: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '700' },
     body: { flex: 1 },
     // Content is frozen while the WS is down — make it read as stale, not live.
     staleContent: { opacity: 0.45 },
@@ -1578,17 +1579,19 @@ function makeStyles(theme: Theme) {
     placeholderTitle: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     placeholderText: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 25,
     },
     placeholderPath: {
       color: theme.text.accent,
       fontSize: font.xs,
+      fontWeight: '600',
       fontFamily: 'monospace',
       marginTop: spacing.sm,
     },
@@ -1609,13 +1612,14 @@ function makeStyles(theme: Theme) {
     discoveredTitle: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     discoveredText: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 25,
     },
     retryBtn: {
       backgroundColor: theme.text.accent,

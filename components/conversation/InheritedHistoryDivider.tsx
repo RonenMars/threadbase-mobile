@@ -58,7 +58,8 @@ function makeStyles(theme: Theme) {
     label: {
       flexShrink: 1,
       color: theme.text.secondary,
-      fontSize: 12,
+      fontSize: 15,
+      fontWeight: '600',
       textAlign: 'center',
     },
   })

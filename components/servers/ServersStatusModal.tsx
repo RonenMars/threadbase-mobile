@@ -468,10 +468,10 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     iconBtn: { padding: spacing.xs },
-    closeText: { color: theme.text.secondary, fontSize: font.base },
+    closeText: { color: theme.text.secondary, fontSize: font.base, fontWeight: '600' },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -482,15 +482,17 @@ function makeStyles(theme: Theme) {
     serverLabel: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     serverUrl: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     errorDetail: {
       color: theme.status.failed,
       fontSize: font.xs,
+      fontWeight: '600',
       marginTop: 2,
     },
     rowRight: {
@@ -518,7 +520,7 @@ function makeStyles(theme: Theme) {
     },
     statusText: {
       fontSize: font.xs,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     dotsBtn: {
       width: 28,
@@ -552,7 +554,7 @@ function makeStyles(theme: Theme) {
     counterText: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     dropBackdrop: {
       flex: 1,
@@ -576,7 +578,7 @@ function makeStyles(theme: Theme) {
     dropTitle: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      fontWeight: '500',
+      fontWeight: '700',
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
     },
@@ -594,7 +596,7 @@ function makeStyles(theme: Theme) {
     dropItemText: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
   })
 }

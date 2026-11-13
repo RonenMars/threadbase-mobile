@@ -201,21 +201,23 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.primary,
       fontSize: font.lg,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     subtitle: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     label: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
       marginTop: spacing.md,
     },
     current: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     input: {
       backgroundColor: theme.bg.secondary,
@@ -226,6 +228,7 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.sm,
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     chipRow: {
       flexDirection: 'row',
@@ -246,18 +249,21 @@ function makeStyles(theme: Theme) {
     chipText: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     chipTextActive: {
       color: theme.text.accent,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     notice: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     error: {
       color: theme.text.danger,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     buttonRow: {
       flexDirection: 'row',
@@ -275,7 +281,7 @@ function makeStyles(theme: Theme) {
     cancelLabel: {
       color: theme.text.secondary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     applyButton: {
       flex: 1,
@@ -290,7 +296,7 @@ function makeStyles(theme: Theme) {
     applyLabel: {
       color: theme.text.onAccent,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

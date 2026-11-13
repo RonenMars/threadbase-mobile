@@ -53,6 +53,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: font.xs,
-    fontWeight: '500',
+    fontWeight: '700',
   },
 })

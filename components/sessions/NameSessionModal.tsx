@@ -120,11 +120,12 @@ function makeStyles(theme: Theme) {
   title: {
     color: theme.text.primary,
     fontSize: font.lg,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   hint: {
     color: theme.text.secondary,
     fontSize: font.sm,
+    fontWeight: '600',
     fontStyle: 'italic',
   },
   input: {
@@ -136,6 +137,7 @@ function makeStyles(theme: Theme) {
     paddingVertical: spacing.sm,
     color: theme.text.primary,
     fontSize: font.base,
+    fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -153,7 +155,7 @@ function makeStyles(theme: Theme) {
   cancelLabel: {
     color: theme.text.secondary,
     fontSize: font.base,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   saveButton: {
     flex: 1,
@@ -165,7 +167,7 @@ function makeStyles(theme: Theme) {
   saveLabel: {
     color: theme.text.onAccent,
     fontSize: font.base,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   })
 }

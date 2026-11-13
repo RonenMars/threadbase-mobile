@@ -58,6 +58,7 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
     },
   })
 }

@@ -379,7 +379,7 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     closeBtn: {
       padding: spacing.xs,
@@ -401,8 +401,9 @@ function makeStyles(theme: Theme) {
     errorText: {
       color: theme.text.danger,
       fontSize: font.base,
+      fontWeight: '600',
       flex: 1,
-      lineHeight: 18,
+      lineHeight: 21,
     },
     saveBtn: {
       backgroundColor: theme.text.accent,
@@ -419,7 +420,7 @@ function makeStyles(theme: Theme) {
     saveBtnText: {
       color: theme.text.onAccent,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

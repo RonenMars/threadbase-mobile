@@ -284,13 +284,14 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
-      lineHeight: 20,
+      fontWeight: '700',
+      lineHeight: 23,
     },
     backupHint: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 16,
+      fontWeight: '600',
+      lineHeight: 20,
     },
     selectRow: {
       flexDirection: 'row',
@@ -299,7 +300,7 @@ function makeStyles(theme: Theme) {
     selectLink: {
       color: theme.text.accent,
       fontSize: font.xs,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     list: {
       maxHeight: 200,
@@ -314,10 +315,12 @@ function makeStyles(theme: Theme) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     selectErrorText: {
       color: theme.text.danger,
       fontSize: font.xs,
+      fontWeight: '600',
     },
     actions: {
       gap: spacing.xs,
@@ -335,7 +338,7 @@ function makeStyles(theme: Theme) {
     actionText: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     confirmBlock: {
       gap: spacing.sm,
@@ -343,12 +346,13 @@ function makeStyles(theme: Theme) {
     confirmTitle: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     confirmMessage: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      lineHeight: 19,
+      fontWeight: '600',
+      lineHeight: 23,
     },
     confirmActions: {
       flexDirection: 'row',
@@ -370,7 +374,7 @@ function makeStyles(theme: Theme) {
     confirmBtnText: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

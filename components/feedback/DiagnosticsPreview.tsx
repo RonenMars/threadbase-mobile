@@ -65,7 +65,8 @@ function styles(theme: Theme) {
     intro: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 17,
+      fontWeight: '600',
+      lineHeight: 22,
     },
     toggle: {
       flexDirection: 'row',
@@ -76,7 +77,7 @@ function styles(theme: Theme) {
     toggleText: {
       color: theme.text.accent,
       fontSize: font.sm,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     rows: {
       backgroundColor: theme.bg.primary,
@@ -94,11 +95,13 @@ function styles(theme: Theme) {
     rowKey: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       fontFamily: 'monospace',
     },
     rowValue: {
       color: theme.text.primary,
       fontSize: font.xs,
+      fontWeight: '600',
       fontFamily: 'monospace',
       flexShrink: 1,
       textAlign: 'right',

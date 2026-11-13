@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 12,
   },
-  title: { color: '#e6edf3', fontSize: 20, fontWeight: '600', textAlign: 'center' },
-  message: { color: '#8b949e', fontSize: 15, textAlign: 'center', lineHeight: 22 },
+  title: { color: '#e6edf3', fontSize: 23, fontWeight: '700', textAlign: 'center' },
+  message: { color: '#8b949e', fontSize: 18, fontWeight: '600', textAlign: 'center', lineHeight: 26 },
   button: {
     marginTop: 12,
     backgroundColor: '#238636',
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  buttonText: { color: '#fff', fontSize: 19, fontWeight: '700' },
   reportButton: {
     marginTop: 8,
     backgroundColor: 'transparent',
@@ -204,5 +204,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#238636',
     borderColor: '#238636',
   },
-  checkboxLabel: { color: '#e6edf3', fontSize: 14, flexShrink: 1 },
+  checkboxLabel: { color: '#e6edf3', fontSize: 17, fontWeight: '600', flexShrink: 1 },
 })

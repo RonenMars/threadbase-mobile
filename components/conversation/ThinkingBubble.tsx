@@ -316,7 +316,7 @@ function makeStyles(theme: Theme) {
     fullScreenTitle: {
       flex: 1,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text.primary,
     },
     headerButton: {
@@ -336,6 +336,7 @@ function makeStyles(theme: Theme) {
     },
     expandText: {
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
     },
     bubble: {
@@ -352,6 +353,7 @@ function makeStyles(theme: Theme) {
     terminalLine: {
       fontFamily: 'monospace',
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
       lineHeight: font.xs * 1.5,
     },
@@ -362,6 +364,7 @@ function makeStyles(theme: Theme) {
     },
     phase: {
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
     },
   })

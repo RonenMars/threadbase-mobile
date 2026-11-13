@@ -333,6 +333,6 @@ function makeStyles(theme: Theme) {
       shadowRadius: 4,
       elevation: 4,
     },
-    scrollBtnText: { color: 'rgba(230, 237, 243, 0.6)', fontSize: 12, fontWeight: '500' },
+    scrollBtnText: { color: 'rgba(230, 237, 243, 0.6)', fontSize: 15, fontWeight: '700' },
   })
 }

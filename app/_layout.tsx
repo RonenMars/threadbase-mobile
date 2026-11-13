@@ -429,9 +429,9 @@ function BiometricLockGate({ children }: { children: React.ReactNode }) {
 
 const lockStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0d1117', alignItems: 'center', justifyContent: 'center', gap: 24 },
-  title: { color: '#e6edf3', fontSize: 20, fontWeight: '600' },
+  title: { color: '#e6edf3', fontSize: 23, fontWeight: '700' },
   btn: { backgroundColor: '#238636', paddingHorizontal: 28, paddingVertical: 12, borderRadius: 8 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  btnText: { color: '#fff', fontSize: 19, fontWeight: '700' },
 })
 
 export { DirectionRoot } from '@/lib/direction-root'

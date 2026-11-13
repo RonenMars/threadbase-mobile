@@ -21,7 +21,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   label: {
     fontSize: font.xs,
     color: theme.text.secondary,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     flex: 1,
@@ -29,6 +29,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   },
   count: {
     fontSize: font.xs,
+    fontWeight: '600',
     color: theme.text.secondary,
     ...rtl.ltr,
   },

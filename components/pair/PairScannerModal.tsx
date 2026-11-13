@@ -233,7 +233,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    closeText: { color: '#fff', fontSize: 28, lineHeight: 30 },
+    closeText: { color: '#fff', fontSize: 31, fontWeight: '600', lineHeight: 38 },
     center: {
       flex: 1,
       alignItems: 'center',
@@ -241,7 +241,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       padding: spacing.xl,
       gap: spacing.md,
     },
-    statusText: { color: theme.text.primary, fontSize: font.base },
+    statusText: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
     permissionWrap: {
       flex: 1,
       alignItems: 'center',
@@ -253,10 +253,11 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     permissionBody: {
       color: theme.text.secondary,
       fontSize: font.base,
-      lineHeight: 22,
+      fontWeight: '600',
+      lineHeight: 25,
       ...rtl.copy,
     },
-    permissionHint: { color: theme.text.warning, fontSize: font.sm, textAlign: 'center' },
+    permissionHint: { color: theme.text.warning, fontSize: font.sm, fontWeight: '600', textAlign: 'center' },
     primaryBtn: {
       marginTop: spacing.md,
       backgroundColor: theme.text.accent,
@@ -282,6 +283,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     reticleHint: {
       color: '#fff',
       fontSize: font.base,
+      fontWeight: '600',
       textShadowColor: 'rgba(0,0,0,0.7)',
       textShadowRadius: 6,
     },
@@ -289,13 +291,14 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     errorBody: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 22,
+      lineHeight: 25,
     },
     supportLink: {
       color: theme.text.accent,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
       marginTop: spacing.sm,
     },
   })

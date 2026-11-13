@@ -52,7 +52,7 @@ describe('TerminalOutput – rendering', () => {
     const userLine = getByText('❯ Howdy')
     const flat = StyleSheet.flatten(userLine.props.style)
     expect(flat.color).toBe('#58a6ff')
-    expect(flat.fontWeight).toBe('600')
+    expect(flat.fontWeight).toBe('700')
     const plainLine = getByText('plain output')
     expect(StyleSheet.flatten(plainLine.props.style).color).toBe('#e6edf3')
   })

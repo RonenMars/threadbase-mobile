@@ -17,15 +17,18 @@ export function makeStyles(theme: Theme) {
   rowPrimary: {
     color: theme.text.primary,
     fontSize: font.sm,
+    fontWeight: '600',
   },
   serverLabel: {
     color: theme.text.accent,
     fontSize: font.xs,
+    fontWeight: '600',
     opacity: 0.75,
   },
   rowDate: {
     color: theme.text.secondary,
     fontSize: font.xs,
+    fontWeight: '600',
     flexShrink: 0,
   },
   })

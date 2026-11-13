@@ -140,6 +140,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       flex: 1,
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       fontFamily: 'monospace',
     },
     // About five rows; the composer must stay on screen above the keyboard.
@@ -158,6 +159,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     message: {
       padding: spacing.md,
@@ -167,6 +169,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       ...rtl.copy,
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
   })
 }

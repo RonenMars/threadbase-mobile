@@ -302,7 +302,7 @@ describe('QuestionCard', () => {
       <QuestionCard block={BASE_BLOCK} onSelect={jest.fn()} />
     )
     await fireEvent.press(getAllByRole('button')[1])
-    expect(getByText('indicator only')).toHaveStyle({ fontWeight: '500' })
+    expect(getByText('indicator only')).toHaveStyle({ fontWeight: '700' })
 
     const next: QuestionBlock = {
       ...BASE_BLOCK,
@@ -313,7 +313,7 @@ describe('QuestionCard', () => {
       }],
     }
     await rerender(<QuestionCard block={next} onSelect={jest.fn()} />)
-    expect(getByText('Yes, and don’t ask again')).not.toHaveStyle({ fontWeight: '500' })
+    expect(getByText('Yes, and don’t ask again')).not.toHaveStyle({ fontWeight: '700' })
   })
 
   // The streamer re-broadcasts a gate whenever the terminal cursor moves, which
@@ -334,10 +334,10 @@ describe('QuestionCard', () => {
       <QuestionCard block={gate} onSelect={jest.fn()} />
     )
     await fireEvent.press(getAllByRole('button')[1])
-    expect(getByText('No')).toHaveStyle({ fontWeight: '500' })
+    expect(getByText('No')).toHaveStyle({ fontWeight: '700' })
 
     await rerender(<QuestionCard block={{ ...gate, selectedIndex: 1 }} onSelect={jest.fn()} />)
-    expect(getByText('No')).toHaveStyle({ fontWeight: '500' })
+    expect(getByText('No')).toHaveStyle({ fontWeight: '700' })
   })
   describe('a permission gate that names its cursor row', () => {
     const gate = mapPermissionToBlock(

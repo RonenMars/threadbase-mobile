@@ -47,18 +47,20 @@ function makeStyles(theme: Theme) {
     },
     label: {
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text.secondary,
       marginBottom: spacing.sm,
     },
     question: {
       fontSize: font.base,
+      fontWeight: '600',
       lineHeight: font.base * 1.45,
       color: theme.text.secondary,
     },
     answer: {
       marginTop: spacing.sm,
       fontSize: font.base,
+      fontWeight: '600',
       lineHeight: font.base * 1.45,
       color: theme.text.primary,
     },

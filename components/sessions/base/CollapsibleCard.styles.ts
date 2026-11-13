@@ -37,30 +37,32 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     fontFamily: MONO_FONT,
     color: theme.text.secondary,
     fontSize: font.xs - 1,
-    fontWeight: '500',
+    fontWeight: '700',
     ...rtl.ltr,
   },
   headerSuffix: {
     color: theme.text.primary,
     fontSize: font.lg,
-    fontWeight: '600',
+    fontWeight: '700',
     lineHeight: font.lg + 4,
     ...rtl.ltr,
   },
   headerActivity: {
     color: theme.text.secondary,
     fontSize: font.xs,
+    fontWeight: '600',
   },
   projectName: {
     flex: 1,
     color: theme.text.primary,
     fontSize: font.base,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   countBadge: {
     fontFamily: MONO_FONT,
     color: theme.text.secondary,
     fontSize: font.xs,
+    fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
   body: {
@@ -75,7 +77,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   sectionLabel: {
     color: theme.text.secondary,
     fontSize: font.xs,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.8,
     marginBottom: spacing.xs,
   },
@@ -97,7 +99,7 @@ export function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   seeAllText: {
     color: theme.text.accent,
     fontSize: font.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   })
 }

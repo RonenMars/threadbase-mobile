@@ -112,7 +112,7 @@ function makeStyles(theme: Theme) {
     headerTitle: {
       color: theme.text.primary,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     headerActions: {
       flexDirection: 'row',
@@ -134,12 +134,14 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       textTransform: 'uppercase',
       letterSpacing: 0.5,
     },
     value: {
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
       fontFamily: 'monospace',
     },
   })

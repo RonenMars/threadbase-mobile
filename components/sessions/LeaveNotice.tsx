@@ -219,8 +219,8 @@ function makeStyles(theme: Theme) {
     },
     pillLabel: {
       fontSize: font.xs,
-      lineHeight: 14,
-      fontWeight: '600',
+      lineHeight: 18,
+      fontWeight: '700',
       letterSpacing: 0.9,
       textTransform: 'uppercase',
     },
@@ -230,12 +230,13 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.primary,
       fontSize: font.lg,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     message: {
       color: theme.text.primary,
       fontSize: font.sm,
-      lineHeight: 20,
+      fontWeight: '600',
+      lineHeight: 25,
     },
     skipRow: {
       flexDirection: 'row',
@@ -246,6 +247,7 @@ function makeStyles(theme: Theme) {
     skipLabel: {
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
       flex: 1,
     },
     segments: {

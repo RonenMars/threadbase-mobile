@@ -259,14 +259,14 @@ export function ServerClaudeFlagsSection({ serverId }: Props) {
 const makeStyles = (theme: Theme, rtl: RtlStyleKit) =>
   StyleSheet.create({
     section: { marginTop: spacing.lg, gap: spacing.sm },
-    sectionTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '600', ...rtl.copy },
-    sectionDescription: { color: theme.text.secondary, fontSize: font.sm, ...rtl.copy },
+    sectionTitle: { color: theme.text.primary, fontSize: font.base, fontWeight: '700', ...rtl.copy },
+    sectionDescription: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', ...rtl.copy },
     warningBox: {
       backgroundColor: theme.bg.secondary,
       borderRadius: radius.sm,
       padding: spacing.sm,
     },
-    warningText: { color: theme.text.secondary, fontSize: font.sm, ...rtl.copy },
+    warningText: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', ...rtl.copy },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -277,9 +277,9 @@ const makeStyles = (theme: Theme, rtl: RtlStyleKit) =>
       borderBottomColor: theme.border,
     },
     rowText: { flex: 1, gap: 2 },
-    rowLabel: { color: theme.text.primary, fontSize: font.sm, fontWeight: '500', ...rtl.copy },
+    rowLabel: { color: theme.text.primary, fontSize: font.sm, fontWeight: '700', ...rtl.copy },
     rowLabelDangerous: { color: theme.text.danger },
-    rowDescription: { color: theme.text.secondary, fontSize: font.xs, ...rtl.copy },
+    rowDescription: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', ...rtl.copy },
     enumRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, maxWidth: '55%' },
     modelField: { maxWidth: '55%', gap: spacing.xs, alignItems: 'flex-end' },
     modelAliasRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
@@ -296,7 +296,7 @@ const makeStyles = (theme: Theme, rtl: RtlStyleKit) =>
       backgroundColor: theme.bg.secondary,
     },
     chipActive: { backgroundColor: theme.text.accent },
-    chipText: { color: theme.text.secondary, fontSize: font.xs, ...rtl.ltr },
+    chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', ...rtl.ltr },
     chipTextActive: { color: '#fff' },
     input: {
       ...rtl.ltr,
@@ -306,10 +306,11 @@ const makeStyles = (theme: Theme, rtl: RtlStyleKit) =>
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
       fontSize: font.sm,
+      fontWeight: '600',
       minWidth: 140,
       maxWidth: '55%',
     },
-    errorText: { color: theme.text.danger, fontSize: font.sm },
+    errorText: { color: theme.text.danger, fontSize: font.sm, fontWeight: '600' },
     saveBtn: {
       backgroundColor: theme.text.accent,
       borderRadius: radius.md,
@@ -318,5 +319,5 @@ const makeStyles = (theme: Theme, rtl: RtlStyleKit) =>
       marginTop: spacing.sm,
     },
     saveBtnDisabled: { opacity: 0.6 },
-    saveBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '600' },
+    saveBtnText: { color: '#fff', fontSize: font.sm, fontWeight: '700' },
   })

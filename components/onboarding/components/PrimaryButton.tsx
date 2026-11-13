@@ -58,8 +58,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.sans,
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     letterSpacing: -0.15,
   },
   icon: { display: 'flex' },

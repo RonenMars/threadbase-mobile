@@ -243,6 +243,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     summary: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs,
       ...rtl.copy,
@@ -250,9 +251,10 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     warning: {
       color: theme.text.warning,
       fontSize: font.xs,
+      fontWeight: '600',
       paddingHorizontal: spacing.md,
       marginBottom: spacing.xs,
-      lineHeight: 16,
+      lineHeight: 20,
       ...rtl.copy,
     },
     filters: {
@@ -270,8 +272,8 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       paddingVertical: 4,
     },
     chipActive: { backgroundColor: theme.bg.secondary, borderColor: theme.text.accent },
-    chipText: { color: theme.text.secondary, fontSize: font.xs, ...rtl.copy },
-    chipTextActive: { color: theme.text.accent, fontWeight: '600' },
+    chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', ...rtl.copy },
+    chipTextActive: { color: theme.text.accent, fontWeight: '700' },
     search: {
       marginHorizontal: spacing.md,
       marginBottom: spacing.sm,
@@ -282,6 +284,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       paddingVertical: 8,
       color: theme.text.primary,
       fontSize: font.sm,
+      fontWeight: '600',
       ...rtl.copy,
     },
     body: { flex: 1 },
@@ -297,11 +300,12 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     },
     rowActive: { backgroundColor: theme.bg.secondary },
     rowText: { flex: 1, gap: 2 },
-    path: { color: theme.text.primary, fontSize: font.sm, fontFamily: 'monospace', ...rtl.ltr },
-    meta: { color: theme.text.secondary, fontSize: font.xs, ...rtl.copy },
+    path: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600', fontFamily: 'monospace', ...rtl.ltr },
+    meta: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', ...rtl.copy },
     empty: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
       padding: spacing.lg,
       ...rtl.copy,
     },
@@ -316,6 +320,6 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       borderTopColor: theme.border,
     },
     actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    actionText: { color: theme.text.accent, fontSize: font.sm, fontWeight: '600', ...rtl.copy },
+    actionText: { color: theme.text.accent, fontSize: font.sm, fontWeight: '700', ...rtl.copy },
   })
 }

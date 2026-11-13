@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
   historyLabel: {
     fontSize: font.xs,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.4,
   },
   historySearch: {

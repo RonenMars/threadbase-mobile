@@ -102,12 +102,13 @@ function makeStyles(theme: Theme) {
     title: {
       color: theme.text.danger,
       fontSize: font.base,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     subtitle: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 16,
+      fontWeight: '600',
+      lineHeight: 20,
     },
     actions: {
       flexDirection: 'row',
@@ -125,12 +126,12 @@ function makeStyles(theme: Theme) {
     actionText: {
       color: theme.text.primary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     actionDangerText: {
       color: theme.text.danger,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

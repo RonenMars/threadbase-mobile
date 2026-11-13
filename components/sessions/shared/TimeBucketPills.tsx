@@ -104,7 +104,7 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     labelActive: {
       color: theme.text.accent,
@@ -121,7 +121,7 @@ function makeStyles(theme: Theme) {
     count: {
       color: theme.text.secondary,
       fontSize: font.xs - 1,
-      fontWeight: '600',
+      fontWeight: '700',
       opacity: 0.7,
     },
     countActive: {

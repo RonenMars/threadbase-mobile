@@ -150,10 +150,10 @@ function makeStyles(theme: Theme) {
     // Same frame as SubagentGroupCard's, so session and orphan cards line up.
     cardWrap: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
     stale: { opacity: 0.6 },
-    heading: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', marginHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.sm },
+    heading: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '700', marginHorizontal: spacing.md, marginTop: spacing.sm, marginBottom: spacing.sm },
     empty: { alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, paddingVertical: spacing.xl },
-    emptyTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
-    emptyHint: { color: theme.text.secondary, fontSize: font.xs, textAlign: 'center' },
-    failure: { color: theme.text.secondary, fontSize: font.xs, marginHorizontal: spacing.md, marginTop: spacing.sm },
+    emptyTitle: { color: theme.text.primary, fontSize: font.sm, fontWeight: '700' },
+    emptyHint: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', textAlign: 'center' },
+    failure: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600', marginHorizontal: spacing.md, marginTop: spacing.sm },
   })
 }

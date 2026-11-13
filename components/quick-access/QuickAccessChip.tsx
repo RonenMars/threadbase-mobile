@@ -99,16 +99,19 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       maxWidth: 140,
     },
     labelMono: {
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
       fontSize: font.xs - 1,
+      fontWeight: '600',
     },
     labelPinned: { color: theme.text.accent },
     count: {
       color: theme.text.secondary,
-      fontSize: 10,
+      fontSize: 13,
+      fontWeight: '600',
       marginStart: 2,
     },
     deleteBadge: {

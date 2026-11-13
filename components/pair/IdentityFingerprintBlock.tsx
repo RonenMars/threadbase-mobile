@@ -97,12 +97,14 @@ function makeStyles(theme: Theme) {
     label: {
       color: theme.text.secondary,
       fontSize: font.sm,
+      fontWeight: '600',
     },
     fingerprint: {
       color: theme.text.primary,
       fontFamily: 'monospace',
       fontSize: font.base,
-      lineHeight: 24,
+      fontWeight: '600',
+      lineHeight: 27,
       writingDirection: 'ltr',
       backgroundColor: theme.bg.card,
       borderRadius: radius.md,
@@ -121,17 +123,19 @@ function makeStyles(theme: Theme) {
     columnLabel: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     columnBody: {
       color: theme.text.primary,
       fontSize: font.sm,
-      lineHeight: 18,
+      fontWeight: '600',
+      lineHeight: 22,
     },
     hint: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      lineHeight: 18,
+      fontWeight: '600',
+      lineHeight: 22,
     },
     toggle: {
       flexDirection: 'row',
@@ -142,7 +146,7 @@ function makeStyles(theme: Theme) {
     toggleText: {
       color: theme.text.accent,
       fontSize: font.sm,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     steps: {
       gap: spacing.xs,
@@ -151,7 +155,8 @@ function makeStyles(theme: Theme) {
     step: {
       color: theme.text.secondary,
       fontSize: font.sm,
-      lineHeight: 18,
+      fontWeight: '600',
+      lineHeight: 22,
     },
   })
 }

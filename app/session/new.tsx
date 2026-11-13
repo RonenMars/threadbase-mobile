@@ -120,7 +120,8 @@ function makeWakingStyles(theme: Theme) {
       gap: 16,
     },
     emoji: {
-      fontSize: 72,
+      fontSize: 75,
+      fontWeight: '600',
     },
     dots: {
       flexDirection: 'row',
@@ -337,12 +338,13 @@ function makeStyles(theme: Theme) {
     phrase: {
       color: theme.text.secondary,
       fontSize: font.base,
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 24,
+      lineHeight: 27,
       maxWidth: 280,
     },
-    project: { color: theme.text.primary, fontSize: font.base, fontWeight: '600', textAlign: 'center' },
-    moreDirs: { color: theme.text.secondary, fontSize: font.sm, textAlign: 'center', marginTop: -spacing.sm },
+    project: { color: theme.text.primary, fontSize: font.base, fontWeight: '700', textAlign: 'center' },
+    moreDirs: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', textAlign: 'center', marginTop: -spacing.sm },
     track: {
       width: '100%',
       maxWidth: 240,
@@ -352,7 +354,7 @@ function makeStyles(theme: Theme) {
       overflow: 'hidden',
     },
     fill: { height: '100%', borderRadius: radius.sm, backgroundColor: theme.text.accent },
-    seconds: { color: theme.text.secondary, fontSize: font.sm, textAlign: 'center' },
+    seconds: { color: theme.text.secondary, fontSize: font.sm, fontWeight: '600', textAlign: 'center' },
     footer: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
     cancelButton: {
       borderWidth: 1,
@@ -361,6 +363,6 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.md,
       alignItems: 'center',
     },
-    cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '500' },
+    cancelText: { color: theme.text.danger, fontSize: font.base, fontWeight: '700' },
   })
 }

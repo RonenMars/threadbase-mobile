@@ -230,7 +230,7 @@ function makeStyles(theme: Theme) {
     fieldLabel: {
       color: theme.text.secondary,
       fontSize: font.base,
-      fontWeight: '500',
+      fontWeight: '700',
       marginBottom: 2,
     },
     input: {
@@ -240,6 +240,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       minHeight: 44,
@@ -268,6 +269,7 @@ function makeStyles(theme: Theme) {
     protocolText: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     protocolOptions: {
       position: 'absolute',
@@ -288,10 +290,11 @@ function makeStyles(theme: Theme) {
     protocolOptionText: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
     },
     protocolOptionSelected: {
       color: theme.text.accent,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     apiKeyRow: {
       flexDirection: 'row',

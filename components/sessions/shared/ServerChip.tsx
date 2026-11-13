@@ -85,7 +85,7 @@ function makeStyles(theme: Theme) {
     },
     pillText: {
       fontSize: font.xs - 2,
-      fontWeight: '600',
+      fontWeight: '700',
       letterSpacing: 0.4,
     },
     tile: {
@@ -97,7 +97,7 @@ function makeStyles(theme: Theme) {
     },
     tileText: {
       color: theme.bg.primary,
-      fontSize: 10,
+      fontSize: 13,
       fontWeight: '700',
     },
   })

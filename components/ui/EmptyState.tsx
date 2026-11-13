@@ -71,16 +71,16 @@ function styles(theme: Theme) {
     title: {
       color: theme.text.primary,
       fontSize: font.lg,
-      fontWeight: '600',
+      fontWeight: '700',
       textAlign: 'center',
       letterSpacing: -0.2,
     },
     subtitle: {
       color: theme.text.secondary,
       fontSize: font.base,
-      fontWeight: '400',
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 20,
+      lineHeight: 23,
     },
     actions: {
       flexDirection: 'row',
@@ -100,7 +100,7 @@ function styles(theme: Theme) {
     actionText: {
       color: theme.bg.primary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     secondaryAction: {
       minHeight: 44,
@@ -113,7 +113,7 @@ function styles(theme: Theme) {
     secondaryActionText: {
       color: theme.text.accent,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }

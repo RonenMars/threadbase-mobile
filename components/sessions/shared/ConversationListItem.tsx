@@ -384,12 +384,12 @@ function makeStyles(theme: Theme) {
     parent: {
       color: theme.text.secondary,
       fontSize: font.xs - 1,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     title: {
       color: theme.text.primary,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
       lineHeight: font.sm + 5,
     },
     metaRow: {
@@ -400,6 +400,7 @@ function makeStyles(theme: Theme) {
     meta: {
       color: theme.text.secondary,
       fontSize: font.xs,
+      fontWeight: '600',
       lineHeight: font.xs + 4,
       flexShrink: 1,
     },
@@ -420,7 +421,7 @@ function makeStyles(theme: Theme) {
     time: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      fontWeight: '500',
+      fontWeight: '700',
     },
   })
 }

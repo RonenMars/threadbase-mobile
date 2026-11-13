@@ -228,13 +228,14 @@ function makeStyles(theme: Theme) {
       padding: spacing.xl,
       gap: spacing.md,
     },
-    statusText: { color: theme.text.primary, fontSize: font.base },
+    statusText: { color: theme.text.primary, fontSize: font.base, fontWeight: '600' },
     errorTitle: { color: theme.text.danger, fontSize: font.lg, fontWeight: '700' },
     errorBody: {
       color: theme.text.primary,
       fontSize: font.base,
+      fontWeight: '600',
       textAlign: 'center',
-      lineHeight: 22,
+      lineHeight: 25,
     },
     primaryBtn: {
       marginTop: spacing.md,
@@ -247,7 +248,7 @@ function makeStyles(theme: Theme) {
     supportLink: {
       color: theme.text.accent,
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
       marginTop: spacing.sm,
     },
   })

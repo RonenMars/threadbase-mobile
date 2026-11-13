@@ -90,7 +90,7 @@ function makeStyles(theme: Theme) {
     label: {
       fontFamily: MONO_FONT,
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
       letterSpacing: 1.5,
     },
     rule: { flex: 1, height: 1 },
@@ -98,12 +98,13 @@ function makeStyles(theme: Theme) {
     count: {
       fontFamily: MONO_FONT,
       fontSize: font.xs,
+      fontWeight: '600',
       color: theme.text.secondary,
       fontVariant: ['tabular-nums'],
     },
     action: {
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.text.accent,
     },
   })

@@ -85,12 +85,13 @@ function makeStyles(theme: Theme) {
     },
     title: {
       fontSize: font.sm,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     subtitle: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      lineHeight: 15,
+      fontWeight: '600',
+      lineHeight: 19,
     },
     action: {
       paddingHorizontal: spacing.md,
@@ -104,7 +105,7 @@ function makeStyles(theme: Theme) {
     },
     actionText: {
       fontSize: font.xs,
-      fontWeight: '600',
+      fontWeight: '700',
     },
   })
 }
