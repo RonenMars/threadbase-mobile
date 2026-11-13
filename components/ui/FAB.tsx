@@ -26,6 +26,8 @@ export const FAB = forwardRef<HostInstance, Props>(function FAB({ onPress, onLay
   const collapseAnim = useRef(new Animated.Value(0)).current
   const reduceMotion = useReduceMotion()
 
+  // Web has no native driver, so react-native-web would count each timing as an interaction
+  // and an endless loop would hold InteractionManager forever, starving FlatList's windowing.
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
@@ -33,11 +35,13 @@ export const FAB = forwardRef<HostInstance, Props>(function FAB({ onPress, onLay
           toValue: 0.18,
           duration: 1400,
           useNativeDriver: true,
+          isInteraction: false,
         }),
         Animated.timing(glowAnim, {
           toValue: 0.08,
           duration: 1400,
           useNativeDriver: true,
+          isInteraction: false,
         }),
       ])
     )

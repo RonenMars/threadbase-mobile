@@ -103,6 +103,7 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
         duration: PULSE_HALF_MS,
         easing: RNEasing.bezier(0.2, 0.7, 0.2, 1),
         useNativeDriver: true,
+        isInteraction: false,
       })
     const loop = RNAnimated.loop(RNAnimated.sequence([fade(0.4), fade(1)]))
     loop.start()

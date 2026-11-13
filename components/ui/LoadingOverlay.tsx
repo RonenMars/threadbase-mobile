@@ -63,6 +63,7 @@ export function LoadingOverlay({
         duration: SPIN_DURATION_MS,
         easing: Easing.linear,
         useNativeDriver: true,
+        isInteraction: false,
       }),
     )
     loop.start()
