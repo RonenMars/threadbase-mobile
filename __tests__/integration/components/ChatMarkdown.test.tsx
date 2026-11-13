@@ -1,4 +1,5 @@
 import React from 'react'
+import { StyleSheet, type TextStyle } from 'react-native'
 import { render } from '@testing-library/react-native'
 import { ChatMarkdown } from '@/components/conversation/ChatMarkdown'
 import { parseMarkdown } from '@/lib/markdown'
@@ -35,6 +36,21 @@ describe('ChatMarkdown – rendering', () => {
     const source = '| a | b |\n| 1 | 2 |'
     const { getByText } = await renderMd(source)
     expect(getByText(source)).toBeTruthy()
+  })
+})
+
+describe('ChatMarkdown – list marker colour', () => {
+  const colorOf = (node: { props: { style?: unknown } }) =>
+    (StyleSheet.flatten(node.props.style as TextStyle) ?? {}).color
+
+  it('draws the marker in the body text colour inside a user bubble', async () => {
+    const { getByText } = await renderMd('1. first', { isUser: true })
+    expect(colorOf(getByText('1.'))).toBe(colorOf(getByText('first')))
+  })
+
+  it('keeps the dimmer marker colour in an assistant bubble', async () => {
+    const { getByText } = await renderMd('1. first')
+    expect(colorOf(getByText('1.'))).not.toBe(colorOf(getByText('first')))
   })
 })
 
