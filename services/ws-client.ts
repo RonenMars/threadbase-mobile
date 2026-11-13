@@ -16,6 +16,7 @@ import type {
 import { getDeviceClientId } from './device-id'
 import { isCleartextAllowed } from './cleartext-policy'
 import { clientLog } from '@/lib/clientLog'
+import { narrowSessionStatus } from '@/lib/sessionPresentation'
 import { OpenError, openContextOnce, openOnFirstReachable, type TransportContext } from '@/services/e2ee/context'
 import { serverAddresses } from '@/services/server-addresses'
 import { openTicketedSocket, ticketedSocketProtocolOk } from '@/services/e2ee/ticketed-socket'
@@ -411,6 +412,12 @@ class WSClient {
       } catch {
         if (context) this._failCurrentConnection(socket, context, false)
         return
+      }
+      // Same contract as the REST path in useSession. A frame without a status is
+      // left alone: consumers merge frames over the cached row, so a default would
+      // overwrite the real status.
+      if ((msg.type === 'session_update' || msg.type === 'session_ready') && msg.session.status !== undefined) {
+        msg = { ...msg, session: { ...msg.session, status: narrowSessionStatus(msg.session.status) } }
       }
       if (context && !firstFrameVerified) {
         firstFrameVerified = true

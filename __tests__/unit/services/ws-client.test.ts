@@ -205,6 +205,28 @@ describe('WSClient – message handling', () => {
     unsub()
   })
 
+  it('narrows an unknown session status to idle before dispatching it', () => {
+    const update = jest.fn()
+    const ready = jest.fn()
+    const unsubUpdate = wsClient.on('session_update', update)
+    const unsubReady = wsClient.on('session_ready', ready)
+
+    wsClient.connect('http://test.local', 'key')
+    mockSocket.onopen!()
+    mockSocket.onmessage!({ data: JSON.stringify({ type: 'session_update', session: { id: '1', status: 'compacting' } }) })
+    mockSocket.onmessage!({ data: JSON.stringify({ type: 'session_ready', session: { id: '2', status: 'compacting' } }) })
+    mockSocket.onmessage!({ data: JSON.stringify({ type: 'session_update', session: { id: '3', status: 'on_hold' } }) })
+    // Consumers merge frames over the cached row, so an absent status must stay absent.
+    mockSocket.onmessage!({ data: JSON.stringify({ type: 'session_update', session: { id: '4' } }) })
+
+    expect(update).toHaveBeenNthCalledWith(1, { type: 'session_update', session: { id: '1', status: 'idle' } })
+    expect(ready).toHaveBeenCalledWith({ type: 'session_ready', session: { id: '2', status: 'idle' } })
+    expect(update).toHaveBeenNthCalledWith(2, { type: 'session_update', session: { id: '3', status: 'on_hold' } })
+    expect(update).toHaveBeenNthCalledWith(3, { type: 'session_update', session: { id: '4' } })
+    unsubUpdate()
+    unsubReady()
+  })
+
   it('does not dispatch to unsubscribed handler', () => {
     const handler = jest.fn()
     const unsub = wsClient.on('session_update', handler)
