@@ -86,6 +86,7 @@ Threadbase iOS had no such role — iOS push goes through APNs, not Firebase —
 
 **GitHub** — `FIREBASE_APP_ID_IOS` and `FIREBASE_APP_ID_ANDROID` point at the TbDev apps, the two profile secrets hold the TbDev profiles, and `GOOGLE_SERVICES_JSON_B64` holds one `google-services.json` with both Android clients.
 Deploy checks that file for `com.ronenmars.threadbase`, QA for `com.ronenmars.threadbase.dev`.
+Both checks have passed against the same secret value, last set 2026-10-02: QA in [run 37058935537](https://github.com/RonenMars/threadbase-mobile/actions/runs/37058935537) and Deploy in [run 40312633448](https://github.com/RonenMars/threadbase-mobile/actions/runs/40312633448) (2026-10-26).
 
 **Expo** (`@ronenmars/threadbase-mobile`) — the app registers with `getExpoPushTokenAsync()` and the streamer sends through Expo, so Expo needs credentials per identifier:
 
@@ -98,7 +99,6 @@ Deploy checks that file for `com.ronenmars.threadbase`, QA for `com.ronenmars.th
 ## Open items
 
 - **No push has been sent to TbDev yet**, so delivery is configured but unproven on both platforms.
-- **No Deploy run has used the two-client `GOOGLE_SERVICES_JSON_B64` yet.** The QA side is proven: the "Write Firebase config" step passed in [run 37058935537](https://github.com/RonenMars/threadbase-mobile/actions/runs/37058935537).
 - **TbDev Android has not been installed on a device.** The iOS build is confirmed side by side with Threadbase on an iPhone.
 - **The scheme split is unproven on hardware.** Unit tests and a merged Android manifest per variant show each build registering its own scheme; an iPhone and an Android device scanning `tb-streamer pair --dev` and `tb-streamer pair` have not yet been checked.
 
