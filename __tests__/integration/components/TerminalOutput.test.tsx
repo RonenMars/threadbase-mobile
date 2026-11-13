@@ -4,7 +4,8 @@ import { fireEvent, render } from '@testing-library/react-native'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
 import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 import i18n from '@/test-utils/i18n-setup'
-import { THEMES, type Theme } from '@/constants/theme'
+import { ANSI_PALETTE, THEMES, type Theme } from '@/constants/theme'
+import type { TerminalRun } from '@/services/virtual-terminal'
 
 const mockTheme: { current: Theme } = { current: THEMES.dark }
 
@@ -427,5 +428,80 @@ describe('TerminalOutput – theming', () => {
     expect(container.borderColor).toBe(theme.bg.card)
     expect(StyleSheet.flatten(getByText('❯ Howdy').props.style).color).toBe(theme.text.accent)
     expect(StyleSheet.flatten(getByText('plain output').props.style).color).toBe(theme.text.primary)
+  })
+})
+
+describe('TerminalOutput – SGR spans', () => {
+  const dark = THEMES.dark
+
+  function spans(line: string, runs: TerminalRun[]) {
+    return render(
+      <TerminalOutput lines={[line]} lineStyles={new Map([[line, runs]])} isStreaming={false} />,
+    )
+  }
+
+  it('renders one nested span per run, keeping the row text intact', async () => {
+    mockTheme.current = dark
+    const { getByText, getByTestId } = await spans('red plain', [
+      { text: 'red', style: { fg: 1, bold: true } },
+      { text: ' plain', style: {} },
+    ])
+    expect(getByTestId('terminal-line-row')).toBeTruthy()
+    expect(getByText('red plain')).toBeTruthy()
+    const red = StyleSheet.flatten(getByText('red').props.style)
+    expect(red).toEqual({ color: ANSI_PALETTE.dark[1], fontWeight: '700' })
+    expect(getByText('plain').props.style).toBeUndefined()
+  })
+
+  it('maps palette slots by colour mode and passes hex colours through', async () => {
+    mockTheme.current = THEMES.light
+    const { getByText } = await spans('ab', [
+      { text: 'a', style: { fg: 12, bg: '#102030' } },
+      { text: 'b', style: { fg: '#ff0000', italic: true, underline: true } },
+    ])
+    expect(StyleSheet.flatten(getByText('a').props.style)).toEqual({
+      color: ANSI_PALETTE.light[12],
+      backgroundColor: '#102030',
+    })
+    expect(StyleSheet.flatten(getByText('b').props.style)).toEqual({
+      color: '#ff0000',
+      fontStyle: 'italic',
+      textDecorationLine: 'underline',
+    })
+    mockTheme.current = dark
+  })
+
+  it('swaps foreground and background for inverse, using theme defaults when unset', async () => {
+    mockTheme.current = dark
+    const { getByText } = await spans('ab', [
+      { text: 'a', style: { inverse: true } },
+      { text: 'b', style: { inverse: true, fg: 2 } },
+    ])
+    expect(StyleSheet.flatten(getByText('a').props.style)).toEqual({
+      color: dark.bg.primary,
+      backgroundColor: dark.text.primary,
+    })
+    expect(StyleSheet.flatten(getByText('b').props.style)).toEqual({
+      color: dark.bg.primary,
+      backgroundColor: ANSI_PALETTE.dark[2],
+    })
+  })
+
+  it('dims by fading the resolved foreground', async () => {
+    mockTheme.current = dark
+    const { getByText } = await spans('ab', [
+      { text: 'a', style: { dim: true } },
+      { text: 'b', style: { dim: true, fg: '#112233' } },
+    ])
+    expect(StyleSheet.flatten(getByText('a').props.style).color).toBe(`${dark.text.primary}99`)
+    expect(StyleSheet.flatten(getByText('b').props.style).color).toBe('#11223399')
+  })
+
+  it('renders a row without runs as plain text', async () => {
+    mockTheme.current = dark
+    const { getByText } = await render(
+      <TerminalOutput lines={['plain']} lineStyles={new Map()} isStreaming={false} />,
+    )
+    expect(getByText('plain').props.children).toBe('plain')
   })
 })

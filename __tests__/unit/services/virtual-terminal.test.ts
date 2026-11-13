@@ -830,3 +830,163 @@ describe('VirtualTerminal – viewport-relative cursor positioning', () => {
     }
   })
 })
+
+// ── SGR attributes ──────────────────────────────────────────────────────────
+describe('VirtualTerminal – SGR attributes', () => {
+  function runsOf(data: string, line: string) {
+    const vt = new VirtualTerminal()
+    vt.feed(data)
+    return vt.getLineStyles().get(line)
+  }
+
+  it('keeps the plain-text accessors free of attributes', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}1;31mred${CSI}0m plain`)
+    expect(vt.getLines()).toEqual(['red plain'])
+    expect(vt.getRawLines()).toEqual(['red plain'])
+    expect(vt.getFrameLines()).toEqual(['red plain'])
+  })
+
+  it('groups cells into runs of identical attributes', () => {
+    expect(runsOf(`${CSI}1;31mred${CSI}0m plain`, 'red plain')).toEqual([
+      { text: 'red', style: { bold: true, fg: 1 } },
+      { text: ' plain', style: {} },
+    ])
+  })
+
+  it('merges adjacent runs whose attributes are equal but set separately', () => {
+    expect(runsOf(`${CSI}32mab${CSI}0m${CSI}32mcd`, 'abcd')).toEqual([
+      { text: 'abcd', style: { fg: 2 } },
+    ])
+  })
+
+  it('has no entry for a row without attributes', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`plain\n${CSI}31mred`)
+    expect(vt.getLineStyles().has('plain')).toBe(false)
+    expect(vt.getLineStyles().has('red')).toBe(true)
+  })
+
+  it('resets on an empty parameter list', () => {
+    expect(runsOf(`${CSI}4ma${CSI}mb`, 'ab')).toEqual([
+      { text: 'a', style: { underline: true } },
+      { text: 'b', style: {} },
+    ])
+  })
+
+  it('applies and clears bold, dim, italic, underline and inverse', () => {
+    const data = `${CSI}1;2;3;4;7ma${CSI}22mb${CSI}23mc${CSI}24md${CSI}27me`
+    expect(runsOf(data, 'abcde')).toEqual([
+      { text: 'a', style: { bold: true, dim: true, italic: true, underline: true, inverse: true } },
+      { text: 'b', style: { italic: true, underline: true, inverse: true } },
+      { text: 'c', style: { underline: true, inverse: true } },
+      { text: 'd', style: { inverse: true } },
+      { text: 'e', style: {} },
+    ])
+  })
+
+  it('maps the 16 colours and the default fg/bg codes', () => {
+    const data = `${CSI}37;40ma${CSI}97;107mb${CSI}90;100mc${CSI}39md${CSI}49me`
+    expect(runsOf(data, 'abcde')).toEqual([
+      { text: 'a', style: { fg: 7, bg: 0 } },
+      { text: 'b', style: { fg: 15, bg: 15 } },
+      { text: 'c', style: { fg: 8, bg: 8 } },
+      { text: 'd', style: { bg: 8 } },
+      { text: 'e', style: {} },
+    ])
+  })
+
+  it('maps 256-colour indexes: the first 16 to the palette, the rest to hex', () => {
+    const data = `${CSI}38;5;9ma${CSI}38;5;196mb${CSI}38;5;16mc${CSI}48;5;244md${CSI}38;5;231me`
+    expect(runsOf(data, 'abcde')).toEqual([
+      { text: 'a', style: { fg: 9 } },
+      { text: 'b', style: { fg: '#ff0000' } },
+      { text: 'c', style: { fg: '#000000' } },
+      { text: 'd', style: { fg: '#000000', bg: '#808080' } },
+      { text: 'e', style: { fg: '#ffffff', bg: '#808080' } },
+    ])
+  })
+
+  it('maps truecolor to hex', () => {
+    expect(runsOf(`${CSI}38;2;1;2;255;48;2;16;32;48mx`, 'x')).toEqual([
+      { text: 'x', style: { fg: '#0102ff', bg: '#102030' } },
+    ])
+  })
+
+  it('continues past an extended colour to the codes after it', () => {
+    expect(runsOf(`${CSI}38;2;1;2;3;1mx`, 'x')).toEqual([
+      { text: 'x', style: { fg: '#010203', bold: true } },
+    ])
+  })
+
+  it('ignores unknown codes without breaking the line or the confidence counter', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}5;53;31ma${CSI}38;9mb${CSI}38;5;300mc`)
+    expect(vt.getLines()).toEqual(['abc'])
+    expect(vt.getLineStyles().get('abc')).toEqual([{ text: 'abc', style: { fg: 1 } }])
+    expect(vt.getParseStats().unsupportedSequenceCount).toBe(0)
+  })
+
+  it('does not read a private-parameter `m` (xterm modifyOtherKeys) as SGR', () => {
+    expect(runsOf(`${CSI}31m${CSI}>4;2mx`, 'x')).toEqual([{ text: 'x', style: { fg: 1 } }])
+  })
+
+  it('keeps attributes across a cursor move and an overwrite', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}31mabc${CSI}0m${CSI}1;2HX`)
+    expect(vt.getLines()).toEqual(['aXc'])
+    expect(vt.getLineStyles().get('aXc')).toEqual([
+      { text: 'a', style: { fg: 1 } },
+      { text: 'X', style: {} },
+      { text: 'c', style: { fg: 1 } },
+    ])
+  })
+
+  it('drops the attributes of cells erased to the end of the line', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}31mabcdef${CSI}0m${CSI}1;4H${CSI}K`)
+    expect(vt.getLineStyles().get('abc')).toEqual([{ text: 'abc', style: { fg: 1 } }])
+  })
+
+  it('fills cells erased to the start of the line with the current background', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`abcdef${CSI}1;3H${CSI}31;44m${CSI}1K`)
+    expect(vt.getLineStyles().get('   def')).toEqual([
+      { text: '   ', style: { bg: 4 } },
+      { text: 'def', style: {} },
+    ])
+  })
+
+  it('keeps attributes of rows scrolled up and of rows archived by a full clear', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}32mold${CSI}0m\nnext`)
+    vt.feed(`${CSI}2J${CSI}H${CSI}33mnew`)
+    const styles = vt.getLineStyles()
+    expect(vt.getLines()).toEqual(['old', 'next', 'new'])
+    expect(styles.get('old')).toEqual([{ text: 'old', style: { fg: 2 } }])
+    expect(styles.get('new')).toEqual([{ text: 'new', style: { fg: 3 } }])
+
+    const scrolled = new VirtualTerminal()
+    scrolled.feed(`top\n${CSI}35mkept${CSI}0m\n${CSI}1S`)
+    expect(scrolled.getLineStyles().get('kept')).toEqual([{ text: 'kept', style: { fg: 5 } }])
+  })
+
+  it('returns the same runs for a row that did not change, and new ones for a row that did', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}31mstill${CSI}0m\n${CSI}32mmov`)
+    const before = vt.getLineStyles()
+    vt.feed('ing')
+    const after = vt.getLineStyles()
+    expect(after.get('still')).toBe(before.get('still'))
+    expect(before.get('mov')).toEqual([{ text: 'mov', style: { fg: 2 } }])
+    expect(after.get('moving')).toEqual([{ text: 'moving', style: { fg: 2 } }])
+  })
+
+  it('clears the pen and the kept attributes on reset', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}31mred`)
+    vt.reset()
+    vt.feed('red')
+    expect(vt.getLineStyles().size).toBe(0)
+  })
+})

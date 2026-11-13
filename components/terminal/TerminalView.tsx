@@ -54,7 +54,7 @@ export function TerminalView({
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
   const { suggestion, chipSuggestion, dismiss: dismissSuggestion } = usePromptSuggestion(serverId, sessionId)
-  const { lines, frameLines, isStreaming, userMessageTexts, prompts } = useTerminalStream(
+  const { lines, frameLines, lineStyles, isStreaming, userMessageTexts, prompts } = useTerminalStream(
     serverId,
     sessionId,
     false,
@@ -234,6 +234,7 @@ export function TerminalView({
       <View testID="terminal-output-region" style={styles.terminalVisible}>
         <TerminalOutput
           lines={conversationId ? live : lines}
+          lineStyles={lineStyles}
           transcript={transcript}
           hasOlder={hasOlder}
           isFetchingOlder={isFetchingOlder}

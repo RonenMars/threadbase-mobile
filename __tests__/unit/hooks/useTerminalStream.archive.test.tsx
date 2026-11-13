@@ -137,3 +137,25 @@ describe('useTerminalStream – history kept across clears', () => {
     expect(result.current.frameLines).toEqual(['repainted frame'])
   })
 })
+
+describe('useTerminalStream – SGR attributes', () => {
+  it('publishes attribute runs keyed by the plain row text', async () => {
+    const { result } = await renderStream()
+    await act(async () => {
+      __wsTest.emit({ type: 'terminal_replay', sessionId: 'sess-1', lines: [], seq: 1 })
+    })
+    await act(async () => {
+      __wsTest.emit({
+        type: 'terminal_output',
+        sessionId: 'sess-1',
+        data: '\x1b[32mok\x1b[0m done',
+        ...({ seq: 2 } as object),
+      })
+    })
+    expect(result.current.lines).toEqual(['ok done'])
+    expect(result.current.lineStyles.get('ok done')).toEqual([
+      { text: 'ok', style: { fg: 2 } },
+      { text: ' done', style: {} },
+    ])
+  })
+})
