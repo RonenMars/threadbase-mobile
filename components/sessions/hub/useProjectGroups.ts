@@ -38,14 +38,13 @@ export function useProjectGroups(
 ): ProjectGroup[] {
   return useMemo(() => {
     const map = new Map<string, ProjectGroup>()
-    // A project path can exist on more than one server and they are distinct
-    // groups, so the map key carries the server too.
-    const keyOf = (serverId: string, projectKey: string) => `${serverId}::${projectKey}`
+    // Keyed by (serverId, projectPath), never projectId: the streamer sends
+    // projectId null for external and historical sessions at a path whose
+    // other sessions carry one, and a path is distinct per server.
+    const keyOf = (serverId: string, projectPath: string) => `${serverId}::${projectPath}`
 
     for (const session of sessions) {
-      // Prefer projectId for grouping; fall back to projectPath while
-      // backend migration is in progress.
-      const key = keyOf(session.serverId, session.projectId ?? session.projectPath)
+      const key = keyOf(session.serverId, session.projectPath)
       if (!map.has(key)) {
         map.set(key, {
           projectId: session.projectId ?? session.projectPath,
@@ -61,6 +60,10 @@ export function useProjectGroups(
       }
       const group = map.get(key)!
       group.sessions.push(session)
+      // First session with a projectId wins; the path fallback is only a placeholder.
+      if (session.projectId && group.projectId === group.projectPath) {
+        group.projectId = session.projectId
+      }
 
       const startMs = toMs(session.startedAt)
       const activityMs = sessionActivityMs(session)
@@ -73,18 +76,10 @@ export function useProjectGroups(
       }
     }
 
-    // Sessions key on projectId when they have one, so a summary (which only
-    // knows the path) has to be matched by path, or a project with a live
-    // session would render as two cards.
-    const byPath = new Map<string, ProjectGroup>()
-    for (const group of map.values()) {
-      byPath.set(keyOf(group.serverId, group.projectPath), group)
-    }
-
     for (const summary of summaries) {
       const pathKey = keyOf(summary.serverId, summary.path)
       const group =
-        byPath.get(pathKey) ??
+        map.get(pathKey) ??
         (() => {
           const created: ProjectGroup = {
             projectId: summary.path,
@@ -98,7 +93,6 @@ export function useProjectGroups(
             earliestStartMs: Infinity,
           }
           map.set(pathKey, created)
-          byPath.set(pathKey, created)
           return created
         })()
 
