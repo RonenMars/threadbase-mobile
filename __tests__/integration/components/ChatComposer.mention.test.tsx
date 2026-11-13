@@ -94,10 +94,7 @@ async function type(text: string, cursor = text.length) {
 }
 
 describe('ChatComposer @ file mentions', () => {
-  const previousFlag = process.env.EXPO_PUBLIC_FILE_MENTIONS
-
   beforeEach(() => {
-    process.env.EXPO_PUBLIC_FILE_MENTIONS = '1'
     mockFetchBrowse.mockReset()
     mockFetchBrowse.mockImplementation(async (_server, path) => {
       const listing = TREE[path]
@@ -109,8 +106,6 @@ describe('ChatComposer @ file mentions', () => {
   afterEach(() => {
     queryClient?.clear()
     queryClient = null
-    if (previousFlag === undefined) delete process.env.EXPO_PUBLIC_FILE_MENTIONS
-    else process.env.EXPO_PUBLIC_FILE_MENTIONS = previousFlag
   })
 
   it('lists the session folder when @ is typed, hiding dotfiles', async () => {
@@ -187,9 +182,8 @@ describe('ChatComposer @ file mentions', () => {
     expect(screen.queryByTestId('file-mention-board')).toBeNull()
   })
 
-  it('stays off without the feature flag', async () => {
-    delete process.env.EXPO_PUBLIC_FILE_MENTIONS
-    await renderHarness()
+  it('stays off without a session folder', async () => {
+    await renderHarness({ projectPath: '' })
     await type('@')
     expect(screen.queryByTestId('file-mention-board')).toBeNull()
     await waitFor(() => expect(mockFetchBrowse).not.toHaveBeenCalled())
