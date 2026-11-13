@@ -112,14 +112,12 @@ const SCROLLBACK_CLEAR_FRAME =
   '  Ran 2 shell commands\r\n' +
   '✳ Brewing… (1m 12s · ↓ 2.4k tokens)\r\n'
 
-// One replay + one clear per socket. The app re-subscribes on every
-// reconnect and the hub subscribes too; a second clear would only repeat
-// what the first already proved, while a replay is idempotent client-side.
-const scrollbackCleared = new WeakSet()
+// A clear follows every replay. The replay carries the pre-clear frame, so a
+// subscriber that arrives after a one-off clear (the terminal surface mounts
+// on a chip tap since chat became the default view) would be left on that
+// stale frame with nothing to replace it.
 function handleSubscribeScrollback(ws) {
   ws.send(JSON.stringify(SCROLLBACK_REPLAY))
-  if (scrollbackCleared.has(ws)) return
-  scrollbackCleared.add(ws)
   setTimeout(() => {
     try {
       ws.send(JSON.stringify({
