@@ -5,11 +5,12 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
+  type TextInputInstance,
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
   useWindowDimensions,
+  type HostInstance,
   } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -197,7 +198,7 @@ export default function ProjectsHub() {
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
   const [classicConvSearch, setClassicConvSearch] = useState('')
-  const searchInputRef = useRef<TextInput>(null)
+  const searchInputRef = useRef<TextInputInstance>(null)
   const [debouncedConvSearch] = useDebounce(classicConvSearch, 300)
   const { data: convSearchData } = useConversationSearch(debouncedConvSearch)
 
@@ -439,7 +440,7 @@ export default function ProjectsHub() {
     openBrowse(serverId)
   }
 
-  const fabRef = useRef<View>(null)
+  const fabRef = useRef<HostInstance>(null)
 
   // Floating chrome: brand row, Now | Projects, and the search field. Rows
   // scroll under it. The banners below may scroll away only because this block

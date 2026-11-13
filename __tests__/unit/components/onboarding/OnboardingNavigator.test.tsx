@@ -9,7 +9,10 @@ import i18n from '@/test-utils/i18n-setup'
 const mockReloadAppAsync = jest.fn()
 const mockAddServer = jest.fn().mockResolvedValue('srv_test')
 
+// expo-localization resolves its native module through `expo` since SDK 58,
+// so the real exports have to survive the mock.
 jest.mock('expo', () => ({
+  ...jest.requireActual('expo'),
   reloadAppAsync: (...args: unknown[]) => mockReloadAppAsync(...args),
 }))
 

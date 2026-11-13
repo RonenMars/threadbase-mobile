@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
@@ -49,7 +49,7 @@ export function BoardChips({ counts, selected, onSelect }: Props) {
   const styles = useMemo(() => makeStyles(theme), [theme])
   const reduceMotion = useReduceMotion()
   const { isRTL } = useAppDirection()
-  const scroller = useRef<ScrollView>(null)
+  const scroller = useRef<ScrollViewInstance>(null)
   const [chipX, setChipX] = useState<Partial<Record<BoardColumnId, number>>>({})
   const size = useRef({ content: 0, viewport: 0 })
 

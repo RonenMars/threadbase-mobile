@@ -140,7 +140,7 @@ describe('openSupportEmail', () => {
   let alertSpy: jest.SpyInstance
 
   beforeEach(() => {
-    openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(true)
+    openURL = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined)
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined)
   })
 

@@ -78,7 +78,7 @@ function BoardCardFrame({
     : styles.card
 
   return (
-    <Card style={StyleSheet.flatten(frameStyle)} testID={`board-card-${rowId}`}>
+    <Card style={StyleSheet.flatten(frameStyle) ?? undefined} testID={`board-card-${rowId}`}>
       <View style={card.spineRow}>
         <CardSpine color={tier ? colorForToken(theme, tierColorToken(tier)) : null} />
         <View style={card.spineRowBody}>

@@ -265,7 +265,7 @@ describe("MessageBubble – search highlight", () => {
 
 describe("MessageBubble – markdown links", () => {
   it("opens http(s) links and ignores other schemes", async () => {
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     const { getByText } = await render(
       <MessageBubble
         message={makeMessage({
@@ -289,7 +289,7 @@ describe("MessageBubble – bare URLs", () => {
     render(<MessageBubble message={makeMessage({ role: "assistant", content: [{ type: "text", text }] })} />);
 
   it("turns a bare https URL into a pressable link", async () => {
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     const url = "https://macsources.com/category/featured/apps/";
     const { getByText } = await render_(`see ${url} for more`);
     await fireEvent.press(getByText(url));
@@ -298,7 +298,7 @@ describe("MessageBubble – bare URLs", () => {
   });
 
   it("does not link file names that look like domains", async () => {
-    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+    const openURL = jest.spyOn(Linking, "openURL").mockResolvedValue(undefined);
     const { getByText } = await render_("edit README.md or main.rs");
     await fireEvent.press(getByText(/README\.md/));
     expect(openURL).not.toHaveBeenCalled();

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
-import { Linking, StyleSheet, Text, View } from 'react-native'
-import { HighlightText, type MatchLayout } from 'one-more-highlight/native'
+import { Linking, StyleSheet, Text, View, type TextProps } from 'react-native'
+import { HighlightText, type HighlightLayoutHandle, type MatchLayout } from 'one-more-highlight/native'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { RtlStyleKit } from '@/lib/rtl'
@@ -115,7 +115,7 @@ function Spans({ spans, styles }: { spans: InlineSpan[]; styles: ReturnType<type
 
 export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMatch }: Props) {
   const { styles, theme } = useThemedStyles(makeStyles)
-  const textRef = useRef<Text>(null)
+  const textRef = useRef<HighlightLayoutHandle>(null)
   const needle = highlight && highlight.length > 0 ? highlight : undefined
 
   const baseStyle = isUser ? [styles.text, { color: theme.text.onAccent }] : styles.text
@@ -130,16 +130,17 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
   const reportMatchLayout = matchAnchor
     ? (matches: readonly MatchLayout[]) => {
         const first = matches[0]
-        const row = matchAnchor.rowRef.current
-        if (!first || !row || !textRef.current) return
-        textRef.current.measureLayout(row, (_x, y) => matchAnchor.onLayout(y + first.y))
+        if (!first || !textRef.current) return
+        void textRef.current
+          .measureMatch(first.matchIndex, matchAnchor.rowRef)
+          .then((m) => { if (m) matchAnchor.onLayout(m.y) })
       }
     : undefined
 
   const renderLine = (
     block: MarkdownBlock,
     index: number,
-    extraStyle?: Text['props']['style'],
+    extraStyle?: TextProps['style'],
   ) => {
     const style = extraStyle ? [baseStyle, extraStyle] : baseStyle
     const match = needle ? matchTextFor(block, needle) : null
@@ -147,7 +148,7 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
       const isAnchor = index === anchorIndex
       return (
         <HighlightText
-          ref={isAnchor ? textRef : undefined}
+          layoutRef={isAnchor ? textRef : undefined}
           text={match}
           searchWords={[needle as string]}
           highlightStyle={activeMatch ? styles.match : styles.matchInactive}

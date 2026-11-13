@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useRef, useState } from 'react'
-import { TouchableOpacity, Text, StyleSheet, Animated, type View } from 'react-native'
+import { TouchableOpacity, Text, StyleSheet, Animated, type HostInstance } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'phosphor-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -18,7 +18,7 @@ const EXPANDED_PAD = 18
 const COLLAPSED_PAD = 14
 const LABEL_MAX = 160
 
-export const FAB = forwardRef<View, Props>(function FAB({ onPress, onLayout, collapsed = false }, ref) {
+export const FAB = forwardRef<HostInstance, Props>(function FAB({ onPress, onLayout, collapsed = false }, ref) {
   const insets = useSafeAreaInsets()
   const theme = useTheme()
   const { t } = useTranslation('sessions')
