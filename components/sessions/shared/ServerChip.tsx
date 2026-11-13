@@ -1,4 +1,5 @@
-import { Text, Pressable, StyleSheet } from 'react-native'
+import { Text, Pressable, View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
+import type { ReactNode } from 'react'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { SERVER_COLOR_DEFAULT, initialsFor } from './serverPalette'
@@ -40,9 +41,10 @@ export function ServerChip({
   const styles = makeStyles(theme)
   const a11yLabel = `Server: ${label}`
 
-  if (variant === 'letter' || variant === 'symbol') {
-    const display = variant === 'letter' ? initialsFor(label) : ''
-    return (
+  // A Pressable with no handler still claims the touch, which swallowed taps
+  // meant for the row underneath; without a handler the chip is a plain View.
+  const box = (style: StyleProp<ViewStyle>, children: ReactNode) =>
+    onPress || onLongPress ? (
       <Pressable
         onPress={onPress}
         onLongPress={onLongPress}
@@ -50,27 +52,29 @@ export function ServerChip({
         accessibilityRole="button"
         testID={testID}
         hitSlop={6}
-        style={[styles.tile, { backgroundColor: color }]}
+        style={style}
       >
-        <Text style={styles.tileText} numberOfLines={1}>{display}</Text>
+        {children}
       </Pressable>
+    ) : (
+      <View accessible accessibilityLabel={a11yLabel} testID={testID} style={style}>
+        {children}
+      </View>
+    )
+
+  if (variant === 'letter' || variant === 'symbol') {
+    const display = variant === 'letter' ? initialsFor(label) : ''
+    return box(
+      [styles.tile, { backgroundColor: color }],
+      <Text style={styles.tileText} numberOfLines={1}>{display}</Text>,
     )
   }
 
   // Default: 'label' — Scottish-Gov status-tag style.
   const display = label.length > maxLabelChars ? label.slice(0, maxLabelChars - 1) + '…' : label
-  return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      accessibilityLabel={a11yLabel}
-      accessibilityRole="button"
-      testID={testID}
-      hitSlop={6}
-      style={[styles.pill, { borderColor: color, backgroundColor: `${color}1f` }]}
-    >
-      <Text style={[styles.pillText, { color }]} numberOfLines={1}>{display}</Text>
-    </Pressable>
+  return box(
+    [styles.pill, { borderColor: color, backgroundColor: `${color}1f` }],
+    <Text style={[styles.pillText, { color }]} numberOfLines={1}>{display}</Text>,
   )
 }
 
