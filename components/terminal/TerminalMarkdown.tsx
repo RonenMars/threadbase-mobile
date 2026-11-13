@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
   // 12pt monospace, so a fixed 14 wrapped the dot onto its own line, and `10.`
   // would have wrapped further.
   marker: {
+    flexShrink: 0,
     minWidth: 14,
     paddingEnd: 4,
     color: '#8b949e',

@@ -26,6 +26,13 @@ describe('ChatMarkdown – rendering', () => {
     expect(queryByText('## Summary')).toBeNull()
   })
 
+  // Web Text defaults to CSS flex-shrink: 1 (only View pins 0), so without this
+  // the "1." marker squeezes below its width and the dot wraps to its own line.
+  it('keeps the list marker from shrinking', async () => {
+    const { getByText } = await renderMd('1. first')
+    expect(StyleSheet.flatten(getByText('1.').props.style).flexShrink).toBe(0)
+  })
+
   it('routes a fenced block through the existing CodeBlock', async () => {
     const { getByTestId, getByText } = await renderMd('```bash\nnpm ci\n```')
     expect(getByTestId('message-code-block')).toBeTruthy()

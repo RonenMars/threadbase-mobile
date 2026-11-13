@@ -278,6 +278,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       flexDirection: 'row',
     },
     marker: {
+      flexShrink: 0,
       minWidth: 16,
       paddingEnd: spacing.xs,
       color: theme.text.secondary,
