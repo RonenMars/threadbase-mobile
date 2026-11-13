@@ -172,6 +172,13 @@ export interface Session {
    * carry it, so a change of `hasOpenPrompt` is the cue to refetch the list.
    */
   pendingPrompts?: Prompt[]
+  /**
+   * Newest transcript message, truncated server-side to 200 chars. Additive; older servers omit it.
+   * It can be the user's own prompt, so only show it when `lastMessageRole` is `assistant`.
+   */
+  lastMessageText?: string
+  /** Absent on older servers: omit the preview rather than guess who spoke. */
+  lastMessageRole?: 'user' | 'assistant'
 }
 
 export interface MessageSnapshot {

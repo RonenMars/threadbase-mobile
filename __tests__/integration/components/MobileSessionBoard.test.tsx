@@ -352,6 +352,14 @@ describe('SessionBoard questions', () => {
     expect(r.queryByTestId('board-question-w')).toBeNull()
     expect(r.queryByText(/clear to save/)).toBeNull()
   })
+
+  it('shows the last assistant reply, as a tap-to-open line without an eye, for a finished turn', async () => {
+    const r = await renderBoard([row(waiting({ hasOpenPrompt: false, pendingPrompts: undefined, lastMessageText: 'Pushed the fix.', lastMessageRole: 'assistant' }))])
+    expect(r.getByText('Pushed the fix.')).toBeTruthy()
+    expect(r.queryByTestId('board-question-w')).toBeNull()
+    await fireEvent.press(r.getByTestId('board-tail-w'))
+    expect(r.queryByTestId('board-question-modal')).toBeNull()
+  })
 })
 
 describe('SessionBoard from 768 up', () => {
