@@ -31,7 +31,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [shipped] Diff review — view file changes from a session and send a review note back into it.
 - [operator-enabled] iOS Live Activities — lock-screen/Dynamic Island session status; requires the streamer operator to enable a flag and configure APNs.
 - [shipped] Android session notification — ongoing notification showing live session status.
-- [shipped] Push notifications — alerts when an agent is waiting for input, completes, or fails.
+- [shipped] Push notifications — alerts when an agent is waiting for input, completes, or fails. Android delivery has not been verified on a device yet ([BACKLOG.md](./BACKLOG.md#leftovers-from-partly-shipped-features)).
 - [shipped] Resilient sessions — leaving or backgrounding the app parks the session instead of killing it.
 - [shipped] Claude CLI flag configuration — set model, permission mode, add-dir, and allowed/disallowed tools per server.
 - [shipped] Backup and restore — export a server's session/project metadata and restore it elsewhere, with a dry-run preview.

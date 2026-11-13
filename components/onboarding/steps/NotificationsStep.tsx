@@ -91,6 +91,7 @@ export function NotificationsStep({ onNext }: Props) {
 
       {/* Allow card */}
       <Pressable
+        testID="onboarding-notifications-allow"
         onPress={handleToggle}
         style={[
           styles.allow,

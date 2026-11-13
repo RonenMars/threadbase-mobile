@@ -235,6 +235,25 @@ appId: com.ronenmars.threadbase
           timeout: 8000
           optional: true
 
+      # Opt-in, for android_notifications_health.yaml: take the real permission
+      # path through the allow card instead of skipping past it. On Android 13+
+      # the system dialog is answered here; on 12 and below nothing is shown and
+      # the resolver block is skipped. Every other flow leaves the variable unset.
+      - runFlow:
+          when:
+            true: ${typeof GRANT_NOTIFICATIONS !== 'undefined' && GRANT_NOTIFICATIONS == 'true'}
+          commands:
+            - tapOn:
+                id: "onboarding-notifications-allow"
+                optional: true
+            - runFlow:
+                when:
+                  visible:
+                    id: "com.android.permissioncontroller:id/permission_allow_button"
+                commands:
+                  - tapOn:
+                      id: "com.android.permissioncontroller:id/permission_allow_button"
+
       - tapOn:
           id: "onboarding-notifications-cta"
           optional: true
