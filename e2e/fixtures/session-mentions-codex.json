@@ -1,0 +1,16 @@
+{
+  "id": "session-mentions-codex",
+  "provider": "codex-cli",
+  "status": "running",
+  "statusSource": "user-input",
+  "ptyAttached": true,
+  "lifecycle": "attached",
+  "projectPath": "/workspace/mentions-demo",
+  "projectName": "mentions-demo",
+  "branch": "main",
+  "lastOutput": "Ready",
+  "elapsedMs": 8000,
+  "promptCount": 1,
+  "subStatus": null,
+  "startedAt": "2026-09-25T10:00:00.000Z"
+}

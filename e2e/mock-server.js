@@ -130,6 +130,21 @@ function handleSubscribeScrollback(ws) {
   }, SCROLLBACK_CLEAR_DELAY_MS)
 }
 
+// Folder listings for the `@` file-mention picker, keyed by absolute path. The
+// session fixtures session-mentions*.json have projectPath /workspace/mentions-demo.
+const MENTIONS_TREE = {
+  '/workspace/mentions-demo': {
+    path: '/workspace/mentions-demo',
+    directories: [{ name: '.git' }, { name: 'src' }],
+    files: [{ name: 'README.md' }, { name: 'package.json' }],
+  },
+  '/workspace/mentions-demo/src': {
+    path: '/workspace/mentions-demo/src',
+    directories: [{ name: 'components' }],
+    files: [{ name: 'app.ts' }, { name: 'index.ts' }],
+  },
+}
+
 // Sessions pushed through /__test__/session-update. The list route replays them,
 // because the client refetches the list when a frame names a session it has not
 // seen, and a fixtures-only reply would undo every update sent before it.
@@ -469,6 +484,12 @@ async function handleRequest(req, res) {
     if (sessionMatch[1] === SCROLLBACK_SESSION_ID) {
       return json(res, 200, readFixture('session-scrollback.json'))
     }
+    if (sessionMatch[1] === 'session-mentions') {
+      return json(res, 200, readFixture('session-mentions.json'))
+    }
+    if (sessionMatch[1] === 'session-mentions-codex') {
+      return json(res, 200, readFixture('session-mentions-codex.json'))
+    }
     if (sessionMatch[1] === 'session-q1152') {
       return json(res, 200, readFixture('session-q1152.json'))
     }
@@ -586,11 +607,13 @@ async function handleRequest(req, res) {
     return json(res, 200, { count: 3 })
   }
 
-  // Stub browse — returns no subdirectories regardless of `path`. The Maestro
-  // flow only needs the breadcrumb row to render the requested cwd; it does
-  // not exercise directory navigation.
+  // Stub browse — returns no subdirectories for any `path` except the
+  // MENTIONS_TREE folders, which feed the composer's `@` picker
+  // (file_mentions.yaml). Other flows only need the breadcrumb row to render
+  // the requested cwd.
   if (method === 'GET' && p === '/api/browse') {
-    return json(res, 200, { directories: [] })
+    const listing = MENTIONS_TREE[url.searchParams.get('path')]
+    return json(res, 200, listing ?? { directories: [] })
   }
 
   // One registered token, so app/notification-health.tsx has a row to render.
