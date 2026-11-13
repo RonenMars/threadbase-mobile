@@ -79,6 +79,34 @@ describe('useProjectGroups with summaries', () => {
     expect(result.current[0].sessions).toHaveLength(1)
   })
 
+  it('puts sessions at one path in one group whether or not they carry a projectId', async () => {
+    const noId: MultiSession = { ...session, id: 's2', projectId: undefined }
+    const { result } = await renderHook(() =>
+      useProjectGroups(
+        [session, noId],
+        [summary('/dev/tb-mobile', 171, '2026-08-09T03:45:12.289Z')],
+        'lastActivity',
+        'desc',
+      ),
+    )
+
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].sessions).toHaveLength(2)
+    expect(result.current[0].conversationCount).toBe(171)
+  })
+
+  it('keeps one group when sessions at one path carry different projectIds, first id wins', async () => {
+    const noId: MultiSession = { ...session, id: 's0', projectId: undefined }
+    const otherId: MultiSession = { ...session, id: 's2', projectId: 'project-2' }
+    const { result } = await renderHook(() =>
+      useProjectGroups([noId, session, otherId], [], 'lastActivity', 'desc'),
+    )
+
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].sessions).toHaveLength(3)
+    expect(result.current[0].projectId).toBe('project-1')
+  })
+
   it('keeps the same project on two servers as two groups', async () => {
     const otherServer: MultiProjectSummary = {
       ...summary('/dev/tb-mobile', 4, '2026-08-01T00:00:00.000Z'),
