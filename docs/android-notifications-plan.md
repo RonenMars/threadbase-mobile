@@ -5,7 +5,7 @@
 
 ## Implementation status
 
-**Updated:** 2026-11-13, branch `fix/android-notifications`.
+**Updated:** 2026-11-13, branches `fix/android-notifications` and `feat/android-notifications-phase4` (stacked).
 
 | Item | State |
 |---|---|
@@ -17,7 +17,30 @@
 | 2 release guard | Done — `ship-android.sh` refuses a build without `google-services.json`; `deploy.yml` already fails when the secret is unset |
 | 2 credentials | Console work, not done |
 | 3 device verification | Not done — nothing here is device-verified |
-| 4 Maestro flow, ROADMAP/FEATURES | Not done |
+| 4 Maestro flow | Written (`e2e/android_notifications_health.yaml`, in `test:e2e:mock`), **not run** — no Maestro or emulator on the authoring machine; the token row is seeded by the mock server |
+| 4 docs | Gap recorded in `BACKLOG.md` and `FEATURES.md`; nothing claimed as verified |
+| Streamer#528 | Closed in streamer v1.48.0; `waitingInputNotifier.ts` sends attention pushes with `priority: "high"` (checked 2026-11-13 against streamer `main` `5902c319`) |
+
+## Checklist for the maintainer
+
+None of this is done or verified.
+
+**Phase 2 — console work**
+- [ ] Expo project: FCM V1 service-account key assigned to `com.ronenmars.threadbase`.
+- [ ] Expo project: FCM V1 key assigned to `com.ronenmars.threadbase.dev` (the wizard files it in the wrong slot, `docs/tbdev.md:111`).
+- [ ] `GOOGLE_SERVICES_JSON_B64` secret set, and one Deploy run confirmed to write the two-client `google-services.json`.
+
+**Phase 3 — devices (Android 13+ and Android 12 or lower)**
+- [ ] Fresh install: onboarding notifications step shows the system prompt (13+), none on 12.
+- [ ] Notification health screen lists an `android` token per paired server.
+- [ ] Send test: arrives in foreground, background and killed.
+- [ ] Attention push: `needs-you` vibration, Allow/Deny answer the gate, tap opens the session on cold start.
+- [ ] Live-session ongoing notification appears and clears.
+- [ ] Mute a channel in system settings: the health screen reports it.
+- [ ] Change app language: channel names update in system settings.
+- [ ] Doze: 30 minutes locked, then a push arrives.
+- [ ] Record model, Android version and date in `docs/dev-on-physical-device-android.md`.
+- [ ] Run `npm run test:e2e:mock` on an Android emulator once, so `android_notifications_health.yaml` is confirmed.
 
 ## Where we are
 
