@@ -144,7 +144,7 @@ module.exports = defineConfig([
   {
     files: [
       "scripts/**/*.{js,ts}",
-      "e2e/**/*.{js,ts}",
+      "e2e/**/*.{js,mjs,ts}",
       "plugins/**/*.{js,ts}",
       "jest.setup.js",
       "app.config.js",

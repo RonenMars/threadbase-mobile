@@ -72,11 +72,20 @@ appId: com.ronenmars.threadbase
 
 # --- 05: finished work on a third machine -----------------------------------
 - runFlow: back-to-hub.yaml
-- scrollUntilVisible:
-    element:
-      id: "conversation-row-conv-hm-onboarding"
-    direction: DOWN
-    centerElement: true
+# scrollUntilVisible swipes from the screen centre, which on a phone at the
+# default text size lands on a Working card and never moves the list.
+# Swipe from the history rows on the left instead.
+- repeat:
+    while:
+      notVisible:
+        id: "conversation-row-conv-hm-onboarding"
+    times: 6
+    commands:
+      - swipe:
+          start: 25%, 85%
+          end: 25%, 40%
+      - waitForAnimationToEnd:
+          timeout: 1500
 - tapOn:
     id: "conversation-row-conv-hm-onboarding"
 - extendedWaitUntil:

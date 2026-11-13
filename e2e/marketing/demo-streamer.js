@@ -163,6 +163,20 @@ function startMachine(port, seed) {
     const method = req.method
     console.log(`[${machine.machineName}] ${method} ${p}`)
 
+    // The web capture (e2e/marketing/web-capture.mjs) is a cross-origin caller,
+    // same as e2e/mock-server.js handles; the native app sends no Origin.
+    if (req.headers.origin) {
+      res.setHeader('Access-Control-Allow-Origin', req.headers.origin)
+      res.setHeader('Vary', 'Origin')
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+      res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'] ?? 'Authorization, Content-Type')
+      res.setHeader('Access-Control-Expose-Headers', 'ETag')
+    }
+    if (method === 'OPTIONS') {
+      res.writeHead(204)
+      return res.end()
+    }
+
     // The legacy (pre-E2EE) pairing reply: the api key sealed to the key the
     // client just generated. The pair token is not checked — any deep link
     // pointing here pairs.
