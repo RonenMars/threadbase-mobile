@@ -98,7 +98,7 @@ New `components/conversation/FileMentionBoard.tsx` (+ `FileMentionBoard.stories.
 
 ### 7. Rollout
 
-Behind `EXPO_PUBLIC_FILE_MENTIONS=1` (same mechanism as slash commands) until verified on a physical iOS and Android device, then default-on for Claude sessions.
+Default-on for Claude sessions; the `EXPO_PUBLIC_FILE_MENTIONS=1` gate it shipped behind was removed before device verification, which is still pending on a physical iOS and Android device.
 
 ## Phase 2 — streamer (separate PR in `threadbase-streamer`)
 

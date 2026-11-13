@@ -50,8 +50,7 @@ export function useFileMentions({
   // The `@` index the user closed the picker on; it stays closed for that token.
   const [dismissedAt, setDismissedAt] = useState<number | null>(null)
 
-  const enabled =
-    process.env.EXPO_PUBLIC_FILE_MENTIONS === '1' && !!projectPath && supportsFileMentions(provider)
+  const enabled = !!projectPath && supportsFileMentions(provider)
   const token = enabled ? findMentionToken(text, cursor) : null
 
   const onSelectionChange = useCallback(
