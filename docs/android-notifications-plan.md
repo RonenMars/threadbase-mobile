@@ -149,10 +149,37 @@ Record results with device model, Android version, and date in `docs/dev-on-phys
 - Update `docs/ROADMAP.md` Feature 12 entry and `docs/FEATURES.md` once Phase 3 passes.
 - `docs/expo-web-support.md` is unaffected (notifications stay native-only).
 
+## Note — how push grouping works on each platform
+
+**Checked:** 2026-11-13, against the streamer's `waitingInputMessage` (`src/services/push/waitingInputNotifier.ts`) and Expo's push API docs.
+The streamer builds one payload for every attention kind (`turn_done`, `permission`, `question`, `failed`, `limited`, `idle`); the idle notifier goes through the same function.
+
+| Payload field | iOS | Android |
+|---|---|---|
+| `threadId` | Maps to `aps.thread-id`. Notifications sharing it stack together. | Ignored. |
+| `collapseId` | Maps to `apns-collapse-id`. Coalesces in transit and replaces the banner already shown. | Maps to FCM `collapse_key`. Coalesces only undelivered messages. |
+| `tag` | Ignored. | Replaces the banner already shown for the same tag. |
+| `channelId` | Ignored. | `needs-you` or `updates`. A channel the app never created means the push is not displayed. |
+| `categoryId` | Action buttons, and a stack summary line if the category sets `categorySummaryFormat`. | Action buttons. |
+
+- **iOS today:** the streamer sets `threadId: session.id`, so every session is a stack of one and a lock screen shows one banner per session.
+  The intended split is two threads, `needs-you` (`permission`, `question`) and `updates` (everything else), chosen by the same predicate as `channelId`.
+  `collapseId: session.id` stays, so a newer push for a session replaces its older banner.
+- **iOS settings:** Notification Grouping (Automatic, By App, Off) belongs to the user under Settings → Notifications → Threadbase.
+  No `Info.plist` key, entitlement or `app.json` option sets it, and the default, Automatic, stacks by `thread-id`.
+  Notifications from two installed builds (for example a dev client and TbDev) are two apps and never share a stack.
+- **Android today:** Expo's push API has no group-key field, so the app cannot ask for a group.
+  Stacking is the system's own auto-grouping, and the `needs-you` / `updates` channels are the only boundary the app controls.
+  Explicit grouping would mean a data-only push plus a locally scheduled notification with `threadIdentifier` set (expo-notifications maps it to the Android group key).
+  That is a bigger change; do it only if Android stacking proves noisy on a device.
+- **Stack summary line (iOS):** needs registered categories with `categorySummaryFormat` (`%u` only; Expo's push API has no `summaryArgument`) and a matching `categoryId` from the streamer, gated on a notification feature the app lists after registering them.
+  It only shows on a collapsed stack, so it depends on the two-thread change landing first.
+- **Not device-verified.** The payload facts above come from code and docs; whether a given phone stacks them is a device behavior.
+
 ## Out of scope
 
 - Android 16 promoted ongoing notifications / status-bar chip for live sessions — `expo-notifications` doesn't expose `setRequestPromotedOngoing`; needs a native module (see the comment in `services/live-activity.android.ts`).
-- Notification grouping/summary per server — worth doing once attention pushes are live and noisy.
+- Explicit Android notification grouping/summary — see the grouping note above; worth doing once attention pushes are live and noisy.
 - Anything that sends pushes without Expo's push service: per CLAUDE.md "Product claims" and `docs/no-hosted-service.md`, re-read those before changing where push payloads go.
 
 ## Order and size
