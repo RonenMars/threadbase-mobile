@@ -32,11 +32,70 @@ const MAX_PENDING_ESCAPE_BYTES = 8_192
 // already restores `grid = [[]]`, which is the origin.
 const DEFAULT_VIEWPORT_ROWS = 40
 
-// CSI finals we intentionally ignore (SGR, modes, reports) without counting
+// CSI finals we intentionally ignore (modes, reports) without counting
 // as unsupported — they are expected noise in agent TUIs.
-const IGNORED_CSI = new Set(['m', 'h', 'l', 'n', 't', 'q', 'c', 's', 'u', 'p'])
+const IGNORED_CSI = new Set(['h', 'l', 'n', 't', 'q', 'c', 's', 'u', 'p'])
 
-const HANDLED_CSI = new Set(['A', 'B', 'C', 'D', 'G', 'H', 'f', 'J', 'K', 'L', 'M', 'S', 'T', 'r'])
+const HANDLED_CSI = new Set(['A', 'B', 'C', 'D', 'G', 'H', 'f', 'J', 'K', 'L', 'M', 'S', 'T', 'r', 'm'])
+
+/** A number is an ANSI palette slot (0-7 normal, 8-15 bright) the theme resolves; a string is `#rrggbb`. */
+export type TerminalColor = number | string
+
+export interface TerminalStyle {
+  fg?: TerminalColor
+  bg?: TerminalColor
+  bold?: boolean
+  dim?: boolean
+  italic?: boolean
+  underline?: boolean
+  inverse?: boolean
+}
+
+export interface TerminalRun {
+  text: string
+  style: TerminalStyle
+}
+
+interface StyledLine {
+  text: string
+  runs: TerminalRun[]
+}
+
+interface GridRow {
+  chars: string[]
+  /** Pen per cell; `undefined` is the default style. */
+  styles: (TerminalStyle | undefined)[]
+  /** Cached `styledRow()`. `undefined` means stale; `null` means no styled cell. */
+  styled: StyledLine | null | undefined
+}
+
+const newRow = (): GridRow => ({ chars: [], styles: [], styled: undefined })
+const DEFAULT_STYLE: TerminalStyle = Object.freeze({})
+
+function sameStyle(a: TerminalStyle, b: TerminalStyle): boolean {
+  return a === b || (
+    a.fg === b.fg && a.bg === b.bg && a.bold === b.bold && a.dim === b.dim &&
+    a.italic === b.italic && a.underline === b.underline && a.inverse === b.inverse
+  )
+}
+
+const hex = (r: number, g: number, b: number): string =>
+  `#${[r, g, b].map((v) => Math.min(255, v).toString(16).padStart(2, '0')).join('')}`
+
+/** xterm's 256-colour table: 0-15 stay palette slots, 16-231 a 6x6x6 cube, 232-255 a grey ramp. */
+function xterm256(n: number): TerminalColor | undefined {
+  if (n < 16) return n
+  if (n < 232) {
+    const level = (v: number) => (v === 0 ? 0 : 55 + v * 40)
+    const i = n - 16
+    return hex(level(Math.floor(i / 36)), level(Math.floor(i / 6) % 6), level(i % 6))
+  }
+  if (n < 256) {
+    const grey = 8 + (n - 232) * 10
+    return hex(grey, grey, grey)
+  }
+  return undefined
+}
 
 // Whole-line box-drawing borders (e.g. the status-bar box Claude Code draws)
 // — box-drawing/block glyphs and whitespace only, nothing else.
@@ -47,9 +106,11 @@ function isVisibleRow(line: string): boolean {
 }
 
 export class VirtualTerminal {
-  private grid: string[][] = [[]]
+  private grid: GridRow[] = [newRow()]
   private row = 0
   private col = 0
+  /** Current SGR pen; `undefined` is the default style. */
+  private pen: TerminalStyle | undefined
   /**
    * Rows in the TUI's viewport. The streamer spawns every PTY at the constants
    * above and reports the real number on `terminal_replay` / `terminal_resize`
@@ -83,6 +144,8 @@ export class VirtualTerminal {
    * that no escape sequence can ever address has no business in it.
    */
   private archived: string[] = []
+  /** Attributes of `archived`, index for index. */
+  private archivedStyled: (StyledLine | null)[] = []
 
   /** Incomplete escape sequence retained across WebSocket frame boundaries. */
   private pendingEscape = ''
@@ -154,6 +217,25 @@ export class VirtualTerminal {
    */
   seedArchive(lines: string[]): void {
     this.archived = lines.map((line) => line.trimEnd()).slice(-MAX_ROWS)
+    this.archivedStyled = this.archived.map(() => null)
+  }
+
+  /**
+   * Attribute runs keyed by the plain row text the line accessors return, for
+   * rows with at least one styled cell. Runs of an unchanged row keep their
+   * identity across calls, so a memoised renderer skips it.
+   */
+  // ponytail: keyed by text, so two rows with equal text and different
+  // attributes share the later row's runs; carry runs through the line
+  // pipeline if that ever shows.
+  getLineStyles(): Map<string, TerminalRun[]> {
+    const out = new Map<string, TerminalRun[]>()
+    const add = (styled: StyledLine | null) => {
+      if (styled) out.set(styled.text, styled.runs)
+    }
+    this.archivedStyled.forEach(add)
+    for (const row of this.grid) add(this.styledRow(row))
+    return out
   }
 
   /**
@@ -190,7 +272,31 @@ export class VirtualTerminal {
   }
 
   private gridRows(): string[] {
-    return this.grid.map((chars) => chars.join('').trimEnd())
+    return this.grid.map((row) => row.chars.join('').trimEnd())
+  }
+
+  private styledRow(row: GridRow): StyledLine | null {
+    if (row.styled !== undefined) return row.styled
+    let styled: StyledLine | null = null
+    if (row.styles.some(Boolean)) {
+      const text = row.chars.join('').trimEnd()
+      const runs: TerminalRun[] = []
+      let pos = 0
+      // Walk cells rather than slice `text`: a row truncated past its end
+      // holds holes that join() skips, so cell index and text offset differ.
+      for (let c = 0; c < row.chars.length && pos < text.length; c++) {
+        const ch = row.chars[c]
+        if (ch === undefined) continue
+        const style = row.styles[c] ?? DEFAULT_STYLE
+        const last = runs[runs.length - 1]
+        if (last && sameStyle(last.style, style)) last.text += ch
+        else runs.push({ text: ch, style })
+        pos += ch.length
+      }
+      if (runs.some((run) => run.style !== DEFAULT_STYLE)) styled = { text, runs }
+    }
+    row.styled = styled
+    return styled
   }
 
   /** Move the grid's rendered rows into `archived`, ahead of a full clear. */
@@ -199,7 +305,11 @@ export class VirtualTerminal {
     while (rows.length > 0 && rows[rows.length - 1] === '') rows.pop()
     if (rows.length === 0) return
     this.archived.push(...rows)
-    if (this.archived.length > MAX_ROWS) this.archived = this.archived.slice(-MAX_ROWS)
+    this.archivedStyled.push(...this.grid.slice(0, rows.length).map((row) => this.styledRow(row)))
+    if (this.archived.length > MAX_ROWS) {
+      this.archived = this.archived.slice(-MAX_ROWS)
+      this.archivedStyled = this.archivedStyled.slice(-MAX_ROWS)
+    }
   }
 
   getParseConfidence(): ParseConfidence {
@@ -225,9 +335,11 @@ export class VirtualTerminal {
   /** Reset terminal state. */
   reset(): void {
     this.archived = []
-    this.grid = [[]]
+    this.archivedStyled = []
+    this.grid = [newRow()]
     this.row = 0
     this.col = 0
+    this.pen = undefined
     this.pendingEscape = ''
     this.unsupportedSequenceCount = 0
     this.truncatedEscapeCount = 0
@@ -236,11 +348,54 @@ export class VirtualTerminal {
 
   private putChar(ch: string): void {
     const line = this.grid[this.row]
-    while (line.length <= this.col) {
-      line.push(' ')
+    while (line.chars.length <= this.col) {
+      line.chars.push(' ')
+      line.styles.push(undefined)
     }
-    line[this.col] = ch
+    line.chars[this.col] = ch
+    line.styles[this.col] = this.pen
+    line.styled = undefined
     this.col++
+  }
+
+  private applySgr(params: string): void {
+    // `CSI > Ps ; Ps m` is xterm's modifyOtherKeys, not SGR.
+    if (/[?<=>]/.test(params)) return
+    const args = params.split(';').map((s) => parseInt(s, 10) || 0)
+    let pen: TerminalStyle = { ...this.pen }
+    for (let k = 0; k < args.length; k++) {
+      const a = args[k]
+      if (a === 0) pen = {}
+      else if (a === 1) pen.bold = true
+      else if (a === 2) pen.dim = true
+      else if (a === 3) pen.italic = true
+      else if (a === 4) pen.underline = true
+      else if (a === 7) pen.inverse = true
+      else if (a === 22) {
+        delete pen.bold
+        delete pen.dim
+      } else if (a === 23) delete pen.italic
+      else if (a === 24) delete pen.underline
+      else if (a === 27) delete pen.inverse
+      else if (a >= 30 && a <= 37) pen.fg = a - 30
+      else if (a === 39) delete pen.fg
+      else if (a >= 40 && a <= 47) pen.bg = a - 40
+      else if (a === 49) delete pen.bg
+      else if (a >= 90 && a <= 97) pen.fg = a - 82
+      else if (a >= 100 && a <= 107) pen.bg = a - 92
+      else if (a === 38 || a === 48) {
+        let color: TerminalColor | undefined
+        if (args[k + 1] === 5) {
+          color = xterm256(args[k + 2] ?? 0)
+          k += 2
+        } else if (args[k + 1] === 2) {
+          color = hex(args[k + 2] ?? 0, args[k + 3] ?? 0, args[k + 4] ?? 0)
+          k += 4
+        }
+        if (color !== undefined) pen[a === 38 ? 'fg' : 'bg'] = color
+      }
+    }
+    this.pen = Object.keys(pen).length > 0 ? pen : undefined
   }
 
   private parseEscape(data: string, i: number): number | null {
@@ -360,12 +515,15 @@ export class VirtualTerminal {
           // Keep what is about to be erased. `2J 3J` back to back archive once:
           // the second finds an empty grid.
           this.archiveGrid()
-          this.grid = [[]]
+          this.grid = [newRow()]
           this.row = 0
           this.col = 0
         } else if (n === 0) {
-          if (this.grid[this.row]) {
-            this.grid[this.row].length = this.col
+          const line = this.grid[this.row]
+          if (line) {
+            line.chars.length = this.col
+            line.styles.length = this.col
+            line.styled = undefined
           }
           this.grid.length = this.row + 1
         }
@@ -373,21 +531,26 @@ export class VirtualTerminal {
       case 'K': {
         const mode = args[0] || 0
         this.ensureRow(this.row)
+        const line = this.grid[this.row]
+        line.styled = undefined
         if (mode === 0) {
-          this.grid[this.row].length = this.col
+          line.chars.length = this.col
+          line.styles.length = this.col
         } else if (mode === 1) {
-          for (let c = 0; c <= this.col && c < this.grid[this.row].length; c++) {
-            this.grid[this.row][c] = ' '
+          const erased = this.pen?.bg !== undefined ? { bg: this.pen.bg } : undefined
+          for (let c = 0; c <= this.col && c < line.chars.length; c++) {
+            line.chars[c] = ' '
+            line.styles[c] = erased
           }
         } else if (mode === 2) {
-          this.grid[this.row] = []
+          this.grid[this.row] = newRow()
         }
         break
       }
       case 'L':
         this.ensureRow(this.row)
         for (let j = 0; j < n; j++) {
-          this.grid.splice(this.row, 0, [])
+          this.grid.splice(this.row, 0, newRow())
         }
         break
       case 'M':
@@ -403,18 +566,21 @@ export class VirtualTerminal {
         break
       case 'T':
         for (let j = 0; j < n; j++) {
-          this.grid.unshift([])
+          this.grid.unshift(newRow())
         }
         this.row += n
         break
       case 'r':
+        break
+      case 'm':
+        this.applySgr(params)
         break
     }
   }
 
   private ensureRow(row: number): void {
     while (this.grid.length <= row) {
-      this.grid.push([])
+      this.grid.push(newRow())
     }
     if (this.grid.length > MAX_ROWS) {
       const excess = this.grid.length - MAX_ROWS

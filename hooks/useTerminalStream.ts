@@ -5,7 +5,7 @@ import { wsManager } from '@/services/ws-client'
 import { useSettingsStore } from '@/stores/settings'
 import { createApiForServer, NotFoundError } from '@/services/api-client'
 import { QUERY_GC_TIME } from '@/services/query-client'
-import { VirtualTerminal } from '@/services/virtual-terminal'
+import { VirtualTerminal, type TerminalRun } from '@/services/virtual-terminal'
 import { dropGhostPromptLine } from '@/lib/terminalChrome'
 import type { ProviderName } from '@/constants/providers'
 import type { ParseConfidence } from '@/lib/renderConfidence'
@@ -45,6 +45,7 @@ export function useTerminalStream(
   // Only the rows drawn since the last full clear — what the transcript join
   // splits on. `lines` also carries the history kept from before the clears.
   const [frameLines, setFrameLines] = useState<TerminalLine[]>([])
+  const [lineStyles, setLineStyles] = useState<ReadonlyMap<string, readonly TerminalRun[]>>(() => new Map())
   const [parseConfidence, setParseConfidence] = useState<ParseConfidence>('high')
   const [isStreaming, setIsStreaming] = useState(false)
   // Ground-truth set of texts the streamer wrote to the PTY, normalized (trim).
@@ -124,6 +125,7 @@ export function useTerminalStream(
     const raw = confidence === 'low'
     setLines(raw ? vt.getRawLines() : vt.getLines())
     setFrameLines(raw ? vt.getFrameRawLines() : vt.getFrameLines())
+    setLineStyles(vt.getLineStyles())
   }
 
   const historyQuery = useQuery({
@@ -392,6 +394,7 @@ export function useTerminalStream(
   return {
     lines: visibleLines,
     frameLines: visibleFrameLines,
+    lineStyles,
     isStreaming,
     userMessageTexts,
     prompts,

@@ -1,6 +1,6 @@
 # Markdown rendering in the terminal and chat views
 
-Status: in progress on `feat/markdown-rendering` — steps 1–3 landed; step 4 open.
+Status: done — steps 1–3 landed on `feat/markdown-rendering`; step 4 landed on `feat/terminal-sgr-colors`.
 Date: 2026-10-04.
 
 ## Problem
@@ -88,6 +88,8 @@ Order:
 3. **`MessageBubble`** — adopt in chat, with the `HighlightText` per-span work and the
    `LONG_TEXT_CHARS` re-tune scoped into it.
 4. **SGR colors in `services/virtual-terminal.ts`** — separate, last, and not a markdown change.
+   Done: the VT keeps per-cell attributes, `getLineStyles()` exposes them as runs keyed by plain
+   row text, and `TerminalOutput` renders them as nested spans; the plain-text accessors are unchanged.
 
 ## What the parser does not do
 

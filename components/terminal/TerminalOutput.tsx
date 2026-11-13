@@ -25,6 +25,8 @@ import type { QuestionPhase } from '@/hooks/useActiveQuestion'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { QuestionCard } from '@/components/terminal/QuestionCard'
 import { TranscriptRow } from '@/components/terminal/TranscriptRow'
+import { TerminalRunSpans } from '@/components/terminal/TerminalRunSpans'
+import type { TerminalRun } from '@/services/virtual-terminal'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { messageItemType } from '@/utils/messageItemType'
@@ -58,14 +60,17 @@ function isUserLine(clean: string, userMessageTexts?: Set<string>): boolean {
 
 interface LineRowProps {
   line: string
+  runs?: readonly TerminalRun[]
   userMessageTexts?: Set<string>
 }
 
 const LineText = memo(function LineText({
   line,
+  runs,
   userMessageTexts,
 }: {
   line: string
+  runs?: readonly TerminalRun[]
   userMessageTexts?: Set<string>
 }) {
   const { styles: chrome } = useThemedStyles(makeChromeStyles)
@@ -77,12 +82,12 @@ const LineText = memo(function LineText({
       selectable
       maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
     >
-      {clean}
+      {runs ? <TerminalRunSpans runs={runs} /> : clean}
     </Text>
   )
 })
 
-const LineRow = memo(function LineRow({ line, userMessageTexts }: LineRowProps) {
+const LineRow = memo(function LineRow({ line, runs, userMessageTexts }: LineRowProps) {
   const clean = stripAnsi(line)
   return (
     <RenderErrorBoundary tag="terminal_line" rawFallback={clean}>
@@ -90,7 +95,7 @@ const LineRow = memo(function LineRow({ line, userMessageTexts }: LineRowProps) 
         style={styles.lineRow}
         testID="terminal-line-row"
       >
-        <LineText line={line} userMessageTexts={userMessageTexts} />
+        <LineText line={line} runs={runs} userMessageTexts={userMessageTexts} />
       </View>
     </RenderErrorBoundary>
   )
@@ -106,6 +111,8 @@ type Row =
 
 interface Props {
   lines: TerminalLine[]
+  /** SGR attribute runs by row text (`VirtualTerminal.getLineStyles()`); a row without an entry renders plain. */
+  lineStyles?: ReadonlyMap<string, readonly TerminalRun[]>
   isStreaming: boolean
   /** Finished turns from the conversation transcript, oldest first. Empty when the session has none. */
   transcript?: Message[]
@@ -157,6 +164,7 @@ interface Props {
 
 export function TerminalOutput({
   lines,
+  lineStyles,
   isStreaming: _isStreaming,
   transcript = [],
   hasOlder = false,
@@ -323,9 +331,9 @@ export function TerminalOutput({
           </View>
         )
       case 'line':
-        return <LineRow line={item.line} userMessageTexts={userMessageTexts} />
+        return <LineRow line={item.line} runs={lineStyles?.get(item.line)} userMessageTexts={userMessageTexts} />
     }
-  }, [chrome, liveDividerLabel, renderMarkdown, userMessageTexts])
+  }, [chrome, lineStyles, liveDividerLabel, renderMarkdown, userMessageTexts])
 
   // Stable keys: a message by id; a PTY row by content + per-content occurrence.
   // Positional keys broke memoisation: every WS frame's `.slice(-maxLines)`
