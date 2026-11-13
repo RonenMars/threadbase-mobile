@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { CheckSquareIcon, DotsThreeVertical, SquareIcon, X } from 'phosphor-react-native'
-import { Trans, useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -103,6 +103,12 @@ export function LeaveNotice({ visible, phase, agent, server, waiting, onLeave, o
   const statusLabel = waiting ? t('status.needsYou') : t('status.working')
   const title = waiting ? t('leaveNotice.waiting', { agent }) : t('leaveNotice.working', { agent })
 
+  // Non-breaking spaces glue the icon to its neighbours so it never wraps onto a line of its own.
+  const [terminateBefore, terminateAfter] = t('leaveNotice.terminateHint', { action: t('endSession.terminate') })
+    // eslint-disable-next-line i18next/no-literal-string -- placeholder tag in the locale string, not copy
+    .split('<menu></menu>')
+    .map((part, i) => (i === 0 ? part.replace(/ $/, '\u00A0') : part.replace(/^ /, '\u00A0')))
+
   return (
     <Modal
       visible={open}
@@ -141,14 +147,9 @@ export function LeaveNotice({ visible, phase, agent, server, waiting, onLeave, o
             <Text style={[styles.title, copyStyle]}>{title}</Text>
             <Text style={[styles.message, copyStyle]}>{t('leaveNotice.body', { server })}</Text>
             <Text style={[styles.message, copyStyle]} testID="leave-notice-terminate-hint">
-              <Trans
-                t={t}
-                i18nKey="leaveNotice.terminateHint"
-                values={{ action: t('endSession.terminate') }}
-                components={{
-                  menu: <DotsThreeVertical size={14} color={theme.text.primary} weight="bold" testID="leave-notice-menu-icon" />,
-                }}
-              />
+              {terminateBefore}
+              <DotsThreeVertical size={14} color={theme.text.primary} weight="bold" testID="leave-notice-menu-icon" />
+              {terminateAfter}
             </Text>
           </View>
           <TouchableOpacity
