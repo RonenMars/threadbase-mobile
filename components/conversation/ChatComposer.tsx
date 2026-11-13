@@ -5,6 +5,7 @@ import {
   Text,
   TextInput,
   type TextInputInstance,
+  type TextInputKeyPressEvent,
   type TextInputSelectionChangeEvent,
   TouchableOpacity,
   ScrollView,
@@ -196,6 +197,19 @@ export function ChatComposer({
     if (disabled || sendDisabled || !hasContent) return
     onSend()
   }
+
+  // Web: Enter sends and Shift+Enter keeps the textarea's newline, as in any desktop chat.
+  // Handled here rather than via blurOnSubmit, which react-native-web follows with a blur.
+  // An open IME composition owns Enter (it commits the candidate), so it is left alone.
+  const onWebKeyPress =
+    Platform.OS === 'web'
+      ? (e: TextInputKeyPressEvent & { nativeEvent: { shiftKey?: boolean; isComposing?: boolean } }) => {
+          const { key, shiftKey, isComposing } = e.nativeEvent
+          if (key !== 'Enter' || shiftKey || isComposing) return
+          e.preventDefault()
+          handleSend()
+        }
+      : undefined
 
   const suggestionChip =
     promptSuggestion !== null &&
@@ -430,6 +444,7 @@ export function ChatComposer({
               selection={selection}
               onSelectionChange={onSelectionChange}
               onBlur={onInputBlur}
+              onKeyPress={onWebKeyPress}
               placeholder={disabled ? t('status.starting') : t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
               multiline

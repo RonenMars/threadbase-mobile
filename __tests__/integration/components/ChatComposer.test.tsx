@@ -459,7 +459,7 @@ describe('ChatComposer', () => {
       expect.objectContaining({ direction: 'ltr', writingDirection: 'ltr', textAlign: 'auto' }),
     )
 
-    cleanup()
+    await cleanup()
     await i18n.changeLanguage('he')
     await renderComposer({ value: 'שלום' })
     const rtlPlane = screen.getByTestId('phosphor-react-native-paper-plane-right-undefined')
@@ -471,5 +471,58 @@ describe('ChatComposer', () => {
       expect.objectContaining({ direction: 'ltr', flexDirection: 'row' }),
     )
   })
-})
 
+  describe('web Enter to send', () => {
+    function pressKey(nativeEvent: { key: string; shiftKey?: boolean; isComposing?: boolean }) {
+      const preventDefault = jest.fn()
+      fireEvent(screen.getByTestId('chat-message-input'), 'keyPress', { nativeEvent, preventDefault })
+      return preventDefault
+    }
+
+    it('sends on Enter and keeps the newline out of the draft', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web')
+      const { props } = await renderComposer({ value: 'hello' })
+      const preventDefault = pressKey({ key: 'Enter' })
+      expect(props.onSend).toHaveBeenCalledTimes(1)
+      expect(preventDefault).toHaveBeenCalled()
+    })
+
+    it('leaves Shift+Enter to insert a newline', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web')
+      const { props } = await renderComposer({ value: 'hello' })
+      const preventDefault = pressKey({ key: 'Enter', shiftKey: true })
+      expect(props.onSend).not.toHaveBeenCalled()
+      expect(preventDefault).not.toHaveBeenCalled()
+    })
+
+    it('does not send while an IME composition is open', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web')
+      const { props } = await renderComposer({ value: 'こんにちは' })
+      pressKey({ key: 'Enter', isComposing: true })
+      expect(props.onSend).not.toHaveBeenCalled()
+    })
+
+    it('swallows Enter without sending when there is nothing to send', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web')
+      const { props } = await renderComposer({ value: '   ', sendDisabled: false })
+      const preventDefault = pressKey({ key: 'Enter' })
+      expect(props.onSend).not.toHaveBeenCalled()
+      expect(preventDefault).toHaveBeenCalled()
+    })
+
+    it('does not send on Enter when sending is disabled', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web')
+      const { props } = await renderComposer({ value: 'hello', sendDisabled: true })
+      pressKey({ key: 'Enter' })
+      expect(props.onSend).not.toHaveBeenCalled()
+    })
+
+    it('keeps Enter as a newline on iOS', async () => {
+      jest.replaceProperty(Platform, 'OS', 'ios')
+      const { props } = await renderComposer({ value: 'hello' })
+      const preventDefault = pressKey({ key: 'Enter' })
+      expect(props.onSend).not.toHaveBeenCalled()
+      expect(preventDefault).not.toHaveBeenCalled()
+    })
+  })
+})
