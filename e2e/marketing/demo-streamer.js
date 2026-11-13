@@ -491,7 +491,8 @@ function startMachine(port, seed) {
     })
   })
 
-  server.listen(port, '127.0.0.1', () => {
+  // DEMO_HOST=0.0.0.0 exposes the demo machines on the LAN so a physical phone can pair.
+  server.listen(port, process.env.DEMO_HOST || '127.0.0.1', () => {
     console.log(`${seed.machineName} listening on http://localhost:${port}`)
   })
 }
