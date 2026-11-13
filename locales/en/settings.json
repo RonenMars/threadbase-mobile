@@ -107,7 +107,8 @@
     "last": "Last"
   },
   "about": {
-    "subtitle": "AI Agent Control Center"
+    "subtitle": "AI Agent Control Center",
+    "copy": "Copy version and build"
   },
   "help": {
     "restartOnboarding": "Restart onboarding",
