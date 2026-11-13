@@ -49,3 +49,18 @@ export function promptRefetchKey(items: readonly MergedItem[]): string {
 export function terminalTailLine(output: string | null | undefined): string | undefined {
   return stripAnsi(output ?? '').split('\n').map((l) => l.trim()).filter(Boolean).pop()
 }
+
+/**
+ * What a Needs you card says under its title. `lastOutput` is the last raw PTY chunk, which after a finished
+ * turn is Claude Code repainting its hint row, so `hasOpenPrompt === false` means there is nothing to show.
+ * The tail survives only where it is the sole signal (older streamers) or the flag says a prompt is open.
+ */
+export function needsYouLine(
+  session: Pick<Session, 'hasOpenPrompt' | 'pendingPrompts' | 'lastOutput'>,
+): { text: string; question: boolean } | undefined {
+  const question = openPrompts(session)[0]?.questions[0]?.text
+  if (question !== undefined) return { text: question, question: true }
+  if (session.hasOpenPrompt === false) return undefined
+  const tail = terminalTailLine(session.lastOutput)
+  return tail ? { text: tail, question: false } : undefined
+}

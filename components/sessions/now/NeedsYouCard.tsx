@@ -7,7 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { StateBadge, getSessionTierLabel } from '@/components/sessions/StateBadge'
 import { formatWaitSince, waitSinceIso } from '@/components/sessions/shared/formatCoarseElapsed'
 import { shortPath } from '@/components/sessions/shared/pathTail'
-import { stripAnsi } from '@/utils/stripAnsi'
+import { needsYouLine } from '@/lib/boardPrompts'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
@@ -37,8 +37,8 @@ interface Props {
 
 /**
  * The only row that earns a whole card and an action line: a live process
- * waiting on the user. The mono block is the raw terminal tail, not a parsed
- * question — there is no answer affordance here by design.
+ * waiting on the user. The mono block shows the open question's text, or the
+ * terminal tail on streamers that cannot say — display only, no answer affordance by design.
  */
 export function NeedsYouCard({ session, title, serverLabel, serverColor, dominantProvider, isFirst }: Props) {
   const theme = useTheme()
@@ -51,7 +51,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const qualifier = wait ? t('row.waitingFor', { elapsed: wait }) : undefined
   const tierLabel = getSessionTierLabel('needsYou', t)
   const accessibilityLabel = qualifier ? `${title}, ${tierLabel}, ${qualifier}` : `${title}, ${tierLabel}`
-  const output = stripAnsi(session.lastOutput ?? '').trim()
+  const output = needsYouLine(session)?.text
   const projectLabel = shortPath(session.projectPath)
 
   return (
