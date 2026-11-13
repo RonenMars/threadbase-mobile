@@ -193,7 +193,9 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
           case 'listItem':
             return (
               <View key={i} style={[styles.itemRow, { paddingStart: block.depth * spacing.md }]}>
-                <Text style={[baseStyle, styles.marker]}>{block.marker}</Text>
+                <Text style={[baseStyle, styles.marker, isUser && { color: theme.text.onAccent }]}>
+                  {block.marker}
+                </Text>
                 <View style={styles.itemBody}>{renderLine(block, i)}</View>
               </View>
             )
