@@ -17,11 +17,21 @@ Notifications.setNotificationHandler({
   }),
 })
 
+/**
+ * The one place that shows the OS notification prompt. On Android 13+ the
+ * prompt only appears once the app owns a channel, so channels come first;
+ * without them `requestPermissionsAsync` can resolve denied with nothing shown.
+ */
+export async function requestNotificationPermission() {
+  await ensureAttentionSetup()
+  return Notifications.requestPermissionsAsync()
+}
+
 export async function requestPermissions(): Promise<boolean> {
   const { granted } = await Notifications.getPermissionsAsync()
   if (granted) return true
 
-  const result = await Notifications.requestPermissionsAsync()
+  const result = await requestNotificationPermission()
   return result.granted
 }
 

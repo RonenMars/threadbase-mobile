@@ -1,4 +1,5 @@
 import type * as Notifications from 'expo-notifications'
+import { Platform } from 'react-native'
 
 /**
  * attention-v1: the channels and permission buttons the streamer's pushes name,
@@ -162,6 +163,18 @@ describe('answerFromNotification', () => {
     settings.useSettingsStore.setState({ biometricLock: true })
 
     await answerFromNotification(response('allow', DATA), known)
+
+    expect(mockPost).not.toHaveBeenCalled()
+  })
+
+  it('on Android, a lock-screen Allow still defers to the app lock instead of answering', async () => {
+    // `isAuthenticationRequired` is iOS-only: Android opens the app, and the app's
+    // biometric lock is the only gate. Do not "fix" this into answering from the lock screen.
+    jest.replaceProperty(Platform, 'OS', 'android')
+    const { answerFromNotification, settings } = load()
+    settings.useSettingsStore.setState({ biometricLock: true })
+
+    await expect(answerFromNotification(response('allow', DATA), known)).resolves.toBe(false)
 
     expect(mockPost).not.toHaveBeenCalled()
   })

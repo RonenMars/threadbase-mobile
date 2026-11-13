@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker'
 import * as Notifications from 'expo-notifications'
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition'
 import { useLiveCameraPermissions } from '@/hooks/useLiveCameraPermissions'
+import { requestNotificationPermission } from '@/services/push'
 
 export type PermissionStatus = 'granted' | 'denied' | 'undetermined'
 export type PermissionKey = 'camera' | 'microphone' | 'photos' | 'notifications'
@@ -15,7 +16,9 @@ export type PermissionsStatus = {
   notifications: PermissionStatus
 }
 
-async function fetchStatuses(): Promise<Omit<PermissionsStatus, 'camera'>> {
+async function fetchStatuses(): Promise<
+  Omit<PermissionsStatus, 'camera'> & { notificationsCanAskAgain: boolean }
+> {
   const [mic, photos, notifs] = await Promise.all([
     ExpoSpeechRecognitionModule.getPermissionsAsync(),
     ImagePicker.getMediaLibraryPermissionsAsync(),
@@ -25,6 +28,7 @@ async function fetchStatuses(): Promise<Omit<PermissionsStatus, 'camera'>> {
     microphone: mic.status as PermissionStatus,
     photos: photos.status as PermissionStatus,
     notifications: notifs.status as PermissionStatus,
+    notificationsCanAskAgain: notifs.canAskAgain,
   }
 }
 
@@ -41,9 +45,14 @@ export function usePermissionsStatus() {
     notifications: 'undetermined',
   })
 
+  // Android stops showing the notification prompt after two denials; the
+  // Settings row must then open system settings instead of re-asking.
+  const [notificationsCanAskAgain, setNotificationsCanAskAgain] = useState(true)
+
   const refresh = useCallback(async () => {
-    const next = await fetchStatuses()
+    const { notificationsCanAskAgain: canAsk, ...next } = await fetchStatuses()
     setStatuses((prev) => ({ ...prev, ...next }))
+    setNotificationsCanAskAgain(canAsk)
   }, [])
 
   // Sync camera status from the expo-camera hook (no extra async call needed)
@@ -85,8 +94,9 @@ export function usePermissionsStatus() {
         break
       }
       case 'notifications': {
-        const result = await Notifications.requestPermissionsAsync()
+        const result = await requestNotificationPermission()
         setStatuses((prev) => ({ ...prev, notifications: result.status as PermissionStatus }))
+        setNotificationsCanAskAgain(result.canAskAgain)
         break
       }
     }
@@ -94,5 +104,5 @@ export function usePermissionsStatus() {
 
   const openSettings = useCallback(() => Linking.openSettings(), [])
 
-  return { statuses, refresh, request, openSettings }
+  return { statuses, notificationsCanAskAgain, refresh, request, openSettings }
 }

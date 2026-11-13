@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import Svg, { Path, Polyline } from 'react-native-svg'
-import * as Notifications from 'expo-notifications'
 import { useTranslation } from 'react-i18next'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { colors, fonts } from '../theme'
-import { registerPushTokenForAll } from '@/services/push'
+import { registerPushTokenForAll, requestNotificationPermission } from '@/services/push'
 import { useServersStore } from '@/stores/servers'
 
 interface Props {
@@ -47,7 +46,7 @@ export function NotificationsStep({ onNext }: Props) {
     }
     setRequesting(true)
     try {
-      const { granted } = await Notifications.requestPermissionsAsync()
+      const { granted } = await requestNotificationPermission()
       setEnabled(granted)
       if (granted) {
         const ids = useServersStore.getState().activeServerIds

@@ -188,7 +188,9 @@
     "hintHealthy": "המשלוחים האחרונים הצליחו.",
     "openRow": "בריאות משלוח",
     "reregisterNeedsPermission": "הרשאת התראות כבויה — הפעל בהגדרות המערכת ונסה שוב.",
-    "reregisterNeedsDevice": "לא ניתן לקבל אסימון push (סימולטורים אינם נרשמים). נסה במכשיר אמיתי."
+    "reregisterNeedsDevice": "לא ניתן לקבל אסימון push (סימולטורים אינם נרשמים). נסה במכשיר אמיתי.",
+    "channelMuted": "הערוץ „{{channel}}” מושתק בהגדרות המערכת, ולכן ההתראות האלה לא יוצגו גם כששרת ה-streamer שולח אותן.",
+    "openChannelSettings": "פתח הגדרות ערוץ"
   },
   "pairedDevices": {
     "screenTitle": "מכשירים מקושרים",
