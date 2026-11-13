@@ -3,6 +3,22 @@
 **Written:** 2026-10-05, against `main` at `4fb94af` (branch `claude/android-notifications-plan-xb7nzw`).
 **Scope:** make push and local notifications work properly on Android phones, matching what iOS users already get.
 
+## Implementation status
+
+**Updated:** 2026-11-13, branch `fix/android-notifications`.
+
+| Item | State |
+|---|---|
+| 1.1 status-bar icon | Not started — needs a white-on-transparent glyph asset from design |
+| 1.2 channels before prompt | Done — `requestNotificationPermission()` in `services/push.ts`, used by onboarding and Settings |
+| 1.3 denied-forever | Done — Settings row re-prompts while `canAskAgain`, then opens system settings |
+| 1.4 channel health | Done — `hooks/useMutedChannels.ts`, shown on the notification health screen |
+| 1.5 lock-screen pin | Done — test in `push-attention.test.ts` |
+| 2 release guard | Done — `ship-android.sh` refuses a build without `google-services.json`; `deploy.yml` already fails when the secret is unset |
+| 2 credentials | Console work, not done |
+| 3 device verification | Not done — nothing here is device-verified |
+| 4 Maestro flow, ROADMAP/FEATURES | Not done |
+
 ## Where we are
 
 Most of the notification code is already shared between iOS and Android.

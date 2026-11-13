@@ -188,7 +188,9 @@
     "hintHealthy": "Recent deliveries succeeded.",
     "openRow": "Delivery health",
     "reregisterNeedsPermission": "Notifications permission is off — enable it in system settings, then retry.",
-    "reregisterNeedsDevice": "Could not get a push token (simulators cannot register). Try on a physical device."
+    "reregisterNeedsDevice": "Could not get a push token (simulators cannot register). Try on a physical device.",
+    "channelMuted": "The “{{channel}}” channel is muted in system settings, so those alerts won't show even when the streamer sends them.",
+    "openChannelSettings": "Open channel settings"
   },
   "pairedDevices": {
     "screenTitle": "Paired devices",

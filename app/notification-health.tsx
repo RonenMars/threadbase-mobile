@@ -19,13 +19,14 @@ import { MIN_TOUCH_TARGET } from '@/constants/a11y'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { usePushHealth } from '@/hooks/usePushHealth'
+import { useMutedChannels, type ChannelId } from '@/hooks/useMutedChannels'
 import { formatEpoch } from '@/services/push-health'
 import { registerPushToken } from '@/services/push'
 import { isQuietNow } from '@/lib/notification-prefs'
 import type { PushTokenHealth, PushTokenState } from '@/types/push-health'
 
 export default function NotificationHealthScreen() {
-  const { t } = useTranslation(['settings', 'common'])
+  const { t } = useTranslation(['settings', 'common', 'sessions'])
   const theme = useTheme()
   const isGlass = useIsGlass()
   const insets = useSafeAreaInsets()
@@ -54,6 +55,7 @@ export default function NotificationHealthScreen() {
   const serverLabel = selected?.label?.trim() || selected?.url || selectedId || '—'
 
   const { data, error, isLoading, isFetching, refetch } = usePushHealth(selectedId)
+  const { muted: mutedChannels, openChannelSettings } = useMutedChannels()
   const [reregistering, setReregistering] = useState(false)
   const [actionMsg, setActionMsg] = useState<string | null>(null)
 
@@ -150,6 +152,23 @@ export default function NotificationHealthScreen() {
             </Text>
           ) : null}
         </View>
+
+        {mutedChannels.map((id) => (
+          <View key={id} style={[s.card, isGlass && s.cardGlass]} testID={`notif-health-muted-${id}`}>
+            <GlassFill />
+            <Text style={s.cardBody}>
+              {t('settings:notificationHealth.channelMuted', { channel: getChannelLabel(id, t) })}
+            </Text>
+            <TouchableOpacity
+              style={s.toolbarBtn}
+              onPress={() => openChannelSettings(id)}
+              accessibilityRole="button"
+              testID={`notif-health-muted-open-${id}`}
+            >
+              <Text style={s.toolbarBtnText}>{t('settings:notificationHealth.openChannelSettings')}</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
 
         <View style={s.toolbar}>
           <TouchableOpacity
@@ -267,6 +286,17 @@ function TokenCard({
       </Text>
     </View>
   )
+}
+
+function getChannelLabel(id: ChannelId, t: TFunction<['settings', 'common', 'sessions']>): string {
+  switch (id) {
+    case 'needs-you':
+      return t('settings:notification.channelNeedsYou')
+    case 'updates':
+      return t('settings:notification.channelUpdates')
+    case 'live-sessions':
+      return t('sessions:liveActivity.channelName')
+  }
 }
 
 function getPushTokenStateLabel(state: PushTokenState, t: TFunction<'settings'>): string {

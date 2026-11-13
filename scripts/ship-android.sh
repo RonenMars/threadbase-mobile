@@ -259,6 +259,13 @@ if (( SKIP_BUNDLE )); then
   [[ -f "$AAB_PATH" ]] || { echo "ERROR: --skip-bundle set but no AAB found at $AAB_PATH" >&2; exit 1; }
   echo "▸ [8/$TOTAL_STEPS] Bundle — skipped (reusing $AAB_PATH)"
 else
+  # build.gradle skips the google-services plugin when this file is absent, which is right for
+  # local dev but ships a store build with no Android push tokens.
+  [[ -f android/app/google-services.json ]] || {
+    echo "ERROR: android/app/google-services.json is missing; this build would ship without Android push." >&2
+    echo "       CI writes it from GOOGLE_SERVICES_JSON_B64 (deploy.yml, step Write Firebase config)." >&2
+    exit 1
+  }
   echo "▸ [8/$TOTAL_STEPS] Bundle and upload"
 fi
 # EXPO_PUBLIC_ANDROID_PLAY_TRACK is inlined into the JS bundle: Play gives an app no

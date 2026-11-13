@@ -167,10 +167,11 @@ jest.mock('expo-notifications', () => ({
   // Cold-start read-back: null means "the app was not launched by a tap".
   getLastNotificationResponseAsync: jest.fn().mockResolvedValue(null),
   setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  getNotificationChannelAsync: jest.fn().mockResolvedValue(null),
   dismissNotificationAsync: jest.fn().mockResolvedValue(undefined),
   getPresentedNotificationsAsync: jest.fn().mockResolvedValue([]),
   setBadgeCountAsync: jest.fn().mockResolvedValue(undefined),
-  AndroidImportance: { HIGH: 5, DEFAULT: 3 },
+  AndroidImportance: { NONE: 0, HIGH: 5, DEFAULT: 3 },
 }))
 
 // ─── expo-image-picker ───────────────────────────────────────────────────────

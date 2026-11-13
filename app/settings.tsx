@@ -127,10 +127,12 @@ function PermissionRow({
   onPress,
   isLast,
   badge,
+  canRequest = status === 'undetermined',
 }: {
   label: string
   description: string
   status: PermissionStatus
+  canRequest?: boolean
   onPress: () => void
   isLast?: boolean
   badge?: string
@@ -154,7 +156,7 @@ function PermissionRow({
         : t('permissions.statusUndetermined')
 
   const actionLabel =
-    status === 'undetermined'
+    canRequest
       ? t('permissions.actionAllow')
       : t('permissions.actionManage')
 
@@ -311,7 +313,10 @@ export default function SettingsScreen() {
   // server is only added once the user dismisses the card.
   const pendingScan = useRef<ExchangeResult | null>(null)
   const [themeTab, setThemeTab] = useState<'dark' | 'light'>(() => theme.colorMode === 'light' ? 'light' : 'dark')
-  const { statuses: permStatuses, request: requestPermission, openSettings: openPermissionSettings } = usePermissionsStatus()
+  const { statuses: permStatuses, notificationsCanAskAgain, request: requestPermission, openSettings: openPermissionSettings } = usePermissionsStatus()
+  const notificationsCanRequest =
+    permStatuses.notifications === 'undetermined' ||
+    (permStatuses.notifications === 'denied' && notificationsCanAskAgain)
 
   const pushPrefsServerIds = activeServerIds.filter(serverSupportsPushPrefs)
 
@@ -891,7 +896,8 @@ await refreshServerInfo(serverId)
             label={t('permissions.notifications')}
             description={t('permissions.notificationsDesc')}
             status={permStatuses.notifications}
-            onPress={permStatuses.notifications === 'undetermined' ? () => requestPermission('notifications') : openPermissionSettings}
+            canRequest={notificationsCanRequest}
+            onPress={notificationsCanRequest ? () => requestPermission('notifications') : openPermissionSettings}
             isLast
           />
         </View>

@@ -13,9 +13,13 @@ import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { usePushHealth } from '@/hooks/usePushHealth'
 import { registerPushToken } from '@/services/push'
+import { useMutedChannels } from '@/hooks/useMutedChannels'
 import type { PushTokenHealth, PushTokenState } from '@/types/push-health'
 
 jest.mock('@/hooks/usePushHealth', () => ({ usePushHealth: jest.fn() }))
+jest.mock('@/hooks/useMutedChannels', () => ({
+  useMutedChannels: jest.fn(() => ({ muted: [], openChannelSettings: jest.fn() })),
+}))
 jest.mock('@/services/push', () => ({
   registerPushToken: jest.fn(),
 }))
@@ -144,5 +148,20 @@ describe('NotificationHealthScreen – screen states', () => {
         ),
       ).toBeTruthy(),
     )
+  })
+})
+
+describe('NotificationHealthScreen – muted Android channels', () => {
+  it('names each muted channel and opens its system page', async () => {
+    const openChannelSettings = jest.fn()
+    ;(useMutedChannels as jest.Mock).mockReturnValue({ muted: ['needs-you', 'live-sessions'], openChannelSettings })
+    const { getByText, getByTestId, queryByTestId } = await renderScreen()
+
+    expect(getByText(/The “Needs you” channel is muted/)).toBeTruthy()
+    expect(getByText(/The “Live sessions” channel is muted/)).toBeTruthy()
+    expect(queryByTestId('notif-health-muted-updates')).toBeNull()
+
+    fireEvent.press(getByTestId('notif-health-muted-open-needs-you'))
+    expect(openChannelSettings).toHaveBeenCalledWith('needs-you')
   })
 })
