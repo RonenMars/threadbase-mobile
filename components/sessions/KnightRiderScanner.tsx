@@ -52,6 +52,7 @@ export function KnightRiderScanner({ testID, size = 'compact', accessibilityLabe
         duration: CYCLE_MS,
         easing: Easing.inOut(Easing.sin),
         useNativeDriver: true,
+        isInteraction: false,
       })
     const loop = Animated.loop(Animated.sequence([sweep(1), sweep(0)]))
     loop.start()

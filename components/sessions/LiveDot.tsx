@@ -42,12 +42,14 @@ export function LiveDot({ live, color, size = 7 }: Props) {
           duration: PULSE_HALF_MS,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
+          isInteraction: false,
         }),
         Animated.timing(opacity, {
           toValue: 0.4,
           duration: PULSE_HALF_MS,
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
+          isInteraction: false,
         }),
       ]),
     )

@@ -110,6 +110,7 @@ function StatusRow({
           duration: 800,
           easing: Easing.linear,
           useNativeDriver: true,
+          isInteraction: false,
         })
       )
       spinLoop.current.start()

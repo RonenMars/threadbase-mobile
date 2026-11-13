@@ -17,8 +17,8 @@ export function SkeletonBox({ width = '100%', height = 14, borderRadius: br = ra
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(anim, { toValue: 0.85, duration: 650, useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.35, duration: 650, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.85, duration: 650, useNativeDriver: true, isInteraction: false }),
+        Animated.timing(anim, { toValue: 0.35, duration: 650, useNativeDriver: true, isInteraction: false }),
       ]),
     )
     loop.start()

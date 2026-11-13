@@ -43,6 +43,7 @@ function SweepBar({ color, track }: { color: string; track: string }) {
         duration: SWEEP_MS,
         easing: Easing.linear,
         useNativeDriver: true,
+        isInteraction: false,
       }),
     )
     loop.start()
