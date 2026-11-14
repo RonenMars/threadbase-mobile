@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createApiForServer, isAnswerRefusedError, isPermissionAnswerRejectedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, NetworkError, NotFoundError, stopSession, stopSessionWhenIdle } from '@/services/api-client'
+import { createApiForServer, isAnswerRefusedError, isPermissionAnswerRejectedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, handoffSession, NetworkError, NotFoundError, stopSession, stopSessionWhenIdle } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
 import type { Session } from '@/types/api'
 import type { ResumeConversationResponse } from '@/types/projectChat'
@@ -279,5 +279,11 @@ export function useSessionActions(serverId: string, sessionId: string) {
     },
   })
 
-  return { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation, stopWhenIdle }
+  const handoff = useMutation({
+    mutationFn: () => handoffSession(serverId, sessionId),
+    // Settled, not success: LAUNCH_FAILED and a 404 also leave the session stopped.
+    onSettled: refreshAfterEnd,
+  })
+
+  return { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation, stopWhenIdle, handoff }
 }

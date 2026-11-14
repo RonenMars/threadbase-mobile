@@ -584,6 +584,11 @@ export interface ServerInfo {
    * server, which must be read as unsupported, never as "turned off".
    */
   push?: { preferences?: boolean }
+  /**
+   * Additive: POST /api/sessions/:id/handoff moves a live session into tmux on
+   * the host. Present only when the host has run `tb-streamer handoff setup`.
+   */
+  handoff?: { openTerminal: boolean; terminalName?: string }
   /** Additive: this server's route on the Threadbase relay. Absent when its relay is off. */
   relayUrl?: string
 }
