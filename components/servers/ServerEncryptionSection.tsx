@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native'
-import { ShieldWarning } from 'phosphor-react-native'
+import { ShieldWarning, Warning } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
+import { isDeviceStaticKeyWrapped } from '@/services/e2ee/device-key'
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { useServersStore } from '@/stores/servers'
 
@@ -26,6 +27,19 @@ export function ServerEncryptionSection({ serverId }: Props) {
 
   const server = useServersStore((s) => s.servers[serverId])
   const setRequireEncryption = useServersStore((s) => s.setRequireEncryption)
+  const [keyWrapped, setKeyWrapped] = useState(false)
+
+  useEffect(() => {
+    let live = true
+    isDeviceStaticKeyWrapped(serverId)
+      .then((wrapped) => {
+        if (live) setKeyWrapped(wrapped)
+      })
+      .catch(() => undefined)
+    return () => {
+      live = false
+    }
+  }, [serverId])
 
   if (!server) return null
 
@@ -35,6 +49,8 @@ export function ServerEncryptionSection({ serverId }: Props) {
     : null
   const noIdentityTitle = t('pair:confirm.noSpkTitle')
   const noIdentityBody = t('pair:confirm.noSpkBody')
+  const wrappedKeyTitle = t('encryption.wrappedKeyTitle')
+  const wrappedKeyBody = t('encryption.wrappedKeyBody')
 
   function handleChange(on: boolean) {
     if (on) {
@@ -64,6 +80,15 @@ export function ServerEncryptionSection({ serverId }: Props) {
           <Text style={styles.noIdentityBody}>{noIdentityBody}</Text>
         </View>
       )}
+      {keyWrapped ? (
+        <View style={styles.noIdentity} testID="server-wrapped-key-warning">
+          <View style={styles.noIdentityHeading}>
+            <Warning size={18} color={theme.text.warning} weight="fill" />
+            <Text style={styles.noIdentityTitle}>{wrappedKeyTitle}</Text>
+          </View>
+          <Text style={styles.noIdentityBody}>{wrappedKeyBody}</Text>
+        </View>
+      ) : null}
       <View style={styles.row}>
         <View style={styles.textBlock}>
           <Text style={styles.label}>{t('encryption.requireLabel')}</Text>
