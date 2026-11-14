@@ -15,6 +15,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { layoutDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 import { isRouteMissingError, isUnsupportedProviderError } from '@/lib/modelEffortSupport'
 import { NetworkError } from '@/services/api-client'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -187,6 +188,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.xl,
     },
     card: {
+      ...webModalWidth,
       width: '100%',
       maxHeight: '80%',
       backgroundColor: theme.bg.card,
