@@ -15,7 +15,7 @@
 | 1.4 channel health | Done — `hooks/useMutedChannels.ts`, shown on the notification health screen |
 | 1.5 lock-screen pin | Done — test in `push-attention.test.ts` |
 | 2 release guard | Done — `ship-android.sh` refuses a build without `google-services.json`; `deploy.yml` already fails when the secret is unset |
-| 2 credentials | Console work, not done |
+| 2 credentials | Partly done: both FCM V1 keys are in Expo and the `.dev` one is proven by a delivered push (2026-11-14); one Deploy run confirming the two-client `google-services.json` is still open |
 | 3 device verification | Not done — nothing here is device-verified |
 | 4 Maestro flow | Written (`e2e/android_notifications_health.yaml`, in `test:e2e:mock`), **not run** — no Maestro or emulator on the authoring machine; the token row is seeded by the mock server |
 | 4 docs | Gap recorded in `BACKLOG.md` and `FEATURES.md`; nothing claimed as verified |
@@ -23,12 +23,12 @@
 
 ## Checklist for the maintainer
 
-None of this is done or verified.
+A box is ticked only with the evidence written beside it.
 
 **Phase 2 — console work**
-- [ ] Expo project: FCM V1 service-account key assigned to `com.ronenmars.threadbase`.
-- [ ] Expo project: FCM V1 key assigned to `com.ronenmars.threadbase.dev` (the wizard files it in the wrong slot, `docs/tbdev.md:111`).
-- [ ] `GOOGLE_SERVICES_JSON_B64` secret set, and one Deploy run confirmed to write the two-client `google-services.json`.
+- [x] Expo project: FCM V1 service-account key assigned to `com.ronenmars.threadbase`. Seen on the Expo credentials page on 2026-11-14; no push from this identifier has been received yet.
+- [x] Expo project: FCM V1 key assigned to `com.ronenmars.threadbase.dev` (the wizard files it in the wrong slot, `docs/tbdev.md:111`). Proven on 2026-11-14: TbDev on a Xiaomi 11 Lite received a test push and a live-session push.
+- [ ] `GOOGLE_SERVICES_JSON_B64` secret set, and one Deploy run confirmed to write the two-client `google-services.json`. The secret is set: Deploy run 40312633448 (2026-10-26) and QA run 43594337589 (2026-11-14) both passed "Write Firebase config". The Deploy step asserts only the `com.ronenmars.threadbase` client and the QA step only the `.dev` client, so no single run has asserted both and this box stays open.
 
 **Phase 3 — devices (Android 13+ and Android 12 or lower)**
 - [ ] Fresh install: onboarding notifications step shows the system prompt (13+), none on 12.
