@@ -502,6 +502,15 @@ export function LiveConversationView({
   // declines. Re-pinning rather than firing one `scrollToEnd` is what lands on the
   // true bottom: the card lays out over several frames.
   const hadQuestionRef = useRef(false)
+
+  // The thinking bubble is a footer too, so flash-list's autoscroll never sees
+  // it either. While the transcript is shorter than the viewport nothing
+  // overflows, so nothing scrolls, and the bubble's lower edge — where the
+  // scanner sits — lands behind the composer. It also grows as PTY lines
+  // stream in. Follow it only while the reader is at the tail.
+  const followWorkingBubble = useCallback(() => {
+    if (followingTailRef.current) listRef.current?.scrollToEnd({ animated: false })
+  }, [])
   useEffect(() => {
     const hasQuestion = activeQuestion !== null
     const arrived = hasQuestion && !hadQuestionRef.current
@@ -600,6 +609,7 @@ export function LiveConversationView({
             onCancelQuestion={cancelQuestion}
             onScrapedCardChange={setScrapedCardShown}
             onSessionQuit={leaveToHome}
+            onWorkingLayout={followWorkingBubble}
           />
         ) : null}
       />
