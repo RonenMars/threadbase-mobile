@@ -48,7 +48,14 @@
         }
       ],
       "expo-router",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0d1117",
+          "defaultChannel": "updates"
+        }
+      ],
       [
         "expo-camera",
         {
