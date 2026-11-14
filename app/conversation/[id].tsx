@@ -43,7 +43,7 @@ import { evictStaleConversationFavorite, hardReloadConversation } from '@/lib/se
 import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCount } from '@/lib/openTrace'
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useTerminateExternal } from '@/hooks/useTerminateExternal'
-import { isExternalAlive, isExternalSession } from '@/lib/externalSession'
+import { isExternalLive, isExternalSession } from '@/lib/externalSession'
 import { useServersStore } from '@/stores/servers'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -465,7 +465,7 @@ export default function ConversationDetailScreen() {
   }, [qc, serverId, id, router])
   const { resume, adoptSession, forkSession } = useSessionActions(serverId, id)
   const requestTerminate = useTerminateExternal(serverId, id)
-  const canTerminate = conversation != null && isExternalSession(conversation) && isExternalAlive(conversation)
+  const canTerminate = conversation != null && isExternalSession(conversation) && isExternalLive(conversation)
 
   // Seed the session cache from the resume snapshot (so /session/:id renders
   // without a round-trip) then hand off to the live session, carrying the

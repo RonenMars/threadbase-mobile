@@ -33,7 +33,7 @@ The spec's Flow 3 step 4 asks for a Claude Code session on Linux Devbox while it
 
 | File | Demonstrates | Marketing proof | State assumptions |
 |---|---|---|---|
-| `01-start-anywhere-continue-anywhere/01-session-discovered.png` | Hub lists "Summarize session persistence" on Work Mac as *Observed* | A session started in a plain terminal appears without being launched from the app | Fresh pairing of three machines; session is `external`, running |
+| `01-start-anywhere-continue-anywhere/01-session-discovered.png` | Hub lists "Summarize session persistence" on Work Mac as *External* | A session started in a plain terminal appears without being launched from the app | Fresh pairing of three machines; session is `external`, running |
 | `…/02-existing-session-opened.png` | Its transcript, with Resume Session | Existing work is readable from the phone | Opened from the hub row |
 | `…/03-waiting-for-input.png` | Live session screen: *Needs you*, Live control | The phone knows the agent is waiting | After Resume → Take over; demo streamer flips status to waiting |
 | `…/04-prompt-sent-from-mobile.png` | Prompt in the transcript under LIVE, keyboard still up | The follow-up was typed on the phone | Keyboard is deliberate here: it is the moment of sending |

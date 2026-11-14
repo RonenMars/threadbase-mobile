@@ -66,7 +66,9 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
 
   const activitySummary = useMemo(() => {
     const needsYouCount = group.sessions.filter((s) => deriveSessionPresentation(s).tier === 'needsYou').length
-    const liveCount = group.sessions.filter(isPresentationLive).length + group.liveExternalCount
+    const externalLiveSessions = group.sessions.filter((s) => deriveSessionPresentation(s).externalLive).length
+    const liveCount = group.sessions.filter(isPresentationLive).length - externalLiveSessions
+    const externalCount = externalLiveSessions + group.liveExternalCount
     const lastActivity = group.latestActivityMs > 0
       ? formatListTime(group.latestActivityMs, {
           locale: i18n.language,
@@ -79,6 +81,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     const pieces: string[] = []
     if (needsYouCount > 0) pieces.push(t('hub.activityNeedsYou', { count: needsYouCount }))
     else if (liveCount > 0) pieces.push(t('hub.activityLive', { count: liveCount }))
+    if (externalCount > 0) pieces.push(t('hub.activityExternal', { count: externalCount }))
     if (todaySessionCount > 0) pieces.push(t('hub.activityToday', { total: todaySessionCount }))
     if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')

@@ -239,7 +239,7 @@ describe('VirtualTerminal – VT100 emulation', () => {
   // ── Charset designation (ESC I…I F) ──
   // Claude Code emits `ESC ( B` (designate ASCII into G0) after every keystroke
   // write. Skipping only the intermediate `(` left the final `B` on screen as a
-  // stray glyph at the cursor — observed 2026-08-15 as a phantom "B" on the
+  // stray glyph at the cursor — seen 2026-08-15 as a phantom "B" on the
   // prompt row that cleared itself when that row was next repainted.
   it('consumes a charset designation instead of printing its final byte', () => {
     // A bare `❯` is filtered as chrome, so assert on text the filter keeps.
@@ -700,7 +700,7 @@ describe('VirtualTerminal – scrollback cap', () => {
 // A TUI paints absolute cursor moves against a fixed 40-row screen, not against
 // the whole append-only grid. Every test here needs a grid TALLER than that
 // screen — the pre-existing cursor tests all run on 1-3 rows, where the viewport
-// origin is 0 and the distinction cannot be observed. That was the coverage hole.
+// origin is 0 and the distinction cannot be seen. That was the coverage hole.
 describe('VirtualTerminal – viewport-relative cursor positioning', () => {
   const SEED_ROWS = 200
   // The real footer from a capture. Matters that it is this exact shape:

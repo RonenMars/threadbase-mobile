@@ -48,7 +48,7 @@ Measured on a clean checkout of `origin/main` @ `a1bf6ef8` in the worktree, afte
 | scripts | `npm run test:scripts` | 11 suites / 91 passed / 0 failed — required because `#651` touches `scripts/` |
 | native deps | — not run | not required (see above) |
 
-Known-flaky before the run: — none observed.
+Known-flaky before the run: — none seen.
 
 ---
 
@@ -148,7 +148,7 @@ Chronological order was sufficient — no non-chronological forced-order constra
 
 ### 23:11 — merge #659
 - Command: rebase `refs/integration/pr/659` onto tip, `git merge --no-ff`
-- Result: clean, no conflicts (2 commits rebased — 1 real + 1 already-upstream skip pattern not observed here, both real). Integration SHA a44badb6. Checks green.
+- Result: clean, no conflicts (2 commits rebased — 1 real + 1 already-upstream skip pattern not seen here, both real). Integration SHA a44badb6. Checks green.
 
 ### 23:18 — merge #666
 - Command: rebase `refs/integration/pr/666` onto tip, `git merge --no-ff`

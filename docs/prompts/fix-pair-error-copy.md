@@ -14,7 +14,7 @@ Hand this to a fresh agent session opened in `~/dev/ai-tools/tb-mobile`.
 
 The `threadbase://pair` deep-link error screen shows a raw exception string instead of translated copy.
 
-Observed on device 2026-08-11 (iPhone 17 Pro Max / iOS 26.1, Release build of `97f2869c`), fresh install with zero paired servers, opening a pair link whose host was unreachable:
+Seen on device 2026-08-11 (iPhone 17 Pro Max / iOS 26.1, Release build of `97f2869c`), fresh install with zero paired servers, opening a pair link whose host was unreachable:
 
 > **Pairing failed**
 > Could not reach the server: fetch failed: UnexpectedException: Could not connect to the server. (at ExpoModulesCore/Promise.swift:56)

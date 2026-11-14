@@ -1,4 +1,4 @@
-import { isExternalSession, isExternalAlive } from '@/lib/externalSession'
+import { isExternalSession, isExternalLive } from '@/lib/externalSession'
 import type { Session } from '@/types/api'
 
 describe('isExternalSession', () => {
@@ -13,40 +13,40 @@ describe('isExternalSession', () => {
   })
 })
 
-describe('isExternalAlive', () => {
+describe('isExternalLive', () => {
   it('trusts processLiveness when present', () => {
-    expect(isExternalAlive({ processLiveness: 'alive' })).toBe(true)
-    expect(isExternalAlive({ processLiveness: 'gone' })).toBe(false)
+    expect(isExternalLive({ processLiveness: 'alive' })).toBe(true)
+    expect(isExternalLive({ processLiveness: 'gone' })).toBe(false)
   })
 
   it('treats an active_writing JSONL as alive', () => {
     expect(
-      isExternalAlive({ activity: { state: 'active_writing', lastEventAt: 'x', source: 'jsonl' } }),
+      isExternalLive({ activity: { state: 'active_writing', lastEventAt: 'x', source: 'jsonl' } }),
     ).toBe(true)
   })
 
   it('does not treat a quiet JSONL as alive', () => {
     expect(
-      isExternalAlive({ activity: { state: 'quiet', lastEventAt: 'x', source: 'jsonl' } }),
+      isExternalLive({ activity: { state: 'quiet', lastEventAt: 'x', source: 'jsonl' } }),
     ).toBe(false)
   })
 
   it('gone wins over a present pid', () => {
-    expect(isExternalAlive({ processLiveness: 'gone', pid: 4242 })).toBe(false)
+    expect(isExternalLive({ processLiveness: 'gone', pid: 4242 })).toBe(false)
   })
 
   it('falls back to a bare pid for older servers with no liveness fields', () => {
-    expect(isExternalAlive({ pid: 4242 })).toBe(true)
+    expect(isExternalLive({ pid: 4242 })).toBe(true)
   })
 
   it('does not apply the pid fallback once a new field is present', () => {
     // processLiveness 'unknown' is a new-server signal — the pid fallback must
     // not override it into "alive".
-    expect(isExternalAlive({ processLiveness: 'unknown', pid: 4242 })).toBe(false)
+    expect(isExternalLive({ processLiveness: 'unknown', pid: 4242 })).toBe(false)
   })
 
   it('is false for a managed session (no pid, no new fields)', () => {
     const managed: Pick<Session, 'processLiveness' | 'activity' | 'pid'> = {}
-    expect(isExternalAlive(managed)).toBe(false)
+    expect(isExternalLive(managed)).toBe(false)
   })
 })

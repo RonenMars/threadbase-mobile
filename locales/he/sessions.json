@@ -63,6 +63,9 @@
     "activityNeedsYou_one": "אחד צריך אותך",
     "activityNeedsYou_two": "שניים צריכים אותך",
     "activityNeedsYou_other": "{{count}} צריכים אותך",
+    "activityExternal_one": "אחד חיצוני",
+    "activityExternal_two": "שניים חיצוניים",
+    "activityExternal_other": "{{count}} חיצוניים",
     "activityToday": "{{total}} היום",
     "activityLast": "אחרון: {{time}}",
     "timeNow": "עכשיו",
@@ -160,7 +163,7 @@
     "working": "עובד"
   },
   "capability": {
-    "observeOnly": "צפייה בלבד",
+    "externalOnly": "צפייה בלבד",
     "liveControl": "שליטה חיה"
   },
   "timeBucket": {

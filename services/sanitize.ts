@@ -12,7 +12,7 @@
  * iOS or Android crash captured by the platform SDK is transmitted without ever
  * reaching this file. The same is true of `filterIntegrations` in
  * services/sentry.ts: it filters JS integrations, and the native SDK keeps its
- * own. Observed directly in this project — a `platform: cocoa` event arrived
+ * own. Seen directly in this project — a `platform: cocoa` event arrived
  * carrying `os.name`, which the blocked `DeviceContext` integration strips from
  * every `platform: javascript` event.
  *

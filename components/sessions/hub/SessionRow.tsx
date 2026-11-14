@@ -31,13 +31,13 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
   const handlePress = useCallback(() => {
     Haptics.selectionAsync()
     useNavLockStore.getState().lock()
-    if (presentation.capabilities.isObserveOnly || isExternal) {
+    if (presentation.capabilities.isExternalOnly || isExternal) {
       const convId = session.boundConversationId ?? session.conversationId ?? session.id
       router.push(conversationHref(convId, session.serverId))
       return
     }
     router.push(`/session/${session.id}?server=${session.serverId}`)
-  }, [session, presentation.capabilities.isObserveOnly, isExternal, router])
+  }, [session, presentation.capabilities.isExternalOnly, isExternal, router])
 
   // Hub rows keep the old reach: the sheet opens only where ending was offered.
   const rowActions = useSessionRowActions(session, title)

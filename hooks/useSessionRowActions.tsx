@@ -12,7 +12,7 @@ import { getProviderLabel } from '@/components/sessions/providerLabel'
 import type { SwipeAction } from '@/components/sessions/shared/SwipeableRow'
 import { useTheme } from '@/contexts/ThemeContext'
 import { conversationHref } from '@/lib/conversationHref'
-import { isExternalAlive, isExternalSession } from '@/lib/externalSession'
+import { isExternalLive, isExternalSession } from '@/lib/externalSession'
 import { deriveSessionPresentation } from '@/lib/sessionPresentation'
 import { useEndSession } from '@/hooks/useEndSession'
 import { useRenameSession } from '@/hooks/useSessionName'
@@ -188,7 +188,7 @@ export function useSessionRowActions(session: MultiSession, title: string) {
   }
   // External sessions are read-only: the display name lives in the streamer's own store, so only favorite, rename and
   // terminating the outside process apply.
-  const externalTrailing: SwipeAction[] = isExternalAlive(session)
+  const externalTrailing: SwipeAction[] = isExternalLive(session)
     ? [rename, { key: 'terminate', label: t('swipe.terminate'), icon: Power, color: theme.status.idle, onPress: requestTerminate, testID: 'session-swipe-terminate' }]
     : [rename]
   const swipe = isExternal ? { leading, trailing: externalTrailing } : { leading, trailing }

@@ -1,3 +1,4 @@
+import { isExternalLive } from '@/lib/externalSession'
 import type { AgentPhase, Session, SessionLifecycle, SessionStatus, UnavailableReason } from '@/types/api'
 
 /**
@@ -56,7 +57,7 @@ export interface SessionCapabilities {
   canCancel: boolean
   canOvertake: boolean
   canResume: boolean
-  isObserveOnly: boolean
+  isExternalOnly: boolean
 }
 
 export type SessionStatusLabel =
@@ -123,22 +124,12 @@ function isExternalSession(s: Pick<SessionPresentationInput, 'ownership'>): bool
   return s.ownership === 'external'
 }
 
-function isExternalAlive(
-  s: Pick<SessionPresentationInput, 'processLiveness' | 'activity' | 'pid'>,
-): boolean {
-  if (s.processLiveness === 'alive') return true
-  if (s.processLiveness === 'gone') return false
-  if (s.activity?.state === 'active_writing') return true
-  if (s.processLiveness == null && s.activity == null && s.pid != null) return true
-  return false
-}
-
-const OBSERVE_ONLY: SessionCapabilities = {
+const EXTERNAL_ONLY: SessionCapabilities = {
   canSendInput: false,
   canCancel: false,
   canOvertake: false,
   canResume: false,
-  isObserveOnly: true,
+  isExternalOnly: true,
 }
 
 const MANAGED_LIVE_CAPS: SessionCapabilities = {
@@ -146,7 +137,7 @@ const MANAGED_LIVE_CAPS: SessionCapabilities = {
   canCancel: true,
   canOvertake: false,
   canResume: false,
-  isObserveOnly: false,
+  isExternalOnly: false,
 }
 
 const IDLE_MANAGED_CAPS: SessionCapabilities = {
@@ -154,7 +145,7 @@ const IDLE_MANAGED_CAPS: SessionCapabilities = {
   canCancel: false,
   canOvertake: false,
   canResume: false,
-  isObserveOnly: false,
+  isExternalOnly: false,
 }
 
 function confidenceFor(session: SessionPresentationInput): SessionConfidence {
@@ -243,7 +234,7 @@ function classifySession(
   session: SessionPresentationInput,
 ): Omit<SessionPresentation, 'subStatus' | 'tier'> {
   const external = isExternalSession(session)
-  const externalAlive = external && isExternalAlive(session)
+  const externalAlive = external && isExternalLive(session)
   const status = session.status
   const confidence = confidenceFor(session)
   const activityAt = activityAtFor(session)
@@ -330,7 +321,7 @@ function classifySession(
       colorToken: 'completed',
       confidence: session.processLiveness ? 'process' : confidence,
       activityAt,
-      capabilities: OBSERVE_ONLY,
+      capabilities: EXTERNAL_ONLY,
     }
   }
 
@@ -343,7 +334,7 @@ function classifySession(
       colorToken: 'idle',
       confidence: 'process',
       activityAt,
-      capabilities: OBSERVE_ONLY,
+      capabilities: EXTERNAL_ONLY,
     }
   }
 
@@ -374,7 +365,7 @@ function classifySession(
       confidence,
       activityAt,
       capabilities: {
-        ...OBSERVE_ONLY,
+        ...EXTERNAL_ONLY,
         canResume: true,
       },
     }
@@ -461,7 +452,7 @@ export function deriveConversationPresentation(
         canCancel: false,
         canOvertake: false,
         canResume: false,
-        isObserveOnly: true,
+        isExternalOnly: true,
       },
       subStatus: null,
     }

@@ -138,7 +138,7 @@ afterEach(() => {
   _resetOpenRefusalsForTests()
 })
 
-describe('the storm, as row 8 observed it', () => {
+describe('the storm, as row 8 saw it', () => {
   /**
    * The negative control, and the one that makes every assertion below mean
    * something. Same fake streamer and same caller loop as the guarded test — the

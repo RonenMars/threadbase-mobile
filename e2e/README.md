@@ -141,7 +141,7 @@ recording path therefore goes through `e2e/run-maestro.js`, which:
 1. snapshots existing `.ips` identities in readable user and system DiagnosticReports
    directories, including `~/Library/Logs/DiagnosticReports/Retired`;
 2. runs Maestro with unchanged arguments and inherited stdio, forwarding termination signals;
-3. polls for five seconds after Maestro exits and parses only newly observed reports;
+3. polls for five seconds after Maestro exits and parses only newly seen reports;
 4. matches the exact `EXC_BAD_ACCESS` / invalid `0x20` /
    `XCTAutomationSession initWithAccessibilityFramework:dataSource:` /
    `com.apple.dt.XCTAutomationSupport` signature for any simulator process;

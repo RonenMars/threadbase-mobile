@@ -12,7 +12,7 @@
  *   - the mutated source file is restored byte-for-byte after each revert;
  *   - a mutated module that fails to parse or import is reported
  *     `BROKEN — did not run`, NEVER counted as a pass. Absence of a failure
- *     line is not evidence; only an observed red is.
+ *     line is not evidence; only a red you actually saw is.
  *
  * Not committed as product code — it lives under scripts/ so the campaign is
  * reproducible rather than a claim in a report.

@@ -311,7 +311,7 @@ test('a header-only partial report is retried until its crash body is complete',
  * only thing standing between a late .ips and a run that reports success while
  * the simulator has already crashed.
  */
-test('the default grace window covers the observed .ips write lag', () => {
+test('the default grace window covers the measured .ips write lag', () => {
   const source = fs.readFileSync(SCRIPT, 'utf8');
   const match = source.match(/^const DEFAULT_GRACE_MS = (\d+)$/m);
 

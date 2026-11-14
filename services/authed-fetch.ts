@@ -522,7 +522,7 @@ async function sealedFetch(
   // entry and the app is handed THAT entry — status `200`, headers merged. The
   // record in the header is real and unseals cleanly, but it seals the empty
   // body a `304` carries, so the reply is a `200` with nothing in it and the
-  // caller's `response.json()` dies on `Unexpected end of input`. Observed on
+  // caller's `response.json()` dies on `Unexpected end of input`. Seen on
   // iOS build 219 against streamer 1.77.3, 2026-09-05.
   //
   // Refuse rather than guess. The true status was `204` or `304` and nothing

@@ -11,7 +11,7 @@
 # Exit codes:
 #   0 — both visual and network assertions passed
 #   1 — visual flow failed (maestro non-zero)
-#   2 — network assertion failed (no multi-page pagination observed)
+#   2 — network assertion failed (no multi-page pagination seen)
 #   3 — mock failed to start
 
 set -euo pipefail
@@ -135,7 +135,7 @@ node -e "
     process.exit(2);
   }
   if (!distinctOffsets.some(o => o > 0)) {
-    console.error('✗ FAIL: no offset > 0 observed — only first page was fetched');
+    console.error('✗ FAIL: no offset > 0 seen — only first page was fetched');
     process.exit(2);
   }
   console.log('✓ pagination network contract verified');

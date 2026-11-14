@@ -52,7 +52,7 @@ Run on a detached `origin/main` @ `e7de5df3` in the worktree, before the first m
 | scripts | `npm run test:scripts` | not run — `scripts/` not in the set |
 | native deps | `npm run check:native-deps` | not run — no native input in the set |
 
-Known-flaky before the run: — none observed. `main` was green on all five, so every later count is an absolute, not a delta against a red baseline.
+Known-flaky before the run: — none seen. `main` was green on all five, so every later count is an absolute, not a delta against a red baseline.
 
 ---
 

@@ -561,7 +561,7 @@ export default function BrowseScreen() {
               )
             })}
             {selectedHealth && !selectedHealth.capabilities.liveControl ? (
-              <Text style={styles.providerWarningText}>{t('provider.observeOnly')}</Text>
+              <Text style={styles.providerWarningText}>{t('provider.externalOnly')}</Text>
             ) : null}
           </View>
         ) : null}

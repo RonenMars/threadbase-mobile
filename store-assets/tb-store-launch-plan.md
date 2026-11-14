@@ -92,7 +92,7 @@ Source: `artifacts/marketing/threadbase-maestro/` on `main` (28 images per devic
 | 5 | `03-control-plane/07-hero.png` | Machines, projects, sessions. |
 | 6 | `04-onboarding/02-welcome.png` | Pull a thread. Watch it weave. |
 
-Alternates: `02-agent-memory/05-cross-provider-memory.png` (Codex and Claude in one search), `01-.../01-session-discovered.png` ("Observed" sessions started in a terminal).
+Alternates: `02-agent-memory/05-cross-provider-memory.png` (Codex and Claude in one search), `01-.../01-session-discovered.png` ("External" sessions started in a terminal).
 
 ### Android phone, same 6 files from `android-phone/`
 

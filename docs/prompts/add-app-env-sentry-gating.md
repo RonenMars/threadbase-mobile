@@ -12,7 +12,7 @@ Hand this to a fresh agent session opened in `~/dev/ai-tools/tb-mobile`.
 
 A Release build fails outright when the Sentry source-map upload credentials are absent, even in contexts that have no use for uploaded source maps.
 
-Observed 2026-08-14 in E2E run [31813189915](https://github.com/RonenMars/threadbase-mobile/actions/runs/31813189915), building `integration/2026-08-14-rebuild` @ `0984f89a`:
+Seen 2026-08-14 in E2E run [31813189915](https://github.com/RonenMars/threadbase-mobile/actions/runs/31813189915), building `integration/2026-08-14-rebuild` @ `0984f89a`:
 
 ```
 error: sentry-cli -   INFO  Loaded file referenced by SENTRY_PROPERTIES (sentry.properties)

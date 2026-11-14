@@ -700,7 +700,7 @@ Then give the squash commit a title naming every member, so the record does not 
 
 Those fields identify the iOS Simulator named by `<UDID>`. They rule out both the Threadbase process (`com.ronenmars.threadbase`) and any connected physical iPhone. `xcrun simctl list devices booted` lists the booted simulators; physical devices do not appear in that output.
 
-**Cause:** The observed 2026-08-20 incident was an `EXC_BAD_ACCESS` in `SpringBoard`'s `XCTAutomationSupport` frame immediately after Maestro 2.8.0 failed `hideKeyboard` on iOS 26.5 and captured the accessibility hierarchy. That timing and stack identify a CoreSimulator/XCTest automation failure. The crash report does not identify an application frame or prove the deeper Apple-framework defect.
+**Cause:** The recorded 2026-08-20 incident was an `EXC_BAD_ACCESS` in `SpringBoard`'s `XCTAutomationSupport` frame immediately after Maestro 2.8.0 failed `hideKeyboard` on iOS 26.5 and captured the accessibility hierarchy. That timing and stack identify a CoreSimulator/XCTest automation failure. The crash report does not identify an application frame or prove the deeper Apple-framework defect.
 
 **Fix:** Do not change Threadbase runtime code for this signature. Avoid `hideKeyboard` in iOS 26.x Maestro flows; scroll the keyboard-aware screen until the next control is visible. `pressKey: Enter` is acceptable only for a single-line input whose return action is known not to alter the tested value. If SpringBoard does not recover, restart only the simulator named by the coalition UDID, then rerun the flow.
 

@@ -63,7 +63,7 @@ export const GHOST_TTL_MS = 30_000
 /**
  * `active` — the gate is live: the card is tappable and send is disabled.
  * `pending` — the user answered and the server took it, but the gate has not
- * been observed closing yet. The card stands as a non-tappable ghost and
+ * been seen closing yet. The card stands as a non-tappable ghost and
  * blocks nothing.
  */
 export type QuestionPhase = 'active' | 'pending'
@@ -118,7 +118,7 @@ export function useActiveQuestionReducer(sessionId: string) {
   // separate messages with no ordering guarantee, so "status isn't
   // waiting_input" on its own would tear down a card a beat after it arrived.
   // What that costs: the status exit is inert until a `waiting_input` update
-  // has actually been observed, so it never fires for a card that arrived by
+  // has actually been seen, so it never fires for a card that arrived by
   // subscribe replay into an already-waiting session. `*_cancelled` is the exit
   // that covers that window.
   const lastStatus = useRef<SessionStatus | null>(null)

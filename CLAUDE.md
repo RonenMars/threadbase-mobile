@@ -486,10 +486,10 @@ None of this is a reason to pin a minimum server version or to ask the streamer 
 ## Session ownership terms
 
 - **External**: a session the streamer discovered but does not own (`ownership: 'external'`, `isExternalSession`). The app shows it read-only: it never sends input to it and never takes it over.
-- The user-facing word is "External", never "Observed". The session tier and its i18n key are `external`; `isObserveOnly` and `observeOnly` keep their names.
+- The user-facing word is "External", never "Observed". The session tier and its i18n key are `external`; the read-only capability flag is `isExternalOnly` and its locale key is `externalOnly`.
 - Allowed actions on an External session: favorite, rename, and terminate. Terminate calls `POST /sessions/:id/terminate`, asks for confirmation first, and is offered only while the process is alive.
 - **Managed**: a session the streamer spawned.
-- **View only**: a provider without live control, so its sessions can't be typed into. Shown as the "View only" chip; code keeps `observeOnly` / `isObserveOnly`.
+- **View only**: a provider without live control, so its sessions can't be typed into. Shown as the "View only" chip; code names the flag `externalOnly` / `isExternalOnly`, shared with External sessions.
 
 ---
 
