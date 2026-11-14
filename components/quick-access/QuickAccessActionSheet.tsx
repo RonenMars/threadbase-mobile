@@ -6,7 +6,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import type { ChipItem } from './QuickAccessChip'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { RtlStyleKit } from '@/lib/rtl'
-import { webModalWidth } from '@/lib/webModal'
+import { webSheetWidth } from '@/lib/webModal'
 
 interface Props {
   item: ChipItem | null
@@ -67,7 +67,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
   return StyleSheet.create({
     backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
     sheet: {
-      ...webModalWidth,
+      ...webSheetWidth,
       ...rtl.overlay,
       backgroundColor: theme.bg.card,
       borderTopLeftRadius: 16,
