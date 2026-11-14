@@ -99,6 +99,7 @@ android {
         manifestPlaceholders = [tbScheme: 'threadbase']
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
+        buildConfigField "boolean", "TB_QA_UPDATER", "${findProperty('tbVariant') == 'dev'}"
     }
     signingConfigs {
         debug {
@@ -206,6 +207,14 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+
+    // Firebase App Distribution's in-app "new build" alert, for the QA build only.
+    // The full SDK adds REQUEST_INSTALL_PACKAGES, which Play rejects, so every
+    // other build compiles against the no-op API artifact.
+    implementation("com.google.firebase:firebase-appdistribution-api:16.0.0-beta21")
+    if (findProperty('tbVariant') == 'dev') {
+        implementation("com.google.firebase:firebase-appdistribution:16.0.0-beta21")
     }
 }
 // google-services.json is gitignored, so a checkout without it still builds; it

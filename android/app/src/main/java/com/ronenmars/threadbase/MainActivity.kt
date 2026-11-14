@@ -3,11 +3,14 @@ import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
 import com.facebook.react.defaults.DefaultReactActivityDelegate
+import com.google.firebase.FirebaseApp
+import com.google.firebase.appdistribution.FirebaseAppDistribution
 
 import expo.modules.ReactActivityDelegateWrapper
 
@@ -21,6 +24,16 @@ class MainActivity : ReactActivity() {
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
     super.onCreate(null)
+  }
+
+  override fun onResume() {
+    super.onResume()
+    // QA builds only: Firebase shows its own "new version" dialog and installs the
+    // build. Without google-services.json there is no FirebaseApp, and getInstance throws.
+    if (BuildConfig.TB_QA_UPDATER && FirebaseApp.getApps(this).isNotEmpty()) {
+      FirebaseAppDistribution.getInstance().updateIfNewReleaseAvailable()
+        .addOnFailureListener { Log.w("TbQaUpdater", "update check failed", it) }
+    }
   }
 
   /**
