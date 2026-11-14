@@ -237,6 +237,19 @@
     "confirm": "Terminate",
     "failed": "Couldn't terminate the session"
   },
+  "handoff": {
+    "action": "Hand off to Terminal",
+    "title": "Hand off to Terminal?",
+    "body": "Threadbase stops this session and resumes it in tmux on {{server}}.",
+    "interruptWarning": "The current turn will be interrupted.",
+    "confirm": "Hand off",
+    "success": "Moved to tmux",
+    "attach": "Attach with {{command}}",
+    "failed": "Couldn't hand off the session. Check the connection and try again.",
+    "launchFailed": "Stopped here, but tmux didn't start — resume it from the app.",
+    "killTimeout": "The session didn't stop, so it wasn't moved.",
+    "nothingToResume": "Send a message first — there's nothing to resume yet."
+  },
   "deleteDialog": {
     "title": "Delete this session?",
     "body": "It's still live. Threadbase terminates it, then removes it from your session list on every device.",

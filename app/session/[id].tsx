@@ -11,11 +11,12 @@ import {
 } from 'react-native'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
 import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
-import { ArrowsClockwise, ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, Trash, Warning } from 'phosphor-react-native'
+import { ArrowsClockwise, ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, TerminalWindow, Trash, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
 import { deriveSessionPresentation, failureTitleKind, sessionOpensAsHistory } from '@/lib/sessionPresentation'
@@ -39,7 +40,7 @@ import { CLAUDE_CODE_PROVIDER } from '@/constants/providers'
 import { findProviderHealth } from '@/types/provider-health'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { globalSurface } from '@/lib/alertArbitration'
-import type { AlertInput } from '@/stores/alerts'
+import { useAlertStore, type AlertInput } from '@/stores/alerts'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
@@ -53,6 +54,7 @@ import { canSetModelEffort } from '@/lib/modelEffortSupport'
 import { LeaveSessionModal } from '@/components/sessions/LeaveSessionModal'
 import { LeaveNotice } from '@/components/sessions/LeaveNotice'
 import { EndSessionDialogs } from '@/components/sessions/EndSessionDialogs'
+import { HandoffDialog } from '@/components/sessions/HandoffDialog'
 import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import { getProviderLabel } from '@/components/sessions/providerLabel'
 import { useEndSession } from '@/hooks/useEndSession'
@@ -77,7 +79,7 @@ import {
   rehydrateSessionAfterReconnect,
   removeSessionFromEagerCache,
 } from '@/lib/sessionLifecycle'
-import { NotFoundError } from '@/services/api-client'
+import { NetworkError, NotFoundError } from '@/services/api-client'
 import { preferRawTerminal } from '@/lib/renderConfidence'
 import { collapseWrappedUserLines } from '@/lib/collapseWrappedUserLines'
 import { stripAnsi } from '@/utils/stripAnsi'
@@ -131,6 +133,19 @@ const RAW_KEY_BYTES: Record<'escape' | 'up' | 'down' | 'left' | 'right' | 'tab' 
   tab: '\t',
   shift_tab: '\x1b[Z',
   enter: '\r',
+}
+
+function getHandoffFailedMessage(code: string | undefined, t: TFunction<'sessions'>): string {
+  switch (code) {
+    case 'HANDOFF_LAUNCH_FAILED':
+      return t('handoff.launchFailed')
+    case 'HANDOFF_KILL_TIMEOUT':
+      return t('handoff.killTimeout')
+    case 'NOTHING_TO_RESUME':
+      return t('handoff.nothingToResume')
+    default:
+      return t('handoff.failed')
+  }
 }
 
 function PendingSessionScreen({
@@ -609,8 +624,10 @@ export default function SessionDetailScreen() {
   // User rename wins; then the JSONL-derived conversation name; then project name.
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
   const rawKeysSupported = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.rawKeys === true)
+  const handoffSupported = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.handoff != null)
+  const [handoffVisible, setHandoffVisible] = useState(false)
 
-  const { sendKeys, sendInput, sendRawKey, stopSession, adoptSession, setModel, setEffort } = useSessionActions(
+  const { sendKeys, sendInput, sendRawKey, stopSession, adoptSession, setModel, setEffort, handoff } = useSessionActions(
     serverId,
     id ?? '',
   )
@@ -1071,6 +1088,38 @@ export default function SessionDetailScreen() {
     if (model !== undefined) setModel.mutate(model, { onSuccess: close })
   }
 
+  // mutateAsync, not mutate's callbacks: the session stopping redirects this
+  // screen away, which can unmount it before the response lands.
+  const confirmHandoff = async () => {
+    setHandoffVisible(false)
+    try {
+      const result = await handoff.mutateAsync()
+      useAlertStore.getState().push({
+        id: `handoff:${id}`,
+        cause: `session:${id}`,
+        level: 'info',
+        title: tSessions('handoff.success'),
+        message: tSessions('handoff.attach', { command: result.attachCommand }),
+        testID: 'session-handoff-success',
+      })
+    } catch (err) {
+      // A 404 means the session is already gone, as with the end-session actions.
+      if (err instanceof NotFoundError) return
+      Alert.alert(tSessions('handoff.action'), getHandoffFailedMessage(err instanceof NetworkError ? err.code : undefined, tSessions))
+    }
+  }
+
+  const handoffItems: HeaderOverflowMenuItem[] =
+    isLive && session.ownership !== 'external' && handoffSupported
+      ? [{
+          key: 'handoff',
+          label: t('sessions:handoff.action'),
+          icon: TerminalWindow,
+          onPress: () => setHandoffVisible(true),
+          testID: 'session-handoff',
+        }]
+      : []
+
   const endSessionItems: HeaderOverflowMenuItem[] = []
   if (isLive) {
     // Waiting for input means there is no turn left to finish.
@@ -1213,6 +1262,7 @@ export default function SessionDetailScreen() {
             disabled: !isLive,
             testID: 'session-raw-keys',
           },
+          ...handoffItems,
           ...endSessionItems,
         ]}
       />
@@ -1496,6 +1546,14 @@ export default function SessionDetailScreen() {
         onConfirmDelete={endSession.confirmDelete}
         onConfirmWatchers={endSession.confirmWatchers}
         onDismiss={endSession.dismissDialog}
+      />
+
+      <HandoffDialog
+        visible={handoffVisible}
+        server={serverName}
+        running={session?.status === 'running'}
+        onConfirm={() => void confirmHandoff()}
+        onDismiss={() => setHandoffVisible(false)}
       />
 
       <NameSessionModal
