@@ -20,8 +20,23 @@ appId: com.ronenmars.threadbase
           commands:
             - tapOn: "Cancel"
 
-- launchApp:
-    clearState: true
+# launchApp grants every permission by default, so a GRANT_NOTIFICATIONS run
+# would never see the system dialog: POST_NOTIFICATIONS is already granted when
+# the allow card is tapped. That run leaves permissions unset instead.
+- runFlow:
+    when:
+      true: ${typeof GRANT_NOTIFICATIONS !== 'undefined' && GRANT_NOTIFICATIONS == 'true'}
+    commands:
+      - launchApp:
+          clearState: true
+          permissions:
+            all: unset
+- runFlow:
+    when:
+      true: ${typeof GRANT_NOTIFICATIONS === 'undefined' || GRANT_NOTIFICATIONS != 'true'}
+    commands:
+      - launchApp:
+          clearState: true
 
 # Cold Android CI boots can put a Pixel Launcher ANR over the welcome screen.
 # Maestro then sees neither hub-screen nor onboarding-welcome-cta and treats
@@ -236,23 +251,23 @@ appId: com.ronenmars.threadbase
           optional: true
 
       # Opt-in, for android_notifications_health.yaml: take the real permission
-      # path through the allow card instead of skipping past it. On Android 13+
-      # the system dialog is answered here; on 12 and below nothing is shown and
-      # the resolver block is skipped. Every other flow leaves the variable unset.
+      # path through the allow card and the system dialog. Requires Android 13+
+      # (CI runs API 35); on 12 and below there is no dialog and this fails.
+      # Every other flow leaves the variable unset.
       - runFlow:
           when:
             true: ${typeof GRANT_NOTIFICATIONS !== 'undefined' && GRANT_NOTIFICATIONS == 'true'}
           commands:
             - tapOn:
                 id: "onboarding-notifications-allow"
-                optional: true
-            - runFlow:
-                when:
-                  visible:
-                    id: "com.android.permissioncontroller:id/permission_allow_button"
-                commands:
-                  - tapOn:
-                      id: "com.android.permissioncontroller:id/permission_allow_button"
+            - extendedWaitUntil:
+                visible:
+                  id: "com.android.permissioncontroller:id/permission_allow_button"
+                timeout: 10000
+            - tapOn:
+                id: "com.android.permissioncontroller:id/permission_allow_button"
+            # The card reads ENABLED once the request comes back granted.
+            - assertVisible: "ENABLED.*"
 
       - tapOn:
           id: "onboarding-notifications-cta"
