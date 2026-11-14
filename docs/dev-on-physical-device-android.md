@@ -288,8 +288,8 @@ or long-press the icon on the phone → **Uninstall**.
 ## Notifications on a physical device
 
 Phase 3 of [android-notifications-plan.md](android-notifications-plan.md#phase-3--verify-on-a-real-phone).
-No run has been recorded yet.
-Every result below starts as "not run", and nothing here is verified.
+One partial run is recorded below, on a Xiaomi 11 Lite 5G NE, observed by the owner on 2026-11-14 from screenshots that are not in the repo.
+Every other check is still not run.
 
 Before a run, Phase 2 credentials must be done: FCM V1 keys for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.dev`, and the `GOOGLE_SERVICES_JSON_B64` secret.
 The streamer sends attention pushes with `priority: "high"` since v1.48.0, and `/api/push/test` is the send-test path.
@@ -298,9 +298,9 @@ Copy the table once per device, one for Android 13+ and one for Android 12 or lo
 | Device model | Android version | Date | Check | Result | Notes |
 |---|---|---|---|---|---|
 | — | — | — | 1. Fresh install: the onboarding notifications step shows the system prompt on 13+ and none on 12 or lower | not run | |
-| — | — | — | 2. Notification health screen lists an `android` token per paired server | not run | |
-| — | — | — | 3. Send test arrives in the foreground, in the background and when the app is killed, with the right icon and colour | not run | |
-| — | — | — | 4. Attention push: `needs-you` vibration, Allow/Deny answer the gate, a tap opens the session on cold start | not run | |
+| Xiaomi 11 Lite 5G NE | Android 14 (UKQ1.240624.001), HyperOS 2.0.8.0.UKOMIXM, patch 2025-08-01 | 2026-11-14 | 2. Notification health screen lists an `android` token per paired server | partial | Two iOS registrations for the paired server were Healthy. A third card headed Healthy with "Platform: android" was visible but cut off at the bottom of the screenshot. Its registered and last-success times were not seen. |
+| Xiaomi 11 Lite 5G NE | Android 14 (UKQ1.240624.001), HyperOS 2.0.8.0.UKOMIXM, patch 2025-08-01 | 2026-11-14 | 3. Send test arrives in the foreground, in the background and when the app is killed, with the right icon and colour | partial | The build was the TbDev variant from the Firebase App Distribution QA build of [run 43594337589](https://github.com/RonenMars/threadbase-mobile/actions/runs/43594337589) (commit 8333e116 of feat/android-notif-icon). The variant is inferred from the branch's features and its package id was not checked. The prod `com.ronenmars.threadbase` app was uninstalled and not tested. "Threadbase — Test notification — push delivery works." showed as a banner in the foreground on the Settings screen. Test sends also arrived in the background, per the owner. The killed-app case was not run. The small icon was a white list-of-bars stand-in glyph in the status bar and the shade. Its colour was not judged, because HyperOS showed it in a slate-blue circle rather than #0d1117, which may be an OEM tint. |
+| — | — | — | 4. Attention push: `needs-you` vibration, Allow/Deny answer the gate, a tap opens the session on cold start | not run | A completion push ("tb-mobile — Claude finished. Tap to read the reply.") arrived in the background on 2026-11-14, but it is not the `needs-you` gate and does not count here. |
 | — | — | — | 5. Live-session ongoing notification appears while the session runs and clears when it ends | not run | |
 | — | — | — | 6. Mute a channel in system settings: the health screen reports it | not run | |
 | — | — | — | 7. Change the app language: channel names update in system settings | not run | |
