@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
+import { WrappedKeyWarning } from '@/components/servers/WrappedKeyWarning'
+import { useWrappedKeyWarning } from '@/hooks/useWrappedKeyWarning'
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
 import { useServersStore } from '@/stores/servers'
 
@@ -26,6 +28,7 @@ export function ServerEncryptionSection({ serverId }: Props) {
 
   const server = useServersStore((s) => s.servers[serverId])
   const setRequireEncryption = useServersStore((s) => s.setRequireEncryption)
+  const keyWrapped = useWrappedKeyWarning(serverId)
 
   if (!server) return null
 
@@ -64,6 +67,7 @@ export function ServerEncryptionSection({ serverId }: Props) {
           <Text style={styles.noIdentityBody}>{noIdentityBody}</Text>
         </View>
       )}
+      {keyWrapped ? <WrappedKeyWarning /> : null}
       <View style={styles.row}>
         <View style={styles.textBlock}>
           <Text style={styles.label}>{t('encryption.requireLabel')}</Text>

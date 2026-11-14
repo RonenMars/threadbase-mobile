@@ -6,6 +6,7 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webSheetWidth } from '@/lib/webModal'
 
 export interface SessionActionItem {
   key: string
@@ -97,6 +98,7 @@ function makeStyles(theme: Theme) {
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     sheet: {
+      ...webSheetWidth,
       backgroundColor: theme.bg.card,
       borderTopLeftRadius: radius.lg,
       borderTopRightRadius: radius.lg,

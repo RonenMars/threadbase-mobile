@@ -21,7 +21,7 @@ import {
   createRecordState,
   restTargetHash,
 } from '@/services/e2ee/record'
-import type { OpenContextArgs, TransportContext } from '@/services/e2ee/context'
+import { OpenError, type OpenContextArgs, type TransportContext } from '@/services/e2ee/context'
 import {
   _resetRestSessionsForTests,
   _restLiveCount,
@@ -1369,6 +1369,23 @@ describe('exchangeToken — the pairing handshake', () => {
     ).rejects.toMatchObject({ kind: 'e2ee-web-unsupported' })
     expect(mockKeychain.size).toBe(0)
     expect(probe.fetch).not.toHaveBeenCalled()
+  })
+
+  it('web blames the browser, not the streamer, when the key it just stored is gone', async () => {
+    expect.assertions(3)
+    mockHasSecureKeychain = false
+    const streamer = fakeStreamer()
+    const probe = withSealedInfo(streamer.fetch, CAPABLE_INFO)
+    _setRestOpenForTests(async () => {
+      throw new OpenError('E2EE_NOT_PAIRED', 'no device key')
+    })
+    global.fetch = probe.fetch
+
+    await expect(
+      exchangeToken({ url: SERVER_URL, token: PAIR_TOKEN, serverPublicKey: SERVER_SPK }),
+    ).rejects.toMatchObject({ kind: 'e2ee-web-unsupported' })
+    expect(mockKeychain.size).toBe(0)
+    expect(probe.calls.filter((c) => c.url.endsWith('/api/info'))).toHaveLength(0)
   })
 
   it('still pairs a legacy no-spk QR where the store is not a keychain', async () => {

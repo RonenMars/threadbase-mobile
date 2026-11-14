@@ -306,7 +306,9 @@
     "forgetTitle": "Forget {{server}}?",
     "forgetMessage": "This device's credentials for {{server}} are deleted. Scan its QR code again to pair from scratch.",
     "forgetCancel": "Cancel",
-    "forgetConfirm": "Forget"
+    "forgetConfirm": "Forget",
+    "wrappedKeyTitle": "Weaker key protection in this browser",
+    "wrappedKeyBody": "This browser cannot store the encryption key the usual way, so it is kept wrapped instead. A script running on this site could copy the key out. Use the app, or a desktop browser, for the strongest protection."
   },
   "state": {
     "details": {

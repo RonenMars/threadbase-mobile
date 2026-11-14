@@ -17,6 +17,7 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 import type { SlashCommand } from '@/constants/slashCommands'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webSheetWidth } from '@/lib/webModal'
 
 interface Props {
   command: SlashCommand | null
@@ -150,6 +151,7 @@ function makeStyles(theme: Theme) {
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     card: {
+      ...webSheetWidth,
       backgroundColor: theme.bg.secondary,
       borderTopLeftRadius: radius.lg,
       borderTopRightRadius: radius.lg,

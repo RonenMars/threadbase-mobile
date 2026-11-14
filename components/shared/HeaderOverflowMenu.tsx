@@ -4,6 +4,7 @@ import { DotsThreeVertical, type IconProps } from 'phosphor-react-native'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { useWebFrameInset } from '@/lib/webModal'
 
 export interface HeaderOverflowMenuItem {
   key: string
@@ -30,6 +31,7 @@ export function HeaderOverflowMenu({ items, accessibilityLabel = 'More options',
   const { direction } = useAppDirection()
   const copyStyle = textDirectionStyle(direction)
   const styles = makeStyles(theme)
+  const frameInset = useWebFrameInset()
   const [open, setOpen] = useState(false)
 
   return (
@@ -44,7 +46,7 @@ export function HeaderOverflowMenu({ items, accessibilityLabel = 'More options',
         <DotsThreeVertical size={22} color={theme.text.secondary} />
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={[styles.backdrop, directionStyle]} onPress={() => setOpen(false)}>
+        <Pressable style={[styles.backdrop, frameInset, directionStyle]} onPress={() => setOpen(false)}>
           <View style={styles.menu}>
             {items.map((item, index) => (
               <React.Fragment key={item.key}>

@@ -21,6 +21,8 @@ import { NetworkError } from '@/services/api-client'
 import { CleartextBlockedError } from '@/services/cleartext-policy'
 import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSection'
+import { WrappedKeyWarning } from '@/components/servers/WrappedKeyWarning'
+import { useWrappedKeyWarning } from '@/hooks/useWrappedKeyWarning'
 import { ServerAddressesSection } from '@/components/servers/ServerAddressesSection'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
 import { useServersStore, type AddServerMeta } from '@/stores/servers'
@@ -29,6 +31,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -42,6 +45,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const theme = useTheme()
   const { addServer, editServer } = useServersStore()
   const isEditMode = serverId !== null
+  const browserWrapsKey = useWrappedKeyWarning()
 
   const [label, setLabel] = useState('')
   const [protocol, setProtocol] = useState<'http' | 'https'>('http')
@@ -287,6 +291,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 onSubmitEditing={handleSave}
               />
 
+              {!isEditMode && browserWrapsKey ? <WrappedKeyWarning /> : null}
+
               {error ? (
                 <View style={styles.errorBox}>
                   <XCircle size={14} color={theme.text.danger} weight="fill" />
@@ -358,6 +364,7 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.xl,
     },
     modal: {
+      ...webModalWidth,
       width: '100%',
       // Opaque under glass — this modal can stack over the Servers Status modal,
       // and a translucent sheet over a translucent sheet bleeds text through.
