@@ -8,7 +8,7 @@
  * flip until long after the tap.
  */
 export const LIST_WINDOW = {
-  initialNumToRender: 8,
+  initialNumToRender: 15,
   maxToRenderPerBatch: 5,
   windowSize: 5,
 } as const
