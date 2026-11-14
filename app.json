@@ -6,6 +6,9 @@
     "orientation": "default",
     "scheme": "threadbase",
     "icon": "./assets/icon.png",
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
     "userInterfaceStyle": "automatic",
     "platforms": [
       "ios",
