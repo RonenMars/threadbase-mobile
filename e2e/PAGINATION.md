@@ -46,7 +46,7 @@ Validates two things at once:
 |---|---|
 | 0 | Visual + network assertions both passed |
 | 1 | Maestro flow failed (visual) |
-| 2 | Network assertion failed (no pagination observed) |
+| 2 | Network assertion failed (no pagination seen) |
 | 3 | Mock server failed to start |
 
 ## Screenshots

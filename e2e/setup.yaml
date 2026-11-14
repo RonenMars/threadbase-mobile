@@ -222,7 +222,7 @@ appId: com.ronenmars.threadbase
       # the OS permission prompt, which Maestro cannot dismiss.
       #
       # Both commands are optional because this is not reliably the screen we
-      # land on. On an Android release build the DONE screen has been observed
+      # land on. On an Android release build the DONE screen has been seen
       # showing directly after the handshake, repeatably and on a clean install,
       # so it is not a timing artifact — but why the step is skipped there has
       # not been established, and asserting it failed every flow on a message

@@ -2,7 +2,7 @@
 
 **2026-08-02: every measurement in the previous version of this document was invalid.** They were taken through a harness that leaked a screen per run, so run order — not any property of the app — drove the timings. On a clean harness the same conversation opens in **~400 ms**, stable across 24 consecutive opens.
 
-**This does not close the original report.** A 14-second open was observed in ordinary use, before any of this rig existed. Nothing here reproduces it and nothing here disproves it; it is **unexplained**, not resolved — and as of 2026-08-03 it has no suspect either: the navigation-stacking candidate that this document previously named was tested and [refuted](#the-navigation-stacking-candidate-is-dead).
+**This does not close the original report.** A 14-second open was seen in ordinary use, before any of this rig existed. Nothing here reproduces it and nothing here disproves it; it is **unexplained**, not resolved — and as of 2026-08-03 it has no suspect either: the navigation-stacking candidate that this document previously named was tested and [refuted](#the-navigation-stacking-candidate-is-dead).
 
 What this document can now say: the message list, the merge memo, the parse path, the server and the network are all excluded, and any remaining cost is not paid per-open on the tail path.
 

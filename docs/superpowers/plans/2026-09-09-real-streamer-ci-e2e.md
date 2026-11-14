@@ -33,7 +33,7 @@
 
 - [x] **Step 1: Write failing behavioral tests**
 
-Cover separate HTTP/app URLs and explicit session paths, `202 { id, status: "pending" }` readiness polling, and preservation of a pre-existing live session while newly observed invocation sessions are stopped.
+Cover separate HTTP/app URLs and explicit session paths, `202 { id, status: "pending" }` readiness polling, and preservation of a pre-existing live session while newly seen invocation sessions are stopped.
 
 - [x] **Step 2: Run the focused tests and verify RED**
 

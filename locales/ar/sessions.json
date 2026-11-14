@@ -199,7 +199,7 @@
     "working": "يعمل"
   },
   "capability": {
-    "observeOnly": "للعرض فقط",
+    "externalOnly": "للعرض فقط",
     "liveControl": "تحكم مباشر"
   },
   "timeBucket": {

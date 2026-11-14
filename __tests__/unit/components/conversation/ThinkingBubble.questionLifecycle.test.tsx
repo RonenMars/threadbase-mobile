@@ -5,7 +5,7 @@ import type { QuestionBlock } from '@/utils/parseQuestionBlock'
 
 // A question puts the session in `waiting_input`, which is the same edge that
 // retires the thinking bubble — so the bubble's fade-then-unmount used to take
-// the freshly-arrived QuestionCard down with it ~350ms later. Observed as "the
+// the freshly-arrived QuestionCard down with it ~350ms later. Seen as "the
 // question card is sometimes unclickable / not there at all".
 
 /** Mirrors the fade duration in ThinkingBubble. */

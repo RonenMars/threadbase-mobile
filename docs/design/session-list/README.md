@@ -110,7 +110,7 @@ One derivation, one place: extend `lib/sessionPresentation.ts`. The 15 `SessionS
 | **Working** | live **and** `status === 'running'` | `status.running` `#3fb950` | dot pulses; 2px indeterminate sweep | Card, 3 lines |
 | **Resumable** | no live process, resume possible | `text.secondary` dot `#484f58` | none | List row, 2 lines, hairline divider |
 | **Can't resume** | `resumable === false` + `unavailableReason`, or `failed` | `status.failed` `#f85149` | none | List row, 1–2 lines, reason in the line |
-| **External** | external process, `isObserveOnly` | `status.completed` `#58a6ff` | none | List row, 2 lines, read-only |
+| **External** | external process, `isExternalOnly` | `status.completed` `#58a6ff` | none | List row, 2 lines, read-only |
 
 **"Live" has exactly one gate** — this is the single highest-impact fix in the brief:
 

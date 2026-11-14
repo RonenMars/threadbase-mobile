@@ -227,7 +227,7 @@ describe('useSessionLeaveGuard', () => {
 
   // The response is not what makes a kill stick — the POST is durable once the
   // streamer has it, and the WS `session_update` is what turns the screen to
-  // history. Observed 2026-09-12: a stop the streamer answered in 26 ms left
+  // history. Seen 2026-09-12: a stop the streamer answered in 26 ms left
   // the card on "Sending…" for ~10 s while "Session ended" was already
   // rendered behind it.
   it('Kill it stops waiting on the response once the grace window passes', async () => {

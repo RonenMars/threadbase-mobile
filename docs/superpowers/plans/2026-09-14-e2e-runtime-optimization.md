@@ -132,7 +132,7 @@ The snippet's `git` is inside the hosted runner, where the local Homebrew path d
 
 **Interfaces:** Extend `splitFlows(flows, shardCount, durations = {})`; keep returning `{ shard: string, total: string, flows: string }[]`. Extend `planShards` with injectable `durationWeights = { android: {}, ios: {} }` for deterministic tests. The CLI loads the JSON and supplies `durationWeights`. `package.json` alone supplies default flow membership.
 
-- [ ] Create this seed data, retaining the measured provenance. Values are observed flow seconds, including whatever setup the flow performed in that run; they are not pure feature timings.
+- [ ] Create this seed data, retaining the measured provenance. Values are measured flow seconds, including whatever setup the flow performed in that run; they are not pure feature timings.
 
 ```json
 {

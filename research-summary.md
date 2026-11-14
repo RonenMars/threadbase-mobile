@@ -64,7 +64,7 @@ Keep the final equality check.  It turns a silent toolchain drift into an early,
 
 ### 2. Increase the iOS driver startup budget (implemented)
 
-Set `MAESTRO_DRIVER_STARTUP_TIMEOUT=300000` in the iOS Maestro-suite step.  The observed readiness time was about 203 seconds, so 300 seconds leaves a meaningful CI-variance margin.  This should be retained even after pinning if occasional slow XCTest launches are expected; it is not a substitute for pinning.
+Set `MAESTRO_DRIVER_STARTUP_TIMEOUT=300000` in the iOS Maestro-suite step.  The seen readiness time was about 203 seconds, so 300 seconds leaves a meaningful CI-variance margin.  This should be retained even after pinning if occasional slow XCTest launches are expected; it is not a substitute for pinning.
 
 ### 3. Verify the fix with controlled runs
 

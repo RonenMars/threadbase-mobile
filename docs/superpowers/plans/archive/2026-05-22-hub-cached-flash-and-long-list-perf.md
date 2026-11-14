@@ -8,7 +8,7 @@
 **Status:** Backlog — not started
 **Owner:** Ronen
 
-Two related issues observed on iPhone 17 sim (iOS 26.2) after the post-onboarding flow on a multi-server account (2,703 conversations across ~10 projects, `tmp` alone holds 1,266). Both ultimately come back to the same theme: **the app paints whatever it has, then re-paints when fresh/expensive data arrives, and there's no virtualization barrier between "1,200-item dataset" and the render path.**
+Two related issues seen on iPhone 17 sim (iOS 26.2) after the post-onboarding flow on a multi-server account (2,703 conversations across ~10 projects, `tmp` alone holds 1,266). Both ultimately come back to the same theme: **the app paints whatever it has, then re-paints when fresh/expensive data arrives, and there's no virtualization barrier between "1,200-item dataset" and the render path.**
 
 This doc captures both for the backlog. Split into focused plans when picking up.
 

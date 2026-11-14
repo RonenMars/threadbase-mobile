@@ -175,7 +175,7 @@
     "working": "Работает"
   },
   "capability": {
-    "observeOnly": "Только просмотр",
+    "externalOnly": "Только просмотр",
     "liveControl": "Управление"
   },
   "timeBucket": {

@@ -164,7 +164,7 @@ export function useSessionLeaveGuard(opts: {
   // go anyway. The answer is not what makes a leave action stick: a kill is
   // durable the moment `POST /stop` reaches the streamer, and what drives the
   // screen to history is the WS `session_update` — which lands while this card
-  // is still spinning (observed 2026-09-12: "Session ended" rendered behind a
+  // is still spinning (seen 2026-09-12: "Session ended" rendered behind a
   // "Sending…" card for ~10 s). Every `/stop` the streamer has served returned
   // in under 100 ms, so a response still missing after this window is stuck on
   // the network leg (a cold connection after foreground, an e2ee context

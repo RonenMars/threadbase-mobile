@@ -476,7 +476,7 @@ Changing the plan model or converting all themes into modes is out of scope for 
 
 - Save a named Figma version before migration.
 - Run one idempotent bridge job per destination page, moving existing component sections and main components rather than deleting and rebuilding them.
-- Keep each job below the bridge's observed timeout window and record the completed page after every job.
+- Keep each job below the bridge's measured timeout window and record the completed page after every job.
 - After each move, verify the same node IDs still exist, no duplicate public name was created, source links remain present, and representative existing instances still point to their main component.
 - Move route frames to `80 Screens` and the theme-gallery evidence to `90 Visual QA` in separate jobs.
 - Run the normal builder only after placement migration passes, so it fills missing assets rather than creating parallel families.

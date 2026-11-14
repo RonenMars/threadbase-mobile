@@ -57,7 +57,7 @@ export interface SessionCapabilities {
   canCancel: boolean
   canOvertake: boolean
   canResume: boolean
-  isObserveOnly: boolean
+  isExternalOnly: boolean
 }
 
 export type SessionStatusLabel =
@@ -124,12 +124,12 @@ function isExternalSession(s: Pick<SessionPresentationInput, 'ownership'>): bool
   return s.ownership === 'external'
 }
 
-const OBSERVE_ONLY: SessionCapabilities = {
+const EXTERNAL_ONLY: SessionCapabilities = {
   canSendInput: false,
   canCancel: false,
   canOvertake: false,
   canResume: false,
-  isObserveOnly: true,
+  isExternalOnly: true,
 }
 
 const MANAGED_LIVE_CAPS: SessionCapabilities = {
@@ -137,7 +137,7 @@ const MANAGED_LIVE_CAPS: SessionCapabilities = {
   canCancel: true,
   canOvertake: false,
   canResume: false,
-  isObserveOnly: false,
+  isExternalOnly: false,
 }
 
 const IDLE_MANAGED_CAPS: SessionCapabilities = {
@@ -145,7 +145,7 @@ const IDLE_MANAGED_CAPS: SessionCapabilities = {
   canCancel: false,
   canOvertake: false,
   canResume: false,
-  isObserveOnly: false,
+  isExternalOnly: false,
 }
 
 function confidenceFor(session: SessionPresentationInput): SessionConfidence {
@@ -321,7 +321,7 @@ function classifySession(
       colorToken: 'completed',
       confidence: session.processLiveness ? 'process' : confidence,
       activityAt,
-      capabilities: OBSERVE_ONLY,
+      capabilities: EXTERNAL_ONLY,
     }
   }
 
@@ -334,7 +334,7 @@ function classifySession(
       colorToken: 'idle',
       confidence: 'process',
       activityAt,
-      capabilities: OBSERVE_ONLY,
+      capabilities: EXTERNAL_ONLY,
     }
   }
 
@@ -365,7 +365,7 @@ function classifySession(
       confidence,
       activityAt,
       capabilities: {
-        ...OBSERVE_ONLY,
+        ...EXTERNAL_ONLY,
         canResume: true,
       },
     }
@@ -452,7 +452,7 @@ export function deriveConversationPresentation(
         canCancel: false,
         canOvertake: false,
         canResume: false,
-        isObserveOnly: true,
+        isExternalOnly: true,
       },
       subStatus: null,
     }

@@ -1233,8 +1233,8 @@ export default function SessionDetailScreen() {
   const handleBack = navigateHome
 
   const presentation = deriveSessionPresentation(session)
-  const capabilityLabel = presentation.capabilities.isObserveOnly
-    ? t('sessions:capability.observeOnly')
+  const capabilityLabel = presentation.capabilities.isExternalOnly
+    ? t('sessions:capability.externalOnly')
     : presentation.live
       ? t('sessions:capability.liveControl')
       : null

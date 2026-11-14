@@ -6,7 +6,7 @@
 
 | Test case | Scenario | Priority | Preconditions |
 |---|---|---|---|
-| TC-TS8-001 | Local-first traffic audit | P0 | Device traffic can be observed through proxy/router logs; paired streamer URL is known. |
+| TC-TS8-001 | Local-first traffic audit | P0 | Device traffic can be seen through proxy/router logs; paired streamer URL is known. |
 | TC-TS8-002 | Server removal and credential cleanup | P0 | One paired server with push registration enabled. |
 
 ## Detailed Test Cases
@@ -14,7 +14,7 @@
 ### TC-TS8-001: Local-first traffic audit
 
 **Priority:** P0  
-**Preconditions:** Device traffic can be observed through proxy/router logs; paired streamer URL is known.
+**Preconditions:** Device traffic can be seen through proxy/router logs; paired streamer URL is known.
 
 **Steps:**
 1. Pair a server.

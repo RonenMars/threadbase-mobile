@@ -153,7 +153,7 @@ describe('useActiveQuestion – teardown when the card\'s premise dies', () => {
   // The gate broadcast and the status flip are two separate messages, and
   // nothing guarantees the flip lands first. A level-triggered rule ("status
   // isn't waiting_input, so drop the card") would tear down a card a beat after
-  // it appeared. Only an observed exit from waiting_input counts.
+  // it appeared. Only a seen exit from waiting_input counts.
   it('keeps a card that arrives before the status flip to waiting_input', async () => {
     const { result } = await setup()
     await act(() => __wsTest.emit('permission', gate))

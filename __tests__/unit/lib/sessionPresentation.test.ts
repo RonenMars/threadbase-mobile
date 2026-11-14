@@ -24,7 +24,7 @@ describe('deriveSessionPresentation', () => {
     expect(deriveSessionPresentation(base({ status: 'running' }))).toMatchObject({
       kind: 'managed_live',
       live: true,
-      capabilities: { canSendInput: true, canCancel: true, isObserveOnly: false },
+      capabilities: { canSendInput: true, canCancel: true, isExternalOnly: false },
     })
     expect(deriveSessionPresentation(base({ status: 'waiting_input' })).statusLabel).toBe(
       'waiting',
@@ -43,7 +43,7 @@ describe('deriveSessionPresentation', () => {
     })
   })
 
-  it('marks external alive as observe-only live', () => {
+  it('marks external alive as external-only live', () => {
     expect(
       deriveSessionPresentation(
         base({
@@ -57,7 +57,7 @@ describe('deriveSessionPresentation', () => {
       kind: 'external_live',
       live: true,
       externalLive: true,
-      capabilities: { isObserveOnly: true, canCancel: false },
+      capabilities: { isExternalOnly: true, canCancel: false },
     })
   })
 
@@ -92,7 +92,7 @@ describe('deriveSessionPresentation', () => {
     ).toMatchObject({
       kind: 'historical',
       statusLabel: 'historical',
-      capabilities: { canResume: true, isObserveOnly: true },
+      capabilities: { canResume: true, isExternalOnly: true },
     })
   })
 
@@ -122,7 +122,7 @@ describe('deriveSessionPresentation', () => {
       live: false,
       externalLive: false,
       colorToken: 'idle',
-      capabilities: { canResume: true, canSendInput: false, isObserveOnly: true },
+      capabilities: { canResume: true, canSendInput: false, isExternalOnly: true },
     })
   })
 
@@ -144,7 +144,7 @@ describe('deriveSessionPresentation', () => {
     ).toBe('failed')
   })
 
-  it('treats lifecycle resumable as historical (resume, observe-only)', () => {
+  it('treats lifecycle resumable as historical (resume, external-only)', () => {
     expect(
       deriveSessionPresentation(
         base({ status: 'idle', ptyAttached: false, lifecycle: 'resumable' }),
@@ -152,7 +152,7 @@ describe('deriveSessionPresentation', () => {
     ).toMatchObject({
       kind: 'historical',
       live: false,
-      capabilities: { canResume: true, isObserveOnly: true },
+      capabilities: { canResume: true, isExternalOnly: true },
     })
   })
 

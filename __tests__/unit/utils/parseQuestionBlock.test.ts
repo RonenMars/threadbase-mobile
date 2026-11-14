@@ -193,7 +193,7 @@ describe('parseQuestionBlock', () => {
   })
 
   it('does not treat a numbered user reply echoed as ❯ 1. … as a one-option menu', () => {
-    // Observed 2026-10-07: replying "1. … 2. …" echoed `❯ 1. …` while the agent
+    // Seen 2026-10-07: replying "1. … 2. …" echoed `❯ 1. …` while the agent
     // worked, and the line above (the agent's question) became a card.
     const lines = [
       'Should I file this as a P2 issue in both',
@@ -208,7 +208,7 @@ describe('parseQuestionBlock', () => {
 
   // #1424: a user message that opens with a numbered list echoes as `❯ 1. …`
   // plus indented `2. …` rows, and the agent's own indented chrome underneath
-  // ("Ran 1 shell command") used to be swallowed as further options. Observed
+  // ("Ran 1 shell command") used to be swallowed as further options. Seen
   // 2026-11-11, session 0df1e60d: the card header was the "Churned for" line.
   it('does not build a card from a numbered user message echoed above agent chrome (#1424)', () => {
     const lines = [
@@ -401,7 +401,7 @@ describe('parseQuestionBlock', () => {
   })
 
   it('returns null for prose whose numbered rows do not start at 1 (wrapped list item)', () => {
-    // Observed 2026-09-08: a resumed session repainted an assistant message
+    // Seen 2026-09-08: a resumed session repainted an assistant message
     // listing open questions 1-8. Item 5 wrapped onto a continuation line
     // ending in "?", and items 6 and 7 below it became the options — a card
     // whose taps type "6"/"7" into the live session. A real menu enumerates
@@ -417,7 +417,7 @@ describe('parseQuestionBlock', () => {
   })
 
   it('returns null for an assistant reply ending in a question plus a 1..n list (no cursor, no footer)', () => {
-    // Observed 2026-09-19: Claude's prose "What would you like next?" followed by
+    // Seen 2026-09-19: Claude's prose "What would you like next?" followed by
     // three numbered choices was carded; tapping sent Enter to an idle prompt.
     const lines = [
       "  I changed nothing. What would you like next?",

@@ -189,10 +189,10 @@ function parseAskUserQuestionMenu(stripped: string[]): QuestionBlock | null {
     // onto a continuation line ending in "?", which ends the contiguous run above
     // item 6 — so the "menu" starts at 6, and tapping an option types "6" into the
     // live session. Trade-off: this also rejects a real menu whose first rows have
-    // scrolled off the top of the screen; widen only if that is ever observed.
+    // scrolled off the top of the screen; widen only if that is ever seen.
     // Numbering alone is not enough either: an assistant reply ending "What would
     // you like next? 1. … 2. … 3. …" enumerates 1..n too, and tapping an option
-    // sends Enter to an idle prompt (observed 2026-09-19, nothing happened, card
+    // sends Enter to an idle prompt (seen 2026-09-19, nothing happened, card
     // stayed). A live picker always paints a ❯ cursor or its Enter/Esc footer.
     const hasMenuChrome = sawCursor || inner.slice(q + 1).some((l) => MENU_FOOTER_RE.test(l.trim()))
     if (options.length >= 2 && hasMenuChrome && optionNumbers.every((n, i) => n === i + 1)) {
@@ -319,7 +319,7 @@ export function parseQuestionBlock(lines: string[]): QuestionBlock | null {
   }
 
   // A picker always offers a choice. One row is the user's own numbered reply
-  // echoed as `❯ 1. …` while the agent works (observed 2026-10-07), not a menu.
+  // echoed as `❯ 1. …` while the agent works (seen 2026-10-07), not a menu.
   if (options.length < 2) return null
   // The `❯ 1.` cursor alone proves nothing: a user message that opens with a
   // numbered list echoes the same way, and the agent's indented chrome under it
