@@ -43,9 +43,11 @@ interface Props {
   /** Server-derived agent phase, already gated on `presentation.live`. */
   subStatus?: AgentPhase | null
   onSessionQuit?: () => void
+  /** Fires when the working bubble mounts or changes size (PTY lines stream in). */
+  onWorkingLayout?: () => void
 }
 
-export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, onScrapedCardChange, subStatus, onSessionQuit }: Props) {
+export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, onScrapedCardChange, subStatus, onSessionQuit, onWorkingLayout }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const { t: tc } = useTranslation('common')
@@ -260,7 +262,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
   const workingLabel = subStatus ? getAgentPhaseLabel(subStatus, t) : t('phase.working')
 
   return (
-    <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble">
+    <Animated.View style={[styles.wrapper, { opacity }]} testID="thinking-bubble" onLayout={onWorkingLayout}>
       {modal}
       <View style={styles.bubble}>
         {hasLines ? (

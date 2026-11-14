@@ -447,6 +447,34 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(screen.getByText('hello there')).toBeTruthy()
   })
 
+  // flash-list's autoscroll ignores the footer, so a short transcript left the
+  // bubble's lower edge — the scanner — behind the composer.
+  describe('working bubble layout', () => {
+    async function sendAndLayoutBubble() {
+      await renderView()
+      await fireEvent.changeText(screen.getByTestId('chat-message-input'), 'hello there')
+      await fireEvent.press(screen.getByTestId('chat-send-button'))
+      scrollToEndMock.mockClear()
+      await act(async () => screen.getByTestId('thinking-bubble').props.onLayout())
+    }
+
+    it('scrolls the bubble into view when the reader is at the end', async () => {
+      await sendAndLayoutBubble()
+      expect(scrollToEndMock).toHaveBeenCalled()
+    })
+
+    it('leaves a reader who scrolled up where they are', async () => {
+      await renderView()
+      await fireEvent.changeText(screen.getByTestId('chat-message-input'), 'hello there')
+      await fireEvent.press(screen.getByTestId('chat-send-button'))
+      await act(async () => screen.getByTestId('live-conversation-list')!.props.onScroll(SCROLLED_UP))
+      scrollToEndMock.mockClear()
+
+      await act(async () => screen.getByTestId('thinking-bubble').props.onLayout())
+      expect(scrollToEndMock).not.toHaveBeenCalled()
+    })
+  })
+
   it('keeps composer text and does not leave an optimistic bubble when send fails', async () => {
     mockMutateAsync.mockRejectedValueOnce(new Error('offline'))
     await renderView()
