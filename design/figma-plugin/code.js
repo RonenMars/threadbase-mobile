@@ -351,7 +351,7 @@ async function buildFAB() {
 async function buildStateBadge() {
   if (findComp('StateBadge')) return;
   const sec = newSection('StateBadge + ServerChip', 'components/sessions/now — StateBadge: dot 7 + 11/500 label in the tier color, gap 4. ServerChip (label): pill, 1px border in the server color, fill at 12%, 9/600 text, +0.4 tracking. Server palette: components/sessions/shared/serverPalette.ts.');
-  const TIERS = { needsYou: ['status/waiting', 'Needs you'], working: ['status/running', 'Working'], observed: ['status/completed', 'Observed'], cantResume: ['status/failed', "Can't resume"], resumable: ['status/idle', 'Resumable'] };
+  const TIERS = { needsYou: ['status/waiting', 'Needs you'], working: ['status/running', 'Working'], external: ['status/completed', 'External'], cantResume: ['status/failed', "Can't resume"], resumable: ['status/idle', 'Resumable'] };
   const comps = [];
   for (const tier of Object.keys(TIERS)) {
     const color = TIERS[tier][0];
@@ -1878,7 +1878,7 @@ async function buildFilterSortSheet() {
     for (const ch of chips) w.appendChild(await chipNode(...ch));
     return g;
   };
-  await group('Show', [['Needs you', true, 'status/waiting', 3], ['Working', false, 'status/running', 5], ['Resumable', false, 'text/accent', 21], ['Can\'t resume', false, 'status/idle', 9], ['Observed', false, 'text/secondary', 4]]);
+  await group('Show', [['Needs you', true, 'status/waiting', 3], ['Working', false, 'status/running', 5], ['Resumable', false, 'text/accent', 21], ['Can\'t resume', false, 'status/idle', 9], ['External', false, 'text/secondary', 4]]);
   await group('Agent', [['Claude', true], ['Codex', false], ['Cursor', false]]);
   await group('Active within', [['Any time', true], ['Today', false], ['7 days', false], ['30 days', false]]);
   const seg = async (title, opts) => {
