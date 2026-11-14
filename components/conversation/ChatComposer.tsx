@@ -592,7 +592,7 @@ function makeStyles(theme: Theme) {
     sendError: { color: theme.status.failed, fontSize: font.sm },
     sendErrorAction: { color: theme.text.accent, fontSize: font.sm, textDecorationLine: 'underline' },
     sendNotice: { color: theme.text.secondary, fontSize: font.sm },
-    inputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, ...iosComposerChrome },
+    inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm, ...iosComposerChrome },
     input: {
       flex: 1,
       backgroundColor: theme.bg.card,
