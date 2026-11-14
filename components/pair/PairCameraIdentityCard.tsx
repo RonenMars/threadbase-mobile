@@ -5,6 +5,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { IdentityFingerprintBlock } from '@/components/pair/IdentityFingerprintBlock'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -59,6 +60,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.md,
     },
     sheet: {
+      ...webModalWidth,
       backgroundColor: theme.bg.secondary,
       borderRadius: radius.lg,
       borderWidth: 1,

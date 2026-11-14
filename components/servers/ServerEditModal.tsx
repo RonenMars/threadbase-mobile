@@ -7,7 +7,6 @@ import {
   TouchableWithoutFeedback,
   StyleSheet,
   Alert,
-  Platform,
 } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller'
 import { X, QrCode, XCircle } from 'phosphor-react-native'
@@ -32,6 +31,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { type Theme, font, radius, spacing } from '@/constants/theme'
 import type { ExchangeResult } from '@/services/pair-exchange'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -364,9 +364,8 @@ function makeStyles(theme: Theme) {
       paddingVertical: spacing.xl,
     },
     modal: {
+      ...webModalWidth,
       width: '100%',
-      // RN Modal renders outside the web layout's 768px frame, so it would span the window.
-      maxWidth: Platform.OS === 'web' ? 520 : undefined,
       // Opaque under glass — this modal can stack over the Servers Status modal,
       // and a translucent sheet over a translucent sheet bleeds text through.
       backgroundColor: theme.bg.card,

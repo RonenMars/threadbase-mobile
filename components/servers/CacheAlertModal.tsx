@@ -10,6 +10,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { clearServerConversationAndSessionState, queryClient } from '@/services/query-client'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -267,6 +268,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.md,
     },
     sheet: {
+      ...webModalWidth,
       backgroundColor: theme.bg.secondary,
       borderRadius: radius.lg,
       borderWidth: 1,

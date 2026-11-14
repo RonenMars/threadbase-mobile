@@ -31,6 +31,7 @@ import { type Theme, font, radius, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 import { removeServerAndUnregisterPush } from '@/services/server-removal'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -443,6 +444,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.md,
     },
     sheet: {
+      ...webModalWidth,
       backgroundColor: theme.bg.secondary,
       borderRadius: radius.lg,
       borderWidth: 1,
@@ -565,6 +567,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.md,
     },
     dropSheet: {
+      ...webModalWidth,
       // A stacked popup must be opaque — a translucent menu over the (also
       // translucent) Servers Status modal lets text bleed through. Use a solid
       // dark surface under glass instead of the see-through bg.card token.

@@ -16,6 +16,7 @@ import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { SLASH_COMMANDS, type SlashCommand } from '@/constants/slashCommands'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import type { RtlStyleKit } from '@/lib/rtl'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   /** Whether the board is visible */
@@ -130,6 +131,7 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       backgroundColor: 'rgba(0,0,0,0.35)',
     },
     sheet: {
+      ...webModalWidth,
       ...rtl.overlay,
       backgroundColor: theme.bg.secondary,
       borderTopLeftRadius: radius.lg,

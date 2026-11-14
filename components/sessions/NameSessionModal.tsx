@@ -14,6 +14,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -109,6 +110,7 @@ function makeStyles(theme: Theme) {
     paddingHorizontal: spacing.xl,
   },
   card: {
+    ...webModalWidth,
     width: '100%',
     backgroundColor: theme.bg.card,
     borderRadius: radius.lg,
