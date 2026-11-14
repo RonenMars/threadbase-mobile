@@ -23,7 +23,7 @@ Each repo's own `integration-by-batches` skill holds its QA targets, build and g
 8. **Evidence over assumption.** Repo, CI and test output decide. Say "not verified" when it is not.
 9. **Approval is a record, not a reading.** "QA passed", "land it" and "push" are three separate signals; each is the user's answer to its own question. A batch lands only after its `qa_verdict` line is in the log (Step 5), and `land-pr.sh` refuses without it.
 10. **The tree QA saw is the tree that lands.** Every fix lives on its PR's branch before the batch is deployed. A fix that exists only on the integration branch, a cherry-pick past the tag, or a deploy run with `--force`, `--skip-tests` or a dirty tree is not QA of what will merge.
-11. **Every decision for the user goes through the question tool** (`AskUserQuestion`), with options and a recommendation: drafts, QA target, J-calls, freeze, push. A question in prose is missed between status lines.
+11. **Every decision for the user goes through the question tool** (`AskUserQuestion`), with options and a recommendation: QA target, J-calls, freeze, push. A question in prose is missed between status lines.
 
 ## Step 0 — Read the world, in both repos
 
@@ -54,7 +54,7 @@ Group by **subsystem + shared files**, then check each group against four questi
 - **A "tooling/docs" batch is legitimate** even when the PRs are unrelated, if none changes observable behaviour and the files are disjoint. State that reasoning in the plan.
 - **Dependency bumps:** lockfile-only bumps share a batch. A platform or test-runner major upgrade is **alone and last** so a regression is attributable.
 - **Order batches:** behaviour first (conflict-dense PRs go stale fastest), tooling/docs next, deps last.
-- **Drafts are the user's call.** List them and ask. A draft cannot be squash-merged; that stop is the author's.
+- **Drafts are batched like any open PR.** Group them, build them and QA them with the rest, and mark each draft in the plan table. A draft cannot be squash-merged, so landing stops at it with `HELD` until the author marks it ready; that stop is the author's.
 - **Hold, don't merge, any PR with an unresolved security finding.** Report it, don't repair someone's PR without approval of the exact diff, and rebuild the batch without it. A batch QA'd with a local patch validates code that differs from what merges.
 
 ## Step 2 — Write the plan, then wait
