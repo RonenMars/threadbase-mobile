@@ -10,13 +10,13 @@ import { Alert } from 'react-native'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native'
 import { createWrapper } from '@/test-utils'
 import { NetworkError, NotFoundError } from '@/services/api-client'
-import { useAlertStore } from '@/stores/alerts'
 import type { ServerInfo } from '@/types/api'
 
 let mockServerInfo: Pick<ServerInfo, 'handoff'> | undefined
 let mockStatus: 'waiting_input' | 'running' | 'idle' = 'waiting_input'
 let mockOwnership: 'external' | undefined
 const mockHandoff = jest.fn()
+const mockReplace = jest.fn()
 
 // ── heavy native deps ────────────────────────────────────────────────────────
 jest.mock('expo-speech-recognition', () => ({
@@ -109,7 +109,7 @@ jest.mock('@/stores/settings', () => ({
 }))
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1' }),
-  useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
   useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
 }))
 jest.mock('@tanstack/react-query', () => ({
@@ -141,7 +141,7 @@ describe('SessionScreen — hand off to terminal', () => {
     mockStatus = 'waiting_input'
     mockOwnership = undefined
     mockHandoff.mockReset()
-    useAlertStore.getState().reset()
+    mockReplace.mockClear()
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {})
   })
 
@@ -183,7 +183,7 @@ describe('SessionScreen — hand off to terminal', () => {
     expect(screen.getByText('The current turn will be interrupted.')).toBeTruthy()
   })
 
-  it('calls the handoff mutation on confirm and toasts the attach command', async () => {
+  it('calls the handoff mutation on confirm, shows the attach command, and goes home on close', async () => {
     mockHandoff.mockResolvedValue({
       status: 'handed_off',
       tmuxSession: 'threadbase',
@@ -195,13 +195,13 @@ describe('SessionScreen — hand off to terminal', () => {
     expect(mockHandoff).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('session-handoff-dialog')).toBeNull()
     await waitFor(() =>
-      expect(useAlertStore.getState().alerts).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ level: 'info', title: 'Moved to tmux', message: 'Attach with tmux attach -t threadbase' }),
-        ]),
-      ),
+      expect(alertSpy).toHaveBeenCalledWith('Moved to tmux', 'Attach with tmux attach -t threadbase', [
+        expect.objectContaining({ text: 'Close' }),
+      ]),
     )
-    expect(alertSpy).not.toHaveBeenCalled()
+    expect(mockReplace).not.toHaveBeenCalledWith('/')
+    alertSpy.mock.calls[0][2][0].onPress()
+    expect(mockReplace).toHaveBeenCalledWith('/')
   })
 
   it.each([
