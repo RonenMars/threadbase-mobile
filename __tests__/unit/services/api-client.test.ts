@@ -445,6 +445,16 @@ describe('handoffSession', () => {
     )
   })
 
+  it('asks the server to open its terminal app when openTerminal is set', async () => {
+    mockFetch.mockResolvedValueOnce(mockOkResponse({ status: 'handed_off', terminalOpened: true }))
+
+    await handoffSession('srv_test', 'sess1', { openTerminal: true })
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://test.local/api/sessions/sess1/handoff',
+      expect.objectContaining({ method: 'POST', body: '{"openTerminal":true}' }),
+    )
+  })
+
   it('surfaces the server code on a 409 and does not retry a network failure', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,

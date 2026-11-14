@@ -280,7 +280,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
   })
 
   const handoff = useMutation({
-    mutationFn: () => handoffSession(serverId, sessionId),
+    mutationFn: (vars?: { openTerminal?: boolean }) => handoffSession(serverId, sessionId, vars),
     // Settled, not success: LAUNCH_FAILED and a 404 also leave the session stopped.
     onSettled: refreshAfterEnd,
   })
