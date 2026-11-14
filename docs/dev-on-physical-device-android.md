@@ -282,3 +282,37 @@ adb disconnect 192.168.68.112:5555
 
 To remove the app entirely: `adb -s <serial> uninstall com.ronenmars.threadbase`,
 or long-press the icon on the phone → **Uninstall**.
+
+---
+
+## Android push verification record (Phase 3)
+
+Fill-in template for Phase 3 of [android-notifications-plan.md](android-notifications-plan.md#phase-3--verify-on-a-real-phone).
+**No run has been recorded yet.** Every cell below is blank; nothing here is verified.
+
+Before a run: Phase 2 credentials (FCM V1 keys for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.dev`, `GOOGLE_SERVICES_JSON_B64`) must be done.
+The streamer sends attention pushes with `priority: "high"` since v1.48.0; `/api/push/test` is the send-test path.
+Use one table per device: Android 13+ and Android 12 or lower.
+
+| Field | Value |
+|---|---|
+| Device model | — |
+| Android version | — |
+| Build + versionCode | — |
+| Date | — |
+| Tester | — |
+
+| # | Check | Expected | Result (PASS/FAIL/N-A) | Notes |
+|---|---|---|---|---|
+| 1 | Fresh install, onboarding notifications step | 13+: system prompt shown. 12 or lower: no prompt | — | — |
+| 2 | Notification health screen | An `android` token per paired server | — | — |
+| 3 | Send test, foreground | Arrives with correct icon and colour | — | — |
+| 3 | Send test, background | Arrives with correct icon and colour | — | — |
+| 3 | Send test, killed | Arrives with correct icon and colour | — | — |
+| 4 | Attention push, vibration | `needs-you` triple pulse | — | — |
+| 4 | Attention push, Allow/Deny | Buttons answer the gate | — | — |
+| 4 | Attention push, tap on cold start | Opens the right session | — | — |
+| 5 | Live-session ongoing notification | Appears while running, clears when the session ends | — | — |
+| 6 | Mute a channel in system settings | Health screen reports it | — | — |
+| 7 | Change app language | Channel names update in system settings | — | — |
+| 8 | Doze: locked 30 minutes, then test push | Push arrives | — | — |
