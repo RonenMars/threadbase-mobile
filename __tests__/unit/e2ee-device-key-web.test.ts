@@ -19,6 +19,7 @@ import naclUtil from 'tweetnacl-util'
 import {
   canHoldDeviceStaticKey,
   clearDeviceStaticKey,
+  isDeviceStaticKeyWrapped,
   loadDeviceStaticKey,
   loadOrCreateDeviceStaticKey,
   webCryptoStaticKey,
@@ -234,6 +235,7 @@ describe('web device key store', () => {
     await loadOrCreateDeviceStaticKey('srv_web')
     expect(database.get(STORE_KEY)?.privateKey).toBeDefined()
     expect(database.get(STORE_KEY)?.wrappingKey).toBeUndefined()
+    await expect(isDeviceStaticKeyWrapped('srv_web')).resolves.toBe(false)
   })
 
   it('falls back to a wrapped key where the browser drops X25519, and reloads it', async () => {
@@ -245,6 +247,7 @@ describe('web device key store', () => {
     expect(row?.privateKey).toBeUndefined()
     expect(row?.wrappingKey?.extractable).toBe(false)
     expect(row?.wrappingKey?.algorithm.name).toBe('AES-GCM')
+    await expect(isDeviceStaticKeyWrapped('srv_web')).resolves.toBe(true)
 
     const reloaded = await loadDeviceStaticKey('srv_web')
     expect(reloaded && b64url(reloaded.publicKey)).toBe(b64url(created.publicKey))

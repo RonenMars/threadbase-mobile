@@ -214,6 +214,15 @@ export async function clearDeviceStaticKey(serverId: string): Promise<void> {
   await inStore('readwrite', (store) => store.delete(deviceStaticKeyStoreKey(serverId)))
 }
 
+/** Whether this browser fell back to the weaker wrapped key for a server. */
+export async function isDeviceStaticKeyWrapped(serverId: string): Promise<boolean> {
+  if (typeof indexedDB === 'undefined') return false
+  const stored = await inStore<StoredKey | undefined>('readonly', (store) =>
+    store.get(deviceStaticKeyStoreKey(serverId)),
+  )
+  return isWrappedKeyRecord(stored)
+}
+
 /** Load-only: `/open` must never mint a key the server has no device row for. */
 export async function loadDeviceStaticKey(serverId: string): Promise<StaticKey | null> {
   if (typeof indexedDB === 'undefined') return null

@@ -42,6 +42,7 @@ A lost key during that check now refuses as `e2ee-web-unsupported` (`E2EE_NOT_PA
 > **The WebKit fallback is a weaker guarantee than a non-extractable key.**
 > A script running on the app's origin can call `unwrapKey` with `extractable: true` and export the private key as bytes, which a non-extractable `CryptoKeyPair` never allows.
 > This applies only to browsers that fail the store-and-read-back test (today every iOS browser); Chromium and native apps are unaffected.
+> Users see it too: Edit Server's encryption section shows a yellow warning on any server whose key is wrapped (`isDeviceStaticKeyWrapped`).
 > It changes nothing for the origin's owner, who could already misuse the key in place (see "Whoever serves the web build controls it" below), but it makes an origin compromise able to keep the key after the page closes.
 
 **The browser must have WebCrypto X25519 and IndexedDB.**

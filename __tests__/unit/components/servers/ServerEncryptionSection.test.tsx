@@ -1,6 +1,7 @@
 import React from 'react'
 import { Alert } from 'react-native'
-import { fireEvent } from '@testing-library/react-native'
+import { fireEvent, waitFor } from '@testing-library/react-native'
+import * as deviceKey from '@/services/e2ee/device-key'
 import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSection'
 import { useServersStore } from '@/stores/servers'
 import { renderWithI18n } from '@/test-utils/render'
@@ -46,6 +47,22 @@ beforeEach(() => {
 })
 
 describe('ServerEncryptionSection', () => {
+  it('warns, in yellow, where this browser keeps a wrapped key for the server', async () => {
+    seedServer()
+    const probe = jest.spyOn(deviceKey, 'isDeviceStaticKeyWrapped').mockResolvedValue(true)
+    const { findByTestId } = await renderWithI18n(<ServerEncryptionSection serverId={SERVER_ID} />)
+    expect(await findByTestId('server-wrapped-key-warning')).toBeTruthy()
+    expect(probe).toHaveBeenCalledWith(SERVER_ID)
+  })
+
+  it('shows no key warning where the key is stored directly', async () => {
+    seedServer()
+    const probe = jest.spyOn(deviceKey, 'isDeviceStaticKeyWrapped').mockResolvedValue(false)
+    const { queryByTestId } = await renderWithI18n(<ServerEncryptionSection serverId={SERVER_ID} />)
+    await waitFor(() => expect(probe).toHaveBeenCalled())
+    expect(queryByTestId('server-wrapped-key-warning')).toBeNull()
+  })
+
   it('asks for the pin as a demand rather than describing a state', async () => {
     seedServer()
     const { getByText } = await renderWithI18n(<ServerEncryptionSection serverId={SERVER_ID} />)
