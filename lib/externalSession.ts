@@ -19,7 +19,7 @@ export function isExternalSession(s: Pick<Session, 'ownership'>): boolean {
  * pid fallback for older servers that send `pid` for a discovered process but
  * none of the new fields (managed PTY + historical shapes never carry `pid`).
  */
-export function isExternalAlive(
+export function isExternalLive(
   s: Pick<Session, 'processLiveness' | 'activity' | 'pid'>,
 ): boolean {
   // New-server signals are authoritative when present.

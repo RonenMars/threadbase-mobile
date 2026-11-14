@@ -57,6 +57,8 @@
     "activityLive_other": "{{count}} live",
     "activityNeedsYou_one": "{{count}} needs you",
     "activityNeedsYou_other": "{{count}} need you",
+    "activityExternal_one": "{{count}} external",
+    "activityExternal_other": "{{count}} external",
     "activityToday": "{{total}} today",
     "activityLast": "last {{time}}",
     "timeNow": "now",

@@ -1,3 +1,4 @@
+import { isExternalLive } from '@/lib/externalSession'
 import type { AgentPhase, Session, SessionLifecycle, SessionStatus, UnavailableReason } from '@/types/api'
 
 /**
@@ -123,16 +124,6 @@ function isExternalSession(s: Pick<SessionPresentationInput, 'ownership'>): bool
   return s.ownership === 'external'
 }
 
-function isExternalAlive(
-  s: Pick<SessionPresentationInput, 'processLiveness' | 'activity' | 'pid'>,
-): boolean {
-  if (s.processLiveness === 'alive') return true
-  if (s.processLiveness === 'gone') return false
-  if (s.activity?.state === 'active_writing') return true
-  if (s.processLiveness == null && s.activity == null && s.pid != null) return true
-  return false
-}
-
 const OBSERVE_ONLY: SessionCapabilities = {
   canSendInput: false,
   canCancel: false,
@@ -243,7 +234,7 @@ function classifySession(
   session: SessionPresentationInput,
 ): Omit<SessionPresentation, 'subStatus' | 'tier'> {
   const external = isExternalSession(session)
-  const externalAlive = external && isExternalAlive(session)
+  const externalAlive = external && isExternalLive(session)
   const status = session.status
   const confidence = confidenceFor(session)
   const activityAt = activityAtFor(session)

@@ -158,15 +158,50 @@ describe('ProjectHubCard', () => {
     expect(push).toHaveBeenCalledWith('/project/project-1?path=%2Ftmp%2Fproject&server=srv-2')
   })
 
-  it('shows live outside conversations on the project header', async () => {
+  it('labels live outside conversations as external, not live', async () => {
     const live: ProjectGroup = { ...group, sessions: [], liveExternalCount: 2 }
-    const { getByText } = await renderCard(false, live)
-    expect(getByText(/2 live/)).toBeTruthy()
+    const { getByText, queryByText } = await renderCard(false, live)
+    expect(getByText(/2 external/)).toBeTruthy()
+    expect(queryByText(/live/)).toBeNull()
   })
 
-  it('shows no live count when the project has none outside', async () => {
+  it('does not read 1 live for a card with one external session only', async () => {
+    const one: ProjectGroup = { ...group, sessions: [], liveExternalCount: 1 }
+    const { getByText, queryByText } = await renderCard(false, one)
+    expect(getByText(/1 external/)).toBeTruthy()
+    expect(queryByText(/1 live/)).toBeNull()
+  })
+
+  it('counts a live external session in the group as external, not live', async () => {
+    const ext: ProjectGroup = {
+      ...group,
+      liveExternalCount: 0,
+      sessions: [{ ...session, ownership: 'external', processLiveness: 'alive', ptyAttached: false }],
+    }
+    const { getByText, queryByText } = await renderCard(false, ext)
+    expect(getByText(/1 external/)).toBeTruthy()
+    expect(queryByText(/live/)).toBeNull()
+  })
+
+  it('shows live and external side by side', async () => {
+    const both: ProjectGroup = { ...todayGroup, liveExternalCount: 2 }
+    const { getByText } = await renderCard(false, both)
+    expect(getByText(/1 live · 2 external · 1 today · last/)).toBeTruthy()
+  })
+
+  it('keeps needs-you ahead of live and still shows external', async () => {
+    const waiting: ProjectGroup = {
+      ...group,
+      liveExternalCount: 2,
+      sessions: [{ ...session, status: 'waiting_input', ptyAttached: true, startedAt: new Date().toISOString() }],
+    }
+    const { getByText } = await renderCard(false, waiting)
+    expect(getByText(/1 needs you · 2 external · 1 today · last/)).toBeTruthy()
+  })
+
+  it('shows no live or external count when the project has none outside', async () => {
     const quiet: ProjectGroup = { ...group, sessions: [], liveExternalCount: 0 }
     const { queryByText } = await renderCard(false, quiet)
-    expect(queryByText(/live/)).toBeNull()
+    expect(queryByText(/live|external/)).toBeNull()
   })
 })
