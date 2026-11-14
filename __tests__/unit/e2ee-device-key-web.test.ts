@@ -20,6 +20,8 @@ import {
   canHoldDeviceStaticKey,
   clearDeviceStaticKey,
   isDeviceStaticKeyWrapped,
+  browserNeedsWrappedKey,
+  _resetWrapProbeForTests,
   loadDeviceStaticKey,
   loadOrCreateDeviceStaticKey,
   webCryptoStaticKey,
@@ -270,6 +272,17 @@ describe('web device key store', () => {
     } finally {
       unwrapKey.mockRestore()
     }
+  })
+
+  it('probes the browser without leaving a key behind', async () => {
+    _resetWrapProbeForTests()
+    await expect(browserNeedsWrappedKey()).resolves.toBe(false)
+    expect(database.size).toBe(0)
+
+    _resetWrapProbeForTests()
+    dropsX25519 = true
+    await expect(browserNeedsWrappedKey()).resolves.toBe(true)
+    expect(database.size).toBe(0)
   })
 
   it('clears the key under the same logical store key', async () => {
