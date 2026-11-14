@@ -40,7 +40,7 @@ A box is ticked only with the evidence written beside it.
 - [ ] Change app language: channel names update in system settings.
 - [ ] Doze: 30 minutes locked, then a push arrives.
 - [ ] Record model, Android version and date in `docs/dev-on-physical-device-android.md`.
-  Template: "Android push verification record (Phase 3)" in that file.
+  Template: "Notifications on a physical device" in that file.
 - [ ] Run `npm run test:e2e:mock` on an Android emulator once, so `android_notifications_health.yaml` is confirmed.
 
 ## Where we are
