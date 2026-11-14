@@ -544,6 +544,25 @@ export async function stopSessionWhenIdle(
   throw new NetworkError(`stop when idle: unexpected response ${JSON.stringify(body)}`)
 }
 
+export interface HandoffResult {
+  status: 'handed_off'
+  tmuxSession: string
+  window: string
+  attachCommand: string
+}
+
+// POST /api/sessions/:id/handoff: the server stops the PTY and resumes the
+// conversation in tmux. Not retried: a replay after the stop would find the
+// session gone, and the server needs up to ~8 s for SIGINT, SIGKILL and the
+// pane check.
+export async function handoffSession(serverId: string, sessionId: string): Promise<HandoffResult> {
+  return createApiForServer(serverId).post<HandoffResult>(
+    `/api/sessions/${encodeURIComponent(sessionId)}/handoff`,
+    {},
+    { retry: false, timeoutMs: 15_000 },
+  )
+}
+
 // Conditional GET that surfaces the response status + ETag to the caller.
 // Used for the conversation-detail freshness check: send `If-None-Match` and
 // short-circuit on `304 Not Modified` (empty body) so the cached copy is kept.
