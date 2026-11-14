@@ -1,5 +1,6 @@
 import {
   createApiForServer,
+  handoffSession,
   resolveCacheAlert,
   stopSession,
   NetworkError,
@@ -429,6 +430,54 @@ describe('api.post – 409 reason fallback (question_gone)', () => {
     await expect(api.post('/api/sessions/sess1/answer', {})).rejects.toMatchObject({
       code: undefined,
     })
+  })
+})
+
+describe('handoffSession', () => {
+  it('POSTs an empty JSON body to the session handoff route and returns the result', async () => {
+    const result = { status: 'handed_off', tmuxSession: 'threadbase', window: 'proj-abc123', attachCommand: 'tmux attach -t threadbase' }
+    mockFetch.mockResolvedValueOnce(mockOkResponse(result))
+
+    await expect(handoffSession('srv_test', 'sess 1')).resolves.toEqual(result)
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://test.local/api/sessions/sess%201/handoff',
+      expect.objectContaining({ method: 'POST', body: '{}' }),
+    )
+  })
+
+  it('surfaces the server code on a 409 and does not retry a network failure', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: jest.fn().mockResolvedValue({ error: 'nothing to resume', code: 'NOTHING_TO_RESUME' }),
+    })
+    await expect(handoffSession('srv_test', 'sess1')).rejects.toMatchObject({ code: 'NOTHING_TO_RESUME' })
+
+    mockFetch.mockReset()
+    mockFetch.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await expect(handoffSession('srv_test', 'sess1')).rejects.toThrow(NetworkError)
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits 15 s before timing out, past the 8 s first-attempt default', async () => {
+    jest.useFakeTimers()
+    try {
+      let signal: AbortSignal | undefined
+      mockFetch.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+        signal = init.signal
+        return new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        })
+      })
+
+      const assertion = expect(handoffSession('srv_test', 'sess1')).rejects.toMatchObject({ code: 'TIMEOUT' })
+      await jest.advanceTimersByTimeAsync(14_999)
+      expect(signal?.aborted).toBe(false)
+      await jest.advanceTimersByTimeAsync(2)
+      await assertion
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })
 

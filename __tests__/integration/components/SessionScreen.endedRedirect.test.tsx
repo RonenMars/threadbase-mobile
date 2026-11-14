@@ -215,4 +215,22 @@ describe('SessionScreen — ended-session redirect', () => {
     expect(queryByText('Starting session…')).toBeNull()
     expect(mockReplace).not.toHaveBeenCalled()
   })
+
+  // Resume / Take over land here with starting=1. Once the PTY has attached, a
+  // later stop (hand off, hold) is an end, not a start: it opens history
+  // instead of stranding the screen on "Starting session…".
+  it('redirects a starting=1 session that attached and was then stopped', async () => {
+    mockParams = { id: PLACEHOLDER_UUID, server: 'srv1', starting: '1' }
+    mockSessionData = endedSession({
+      conversationId: PLACEHOLDER_UUID,
+      ptyAttached: true,
+      status: 'waiting_input',
+      lifecycle: 'attached',
+    })
+    const { rerender, queryByText } = await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    mockSessionData = endedSession({ conversationId: PLACEHOLDER_UUID, lifecycle: 'resumable' })
+    await rerender(<SessionDetailScreen />)
+    expect(queryByText('Starting session…')).toBeNull()
+    expect(mockReplace).toHaveBeenCalledWith(`/conversation/${PLACEHOLDER_UUID}?server=srv1`)
+  })
 })
