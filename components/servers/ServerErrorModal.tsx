@@ -18,6 +18,7 @@ import { wsManager } from '@/services/ws-client'
 import { wsPermanentErrorMessage } from '@/components/servers/wsPermanentErrorMessage'
 import { safeHostname } from '@/lib/serverUrl'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
+import { webModalWidth } from '@/lib/webModal'
 
 interface Props {
   visible: boolean
@@ -120,6 +121,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.xl,
     },
     modal: {
+      ...webModalWidth,
       width: '100%',
       // Opaque under glass — can stack over the Servers Status modal; a
       // translucent sheet over a translucent sheet bleeds text through.

@@ -67,6 +67,7 @@ import { recordDiagnosticEvent } from '@/services/diagnostic-events'
 import { ONBOARDING_RESUME_KEY, parseOnboardingResume } from '@/lib/onboarding-resume'
 import { useAppDirection } from '@/lib/rtl'
 import { DirectionRoot } from '@/lib/direction-root'
+import { WEB_FRAME_GUTTER, WEB_MAX_CONTENT_WIDTH } from '@/lib/webModal'
 
 /** Read at tap time, not render time: the store may have changed since the push arrived. */
 const isKnownServer = (serverId: string) => useServersStore.getState().getServer(serverId) !== undefined
@@ -550,11 +551,7 @@ export function ThemedStack({ router }: { router: ReturnType<typeof useRouter> }
   return <NavThemeProvider value={navTheme}>{stack}</NavThemeProvider>
 }
 
-// Web only: the layout is phone-first, so on a wide browser window it keeps a
-// tablet-width card centered instead of stretching rows and the FAB edge to edge.
 // Narrower windows get the plain full-bleed phone layout.
-const WEB_MAX_CONTENT_WIDTH = 768
-const WEB_FRAME_GUTTER = 24
 
 function WebFrame({ children }: { children: React.ReactNode }) {
   const theme = useTheme()

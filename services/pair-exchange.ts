@@ -18,7 +18,7 @@ import { canHoldDeviceStaticKey } from '@/services/e2ee/device-key'
 import { invalidateRestContext } from '@/services/e2ee/rest-session'
 import { HEADER_RELAY_ERROR } from '@/services/e2ee/context'
 import { FIRST_ADDRESS_TIMEOUT_MS, isRelayRoute } from '@/services/server-addresses'
-import { authedFetch } from '@/services/authed-fetch'
+import { authedFetch, EnvelopeError } from '@/services/authed-fetch'
 import type { NoiseInitiator } from '@/services/e2ee/noise'
 
 export interface PairUri {
@@ -592,6 +592,9 @@ async function assertWebServerAcceptsSealedSocket(target: {
   requireEncryption: true
 }): Promise<void> {
   let info: ServerInfo | null = null
+  // A key this browser lost between pairing and `/open` is a local failure, not
+  // an old streamer, and saying "update the streamer" sends the user the wrong way.
+  let lostDeviceKey = false
   // Without a key `authedFetch` would not seal, so there is no request to make.
   if (target.serverPublicKey) {
     const controller = new AbortController()
@@ -602,8 +605,9 @@ async function assertWebServerAcceptsSealedSocket(target: {
         const parsed: ServerInfo | null = await res.json().catch(() => null)
         info = parsed !== null && typeof parsed === 'object' ? parsed : null
       }
-    } catch {
+    } catch (err) {
       info = null
+      lostDeviceKey = err instanceof EnvelopeError && err.code === 'E2EE_NOT_PAIRED'
     } finally {
       clearTimeout(timeoutId)
     }
@@ -616,6 +620,9 @@ async function assertWebServerAcceptsSealedSocket(target: {
   } catch {
     // The refusal below stands regardless. A key left behind is reused, not
     // duplicated, by the next pairing with this server.
+  }
+  if (lostDeviceKey) {
+    throw new PairExchangeError('e2ee-web-unsupported', 'This browser could not keep its encryption key')
   }
   throw new PairExchangeError(
     'e2ee-web-server-unsupported',

@@ -26,6 +26,16 @@ export async function canHoldDeviceStaticKey(): Promise<boolean> {
   return true
 }
 
+/** Native never wraps a key, so no pairing here needs the weaker fallback. */
+export async function browserNeedsWrappedKey(): Promise<boolean> {
+  return false
+}
+
+/** Native never wraps its key: the Keychain / Keystore holds the raw bytes. */
+export async function isDeviceStaticKeyWrapped(_serverId: string): Promise<boolean> {
+  return false
+}
+
 /**
  * Forgets this device's static key for a server.
  *

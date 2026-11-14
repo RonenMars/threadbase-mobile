@@ -14,6 +14,7 @@ import React from 'react'
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
 import { ServerEditModal } from '@/components/servers/ServerEditModal'
 import en from '@/locales/en/common.json'
+import * as deviceKey from '@/services/e2ee/device-key'
 
 jest.mock('@/components/pair/PairScannerModal', () => ({
   PairScannerModal: () => null,
@@ -92,5 +93,22 @@ describe('ServerEditModal – API key visibility toggle', () => {
 
     await fireEvent.press(screen.getByTestId('server-form-toggle-api-key'))
     expect(keyInput.props.secureTextEntry).toBe(true)
+  })
+})
+
+describe('ServerEditModal – weaker key warning', () => {
+  afterEach(() => jest.restoreAllMocks())
+
+  it('warns in add mode where this browser would wrap the key', async () => {
+    jest.spyOn(deviceKey, 'browserNeedsWrappedKey').mockResolvedValue(true)
+    const screen = await render(<ServerEditModal visible serverId={null} onClose={jest.fn()} />)
+    expect(await screen.findByTestId('wrapped-key-warning')).toBeTruthy()
+  })
+
+  it('shows no warning in add mode where the browser keeps the key directly', async () => {
+    const probe = jest.spyOn(deviceKey, 'browserNeedsWrappedKey').mockResolvedValue(false)
+    const screen = await render(<ServerEditModal visible serverId={null} onClose={jest.fn()} />)
+    await waitFor(() => expect(probe).toHaveBeenCalled())
+    expect(screen.queryByTestId('wrapped-key-warning')).toBeNull()
   })
 })

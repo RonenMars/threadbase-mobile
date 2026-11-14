@@ -19,6 +19,9 @@ import naclUtil from 'tweetnacl-util'
 import {
   canHoldDeviceStaticKey,
   clearDeviceStaticKey,
+  isDeviceStaticKeyWrapped,
+  browserNeedsWrappedKey,
+  _resetWrapProbeForTests,
   loadDeviceStaticKey,
   loadOrCreateDeviceStaticKey,
   webCryptoStaticKey,
@@ -32,10 +35,17 @@ import recordVectors from '@/__tests__/fixtures/e2ee-record-vectors.json'
 
 type Handler = (() => void) | null
 
-function hostClone(value: CryptoKeyPair): Promise<CryptoKeyPair> {
+/** A direct key pair, or the WebKit fallback's wrapped record. */
+type StoredRow = Partial<CryptoKeyPair> & {
+  wrappingKey?: CryptoKey
+  wrappedPrivateKey?: ArrayBuffer
+  iv?: Uint8Array<ArrayBuffer>
+}
+
+function hostClone<T>(value: T): Promise<T> {
   const { port1, port2 } = new MessageChannel()
   return new Promise((resolve) => {
-    port2.once('message', (cloned: CryptoKeyPair) => {
+    port2.once('message', (cloned: T) => {
       port1.close()
       resolve(cloned)
     })
@@ -56,7 +66,7 @@ class FakeTransaction {
   onerror: Handler = null
   onabort: Handler = null
   error: DOMException | null = null
-  constructor(private readonly rows: Map<string, CryptoKeyPair>) {}
+  constructor(private readonly rows: Map<string, StoredRow | null>) {}
 
   objectStore() {
     const tx = this
@@ -74,9 +84,10 @@ class FakeTransaction {
         const row = this.rows.get(key)
         return run(async () => (row ? hostClone(row) : undefined))
       },
-      put: (value: CryptoKeyPair, key: string) =>
+      put: (value: StoredRow, key: string) =>
         run(async () => {
-          this.rows.set(key, await hostClone(value))
+          // WebKit commits an X25519 CryptoKey without error and reads it back as null.
+          this.rows.set(key, dropsX25519 && value.privateKey ? null : await hostClone(value))
           return key
         }),
       delete: (key: string) =>
@@ -88,8 +99,9 @@ class FakeTransaction {
   }
 }
 
-const database = new Map<string, CryptoKeyPair>()
+const database = new Map<string, StoredRow | null>()
 let databaseCreated = false
+let dropsX25519 = false
 
 const fakeIndexedDB = {
   open() {
@@ -123,6 +135,7 @@ function installIndexedDB(present: boolean) {
 beforeEach(() => {
   database.clear()
   databaseCreated = false
+  dropsX25519 = false
   installIndexedDB(true)
 })
 
@@ -198,10 +211,10 @@ describe('web device key store', () => {
   it('stores a non-extractable private key that exportKey refuses', async () => {
     await loadOrCreateDeviceStaticKey('srv_web')
     const stored = database.get(STORE_KEY)
-    expect(stored?.privateKey.extractable).toBe(false)
-    expect(stored?.privateKey.algorithm.name).toBe('X25519')
-    await expect(crypto.subtle.exportKey('pkcs8', stored!.privateKey)).rejects.toThrow()
-    await expect(crypto.subtle.exportKey('jwk', stored!.privateKey)).rejects.toThrow()
+    expect(stored?.privateKey?.extractable).toBe(false)
+    expect(stored?.privateKey?.algorithm.name).toBe('X25519')
+    await expect(crypto.subtle.exportKey('pkcs8', stored!.privateKey!)).rejects.toThrow()
+    await expect(crypto.subtle.exportKey('jwk', stored!.privateKey!)).rejects.toThrow()
     // Positive control: an extractable key of the same kind DOES export, so the
     // refusal above is the extractable flag and not an unsupported format.
     const extractable = await importFixedKeyPair(new Uint8Array(32).fill(5))
@@ -217,7 +230,59 @@ describe('web device key store', () => {
     expect(b64url(key.publicKey)).not.toBe(
       b64url(generateKeyPairFromSeed(new Uint8Array(32).fill(6)).publicKey),
     )
-    expect(database.get(STORE_KEY)?.privateKey.extractable).toBe(false)
+    expect(database.get(STORE_KEY)?.privateKey?.extractable).toBe(false)
+  })
+
+  it('keeps a direct pair, not a wrapped one, where the browser stores X25519', async () => {
+    await loadOrCreateDeviceStaticKey('srv_web')
+    expect(database.get(STORE_KEY)?.privateKey).toBeDefined()
+    expect(database.get(STORE_KEY)?.wrappingKey).toBeUndefined()
+    await expect(isDeviceStaticKeyWrapped('srv_web')).resolves.toBe(false)
+  })
+
+  it('falls back to a wrapped key where the browser drops X25519, and reloads it', async () => {
+    dropsX25519 = true
+
+    const created = await loadOrCreateDeviceStaticKey('srv_web')
+
+    const row = database.get(STORE_KEY)
+    expect(row?.privateKey).toBeUndefined()
+    expect(row?.wrappingKey?.extractable).toBe(false)
+    expect(row?.wrappingKey?.algorithm.name).toBe('AES-GCM')
+    await expect(isDeviceStaticKeyWrapped('srv_web')).resolves.toBe(true)
+
+    const reloaded = await loadDeviceStaticKey('srv_web')
+    expect(reloaded && b64url(reloaded.publicKey)).toBe(b64url(created.publicKey))
+    const again = await loadOrCreateDeviceStaticKey('srv_web')
+    expect(b64url(again.publicKey)).toBe(b64url(created.publicKey))
+    const peer = generateKeyPairFromSeed(new Uint8Array(32).fill(4))
+    expect(b64url(await reloaded!.dh(peer.publicKey))).toBe(
+      b64url(sharedKey(peer.secretKey, created.publicKey, true)),
+    )
+  })
+
+  it('unwraps the fallback key as non-extractable', async () => {
+    dropsX25519 = true
+    const unwrapKey = jest.spyOn(crypto.subtle, 'unwrapKey')
+    try {
+      await loadOrCreateDeviceStaticKey('srv_web')
+      const unwrapped = await unwrapKey.mock.results.at(-1)!.value
+      expect(unwrapped.extractable).toBe(false)
+      expect(unwrapKey.mock.calls.every((call) => call[5] === false)).toBe(true)
+    } finally {
+      unwrapKey.mockRestore()
+    }
+  })
+
+  it('probes the browser without leaving a key behind', async () => {
+    _resetWrapProbeForTests()
+    await expect(browserNeedsWrappedKey()).resolves.toBe(false)
+    expect(database.size).toBe(0)
+
+    _resetWrapProbeForTests()
+    dropsX25519 = true
+    await expect(browserNeedsWrappedKey()).resolves.toBe(true)
+    expect(database.size).toBe(0)
   })
 
   it('clears the key under the same logical store key', async () => {

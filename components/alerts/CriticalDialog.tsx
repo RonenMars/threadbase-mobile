@@ -16,6 +16,7 @@ import { alertAppearance } from '@/lib/alertAppearance'
 import { getAlertLevelLabel } from '@/lib/alertLabels'
 import { blockTextDirectionStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
 import type { AlertButtonVariant, AlertLevel } from '@/types/alerts'
+import { webModalWidth } from '@/lib/webModal'
 
 const TARGET = 44
 
@@ -169,6 +170,7 @@ function makeStyles(theme: Theme) {
       paddingHorizontal: spacing.xl,
     },
     card: {
+      ...webModalWidth,
       width: '100%',
       backgroundColor: theme.bg.card,
       borderRadius: radius.lg,
