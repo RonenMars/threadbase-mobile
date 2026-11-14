@@ -9,7 +9,7 @@
 
 | Item | State |
 |---|---|
-| 1.1 status-bar icon | Not started — needs a white-on-transparent glyph asset from design |
+| 1.1 status-bar icon | In PR — stand-in glyph derived from the logo (`assets/notification-icon.png`, design may replace it), not device-verified |
 | 1.2 channels before prompt | Done — `requestNotificationPermission()` in `services/push.ts`, used by onboarding and Settings |
 | 1.3 denied-forever | Done — Settings row re-prompts while `canAskAgain`, then opens system settings |
 | 1.4 channel health | Done — `hooks/useMutedChannels.ts`, shown on the notification health screen |
