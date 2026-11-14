@@ -12,6 +12,10 @@ export const WEB_FRAME_GUTTER = 24
 export const webModalWidth: ViewStyle =
   Platform.OS === 'web' ? { width: '100%', maxWidth: 520, alignSelf: 'center' } : {}
 
+/** Like `webModalWidth`, for a sheet attached to the screen's bottom edge: it takes the frame's width. */
+export const webSheetWidth: ViewStyle =
+  Platform.OS === 'web' ? { width: '100%', maxWidth: WEB_MAX_CONTENT_WIDTH, alignSelf: 'center' } : {}
+
 /**
  * Padding for a full-window overlay so content anchored to its edges (a header
  * dropdown) lands at the web frame's edges, not the browser window's.

@@ -14,7 +14,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { CopyButton } from '@/components/shared/CopyButton'
 import { ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
-import { webModalWidth } from '@/lib/webModal'
+import { webSheetWidth } from '@/lib/webModal'
 
 export interface InfoField {
   label: string
@@ -94,7 +94,7 @@ function makeStyles(theme: Theme) {
       backgroundColor: 'rgba(0,0,0,0.5)',
     },
     sheet: {
-      ...webModalWidth,
+      ...webSheetWidth,
       backgroundColor: theme.bg.secondary,
       borderTopLeftRadius: 16,
       borderTopRightRadius: 16,
