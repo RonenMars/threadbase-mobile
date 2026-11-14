@@ -31,6 +31,19 @@ Removing a server and hand-editing its URL or API key leave the key in place, so
 Forgetting a device means the next pairing mints a new identity, and a revoked row for the old key is never restored.
 The `localStorage` SecureStore shim never holds a device key.
 
+**WebKit drops a stored X25519 key, so iPhone browsers get a wrapped key instead.**
+Every iOS browser is WebKit, and WebKit's IndexedDB commits an X25519 `CryptoKey` without error and then reads it back as `null` (reproduced in Playwright WebKit, 2026-11-14; ECDH P-256 survives, Chromium keeps X25519).
+The symptom was a pairing that succeeded on the streamer and then failed with "This streamer needs an update": the sealed `/api/info` check found no key, `/open` never left the browser, and the failure was reported as an old streamer.
+`loadOrCreateDeviceStaticKey` therefore reads the key back after storing it, and only when that read comes back empty does it store a fallback record: a non-extractable AES-GCM wrapping key, the X25519 private key wrapped as `pkcs8`, its IV and the raw public key.
+On load the private key is unwrapped as non-extractable, so the key in use is the same kind as on Chromium.
+A lost key during that check now refuses as `e2ee-web-unsupported` (`E2EE_NOT_PAIRED` from the sealed request), not as `e2ee-web-server-unsupported`.
+
+> [!WARNING]
+> **The WebKit fallback is a weaker guarantee than a non-extractable key.**
+> A script running on the app's origin can call `unwrapKey` with `extractable: true` and export the private key as bytes, which a non-extractable `CryptoKeyPair` never allows.
+> This applies only to browsers that fail the store-and-read-back test (today every iOS browser); Chromium and native apps are unaffected.
+> It changes nothing for the origin's owner, who could already misuse the key in place (see "Whoever serves the web build controls it" below), but it makes an origin compromise able to keep the key after the page closes.
+
 **The browser must have WebCrypto X25519 and IndexedDB.**
 Probed by generating a throwaway key, since a browser can expose `crypto.subtle` without X25519.
 Missing either refuses encrypted pairing as `e2ee-web-unsupported`.

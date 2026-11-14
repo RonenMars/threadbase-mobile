@@ -17,6 +17,24 @@ const DB_VERSION = 1
 const STORE_NAME = 'device-keys'
 const X25519 = 'X25519'
 const SHARED_SECRET_BITS = 256
+const AES_GCM = 'AES-GCM'
+
+/**
+ * The WebKit fallback. WebKit (Safari, and every iOS browser) commits an X25519
+ * `CryptoKey` to IndexedDB without error and reads it back as `null`, while an
+ * AES-GCM `CryptoKey` survives. So there the private key is stored wrapped under
+ * a non-extractable AES key. This is weaker than the direct record: a script on
+ * this origin can `unwrapKey` it as extractable and read the bytes out. Used only
+ * when the direct record fails its read-back — see docs/e2ee-client.md.
+ */
+interface WrappedKeyRecord {
+  wrappingKey: CryptoKey
+  wrappedPrivateKey: ArrayBuffer
+  iv: Uint8Array<ArrayBuffer>
+  publicKey: Uint8Array<ArrayBuffer>
+}
+
+type StoredKey = CryptoKeyPair | WrappedKeyRecord
 
 /** The same logical key native uses in SecureStore, so both platforms describe one record. */
 function deviceStaticKeyStoreKey(serverId: string): string {
@@ -60,10 +78,11 @@ async function inStore<T>(
   }
 }
 
-function isUsableKeyPair(value: CryptoKeyPair | undefined): value is CryptoKeyPair {
+function isUsableKeyPair(value: StoredKey | undefined): value is CryptoKeyPair {
   return (
     typeof value === 'object' &&
     value !== null &&
+    'privateKey' in value &&
     value.privateKey instanceof CryptoKey &&
     value.publicKey instanceof CryptoKey &&
     value.privateKey.algorithm.name === X25519 &&
@@ -125,11 +144,68 @@ export async function webCryptoStaticKey(pair: CryptoKeyPair): Promise<StaticKey
   }
 }
 
+function isWrappedKeyRecord(value: StoredKey | undefined): value is WrappedKeyRecord {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'wrappingKey' in value &&
+    value.wrappingKey instanceof CryptoKey &&
+    value.wrappingKey.extractable === false &&
+    value.wrappedPrivateKey instanceof ArrayBuffer &&
+    value.iv instanceof Uint8Array &&
+    value.publicKey instanceof Uint8Array
+  )
+}
+
+async function unwrapKeyPair(record: WrappedKeyRecord): Promise<CryptoKeyPair | null> {
+  try {
+    return {
+      privateKey: await crypto.subtle.unwrapKey(
+        'pkcs8',
+        record.wrappedPrivateKey,
+        record.wrappingKey,
+        { name: AES_GCM, iv: record.iv },
+        { name: X25519 },
+        false,
+        ['deriveBits'],
+      ),
+      publicKey: await crypto.subtle.importKey('raw', record.publicKey, { name: X25519 }, true, []),
+    }
+  } catch {
+    return null
+  }
+}
+
+async function createWrappedKeyRecord(): Promise<WrappedKeyRecord> {
+  const wrappingKey = await crypto.subtle.generateKey({ name: AES_GCM, length: 256 }, false, [
+    'wrapKey',
+    'unwrapKey',
+  ])
+  const pair = (await crypto.subtle.generateKey({ name: X25519 }, true, [
+    'deriveBits',
+  ])) as CryptoKeyPair
+  const iv = crypto.getRandomValues(new Uint8Array(12))
+  return {
+    wrappingKey,
+    wrappedPrivateKey: await crypto.subtle.wrapKey('pkcs8', pair.privateKey, wrappingKey, {
+      name: AES_GCM,
+      iv,
+    }),
+    iv,
+    publicKey: new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey)),
+  }
+}
+
+async function writeKey(serverId: string, value: StoredKey): Promise<void> {
+  await inStore('readwrite', (store) => store.put(value, deviceStaticKeyStoreKey(serverId)))
+}
+
 async function readKeyPair(serverId: string): Promise<CryptoKeyPair | null> {
-  const stored = await inStore<CryptoKeyPair | undefined>('readonly', (store) =>
+  const stored = await inStore<StoredKey | undefined>('readonly', (store) =>
     store.get(deviceStaticKeyStoreKey(serverId)),
   )
-  return isUsableKeyPair(stored) ? stored : null
+  if (isUsableKeyPair(stored)) return stored
+  return isWrappedKeyRecord(stored) ? unwrapKeyPair(stored) : null
 }
 
 export async function clearDeviceStaticKey(serverId: string): Promise<void> {
@@ -162,6 +238,16 @@ export async function loadOrCreateDeviceStaticKey(serverId: string): Promise<Sta
   const created = (await crypto.subtle.generateKey({ name: X25519 }, false, [
     'deriveBits',
   ])) as CryptoKeyPair
-  await inStore('readwrite', (store) => store.put(created, deviceStaticKeyStoreKey(serverId)))
-  return webCryptoStaticKey(created)
+  await writeKey(serverId, created)
+  // Read back, never trust the commit: WebKit reports success and stores null.
+  // Returning the unread key there would pair a device that cannot reopen.
+  const stored = (await readKeyPair(serverId)) ?? (await storeWrappedKey(serverId))
+  return webCryptoStaticKey(stored)
+}
+
+async function storeWrappedKey(serverId: string): Promise<CryptoKeyPair> {
+  await writeKey(serverId, await createWrappedKeyRecord())
+  const stored = await readKeyPair(serverId)
+  if (!stored) throw new Error('This browser cannot keep an encryption key')
+  return stored
 }
