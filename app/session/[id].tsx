@@ -40,7 +40,7 @@ import { CLAUDE_CODE_PROVIDER } from '@/constants/providers'
 import { findProviderHealth } from '@/types/provider-health'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { globalSurface } from '@/lib/alertArbitration'
-import { useAlertStore, type AlertInput } from '@/stores/alerts'
+import type { AlertInput } from '@/stores/alerts'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
@@ -515,7 +515,11 @@ export default function SessionDetailScreen() {
   // A `starting=1` route whose PTY is already attached is not starting any
   // more: its session_ready fired before we got here, and the pending screen
   // would sit on the spinner waiting for an event that will never come again.
-  const isPending = (id?.startsWith('pending_') ?? false) || (isStarting && session?.ptyAttached !== true)
+  // Once attached, a later detach (hand off, hold) is an end, not a start.
+  const [hasAttached, setHasAttached] = useState(false)
+  if (session?.ptyAttached === true && !hasAttached) setHasAttached(true)
+  const isPending =
+    (id?.startsWith('pending_') ?? false) || (isStarting && !hasAttached && session?.ptyAttached !== true)
   const isDetailSlowGlobal = useLoadingStateStore((s) => s.slowCounts['session-detail'] > 0)
   const isBlankLoading = isLoading && !session
   const [slowSince, setSlowSince] = useState<string | null>(null)
@@ -1094,14 +1098,11 @@ export default function SessionDetailScreen() {
     setHandoffVisible(false)
     try {
       const result = await handoff.mutateAsync()
-      useAlertStore.getState().push({
-        id: `handoff:${id}`,
-        cause: `session:${id}`,
-        level: 'info',
-        title: tSessions('handoff.success'),
-        message: tSessions('handoff.attach', { command: result.attachCommand }),
-        testID: 'session-handoff-success',
-      })
+      // A native alert, not a toast: toasts render only on the home screen, and
+      // the stop has already sent this screen to history.
+      Alert.alert(tSessions('handoff.success'), tSessions('handoff.attach', { command: result.attachCommand }), [
+        { text: t('common:button.close'), onPress: navigateHome },
+      ])
     } catch (err) {
       // A 404 means the session is already gone, as with the end-session actions.
       if (err instanceof NotFoundError) return
