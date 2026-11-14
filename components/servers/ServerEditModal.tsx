@@ -21,6 +21,8 @@ import { NetworkError } from '@/services/api-client'
 import { CleartextBlockedError } from '@/services/cleartext-policy'
 import { ServerClaudeFlagsSection } from '@/components/servers/ServerClaudeFlagsSection'
 import { ServerEncryptionSection } from '@/components/servers/ServerEncryptionSection'
+import { WrappedKeyWarning } from '@/components/servers/WrappedKeyWarning'
+import { useWrappedKeyWarning } from '@/hooks/useWrappedKeyWarning'
 import { ServerAddressesSection } from '@/components/servers/ServerAddressesSection'
 import { ServerFormFields, splitUrl } from '@/components/servers/ServerFormFields'
 import { useServersStore, type AddServerMeta } from '@/stores/servers'
@@ -42,6 +44,7 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
   const theme = useTheme()
   const { addServer, editServer } = useServersStore()
   const isEditMode = serverId !== null
+  const browserWrapsKey = useWrappedKeyWarning()
 
   const [label, setLabel] = useState('')
   const [protocol, setProtocol] = useState<'http' | 'https'>('http')
@@ -286,6 +289,8 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
                 keyInputTestID="server-edit-key-input"
                 onSubmitEditing={handleSave}
               />
+
+              {!isEditMode && browserWrapsKey ? <WrappedKeyWarning /> : null}
 
               {error ? (
                 <View style={styles.errorBox}>

@@ -51,7 +51,7 @@ describe('ServerEncryptionSection', () => {
     seedServer()
     const probe = jest.spyOn(deviceKey, 'isDeviceStaticKeyWrapped').mockResolvedValue(true)
     const { findByTestId } = await renderWithI18n(<ServerEncryptionSection serverId={SERVER_ID} />)
-    expect(await findByTestId('server-wrapped-key-warning')).toBeTruthy()
+    expect(await findByTestId('wrapped-key-warning')).toBeTruthy()
     expect(probe).toHaveBeenCalledWith(SERVER_ID)
   })
 
@@ -60,7 +60,7 @@ describe('ServerEncryptionSection', () => {
     const probe = jest.spyOn(deviceKey, 'isDeviceStaticKeyWrapped').mockResolvedValue(false)
     const { queryByTestId } = await renderWithI18n(<ServerEncryptionSection serverId={SERVER_ID} />)
     await waitFor(() => expect(probe).toHaveBeenCalled())
-    expect(queryByTestId('server-wrapped-key-warning')).toBeNull()
+    expect(queryByTestId('wrapped-key-warning')).toBeNull()
   })
 
   it('asks for the pin as a demand rather than describing a state', async () => {

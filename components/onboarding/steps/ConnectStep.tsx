@@ -13,6 +13,8 @@ import { useCopyToClipboard } from '@/hooks/useCopyToClipboard'
 import { useTBPair, type PairResult, type PairLogKind } from '@/hooks/useTBPair'
 import { PairScannerModal } from '@/components/pair/PairScannerModal'
 import { PairConfirmGate, type PendingPairTarget } from '@/components/pair/PairConfirmGate'
+import { WrappedKeyWarning } from '@/components/servers/WrappedKeyWarning'
+import { useWrappedKeyWarning } from '@/hooks/useWrappedKeyWarning'
 import { PairCameraIdentityCard } from '@/components/pair/PairCameraIdentityCard'
 import { pendingTargetFromPaste } from '@/services/pair-confirm-target'
 import { formatFingerprint } from '@/services/e2ee/fingerprint'
@@ -121,6 +123,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
   const pendingResult = useRef<PairResult | null>(null)
   const pendingScan = useRef<ExchangeResult | null>(null)
   const { phase, log, pair, reset } = useTBPair()
+  const browserWrapsKey = useWrappedKeyWarning()
 
   // A pasted threadbase:// pair URI carries its own server URL.
   const credentialKind = classifyPairCredential(token)
@@ -233,6 +236,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         <Text style={[styles.headline, textDirectionStyle]}>{t('connect.headline')}</Text>
         <Text style={[styles.modeBlurb, textDirectionStyle]}>{t('connect.modeBlurb')}</Text>
         <Text style={[styles.connectivityHint, textDirectionStyle]}>{t('connect.connectivityHint')}</Text>
+        {browserWrapsKey ? <WrappedKeyWarning /> : null}
 
         <TouchableOpacity
           testID="onboarding-connect-qr-card"
@@ -279,6 +283,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           <Text style={[styles.explainStep, textDirectionStyle, { marginTop: 10 }]}>{t('connect.step2')}</Text>
           <Text style={[styles.explainStep, textDirectionStyle, { marginTop: 10 }]}>{t('connect.step3')}</Text>
         </TerminalCard>
+        {browserWrapsKey ? <WrappedKeyWarning /> : null}
 
         <View style={styles.flex} />
 
@@ -367,6 +372,8 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
             {urlError}
           </Text>
         ) : null}
+
+        {browserWrapsKey ? <WrappedKeyWarning /> : null}
 
         {phase === 'err' ? (
           <TouchableOpacity

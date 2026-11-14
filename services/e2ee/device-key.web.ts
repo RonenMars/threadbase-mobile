@@ -214,6 +214,35 @@ export async function clearDeviceStaticKey(serverId: string): Promise<void> {
   await inStore('readwrite', (store) => store.delete(deviceStaticKeyStoreKey(serverId)))
 }
 
+const PROBE_SERVER_ID = '__store_probe__'
+let wrapProbe: Promise<boolean> | null = null
+
+/**
+ * Whether a pairing in this browser would get the weaker wrapped key: the same
+ * store-and-read-back test `loadOrCreateDeviceStaticKey` runs, on a throwaway
+ * key, so the warning can show before a pairing rather than after it.
+ */
+export function browserNeedsWrappedKey(): Promise<boolean> {
+  wrapProbe ??= (async () => {
+    if (!(await canHoldDeviceStaticKey())) return false
+    const probe = (await crypto.subtle.generateKey({ name: X25519 }, false, [
+      'deriveBits',
+    ])) as CryptoKeyPair
+    try {
+      await writeKey(PROBE_SERVER_ID, probe)
+      return (await readKeyPair(PROBE_SERVER_ID)) === null
+    } finally {
+      await clearDeviceStaticKey(PROBE_SERVER_ID)
+    }
+  })().catch(() => false)
+  return wrapProbe
+}
+
+/** Test-only: forget the cached probe answer. */
+export function _resetWrapProbeForTests(): void {
+  wrapProbe = null
+}
+
 /** Whether this browser fell back to the weaker wrapped key for a server. */
 export async function isDeviceStaticKeyWrapped(serverId: string): Promise<boolean> {
   if (typeof indexedDB === 'undefined') return false

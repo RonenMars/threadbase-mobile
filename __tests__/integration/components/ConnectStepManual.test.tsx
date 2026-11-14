@@ -4,6 +4,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native'
 import { ConnectStep } from '@/components/onboarding/steps/ConnectStep'
 import { useTBPair } from '@/hooks/useTBPair'
 import i18n from '@/test-utils/i18n-setup'
+import * as deviceKey from '@/services/e2ee/device-key'
 
 jest.mock('expo-clipboard', () => ({
   setStringAsync: jest.fn(),
@@ -33,6 +34,25 @@ describe('ConnectStep – manual mode', () => {
 
   afterEach(() => {
     jest.useRealTimers()
+    jest.restoreAllMocks()
+  })
+
+  it('warns on every connect screen where this browser would wrap the key', async () => {
+    jest.spyOn(deviceKey, 'browserNeedsWrappedKey').mockResolvedValue(true)
+    const screen = await render(<ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />)
+    expect(await screen.findByTestId('wrapped-key-warning')).toBeTruthy()
+    await fireEvent.press(screen.getByTestId('onboarding-connect-qr-card'))
+    expect(await screen.findByTestId('wrapped-key-warning')).toBeTruthy()
+    await fireEvent.press(screen.getByTestId('onboarding-connect-back-to-choose'))
+    await fireEvent.press(screen.getByTestId('onboarding-connect-paste-card'))
+    expect(await screen.findByTestId('wrapped-key-warning')).toBeTruthy()
+  })
+
+  it('shows no key warning where this browser keeps the key directly', async () => {
+    const probe = jest.spyOn(deviceKey, 'browserNeedsWrappedKey').mockResolvedValue(false)
+    const screen = await render(<ConnectStep onPaired={jest.fn()} onAdvance={jest.fn()} />)
+    await waitFor(() => expect(probe).toHaveBeenCalled())
+    expect(screen.queryByTestId('wrapped-key-warning')).toBeNull()
   })
 
   it('shows manual-mode onboarding copy after choosing paste entry', async () => {
