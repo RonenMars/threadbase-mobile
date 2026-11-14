@@ -458,6 +458,27 @@ describe('handoffSession', () => {
     await expect(handoffSession('srv_test', 'sess1')).rejects.toThrow(NetworkError)
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
+
+  it('waits 15 s before timing out, past the 8 s first-attempt default', async () => {
+    jest.useFakeTimers()
+    try {
+      let signal: AbortSignal | undefined
+      mockFetch.mockImplementation((_url: string, init: { signal: AbortSignal }) => {
+        signal = init.signal
+        return new Promise((_resolve, reject) => {
+          init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+        })
+      })
+
+      const assertion = expect(handoffSession('srv_test', 'sess1')).rejects.toMatchObject({ code: 'TIMEOUT' })
+      await jest.advanceTimersByTimeAsync(14_999)
+      expect(signal?.aborted).toBe(false)
+      await jest.advanceTimersByTimeAsync(2)
+      await assertion
+    } finally {
+      jest.useRealTimers()
+    }
+  })
 })
 
 describe('api.delete', () => {

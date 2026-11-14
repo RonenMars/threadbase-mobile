@@ -281,7 +281,8 @@ export function useSessionActions(serverId: string, sessionId: string) {
 
   const handoff = useMutation({
     mutationFn: () => handoffSession(serverId, sessionId),
-    onSuccess: refreshAfterEnd,
+    // Settled, not success: LAUNCH_FAILED and a 404 also leave the session stopped.
+    onSettled: refreshAfterEnd,
   })
 
   return { sendInput, sendKeys, sendRawKey, respondToQuestion, answerPermission, answerPrompt, setModel, setEffort, adoptSession, resume, forkSession, stopSession: stopSessionMutation, stopWhenIdle, handoff }
