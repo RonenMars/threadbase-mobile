@@ -285,34 +285,24 @@ or long-press the icon on the phone → **Uninstall**.
 
 ---
 
-## Android push verification record (Phase 3)
+## Notifications on a physical device
 
-Fill-in template for Phase 3 of [android-notifications-plan.md](android-notifications-plan.md#phase-3--verify-on-a-real-phone).
-**No run has been recorded yet.** Every cell below is blank; nothing here is verified.
+Phase 3 of [android-notifications-plan.md](android-notifications-plan.md#phase-3--verify-on-a-real-phone).
+No run has been recorded yet.
+Every result below starts as "not run", and nothing here is verified.
 
-Before a run: Phase 2 credentials (FCM V1 keys for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.dev`, `GOOGLE_SERVICES_JSON_B64`) must be done.
-The streamer sends attention pushes with `priority: "high"` since v1.48.0; `/api/push/test` is the send-test path.
-Use one table per device: Android 13+ and Android 12 or lower.
+Before a run, Phase 2 credentials must be done: FCM V1 keys for `com.ronenmars.threadbase` and `com.ronenmars.threadbase.dev`, and the `GOOGLE_SERVICES_JSON_B64` secret.
+The streamer sends attention pushes with `priority: "high"` since v1.48.0, and `/api/push/test` is the send-test path.
+Copy the table once per device, one for Android 13+ and one for Android 12 or lower, and fill in the device columns.
 
-| Field | Value |
-|---|---|
-| Device model | — |
-| Android version | — |
-| Build + versionCode | — |
-| Date | — |
-| Tester | — |
-
-| # | Check | Expected | Result (PASS/FAIL/N-A) | Notes |
-|---|---|---|---|---|
-| 1 | Fresh install, onboarding notifications step | 13+: system prompt shown. 12 or lower: no prompt | — | — |
-| 2 | Notification health screen | An `android` token per paired server | — | — |
-| 3 | Send test, foreground | Arrives with correct icon and colour | — | — |
-| 3 | Send test, background | Arrives with correct icon and colour | — | — |
-| 3 | Send test, killed | Arrives with correct icon and colour | — | — |
-| 4 | Attention push, vibration | `needs-you` triple pulse | — | — |
-| 4 | Attention push, Allow/Deny | Buttons answer the gate | — | — |
-| 4 | Attention push, tap on cold start | Opens the right session | — | — |
-| 5 | Live-session ongoing notification | Appears while running, clears when the session ends | — | — |
-| 6 | Mute a channel in system settings | Health screen reports it | — | — |
-| 7 | Change app language | Channel names update in system settings | — | — |
-| 8 | Doze: locked 30 minutes, then test push | Push arrives | — | — |
+| Device model | Android version | Date | Check | Result | Notes |
+|---|---|---|---|---|---|
+| — | — | — | 1. Fresh install: the onboarding notifications step shows the system prompt on 13+ and none on 12 or lower | not run | |
+| — | — | — | 2. Notification health screen lists an `android` token per paired server | not run | |
+| — | — | — | 3. Send test arrives in the foreground, in the background and when the app is killed, with the right icon and colour | not run | |
+| — | — | — | 4. Attention push: `needs-you` vibration, Allow/Deny answer the gate, a tap opens the session on cold start | not run | |
+| — | — | — | 5. Live-session ongoing notification appears while the session runs and clears when it ends | not run | |
+| — | — | — | 6. Mute a channel in system settings: the health screen reports it | not run | |
+| — | — | — | 7. Change the app language: channel names update in system settings | not run | |
+| — | — | — | 8. Doze: locked for 30 minutes, then a test push arrives | not run | |
+| — | — | — | 9. Emulator: `npm run test:e2e:mock` run once on an Android emulator, confirming `android_notifications_health.yaml` | not run | |
