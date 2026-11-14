@@ -14,7 +14,7 @@ import { useAlertStore } from '@/stores/alerts'
 import type { ServerInfo } from '@/types/api'
 
 let mockServerInfo: Pick<ServerInfo, 'handoff'> | undefined
-let mockStatus: 'waiting_input' | 'running' = 'waiting_input'
+let mockStatus: 'waiting_input' | 'running' | 'idle' = 'waiting_input'
 let mockOwnership: 'external' | undefined
 const mockHandoff = jest.fn()
 
@@ -162,6 +162,13 @@ describe('SessionScreen — hand off to terminal', () => {
     expect(screen.queryByTestId('session-handoff')).toBeNull()
   })
 
+  it('is hidden for a session that is no longer live', async () => {
+    mockStatus = 'idle'
+    await openMenu()
+    expect(screen.getByTestId('session-raw-keys')).toBeTruthy()
+    expect(screen.queryByTestId('session-handoff')).toBeNull()
+  })
+
   it('names the server and omits the interrupt warning while waiting for input', async () => {
     await openMenu()
     await fireEvent.press(screen.getByTestId('session-handoff'))
@@ -186,6 +193,7 @@ describe('SessionScreen — hand off to terminal', () => {
     await confirmHandoff()
 
     expect(mockHandoff).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('session-handoff-dialog')).toBeNull()
     await waitFor(() =>
       expect(useAlertStore.getState().alerts).toEqual(
         expect.arrayContaining([
@@ -200,8 +208,8 @@ describe('SessionScreen — hand off to terminal', () => {
     ['HANDOFF_LAUNCH_FAILED', "Stopped here, but tmux didn't start — resume it from the app."],
     ['HANDOFF_KILL_TIMEOUT', "The session didn't stop, so it wasn't moved."],
     ['NOTHING_TO_RESUME', "Send a message first — there's nothing to resume yet."],
-    ['NO_PID', "Couldn't hand off the session. Check the connection and try again."],
-    [undefined, "Couldn't hand off the session. Check the connection and try again."],
+    ['NO_PID', "Couldn't hand off the session. Try again."],
+    [undefined, "Couldn't hand off the session. Try again."],
   ])('maps error code %s to its copy', async (code, message) => {
     mockHandoff.mockRejectedValue(new NetworkError('refused', code, undefined, 409))
     await confirmHandoff()

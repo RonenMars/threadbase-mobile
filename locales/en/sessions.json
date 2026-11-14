@@ -245,7 +245,7 @@
     "confirm": "Hand off",
     "success": "Moved to tmux",
     "attach": "Attach with {{command}}",
-    "failed": "Couldn't hand off the session. Check the connection and try again.",
+    "failed": "Couldn't hand off the session. Try again.",
     "launchFailed": "Stopped here, but tmux didn't start — resume it from the app.",
     "killTimeout": "The session didn't stop, so it wasn't moved.",
     "nothingToResume": "Send a message first — there's nothing to resume yet."
