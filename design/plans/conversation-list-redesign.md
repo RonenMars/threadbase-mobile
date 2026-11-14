@@ -387,7 +387,7 @@ Goal: tell projects apart at a glance when the path IS the identity.
 │   23 today · last 4h ago                              [srv-a]   │
 ├──────────────────────────────────────────────────────────────────┤
 │ ┃ .claude-mem/                                       757    ›   │
-│ ┃ observer-sessions                                              │
+│ ┃ agent-authored sessions                                        │
 │ ┃ 12 today · last 5h ago                              [srv-b]   │
 └──────────────────────────────────────────────────────────────────┘
 ```
