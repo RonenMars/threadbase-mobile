@@ -555,8 +555,8 @@ export interface HandoffResult {
 
 // POST /api/sessions/:id/handoff: the server stops the PTY and resumes the
 // conversation in tmux. Not retried: a replay after the stop would find the
-// session gone, and the server needs up to ~8 s for SIGINT, SIGKILL and the
-// pane check.
+// session gone, and the server needs up to ~11 s for SIGINT, SIGKILL, the
+// pane check and a terminal launch.
 export async function handoffSession(
   serverId: string,
   sessionId: string,
