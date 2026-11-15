@@ -1,0 +1,17 @@
+{
+  "id": "session-markdown",
+  "provider": "claude-code",
+  "status": "running",
+  "statusSource": "user-input",
+  "ptyAttached": true,
+  "lifecycle": "attached",
+  "conversationId": "conv-markdown",
+  "projectPath": "/workspace/northstar-commerce/apps/storefront",
+  "projectName": "storefront",
+  "branch": "feat/retry-backoff",
+  "lastOutput": "Working",
+  "elapsedMs": 21000,
+  "promptCount": 1,
+  "subStatus": null,
+  "startedAt": "2026-09-25T10:00:00.000Z"
+}
