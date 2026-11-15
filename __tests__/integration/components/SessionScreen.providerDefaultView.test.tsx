@@ -1,8 +1,8 @@
 /**
  * SessionScreen — default view mode per provider.
  *
- * Cursor opens in Terminal; every other provider follows the global setting (chat).
- * Either can be switched with the header chip.
+ * Every provider, Cursor included, follows the global setting (chat).
+ * It can be switched with the header chip.
  */
 import React, { type EffectCallback } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react-native'
@@ -104,28 +104,14 @@ describe('SessionScreen — default view mode per provider', () => {
 
   const chipLabel = () => screen.getByTestId('session-view-mode-chip').props.accessibilityLabel
 
-  it('opens a non-Cursor session in Chat', async () => {
-    mockProvider = 'claude'
+  it.each(['claude', 'cursor'])('opens a %s session in Chat', async (provider) => {
+    mockProvider = provider
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(chipLabel()).toBe('Chat')
   })
 
-  it('opens a Cursor session in Terminal', async () => {
-    mockProvider = 'cursor'
-    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
-    expect(chipLabel()).toBe('Terminal')
-  })
-
-  it('lets a Cursor session switch to Chat without touching the global setting', async () => {
-    mockProvider = 'cursor'
-    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
-    await fireEvent.press(screen.getByTestId('session-view-mode-chip'))
-    expect(chipLabel()).toBe('Chat')
-    expect(mockSetSessionView).not.toHaveBeenCalled()
-  })
-
-  it('lets a non-Cursor session switch to Terminal via the global setting', async () => {
-    mockProvider = 'claude'
+  it.each(['claude', 'cursor'])('lets a %s session switch to Terminal via the global setting', async (provider) => {
+    mockProvider = provider
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     await fireEvent.press(screen.getByTestId('session-view-mode-chip'))
     expect(mockSetSessionView).toHaveBeenCalledWith('terminal')
