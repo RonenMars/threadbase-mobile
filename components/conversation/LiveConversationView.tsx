@@ -508,9 +508,14 @@ export function LiveConversationView({
   // overflows, so nothing scrolls, and the bubble's lower edge — where the
   // scanner sits — lands behind the composer. It also grows as PTY lines
   // stream in. Follow it only while the reader is at the tail.
+  // A layout-driven scroll event can report a gap past FOLLOW_TAIL_THRESHOLD_PX
+  // while the footer is still growing, clearing followingTailRef for a reader
+  // who never touched the list. The pin is only released by a drag, so it is
+  // the reliable "reader has not left the tail" signal.
   const followWorkingBubble = useCallback(() => {
     if (followingTailRef.current) listRef.current?.scrollToEnd({ animated: false })
-  }, [])
+    else stickToEnd()
+  }, [stickToEnd])
   useEffect(() => {
     const hasQuestion = activeQuestion !== null
     const arrived = hasQuestion && !hadQuestionRef.current

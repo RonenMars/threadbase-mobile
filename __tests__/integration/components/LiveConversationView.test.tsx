@@ -467,11 +467,30 @@ describe('LiveConversationView — optimistic sent message', () => {
       await renderView()
       await fireEvent.changeText(screen.getByTestId('chat-message-input'), 'hello there')
       await fireEvent.press(screen.getByTestId('chat-send-button'))
-      await act(async () => screen.getByTestId('live-conversation-list')!.props.onScroll(SCROLLED_UP))
+      const list = screen.getByTestId('live-conversation-list')
+      await act(async () => list!.props.onScrollBeginDrag())
+      await act(async () => list!.props.onScroll(SCROLLED_UP))
       scrollToEndMock.mockClear()
 
       await act(async () => screen.getByTestId('thinking-bubble').props.onLayout())
       expect(scrollToEndMock).not.toHaveBeenCalled()
+    })
+
+    // Measured on web: while the footer grows, a layout-driven scroll event at
+    // offset 0 reports a gap of 173px, which cleared the tail flag for a reader
+    // who never touched the list.
+    it('still follows the bubble when a layout-driven scroll event reports a gap and the reader never dragged', async () => {
+      await renderView()
+      await fireEvent.changeText(screen.getByTestId('chat-message-input'), 'hello there')
+      await fireEvent.press(screen.getByTestId('chat-send-button'))
+      const layoutDriven = {
+        nativeEvent: { contentOffset: { y: 0 }, contentSize: { height: 865 }, layoutMeasurement: { height: 692 } },
+      }
+      await act(async () => screen.getByTestId('live-conversation-list')!.props.onScroll(layoutDriven))
+      scrollToEndMock.mockClear()
+
+      await act(async () => screen.getByTestId('thinking-bubble').props.onLayout())
+      expect(scrollToEndMock).toHaveBeenCalled()
     })
   })
 
