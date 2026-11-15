@@ -85,6 +85,14 @@ jest.mock('@/services/api-client', () => {
   }
 })
 
+const mockNotifyToggle = jest.fn()
+jest.mock('@/components/sessions/ExternalSessionNotifyToggle', () => ({
+  ExternalSessionNotifyToggle: (props: unknown) => {
+    mockNotifyToggle(props)
+    return null
+  },
+}))
+
 function seedServer() {
   useServersStore.setState({
     servers: {
@@ -422,5 +430,42 @@ describe('conversation detail — 404 live-session fallback', () => {
 
     expect(root.queryByTestId('conversation-load-error')).toBeNull()
     expect(root.queryByTestId('conversation-not-found')).toBeNull()
+  })
+})
+
+describe('conversation detail — external turn-end toggle', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    seedServer()
+    mockNotifyToggle.mockClear()
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'conv-gating', server: 'srv1' })
+  })
+  afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
+  })
+
+  it('offers the toggle for an external conversation whose CLI is alive', async () => {
+    mockDetailRef.current = {
+      ...makeDetail(4),
+      meta: { ...makeDetail(4).meta, ownership: 'external', processLiveness: 'alive' },
+    }
+    await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+
+    expect(mockNotifyToggle).toHaveBeenCalledWith({ serverId: 'srv1', conversationId: 'conv-gating' })
+  })
+
+  it('does not offer it once the external CLI is gone, or for a managed conversation', async () => {
+    mockDetailRef.current = { ...makeDetail(4), meta: { ...makeDetail(4).meta, ownership: 'external' } }
+    const root = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+    root.unmount()
+
+    mockDetailRef.current = { ...makeDetail(4), meta: { ...makeDetail(4).meta, processLiveness: 'alive' } }
+    await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueriesAndLiftSkeleton()
+
+    expect(mockNotifyToggle).not.toHaveBeenCalled()
   })
 })

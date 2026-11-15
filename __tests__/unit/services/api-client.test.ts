@@ -502,6 +502,19 @@ describe('api.delete', () => {
   })
 })
 
+describe('204 No Content', () => {
+  it('resolves without parsing the empty body', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+      headers: new Headers(),
+      json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected end of JSON input')),
+      text: jest.fn().mockResolvedValue(''),
+    })
+    await expect(api.put('/api/push/subscriptions', { token: 't', conversationId: 'c' })).resolves.toBeUndefined()
+  })
+})
+
 describe('createApiForServer – unknown server', () => {
   it('throws NetworkError for unknown serverId', async () => {
     const unknownApi = createApiForServer('srv_unknown')

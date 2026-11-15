@@ -447,6 +447,9 @@ async function request<T>(
     throw new NetworkError(detail || `Server returned ${response.status}`, code, warmupState, response.status)
   }
 
+  // A 204 has no body, so response.json() would throw on a request that succeeded.
+  if (response.status === 204) return undefined as T
+
   if (traced) traceMark('response', `HTTP ${response.status}`)
   const json = await readApiJson<T>(response, path)
   if (traced) traceMark('parsed')

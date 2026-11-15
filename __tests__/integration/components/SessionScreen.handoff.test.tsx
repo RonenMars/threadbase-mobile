@@ -35,6 +35,7 @@ jest.mock('@/components/terminal/TerminalView', () => ({
   TerminalView: () => null,
 }))
 jest.mock('@/components/terminal/MatrixRain', () => ({ MatrixRain: () => null }))
+jest.mock('@/components/sessions/ExternalSessionNotifyToggle', () => ({ ExternalSessionNotifyToggle: () => null }))
 jest.mock('@/hooks/useSession', () => ({
   useSessionDetail: () => ({
     data: {

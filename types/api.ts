@@ -582,8 +582,10 @@ export interface ServerInfo {
    * stores and enforces per-device notification preferences
    * (`PATCH /api/push/preferences`, `POST /api/push/test`). Absent on an older
    * server, which must be read as unsupported, never as "turned off".
+   * `subscriptions` is true when it accepts `PUT`/`DELETE /api/push/subscriptions`
+   * for a turn-end push on one external session.
    */
-  push?: { preferences?: boolean }
+  push?: { preferences?: boolean; subscriptions?: boolean }
   /**
    * Additive: POST /api/sessions/:id/handoff moves a live session into tmux on
    * the host. Present only when the host has run `tb-streamer handoff setup`.

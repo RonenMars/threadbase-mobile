@@ -28,6 +28,10 @@ jest.mock('@/components/terminal/TerminalView', () => ({
   TerminalView: () => null,
 }))
 jest.mock('@/components/terminal/MatrixRain', () => ({ MatrixRain: () => null }))
+const mockNotifyToggle = jest.fn((_props: { serverId: string; conversationId: string }) => null)
+jest.mock('@/components/sessions/ExternalSessionNotifyToggle', () => ({
+  ExternalSessionNotifyToggle: (props: { serverId: string; conversationId: string }) => mockNotifyToggle(props),
+}))
 jest.mock('@/hooks/useSession', () => ({
   useSessionDetail: () => ({ data: mockSessionData, isLoading: false }),
 }))
@@ -120,5 +124,17 @@ describe('SessionScreen — DiscoveredSessionScreen gate', () => {
     mockSessionData = { ...baseSession, ownership: 'external' }
     await render(<SessionDetailScreen />, { wrapper: createWrapper() })
     expect(screen.queryByText('Overtake')).toBeNull()
+  })
+
+  it('offers the turn-end alert for this server and session on an external session only', async () => {
+    // Live, like e2e/fixtures/session-external.json: the banner and toggle sit in the live view.
+    mockSessionData = { ...baseSession, ownership: 'external', ptyAttached: true }
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(mockNotifyToggle).toHaveBeenCalledWith({ serverId: 'srv1', conversationId: 'sess-ext' })
+
+    mockNotifyToggle.mockClear()
+    mockSessionData = { ...baseSession, ownership: 'managed', ptyAttached: true }
+    await render(<SessionDetailScreen />, { wrapper: createWrapper() })
+    expect(mockNotifyToggle).not.toHaveBeenCalled()
   })
 })

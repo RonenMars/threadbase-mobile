@@ -44,6 +44,7 @@ import type { AlertInput } from '@/stores/alerts'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
 import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
+import { ExternalSessionNotifyToggle } from '@/components/sessions/ExternalSessionNotifyToggle'
 import { RecoveryOverlay } from '@/components/ui/RecoveryOverlay'
 import { useWsStatus } from '@/hooks/useWsStatus'
 import { useWsReconnectAttempt } from '@/hooks/useWsReconnectAttempt'
@@ -1436,6 +1437,9 @@ export default function SessionDetailScreen() {
                 onTakeOver={handleTakeOver}
                 isTakingOver={adoptSession.isPending}
               />
+            ) : null}
+            {session?.ownership === 'external' && id ? (
+              <ExternalSessionNotifyToggle serverId={serverId} conversationId={id} />
             ) : null}
             <View style={showReconnectLoader ? [styles.flex, styles.staleContent] : styles.flex}>
             {showTerminalSurface ? (

@@ -226,6 +226,43 @@ export async function syncNotificationPrefs(serverId: string): Promise<void> {
   }
 }
 
+/** Whether this server can push one external session's turn end to this device. */
+export function serverSupportsPushSubscriptions(serverId: string): boolean {
+  return useServersStore.getState().servers[serverId]?.serverInfo?.push?.subscriptions === true
+}
+
+/**
+ * Ask for a push when this external session's turn ends. `false` means there is
+ * no push token (notifications are off), so nothing was sent. The server answers
+ * 404 for a token it does not hold; registering puts it there, then one retry.
+ */
+export async function subscribeExternalSession(serverId: string, conversationId: string): Promise<boolean> {
+  const token = await expoPushToken()
+  if (!token) return false
+  const api = createApiForServer(serverId)
+  try {
+    await api.put('/api/push/subscriptions', { token, conversationId })
+  } catch (err) {
+    if (!(err instanceof NotFoundError)) throw err
+    await registerPushToken(serverId)
+    await api.put('/api/push/subscriptions', { token, conversationId })
+  }
+  return true
+}
+
+/** `false` means there is no push token, so nothing was sent. */
+export async function unsubscribeExternalSession(serverId: string, conversationId: string): Promise<boolean> {
+  const token = await expoPushToken()
+  if (!token) return false
+  try {
+    await createApiForServer(serverId).delete('/api/push/subscriptions', { token, conversationId })
+  } catch (err) {
+    // A server that does not hold the token holds no subscription for it either.
+    if (!(err instanceof NotFoundError)) throw err
+  }
+  return true
+}
+
 export async function syncNotificationPrefsForAll(serverIds: string[]): Promise<void> {
   await Promise.allSettled(serverIds.map((id) => syncNotificationPrefs(id)))
 }
