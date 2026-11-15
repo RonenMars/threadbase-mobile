@@ -193,6 +193,7 @@ describe('SessionScreen — hand off to terminal', () => {
     await confirmHandoff()
 
     expect(mockHandoff).toHaveBeenCalledTimes(1)
+    expect(mockHandoff).toHaveBeenCalledWith({ openTerminal: false })
     expect(screen.queryByTestId('session-handoff-dialog')).toBeNull()
     await waitFor(() =>
       expect(alertSpy).toHaveBeenCalledWith('Moved to tmux', 'Attach with tmux attach -t threadbase', [
@@ -202,6 +203,64 @@ describe('SessionScreen — hand off to terminal', () => {
     expect(mockReplace).not.toHaveBeenCalledWith('/')
     alertSpy.mock.calls[0][2][0].onPress()
     expect(mockReplace).toHaveBeenCalledWith('/')
+  })
+
+  it('offers only the plain hand-off when the server has no terminal app to open', async () => {
+    mockServerInfo = { handoff: { openTerminal: false, terminalName: 'Ghostty' } }
+    await openMenu()
+    await fireEvent.press(screen.getByTestId('session-handoff'))
+    expect(screen.getByText('Hand off')).toBeTruthy()
+    expect(screen.queryByTestId('session-handoff-confirm-open')).toBeNull()
+  })
+
+  describe('with a terminal app configured on the server', () => {
+    const RESULT = {
+      status: 'handed_off',
+      tmuxSession: 'threadbase',
+      window: 'my-project-sess-l',
+      attachCommand: 'tmux attach -t threadbase',
+    }
+
+    beforeEach(() => {
+      mockServerInfo = { handoff: { openTerminal: true, terminalName: 'Ghostty' } }
+    })
+
+    async function confirmOpen() {
+      await openMenu()
+      await fireEvent.press(screen.getByTestId('session-handoff'))
+      expect(screen.getByTestId('session-handoff-confirm')).toBeTruthy()
+      await fireEvent.press(screen.getByText('Hand off & open Ghostty'))
+    }
+
+    it('asks the server to open the terminal and shows the plain attach copy when it did', async () => {
+      mockHandoff.mockResolvedValue({ ...RESULT, terminalOpened: true })
+      await confirmOpen()
+      expect(mockHandoff).toHaveBeenCalledWith({ openTerminal: true })
+      await waitFor(() =>
+        expect(alertSpy).toHaveBeenCalledWith('Moved to tmux', 'Attach with tmux attach -t threadbase', expect.any(Array)),
+      )
+    })
+
+    it('says the terminal did not open when the server reports terminalOpened false', async () => {
+      mockHandoff.mockResolvedValue({ ...RESULT, terminalOpened: false })
+      await confirmOpen()
+      await waitFor(() =>
+        expect(alertSpy).toHaveBeenCalledWith(
+          'Moved to tmux',
+          "Attach with tmux attach -t threadbase\nCouldn't open Ghostty.",
+          expect.any(Array),
+        ),
+      )
+    })
+
+    it('keeps the plain hand-off from opening the terminal, or reporting that it did not', async () => {
+      mockHandoff.mockResolvedValue({ ...RESULT, terminalOpened: false })
+      await confirmHandoff()
+      expect(mockHandoff).toHaveBeenCalledWith({ openTerminal: false })
+      await waitFor(() =>
+        expect(alertSpy).toHaveBeenCalledWith('Moved to tmux', 'Attach with tmux attach -t threadbase', expect.any(Array)),
+      )
+    })
   })
 
   it.each([

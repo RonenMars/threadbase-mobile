@@ -12,11 +12,14 @@ interface Props {
   server: string
   /** A turn is in flight, so stopping cuts it. */
   running: boolean
+  /** App the server can open on the tmux session; adds a second confirm button. */
+  terminalName?: string
   onConfirm: () => void
+  onConfirmOpen: () => void
   onDismiss: () => void
 }
 
-export function HandoffDialog({ visible, server, running, onConfirm, onDismiss }: Props) {
+export function HandoffDialog({ visible, server, running, terminalName, onConfirm, onConfirmOpen, onDismiss }: Props) {
   const { t } = useTranslation(['sessions', 'common'])
   const theme = useTheme()
   const styles = makeStyles(theme)
@@ -33,7 +36,11 @@ export function HandoffDialog({ visible, server, running, onConfirm, onDismiss }
       actions={[
         { label: t('common:button.cancel'), variant: 'secondary', onPress: onDismiss, testID: 'session-handoff-cancel' },
         { label: t('handoff.confirm'), onPress: onConfirm, testID: 'session-handoff-confirm' },
+        ...(terminalName
+          ? [{ label: t('handoff.confirmOpen', { terminal: terminalName }), onPress: onConfirmOpen, testID: 'session-handoff-confirm-open' }]
+          : []),
       ]}
+      stacked={terminalName !== undefined}
     >
       {running ? (
         <Text style={[styles.interrupt, blockTextDirectionStyle(direction)]} testID="session-handoff-interrupt">

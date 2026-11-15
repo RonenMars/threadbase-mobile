@@ -2,12 +2,12 @@ import { renderHook, act, waitFor } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { useSessionActions } from '@/hooks/useSessionActions'
-import { NetworkError, NotFoundError } from '@/services/api-client'
+import { NetworkError, NotFoundError, type handoffSession } from '@/services/api-client'
 
 const mockHandoffSession = jest.fn()
 jest.mock('@/services/api-client', () => {
   const actual = jest.requireActual('@/services/api-client')
-  return { ...actual, handoffSession: (...args: [string, string]) => mockHandoffSession(...args) }
+  return { ...actual, handoffSession: (...args: Parameters<typeof handoffSession>) => mockHandoffSession(...args) }
 })
 
 async function setup() {
@@ -32,7 +32,14 @@ describe('handoff', () => {
     const { result, invalidateSpy } = await setup()
     await act(async () => { await result.current.handoff.mutateAsync().catch(() => {}) })
     await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['sessions'] }))
-    expect(mockHandoffSession).toHaveBeenCalledWith('srv1', 'sess1')
+    expect(mockHandoffSession).toHaveBeenCalledWith('srv1', 'sess1', undefined)
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['session', 'srv1', 'sess1'] })
+  })
+
+  it('passes openTerminal through to the request', async () => {
+    mockHandoffSession.mockResolvedValue({ status: 'handed_off', terminalOpened: true })
+    const { result } = await setup()
+    await act(async () => { await result.current.handoff.mutateAsync({ openTerminal: true }) })
+    expect(mockHandoffSession).toHaveBeenCalledWith('srv1', 'sess1', { openTerminal: true })
   })
 })

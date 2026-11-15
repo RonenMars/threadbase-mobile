@@ -628,7 +628,9 @@ export default function SessionDetailScreen() {
   // User rename wins; then the JSONL-derived conversation name; then project name.
   const sessionName = getName(serverId, id) ?? session?.sessionName ?? session?.projectName
   const rawKeysSupported = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.rawKeys === true)
-  const handoffSupported = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.handoff != null)
+  const handoffInfo = useServersStore((s) => s.servers?.[serverId]?.serverInfo?.handoff)
+  const handoffSupported = handoffInfo != null
+  const handoffTerminal = handoffInfo?.openTerminal ? handoffInfo.terminalName : undefined
   const [handoffVisible, setHandoffVisible] = useState(false)
 
   const { sendKeys, sendInput, sendRawKey, stopSession, adoptSession, setModel, setEffort, handoff } = useSessionActions(
@@ -1094,13 +1096,16 @@ export default function SessionDetailScreen() {
 
   // mutateAsync, not mutate's callbacks: the session stopping redirects this
   // screen away, which can unmount it before the response lands.
-  const confirmHandoff = async () => {
+  const confirmHandoff = async (openTerminal: boolean) => {
     setHandoffVisible(false)
     try {
-      const result = await handoff.mutateAsync()
+      const result = await handoff.mutateAsync({ openTerminal })
+      const attach = tSessions('handoff.attach', { command: result.attachCommand })
       // A native alert, not a toast: toasts render only on the home screen, and
       // the stop has already sent this screen to history.
-      Alert.alert(tSessions('handoff.success'), tSessions('handoff.attach', { command: result.attachCommand }), [
+      Alert.alert(tSessions('handoff.success'), openTerminal && result.terminalOpened === false
+        ? `${attach}\n${tSessions('handoff.terminalNotOpened', { terminal: handoffTerminal })}`
+        : attach, [
         { text: t('common:button.close'), onPress: navigateHome },
       ])
     } catch (err) {
@@ -1553,7 +1558,9 @@ export default function SessionDetailScreen() {
         visible={handoffVisible}
         server={serverName}
         running={session?.status === 'running'}
-        onConfirm={() => void confirmHandoff()}
+        terminalName={handoffTerminal}
+        onConfirm={() => void confirmHandoff(false)}
+        onConfirmOpen={() => void confirmHandoff(true)}
         onDismiss={() => setHandoffVisible(false)}
       />
 
