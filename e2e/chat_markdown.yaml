@@ -1,0 +1,98 @@
+# Maestro E2E — markdown rendering in the chat view
+# The fixture conversation (conv-markdown) holds one assistant message with a
+# heading, bold and italic text, a bullet list, a fenced code block and an http
+# link. The flow asserts the rendered words are on screen and that none of the
+# raw markers are: `##`, `**`, `*`, the list dash, the ``` fence and the
+# `[text](url)` brackets. A message that fell back to one literal Text would
+# show every marker and fail the assertNotVisible steps.
+#
+# Maestro matches `text` as a full-string regex against the element's label, and
+# a paragraph's label is all of its spans joined, so each assertion is `.*x.*`.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node e2e/run-maestro.js test e2e/chat_markdown.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-markdown"
+
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 12000
+
+# Chat is the default view; the chip only needs a tap if a stored preference
+# put this session on the terminal.
+- extendedWaitUntil:
+    visible:
+      id: "session-view-mode-chip"
+    timeout: 15000
+
+- runFlow:
+    when:
+      notVisible:
+        id: "live-conversation-list"
+    commands:
+      - tapOn:
+          id: "session-view-mode-chip"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-markdown"
+    timeout: 10000
+
+# --- rendered text is on screen ------------------------------------------------
+- assertVisible:
+    text: "Retry policy"
+
+- assertVisible:
+    text: ".*exponential backoff.*"
+
+- assertVisible:
+    text: ".*full jitter.*"
+
+- assertVisible:
+    text: ".*First bullet caps the delay.*"
+
+- assertVisible:
+    text: ".*Second bullet stops after.*"
+
+- assertVisible:
+    id: "message-code-block"
+
+# Prism splits the code into one Text per token, so no single label holds
+# `Math.min`; the fixture code also avoids `*` so the marker check below stays
+# unambiguous.
+- assertVisible:
+    text: "30000"
+
+- assertVisible:
+    text: ".*retry design notes.*"
+
+# --- raw markers are not -------------------------------------------------------
+- assertNotVisible:
+    text: ".*##.*"
+
+- assertNotVisible:
+    text: ".*\\*.*"
+
+- assertNotVisible:
+    text: "- .*"
+
+- assertNotVisible:
+    text: ".*```.*"
+
+- assertNotVisible:
+    text: ".*\\]\\(.*"
+
+- assertNotVisible:
+    text: ".*example\\.com.*"

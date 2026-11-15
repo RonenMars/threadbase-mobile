@@ -356,6 +356,11 @@ async function handleRequest(req, res) {
     if (conversationMatch[1] === 'conv-scrollback') {
       return json(res, 200, readFixture('conv-scrollback.json'))
     }
+    // chat_markdown.yaml: one assistant message carrying every markdown shape
+    // ChatMarkdown renders, so the flow can assert on rendered text and absent markers.
+    if (conversationMatch[1] === 'conv-markdown') {
+      return json(res, 200, readFixture('conv-markdown.json'))
+    }
     if (conversationMatch[1] === 'conv-many-messages') {
       return json(res, 200, readFixture('conversation-detail-many.json'))
     }
@@ -492,6 +497,9 @@ async function handleRequest(req, res) {
     }
     if (sessionMatch[1] === 'session-q1152') {
       return json(res, 200, readFixture('session-q1152.json'))
+    }
+    if (sessionMatch[1] === 'session-markdown') {
+      return json(res, 200, readFixture('session-markdown.json'))
     }
     return json(res, 200, readFixture('session-detail.json'))
   }
