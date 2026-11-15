@@ -100,6 +100,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
   )
   const serverGroups = useServerGroups(groups, displayedServerIds, serverLabels)
   const showServerHeaders = serverGroups.length > 0
+  const showServerRowRefresh = Boolean(isBackgroundRefreshing && serverGroups.length > 1)
   const collidingPaths = useMemo(
     () =>
       collidingProjectPaths([
@@ -379,7 +380,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
                   collapsible={serverGroups.length > 1}
                   isExpanded={!collapsedServers.includes(item.serverId)}
                   onToggle={() => toggleServer(item.serverId)}
-                  isRefreshing={isBackgroundRefreshing}
+                  isRefreshing={showServerRowRefresh}
                   failed={item.failed}
                   onRetry={item.failed ? () => onRetryServer?.(item.serverId) : undefined}
                   onDetails={item.failed ? onOpenStatus : undefined}
