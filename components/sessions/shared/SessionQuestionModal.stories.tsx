@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-native-web-vite'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { MultiSession } from '@/types/api'
-import { BoardQuestionModal } from './BoardQuestionModal'
+import { SessionQuestionModal } from './SessionQuestionModal'
 
 const session = {
   id: 'w',
@@ -27,14 +27,14 @@ const session = {
 
 const queryClient = new QueryClient()
 
-const meta: Meta<typeof BoardQuestionModal> = {
-  title: 'sessions/board/BoardQuestionModal',
-  component: BoardQuestionModal,
+const meta: Meta<typeof SessionQuestionModal> = {
+  title: 'sessions/shared/SessionQuestionModal',
+  component: SessionQuestionModal,
   decorators: [(Story) => <QueryClientProvider client={queryClient}><Story /></QueryClientProvider>],
 }
 
 export default meta
 
-export const Default: StoryObj<typeof BoardQuestionModal> = {
+export const Default: StoryObj<typeof SessionQuestionModal> = {
   args: { session, title: 'Refactor the hub card', onClose: () => {}, onPromptsChanged: () => {} },
 }

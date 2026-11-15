@@ -13,7 +13,7 @@ import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
 import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
-import { BoardQuestionModal } from '@/components/sessions/board/BoardQuestionModal'
+import { SessionQuestionModal } from '@/components/sessions/shared/SessionQuestionModal'
 import { LiveCard } from './LiveCard'
 
 /** Wait stamps are fixed, so the card ticks locally or the number freezes. */
@@ -81,7 +81,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
             onPress={handlePress}
             onLongPress={line.question ? () => setAnswering(true) : undefined}
             accessibilityRole="button"
-            accessibilityLabel={line.question ? t('boardTab.showQuestion', { title }) : t('boardTab.openSession', { title })}
+            accessibilityLabel={line.question ? t('row.showQuestion', { title }) : t('row.openSession', { title })}
             testID={`needs-you-line-${session.id}`}
           >
             <Text style={styles.output} numberOfLines={1}>{line.text}</Text>
@@ -102,7 +102,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         <EndSessionStatus {...endStatus} />
         {overlays}
         {answering ? (
-          <BoardQuestionModal
+          <SessionQuestionModal
             session={session}
             title={title}
             onClose={() => setAnswering(false)}

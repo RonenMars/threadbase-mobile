@@ -15,7 +15,7 @@ import { useSettingsStore } from '@/stores/settings'
 import type { MultiSession } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { BoardColumnList, type BoardCardModel } from './BoardColumnList'
-import { BoardQuestionModal } from './BoardQuestionModal'
+import { SessionQuestionModal } from '@/components/sessions/shared/SessionQuestionModal'
 import { DesktopBoard } from './DesktopBoard'
 import { PhoneBoard } from './PhoneBoard'
 
@@ -175,7 +175,7 @@ export function SessionBoard({
     <View style={[styles.fill, { paddingTop: topInset }]}>
       <Layout counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} />
       {questionFor && questionSession ? (
-        <BoardQuestionModal
+        <SessionQuestionModal
           session={questionSession}
           title={questionFor.title}
           onClose={() => setQuestionFor(null)}

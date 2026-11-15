@@ -12,9 +12,9 @@ jest.mock('@/hooks/useSessionActions', () => ({
   }),
 }))
 
-jest.mock('@/components/sessions/board/BoardQuestionModal', () => {
+jest.mock('@/components/sessions/shared/SessionQuestionModal', () => {
   const { Text } = require('react-native')
-  return { BoardQuestionModal: () => <Text>question-modal</Text> }
+  return { SessionQuestionModal: () => <Text>question-modal</Text> }
 })
 
 const CLEAR_HINT = '\x1b[?25l\rnew task? /clear to save 165.2k tokens ·\x1b[?25h'

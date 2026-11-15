@@ -177,7 +177,14 @@
   },
   "row": {
     "waitingFor": "waiting {{elapsed}}",
-    "open": "Open"
+    "open": "Open",
+    "openSession": "Open session {{title}}",
+    "showQuestion": "Show the question for {{title}}"
+  },
+  "question": {
+    "close": "Close without answering",
+    "count": "Question {{current}} of {{total}}",
+    "answerInSession": "Answer this one in the session."
   },
   "layout": {
     "now": "Now",
@@ -297,13 +304,8 @@
     "columns": "Session states",
     "showBoard": "Show board",
     "showList": "Show list",
-    "openSession": "Open session {{title}}",
-    "showQuestion": "Show the question for {{title}}",
     "showSubagents_one": "Show {{count}} sub-agent",
     "showSubagents_other": "Show {{count}} sub-agents",
-    "closeQuestion": "Close without answering",
-    "questionCount": "Question {{current}} of {{total}}",
-    "answerInSession": "Answer this one in the session.",
     "previousColumn": "Previous column",
     "nextColumn": "Next column",
     "orphanHeading": "Sub-agents of other sessions",
