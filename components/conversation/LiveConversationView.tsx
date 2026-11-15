@@ -91,6 +91,15 @@ function echoMatchKey(m: Message): string {
     .trim()
 }
 
+const MIRRORED_LINE_CAP = 5
+
+function assistantTextLines(m: Message): string[] {
+  if (m.role !== 'assistant') return []
+  return m.content.flatMap((block) =>
+    block.type === 'text' ? block.text.split(/\r?\n/) : [],
+  )
+}
+
 // Distance from the end, in px, within which the reader counts as following the
 // conversation rather than reading back through it.
 const FOLLOW_TAIL_THRESHOLD_PX = 100
@@ -174,7 +183,7 @@ export function LiveConversationView({
   // FlashList runs its autoscroll-to-bottom check on every `data` identity
   // change, so a fresh array from e.g. the jump-to-latest FAB toggling
   // snapped a reader who had scrolled up a few lines back to the tail.
-  const { allMessages, queuedIds } = useMemo(() => {
+  const { allMessages, queuedIds, thinkingMessageLines } = useMemo(() => {
     const historicalMessages: Message[] = data?.messages ?? []
     // Historical carries a server message_index; live WS messages do not (yet —
     // real indexes arrive with the WS-resume follow-up). Order historical by
@@ -194,6 +203,7 @@ export function LiveConversationView({
 
     // Drop optimistic turns whose echo has landed — matched one-for-one by text.
     const allStreamed = [...orderedHistorical, ...newLive]
+    const liveAssistantLines = turnInFlight ? newLive.flatMap(assistantTextLines) : []
     const echoedUserTexts = allStreamed.filter((m) => m.role === 'user').map((m) => echoMatchKey(m))
     const stillPending = (() => {
       const remaining = [...pendingSends]
@@ -218,6 +228,7 @@ export function LiveConversationView({
         ...queued,
       ],
       queuedIds: new Set(queued.map((m) => m.id)),
+      thinkingMessageLines: liveAssistantLines,
     }
   }, [data?.messages, liveMessages, pendingSends, queuedSendIds, turnInFlight])
 
@@ -260,6 +271,17 @@ export function LiveConversationView({
     provider,
     suggestion,
   )
+  // Mirrored text goes first: the bubble scrapes a question from the last 30
+  // lines, so the live PTY tail has to stay last. The PTY echoes the same reply
+  // behind a glyph, hence the substring dedupe; the cap keeps a long reply from
+  // pushing the PTY tail out of the 60-line window.
+  const thinkingLines = useMemo(() => {
+    const mirrored = thinkingMessageLines
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !ptyLines.some((p) => p.includes(line)))
+      .slice(-MIRRORED_LINE_CAP)
+    return [...mirrored, ...ptyLines]
+  }, [ptyLines, thinkingMessageLines])
 
   useEffect(() => {
     // A resumed session's PTY replay lands immediately while REST history is
@@ -600,7 +622,7 @@ export function LiveConversationView({
         }
         ListFooterComponent={showThinkingFooter ? (
           <ThinkingBubble
-            lines={ptyLines}
+            lines={thinkingLines}
             fadingOut={thinkingState === 'fading'}
             onFadeOutComplete={handleFadeOutComplete}
             onSendKeys={(keys) => sendKeys.mutate(keys)}

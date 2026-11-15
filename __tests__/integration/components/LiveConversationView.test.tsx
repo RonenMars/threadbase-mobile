@@ -624,6 +624,31 @@ describe('LiveConversationView — queued send during a turn', () => {
     mockSessionStatus = 'running'
   })
 
+  it('mirrors live assistant text into the thinking bubble while the turn is running', async () => {
+    await renderView()
+
+    expect(renderedTexts()).toEqual(['streaming reply'])
+    expect(screen.getAllByTestId('thinking-terminal-line').map((n) => n.props.children)).toContain('streaming reply')
+  })
+
+  it('does not repeat assistant text the terminal already echoes, and keeps the PTY tail last', async () => {
+    mockPtyLines = ['> prompt', '● streaming reply']
+    await renderView()
+
+    const lines = screen.getAllByTestId('thinking-terminal-line').map((n) => n.props.children)
+    expect(lines).toEqual(['> prompt', '● streaming reply'])
+  })
+
+  it('mirrors only the last few non-empty lines of a long reply, ahead of the PTY tail', async () => {
+    const body = Array.from({ length: 12 }, (_, i) => `row ${i + 1}`)
+    mockLive = [{ ...ASSISTANT_LIVE, content: [{ type: 'text', text: body.join('\n\n') }] }]
+    mockPtyLines = ['pty tail']
+    await renderView()
+
+    const lines = screen.getAllByTestId('thinking-terminal-line').map((n) => n.props.children)
+    expect(lines).toEqual(['row 8', 'row 9', 'row 10', 'row 11', 'row 12', 'pty tail'])
+  })
+
   it('places a message sent mid-turn after the streaming reply, labelled queued', async () => {
     await renderView()
     await sendText('and also this')

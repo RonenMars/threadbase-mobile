@@ -273,7 +273,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
             scrollEnabled={false}
           >
             {visibleLines.map((line, i) => (
-              <Text key={i} style={styles.terminalLine} numberOfLines={1}>{line}</Text>
+              <Text key={i} style={styles.terminalLine} numberOfLines={1} testID="thinking-terminal-line">{line}</Text>
             ))}
           </ScrollView>
         ) : null}
