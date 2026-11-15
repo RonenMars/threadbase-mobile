@@ -5,11 +5,11 @@
 
 ## Implementation status
 
-**Updated:** 2026-11-13, branches `fix/android-notifications` and `feat/android-notifications-phase4` (stacked).
+**Updated:** 2026-11-15, on `main`.
 
 | Item | State |
 |---|---|
-| 1.1 status-bar icon | In PR — stand-in glyph derived from the logo (`assets/notification-icon.png`, design may replace it), not device-verified |
+| 1.1 status-bar icon | Done — merged in [#1495](https://github.com/RonenMars/threadbase-mobile/pull/1495); stand-in glyph derived from the logo (`assets/notification-icon.png`, design may replace it), not device-verified |
 | 1.2 channels before prompt | Done — `requestNotificationPermission()` in `services/push.ts`, used by onboarding and Settings |
 | 1.3 denied-forever | Done — Settings row re-prompts while `canAskAgain`, then opens system settings |
 | 1.4 channel health | Done — `hooks/useMutedChannels.ts`, shown on the notification health screen |
@@ -17,6 +17,7 @@
 | 2 release guard | Done — `ship-android.sh` refuses a build without `google-services.json`; `deploy.yml` already fails when the secret is unset |
 | 2 credentials | Partly done: both FCM V1 keys are in Expo and the `.dev` one is proven by a delivered push (2026-11-14); one Deploy run confirming the two-client `google-services.json` is still open |
 | 3 device verification | Not done — nothing here is device-verified |
+| 4 unit tests | Done — `__tests__/unit/services/push-permission-order.test.ts` (1.2), `__tests__/unit/hooks/usePermissionsStatus.test.tsx` (1.3), `__tests__/unit/hooks/useMutedChannels.test.ts` (1.4), `__tests__/unit/services/push-attention.test.ts` (1.5) |
 | 4 Maestro flow | Written (`e2e/android_notifications_health.yaml`, in `test:e2e:mock`), **not run** — no Maestro or emulator on the authoring machine; the token row is seeded by the mock server |
 | 4 docs | Gap recorded in `BACKLOG.md` and `FEATURES.md`; nothing claimed as verified |
 | Streamer#528 | Closed in streamer v1.48.0; `waitingInputNotifier.ts` sends attention pushes with `priority: "high"` (checked 2026-11-13 against streamer `main` `5902c319`) |
