@@ -12,12 +12,16 @@ import { makeStyles as makeCardStyles } from '@/components/sessions/base/Collaps
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useAllSubagents, type BoardSubagent } from '@/hooks/useAllSubagents'
 import { conversationHref } from '@/lib/conversationHref'
+import { isLiveAttachedPty } from '@/lib/sessionLeavePolicy'
+import type { MultiSession } from '@/types/api'
 import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel } from '@/lib/subagents'
 
 interface Props {
   serverIds: readonly string[]
   /** Parent conversation titles the list already holds, keyed by conversation id. */
   parentTitles: ReadonlyMap<string, string>
+  /** Sessions the list already holds: a parent with a live one opens that screen, not its history. */
+  liveSessions?: readonly MultiSession[]
   topInset?: number
 }
 
@@ -25,7 +29,7 @@ interface Props {
  * Every sub-agent across the active servers, grouped under its parent.
  * Read-only: a row opens the transcript, a group header opens the parent.
  */
-export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) {
+export function SubagentBoard({ serverIds, parentTitles, liveSessions = [], topInset = 0 }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
@@ -84,7 +88,12 @@ export function SubagentBoard({ serverIds, parentTitles, topInset = 0 }: Props) 
           title={title}
           isOpen={openIds.has(g.parentId)}
           onToggle={toggleOpen}
-          onOpenParent={() => router.push(conversationHref(g.parentId, serverId))}
+          onOpenParent={() => {
+            const live = liveSessions.find(
+              (x) => x.serverId === serverId && isLiveAttachedPty(x) && (x.boundConversationId ?? x.conversationId) === g.parentId,
+            )
+            router.push(live ? `/session/${live.id}?server=${serverId}` : conversationHref(g.parentId, serverId))
+          }}
           serverIdFor={(id) => serverByRowId.get(id) ?? serverId}
         />
       )

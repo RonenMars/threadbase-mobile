@@ -70,6 +70,7 @@ import { MatrixRain } from '@/components/terminal/MatrixRain'
 import { useQuickAccessStore, buildFavoriteId } from '@/stores/quickAccess'
 import { useSettingsStore } from '@/stores/settings'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
+import { SubagentSection } from '@/components/conversation/SubagentSection'
 import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
@@ -1411,6 +1412,7 @@ export default function SessionDetailScreen() {
             ) : null}
           </View>
         ) : null}
+        {historyConversationId ? <SubagentSection serverId={serverId} parentId={historyConversationId} /> : null}
         {isLive && (endSession.armed || endSession.terminatingAt != null) ? (
           <View style={styles.endStatus}>
             <EndSessionStatus

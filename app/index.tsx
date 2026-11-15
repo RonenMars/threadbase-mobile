@@ -636,7 +636,7 @@ export default function ProjectsHub() {
           onScroll={onScroll}
         />
       ) : showSubagents ? (
-        <SubagentBoard serverIds={displayedServerIds} parentTitles={subagentParentTitles} topInset={chromeHeight} />
+        <SubagentBoard serverIds={displayedServerIds} parentTitles={subagentParentTitles} liveSessions={visibleSessions} topInset={chromeHeight} />
       ) : sessionsLayout === 'projects' && sessionsTreeView ? (
         <TreeSessionsList
           sessions={filteredSessions}

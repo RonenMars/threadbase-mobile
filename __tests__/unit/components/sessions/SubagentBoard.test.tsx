@@ -94,6 +94,41 @@ describe('SubagentBoard', () => {
     expect(push).toHaveBeenLastCalledWith('/conversation/p1?server=s1')
   })
 
+  describe('opening the parent', () => {
+    const live = (over: Record<string, unknown> = {}) =>
+      ({ id: 'sess-1', serverId: 's1', boundConversationId: 'p1', ptyAttached: true, status: 'running', ...over }) as never
+    const openParent = async (liveSessions: unknown[]) => {
+      const push = jest.fn()
+      ;(useRouter as jest.Mock).mockReturnValue({ push, back: jest.fn(), replace: jest.fn() })
+      mockGet.mockResolvedValue(page([sub('a', 'p1')]))
+      const r = await render(
+        <SubagentBoard serverIds={['s1']} parentTitles={new Map()} liveSessions={liveSessions as never[]} />,
+        { wrapper: createWrapper() },
+      )
+      await expand(r, 'p1')
+      await fireEvent.press(r.getByTestId('subagent-parent-p1'))
+      return push
+    }
+
+    it('goes to the live session when the parent is attached and running', async () => {
+      expect(await openParent([live()])).toHaveBeenLastCalledWith('/session/sess-1?server=s1')
+    })
+
+    it('matches on the conversation id when nothing is bound yet', async () => {
+      const push = await openParent([live({ boundConversationId: undefined, conversationId: 'p1' })])
+      expect(push).toHaveBeenLastCalledWith('/session/sess-1?server=s1')
+    })
+
+    it.each([
+      ['detached', { ptyAttached: false }],
+      ['idle', { status: 'idle' }],
+      ['on another server', { serverId: 's2' }],
+      ['another conversation', { boundConversationId: 'other' }],
+    ])('opens the transcript when the session is %s', async (_n, over) => {
+      expect(await openParent([live(over)])).toHaveBeenLastCalledWith('/conversation/p1?server=s1')
+    })
+  })
+
   it('falls back to a short id when the parent is not in the list', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'abcdef123456', { subagentActive: true })]))
     const r = await renderBoard()
