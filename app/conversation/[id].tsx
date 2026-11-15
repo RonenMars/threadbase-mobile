@@ -44,6 +44,7 @@ import { startOpenTrace, mark as traceMark, finishOpenTrace, useLiveInstanceCoun
 import { useSessionActions, type ResumeResult } from '@/hooks/useSessionActions'
 import { useTerminateExternal } from '@/hooks/useTerminateExternal'
 import { isExternalLive, isExternalSession } from '@/lib/externalSession'
+import { ExternalSessionNotifyToggle } from '@/components/sessions/ExternalSessionNotifyToggle'
 import { useServersStore } from '@/stores/servers'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -971,6 +972,7 @@ export default function ConversationDetailScreen() {
             <Text style={styles.unavailableBannerText}>{unavailableMessage}</Text>
           </View>
         ) : null}
+        {canTerminate ? <ExternalSessionNotifyToggle serverId={serverId} conversationId={id} /> : null}
         {hasMessages ? (
           showSearchView ? (
             // Keyed on the fetch window: re-anchoring (match step out of the
