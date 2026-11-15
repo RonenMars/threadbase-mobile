@@ -8,7 +8,6 @@ import {
   type TextInputInstance,
   TouchableOpacity,
   Pressable,
-  ActivityIndicator,
   useWindowDimensions,
   type HostInstance,
   } from 'react-native'
@@ -33,7 +32,6 @@ import { makeStyles as makeSearchStyles } from '@/components/sessions/SearchStyl
 import { FilterPresets } from '@/components/servers/FilterPresets'
 import { useAppDirection } from '@/lib/rtl'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
-import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { FilterSortSheet } from '@/components/servers/FilterSortSheet'
 import { isPresentationLive } from '@/lib/sessionPresentation'
 import { sessionActivityMs } from '@/lib/sessionActivity'
@@ -72,6 +70,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation, ServerConfig } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { ALL_TIERS, DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, displayedListItems, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
+import { selectIsRecovering, useQueryRecoveryStore } from '@/stores/query-recovery'
 
 
 // Stable empty reference so a memo/child does not see a fresh [] each render
@@ -147,6 +146,7 @@ export default function ProjectsHub() {
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
   const hasEverHadServer = useServersStore((s) => s.hasEverHadServer)
+  const isRecovering = useQueryRecoveryStore(selectIsRecovering)
 
   useEffect(() => {
     clientLog.info('hub.mount', 'ProjectsHub mounted', {
@@ -312,11 +312,8 @@ export default function ProjectsHub() {
     hasCachedData &&
     (!sessionsDone ||
       (isGroupedLayout ? summariesFetching : needsClassicConversations && convPages.isFetching))
-  // Single-server has no server-name rows to host the cached-data chip, so the
-  // notice overlays the list: centered banner in Hub/Tree, caption under the
-  // header fallback spinner in Classic. Multi-server is covered by the chips.
-  const showSyncNotice = isBackgroundRefreshing && activeServerIds.length <= 1
-  const syncNoticeVariant = sessionsLayout === 'projects' ? 'banner' : 'caption'
+  const isRecoveryOverlayVisible = isRecovering && Object.keys(servers).length === 1
+  const showNonBlockingSync = isBackgroundRefreshing && !isRecoveryOverlayVisible
   // A boolean selector: the root wakes only when every server goes down or one
   // recovers, not on each individual server's status change.
   const allServersFailed = useServerFetchStatusStore(
@@ -461,11 +458,6 @@ export default function ProjectsHub() {
 
         {/* Right: search, filter, settings */}
         <View style={styles.headerRight}>
-          {/* Background-refetch fallback spinner — only with a single server,
-              where no server-name row exists to anchor it */}
-          {isBackgroundRefreshing && activeServerIds.length <= 1 ? (
-            <ActivityIndicator size="small" color={theme.text.secondary} testID="header-background-refreshing" />
-          ) : null}
           <HomeStatusPill onPress={openStatusSurface} suppressAlerts={allServersFailed} />
 
           <Pressable
@@ -654,7 +646,7 @@ export default function ProjectsHub() {
           onRefresh={handleRefresh}
           searchOpen={searchOpen}
           searchQuery={classicConvSearch}
-          isBackgroundRefreshing={isBackgroundRefreshing}
+          isBackgroundRefreshing={showNonBlockingSync}
           topInset={chromeHeight}
           ListHeaderComponent={listHeader}
           onNewSession={handleFABPress}
@@ -671,7 +663,7 @@ export default function ProjectsHub() {
           onRefresh={handleRefresh}
           searchOpen={searchOpen}
           searchQuery={classicConvSearch}
-          isBackgroundRefreshing={isBackgroundRefreshing}
+          isBackgroundRefreshing={showNonBlockingSync}
           topInset={chromeHeight}
           ListHeaderComponent={listHeader}
           onNewSession={handleFABPress}
@@ -690,7 +682,7 @@ export default function ProjectsHub() {
             onEndReached={loadMoreConversations}
             searchQuery={classicConvSearch}
             conversationsFromServer={Boolean(debouncedConvSearch)}
-            isBackgroundRefreshing={isBackgroundRefreshing}
+            isBackgroundRefreshing={showNonBlockingSync}
             topInset={chromeHeight}
             ListHeaderComponent={listHeader}
             onNewSession={handleFABPress}
@@ -709,7 +701,6 @@ export default function ProjectsHub() {
       <View style={[styles.belowChrome, { top: chromeHeight }]} pointerEvents="box-none">
         {allServersFailed ? null : <HomeStatusStrip onPress={openStatusSurface} />}
         <ToastViewport />
-        <SyncCachedNotice visible={showSyncNotice} variant={syncNoticeVariant} />
       </View>
 
       {/* FAB */}

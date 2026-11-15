@@ -7,7 +7,7 @@ import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { seedServerFailure } from '@/test-utils/serverFailure'
 import i18n from '@/test-utils/i18n-setup'
-import type { MultiSession } from '@/types/api'
+import type { MultiSession, ServerConfig } from '@/types/api'
 
 jest.mock('@/hooks/useConversations', () => ({
   useConversationSearch: () => ({ data: undefined }),
@@ -45,7 +45,15 @@ const liveSession: MultiSession = {
   startedAt: new Date(NOW - 60_000).toISOString(),
 }
 
-function renderHub(sessions: MultiSession[], summaries: MultiProjectSummary[]) {
+function server(id: string, label: string): ServerConfig {
+  return { id, url: `http://${id}`, apiKey: 'k', label, isConnected: true, serverInfo: null, connectionError: null }
+}
+
+function renderHub(
+  sessions: MultiSession[],
+  summaries: MultiProjectSummary[],
+  extra: { isBackgroundRefreshing?: boolean } = {},
+) {
   return renderWithI18n(
     <ProjectHubList
       sessions={sessions}
@@ -56,12 +64,23 @@ function renderHub(sessions: MultiSession[], summaries: MultiProjectSummary[]) {
       onRefresh={() => {}}
       searchOpen={false}
       searchQuery=""
+      {...extra}
     />,
   )
 }
 
 beforeEach(async () => {
   await i18n.changeLanguage('en')
+  useServersStore.setState({
+    activeServerIds: ['srv-1'],
+    displayedServerIds: ['srv-1'],
+    servers: { 'srv-1': server('srv-1', 'MacBook Pro') },
+  })
+})
+
+afterEach(() => {
+  useServerFetchStatusStore.getState().reset()
+  useServersStore.setState({ activeServerIds: [], displayedServerIds: [], servers: {} })
 })
 
 describe('ProjectHubList tiers', () => {
@@ -95,19 +114,39 @@ describe('ProjectHubList tiers', () => {
 
 })
 
-describe('ProjectHubList server failure', () => {
-  afterEach(() => {
-    useServerFetchStatusStore.getState().reset()
-    useServersStore.setState({ activeServerIds: [], displayedServerIds: [], servers: {} })
-  })
+describe('ProjectHubList refresh indicators', () => {
+  it('shows the refresh scanner on server title rows when multiple servers are visible', async () => {
+    useServersStore.setState({
+      activeServerIds: ['srv-1', 'srv-2'],
+      displayedServerIds: ['srv-1', 'srv-2'],
+      servers: {
+        'srv-1': server('srv-1', 'MacBook Pro'),
+        'srv-2': server('srv-2', 'studio-linux'),
+      },
+    })
 
+    const { getByTestId } = await renderHub(
+      [liveSession],
+      [
+        summary('fresh', DAY),
+        { ...summary('other', DAY), serverId: 'srv-2', path: '/home/user/other', name: 'other' },
+      ],
+      { isBackgroundRefreshing: true },
+    )
+
+    expect(getByTestId('server-header-refreshing-srv-1')).toBeTruthy()
+    expect(getByTestId('server-header-refreshing-srv-2')).toBeTruthy()
+  })
+})
+
+describe('ProjectHubList server failure', () => {
   it('shows a section failure panel for one down host', async () => {
     useServersStore.setState({
       activeServerIds: ['srv-1', 'srv-2'],
       displayedServerIds: ['srv-1', 'srv-2'],
       servers: {
-        'srv-1': { id: 'srv-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
-        'srv-2': { id: 'srv-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+        'srv-1': server('srv-1', 'MacBook Pro'),
+        'srv-2': server('srv-2', 'studio-linux'),
       },
     })
     seedServerFailure('srv-2')
@@ -128,8 +167,8 @@ describe('ProjectHubList server failure', () => {
       activeServerIds: ['srv-1', 'srv-2'],
       displayedServerIds: ['srv-1', 'srv-2'],
       servers: {
-        'srv-1': { id: 'srv-1', url: 'http://one', apiKey: 'k', label: 'MacBook Pro', isConnected: true, serverInfo: null, connectionError: null },
-        'srv-2': { id: 'srv-2', url: 'http://two', apiKey: 'k', label: 'studio-linux', isConnected: true, serverInfo: null, connectionError: null },
+        'srv-1': server('srv-1', 'MacBook Pro'),
+        'srv-2': server('srv-2', 'studio-linux'),
       },
     })
     seedServerFailure('srv-1')
@@ -147,7 +186,6 @@ describe('ProjectHubList server failure', () => {
   })
 
   it('renders no section for a server the filter hides', async () => {
-    const server = (id: string, label: string) => ({ id, url: `http://${id}`, apiKey: 'k', label, isConnected: true, serverInfo: null, connectionError: null })
     useServersStore.setState({
       activeServerIds: ['srv-1', 'srv-2', 'srv-3'],
       displayedServerIds: ['srv-1', 'srv-3'],
