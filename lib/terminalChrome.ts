@@ -1,6 +1,7 @@
 import {
   CLAUDE_CODE_PROVIDER,
   CODEX_CLI_PROVIDER,
+  COPILOT_PROVIDER,
   type ProviderName,
 } from '@/constants/providers'
 import { stripAnsi } from '@/utils/stripAnsi'
@@ -72,6 +73,31 @@ export function isCodexTerminalChrome(line: string): boolean {
   return false
 }
 
+/**
+ * Copilot CLI draws no title or transcript line for its own chrome, and
+ * VirtualTerminal keeps every row it has painted, so the busy row, the status
+ * footer and a dismissed permission / `ask_user` card would otherwise sit in the
+ * last rows for good. Patterns are read off the 1.0.92 captures in tb-streamer
+ * (`__tests__/fixtures/turn-signals/copilot-1.0.92-*.json`). A card's box gutter
+ * is peeled first; anchored so a reply that quotes a phrase is kept. The card's
+ * title, body and command rows carry no fixed text and are not matched.
+ */
+export function isCopilotTerminalChrome(line: string): boolean {
+  if (isCodexTerminalChrome(line)) return true
+  const row = line.trim().replace(/^[│┃]\s*/, '').replace(/\s*[│┃]$/, '')
+  if (/^[❯›>]$/.test(row)) return true
+  if (/^\S\s+Working\b.*\b(?:interrupt|edit prompt)\b/.test(row)) return true
+  if (/\bSession: [\d.]+ AIC\b/.test(row)) return true
+  if (/^←\s*open sidebar\b/.test(row) || /^Interactive · Manual Approval\b/.test(row)) return true
+  if (/^Do you (?:want to run this command|trust the files in this folder)\?$/.test(row)) return true
+  if (/^(?:❯\s*)?\d+\.\s+(?:Yes(?:, and\b.*)?|No(?: \(Esc\)|, and tell Copilot\b.*))$/.test(row)) return true
+  if (/^↑\/↓ to navigate\b.*\besc to cancel$/.test(row)) return true
+  if (row === 'Copilot needs information.') return true
+  if (/^(?:↑\/↓ (?:select|adjust)\b|enter accept\b).*\bctrl\+d decline\b/.test(row)) return true
+  if (/^\S\s+Asking user\s+Waiting for response\b/.test(row)) return true
+  return false
+}
+
 /** Keep every non-empty line — used for raw-terminal fallback. */
 export function isPassthroughChrome(line: string): boolean {
   return line.length === 0
@@ -83,6 +109,7 @@ export function getTerminalChromeFilter(
 ): TerminalChromeFilter {
   if (opts?.raw) return isPassthroughChrome
   if (provider === CODEX_CLI_PROVIDER) return isCodexTerminalChrome
+  if (provider === COPILOT_PROVIDER) return isCopilotTerminalChrome
   if (provider === CLAUDE_CODE_PROVIDER || provider == null || provider === '') {
     return isClaudeTerminalChrome
   }
