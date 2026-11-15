@@ -69,7 +69,7 @@ function renderCard(s: MultiSession) {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   return renderWithI18n(
     <QueryClientProvider client={client}>
-      <NeedsYouCard session={s} title="Fix login redirect" />
+      <NeedsYouCard session={s} title="Fix login redirect" onPromptsChanged={jest.fn()} />
     </QueryClientProvider>,
   )
 }
@@ -164,7 +164,7 @@ describe('session swipe actions', () => {
 
 describe('needs-you terminal tail', () => {
   it('strips terminal control codes from the tail', async () => {
-    await renderCard(session({ lastOutput: '\x1b[?25lAllow edit? (y/n)\x1b[?25h' }))
+    await renderCard(session({ hasOpenPrompt: true, lastOutput: '\x1b[?25lAllow edit? (y/n)\x1b[?25h' }))
     expect(screen.getByText('Allow edit? (y/n)')).toBeTruthy()
   })
 

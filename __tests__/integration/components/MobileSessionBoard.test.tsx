@@ -339,8 +339,8 @@ describe('SessionBoard questions', () => {
     expect(r.getByTestId('board-question-modal')).toBeTruthy()
   })
 
-  it('falls back to the terminal tail, without an eye, on a server with no prompts', async () => {
-    const r = await renderBoard([row(waiting({ hasOpenPrompt: undefined, pendingPrompts: undefined, lastOutput: 'Allow edit?\n' }))])
+  it('falls back to the terminal tail, without an eye, while a prompt is open but its text has not arrived', async () => {
+    const r = await renderBoard([row(waiting({ hasOpenPrompt: true, pendingPrompts: undefined, lastOutput: 'Allow edit?\n' }))])
     expect(r.queryByTestId('board-question-w')).toBeNull()
     expect(r.getByText('Allow edit?')).toBeTruthy()
     await fireEvent.press(r.getByTestId('board-tail-w'))
@@ -353,12 +353,11 @@ describe('SessionBoard questions', () => {
     expect(r.queryByText(/clear to save/)).toBeNull()
   })
 
-  it('shows the last assistant reply, as a tap-to-open line without an eye, for a finished turn', async () => {
+  it('renders no line for the last assistant reply of a finished turn', async () => {
     const r = await renderBoard([row(waiting({ hasOpenPrompt: false, pendingPrompts: undefined, lastMessageText: 'Pushed the fix.', lastMessageRole: 'assistant' }))])
-    expect(r.getByText('Pushed the fix.')).toBeTruthy()
+    expect(r.queryByText('Pushed the fix.')).toBeNull()
+    expect(r.queryByTestId('board-tail-w')).toBeNull()
     expect(r.queryByTestId('board-question-w')).toBeNull()
-    await fireEvent.press(r.getByTestId('board-tail-w'))
-    expect(r.queryByTestId('board-question-modal')).toBeNull()
   })
 })
 

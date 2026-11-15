@@ -697,6 +697,7 @@ export default function ProjectsHub() {
             onScroll={onScroll}
             onRetryServer={(serverId) => retryFailed([serverId])}
             onOpenStatus={openStatusSurface}
+            onPromptsChanged={refetchSessions}
           />
         </View>
       )}

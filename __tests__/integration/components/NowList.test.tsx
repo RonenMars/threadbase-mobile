@@ -1,5 +1,6 @@
 import React from 'react'
 import { StyleSheet, Text } from 'react-native'
+import { I18nextProvider } from 'react-i18next'
 import { fireEvent, waitFor } from '@testing-library/react-native'
 import { NowList } from '@/components/sessions/now/NowList'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
@@ -76,6 +77,7 @@ function renderList(
       onRefresh={() => {}}
       searchQuery=""
       conversationsFromServer={false}
+      onPromptsChanged={() => {}}
       {...extra}
     />,
   )
@@ -86,6 +88,20 @@ beforeEach(async () => {
 })
 
 describe('NowList', () => {
+  it('asks for a refetch when a session opens a prompt, since session updates carry no pendingPrompts', async () => {
+    const onPromptsChanged = jest.fn()
+    const live = (hasOpenPrompt: boolean) =>
+      asItem(session({ id: 'w', status: 'running', ptyAttached: true, lifecycle: 'attached', hasOpenPrompt }))
+    const { rerender } = await renderList([live(false)], 'state', { onPromptsChanged })
+    expect(onPromptsChanged).not.toHaveBeenCalled()
+    await rerender(
+      <I18nextProvider i18n={i18n}>
+        <NowList items={[live(true)]} refreshing={false} onRefresh={() => {}} searchQuery="" conversationsFromServer={false} onPromptsChanged={onPromptsChanged} />
+      </I18nextProvider>,
+    )
+    expect(onPromptsChanged).toHaveBeenCalledTimes(1)
+  })
+
   it('orders by state: needs you, then working, then earlier — and a held session is never live', async () => {
     const waiting = session({ id: 'w', status: 'waiting_input', ptyAttached: true, lifecycle: 'attached', sessionName: 'Why sessions open in terminal view' })
     const running = session({ id: 'r', status: 'running', ptyAttached: true, lifecycle: 'attached', sessionName: 'Scan all worktrees for stale ones' })

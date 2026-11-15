@@ -140,11 +140,8 @@ describe('needsYouLine', () => {
     expect(needsYouLine(withOutput(false, '\x1b[?25l\r25\x1b[?25h'))).toBeUndefined()
   })
 
-  it('keeps the terminal tail on an older server that omits hasOpenPrompt', () => {
-    expect(needsYouLine(withOutput(undefined, 'Allow this edit? (y/n)'))).toEqual({
-      text: 'Allow this edit? (y/n)',
-      question: false,
-    })
+  it('shows nothing on an older server that omits hasOpenPrompt, since it cannot say a question is open', () => {
+    expect(needsYouLine(withOutput(undefined, 'Allow this edit? (y/n)'))).toBeUndefined()
   })
 
   it('falls back to the terminal tail when hasOpenPrompt is true but the prompts have not merged in yet', () => {
@@ -154,31 +151,18 @@ describe('needsYouLine', () => {
     })
   })
 
-  describe('last assistant reply on a finished turn', () => {
+  describe('a finished turn', () => {
     const finished = (overrides: Partial<Session>) =>
       ({ hasOpenPrompt: false, lastOutput: '\x1b[?25l\rnew task? /clear to save 165.2k tokens ·\x1b[?25h', ...overrides }) as Session
 
-    it('shows the reply when the streamer says no question is open and the last message is the assistant\'s', () => {
-      const session = finished({ lastMessageText: 'Done.\n  Pushed the fix.', lastMessageRole: 'assistant' })
-      expect(needsYouLine(session)).toEqual({ text: 'Done. Pushed the fix.', question: false })
-    })
-
-    it('omits the line when the newest message is the user\'s own prompt', () => {
-      expect(needsYouLine(finished({ lastMessageText: 'fix it', lastMessageRole: 'user' }))).toBeUndefined()
-    })
-
-    it('omits the line when the streamer sends no role, rather than guessing who spoke', () => {
-      expect(needsYouLine(finished({ lastMessageText: 'Done.' }))).toBeUndefined()
+    it('shows nothing, even though the last message is the assistant\'s reply', () => {
+      const session = finished({ lastMessageText: 'Done. Pushed the fix.', lastMessageRole: 'assistant' })
+      expect(needsYouLine(session)).toBeUndefined()
     })
 
     it('never lets a reply replace an open question', () => {
       const session = finished({ hasOpenPrompt: true, pendingPrompts: [prompt('a', [question('1')])], lastMessageText: 'Done.', lastMessageRole: 'assistant' })
       expect(needsYouLine(session)).toEqual({ text: 'text 1', question: true })
-    })
-
-    it('keeps the terminal tail on an older streamer even if a reply is present', () => {
-      const session = finished({ hasOpenPrompt: undefined, lastOutput: 'Allow this edit? (y/n)', lastMessageText: 'Done.', lastMessageRole: 'assistant' })
-      expect(needsYouLine(session)).toEqual({ text: 'Allow this edit? (y/n)', question: false })
     })
   })
 })

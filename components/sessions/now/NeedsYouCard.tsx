@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { MONO_FONT } from '@/constants/mono'
@@ -13,6 +13,7 @@ import { EndSessionStatus } from '@/components/sessions/EndSessionStatus'
 import type { ProviderName } from '@/constants/providers'
 import type { MultiSession } from '@/types/api'
 import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
+import { BoardQuestionModal } from '@/components/sessions/board/BoardQuestionModal'
 import { LiveCard } from './LiveCard'
 
 /** Wait stamps are fixed, so the card ticks locally or the number freezes. */
@@ -33,14 +34,16 @@ interface Props {
   serverColor?: string | null
   dominantProvider?: ProviderName
   isFirst?: boolean
+  /** An answer landed or the prompt moved on: the list's `pendingPrompts` are out of date. */
+  onPromptsChanged: () => void
 }
 
 /**
  * The only row that earns a whole card and an action line: a live process
- * waiting on the user. The mono block shows the open question's text, or the
- * terminal tail on streamers that cannot say — display only, no answer affordance by design.
+ * waiting on the user. The mono block appears only while a question is open and shows its text;
+ * a long press on it opens the answers, a tap opens the session.
  */
-export function NeedsYouCard({ session, title, serverLabel, serverColor, dominantProvider, isFirst }: Props) {
+export function NeedsYouCard({ session, title, serverLabel, serverColor, dominantProvider, isFirst, onPromptsChanged }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -51,7 +54,8 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
   const qualifier = wait ? t('row.waitingFor', { elapsed: wait }) : undefined
   const tierLabel = getSessionTierLabel('needsYou', t)
   const accessibilityLabel = qualifier ? `${title}, ${tierLabel}, ${qualifier}` : `${title}, ${tierLabel}`
-  const output = needsYouLine(session)?.text
+  const line = needsYouLine(session)
+  const [answering, setAnswering] = useState(false)
   const projectLabel = shortPath(session.projectPath)
 
   return (
@@ -72,8 +76,16 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         isFirst={isFirst}
       >
         <StateBadge tier="needsYou" qualifier={qualifier} />
-        {output ? (
-          <Text style={styles.output} numberOfLines={1}>{output}</Text>
+        {line ? (
+          <Pressable
+            onPress={handlePress}
+            onLongPress={line.question ? () => setAnswering(true) : undefined}
+            accessibilityRole="button"
+            accessibilityLabel={line.question ? t('boardTab.showQuestion', { title }) : t('boardTab.openSession', { title })}
+            testID={`needs-you-line-${session.id}`}
+          >
+            <Text style={styles.output} numberOfLines={1}>{line.text}</Text>
+          </Pressable>
         ) : null}
         <View style={styles.footer}>
           {projectLabel ? (
@@ -89,6 +101,14 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         </View>
         <EndSessionStatus {...endStatus} />
         {overlays}
+        {answering ? (
+          <BoardQuestionModal
+            session={session}
+            title={title}
+            onClose={() => setAnswering(false)}
+            onPromptsChanged={onPromptsChanged}
+          />
+        ) : null}
       </LiveCard>
     </SwipeableRow>
   )
