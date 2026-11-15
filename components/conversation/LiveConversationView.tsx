@@ -271,17 +271,18 @@ export function LiveConversationView({
     provider,
     suggestion,
   )
-  // Mirrored text goes first: the bubble scrapes a question from the last 30
-  // lines, so the live PTY tail has to stay last. The PTY echoes the same reply
-  // behind a glyph, hence the substring dedupe; the cap keeps a long reply from
-  // pushing the PTY tail out of the 60-line window.
-  const thinkingLines = useMemo(() => {
-    const mirrored = thinkingMessageLines
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !ptyLines.some((p) => p.includes(line)))
-      .slice(-MIRRORED_LINE_CAP)
-    return [...mirrored, ...ptyLines]
-  }, [ptyLines, thinkingMessageLines])
+  // Display-only: the bubble scrapes questions from `ptyLines` alone, so
+  // model-authored text can never raise a card that sends keystrokes. The PTY
+  // echoes the same reply behind a glyph, hence the substring dedupe; the cap
+  // keeps a long reply from pushing the PTY tail out of the 60-line window.
+  const mirroredLines = useMemo(
+    () =>
+      thinkingMessageLines
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0 && !ptyLines.some((p) => p.includes(line)))
+        .slice(-MIRRORED_LINE_CAP),
+    [ptyLines, thinkingMessageLines],
+  )
 
   useEffect(() => {
     // A resumed session's PTY replay lands immediately while REST history is
@@ -622,7 +623,8 @@ export function LiveConversationView({
         }
         ListFooterComponent={showThinkingFooter ? (
           <ThinkingBubble
-            lines={thinkingLines}
+            lines={ptyLines}
+            mirroredLines={mirroredLines}
             fadingOut={thinkingState === 'fading'}
             onFadeOutComplete={handleFadeOutComplete}
             onSendKeys={(keys) => sendKeys.mutate(keys)}

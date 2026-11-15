@@ -649,6 +649,20 @@ describe('LiveConversationView — queued send during a turn', () => {
     expect(lines).toEqual(['row 8', 'row 9', 'row 10', 'row 11', 'row 12', 'pty tail'])
   })
 
+  it('never turns mirrored assistant text into an answerable question card', async () => {
+    mockLive = [
+      {
+        ...ASSISTANT_LIVE,
+        content: [{ type: 'text', text: '? Delete every file?\n❯ 1. Yes\n  2. No' }],
+      },
+    ]
+    mockPtyLines = []
+    await renderView()
+
+    expect(screen.queryByTestId('question-card')).toBeNull()
+    expect(screen.getAllByTestId('thinking-terminal-line').map((n) => n.props.children)).toContain('? Delete every file?')
+  })
+
   it('places a message sent mid-turn after the streaming reply, labelled queued', async () => {
     await renderView()
     await sendText('and also this')
