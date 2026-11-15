@@ -208,6 +208,7 @@ function makeStyles(theme: Theme) {
     },
     actionsStacked: {
       flexDirection: 'column',
+      flexWrap: 'nowrap',
       alignItems: 'stretch',
     },
     action: {

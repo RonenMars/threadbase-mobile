@@ -1,4 +1,5 @@
 import { fireEvent } from '@testing-library/react-native'
+import { StyleSheet } from 'react-native'
 import { CriticalDialog } from '@/components/alerts/CriticalDialog'
 import { renderWithI18n } from '@/test-utils/render'
 
@@ -22,6 +23,24 @@ describe('CriticalDialog', () => {
     getByText('Resume this conversation?')
     fireEvent.press(getByTestId('critical-take-over'))
     expect(onTakeOver).toHaveBeenCalledTimes(1)
+  })
+
+  it('stacks actions in one column so they stretch to the card width', async () => {
+    const { getByTestId } = await renderWithI18n(
+      <CriticalDialog
+        visible
+        title="Hand off?"
+        onRequestClose={() => {}}
+        stacked
+        actions={[
+          { label: 'Cancel', variant: 'secondary', onPress: () => {}, testID: 'critical-cancel' },
+          { label: 'A much longer confirm label', onPress: () => {}, testID: 'critical-confirm' },
+        ]}
+      />,
+    )
+    // A wrapping column is only as wide as its widest child, so stretch stops short of the card.
+    const row = StyleSheet.flatten(getByTestId('critical-cancel').parent?.props.style)
+    expect(row).toMatchObject({ flexDirection: 'column', flexWrap: 'nowrap', alignItems: 'stretch' })
   })
 
   it('hides chrome when not visible', async () => {
