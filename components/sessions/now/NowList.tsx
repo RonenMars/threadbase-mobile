@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, FlatList, RefreshControl } from 'react-native'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
@@ -16,6 +16,7 @@ import { earlierBucketFor, type EarlierBucket } from '@/components/sessions/hub/
 import { basename } from '@/components/sessions/shared/pathTail'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { promptRefetchKey } from '@/lib/boardPrompts'
 import { conversationHref } from '@/lib/conversationHref'
 import type { SessionStatusLabel } from '@/lib/sessionPresentation'
 import { useNavLockStore } from '@/stores/navLock'
@@ -56,6 +57,8 @@ interface Props {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
   onRetryServer?: (serverId: string) => void
   onOpenStatus?: () => void
+  /** Refetch the list without the pull spinner: `pendingPrompts` only arrive on list rows. */
+  onPromptsChanged: () => void
 }
 
 type Entry = NowEntry
@@ -193,6 +196,7 @@ export const NowList = React.memo(function NowList({
   onScroll,
   onRetryServer,
   onOpenStatus,
+  onPromptsChanged,
 }: Props) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
@@ -306,6 +310,15 @@ export const NowList = React.memo(function NowList({
 
   const highlight = searchQuery.trim() || undefined
 
+  // A session_update merges over the row and never carries `pendingPrompts`, so refetch when the set of open prompts changes.
+  const refetchKey = promptRefetchKey(items)
+  const lastRefetchKey = useRef(refetchKey)
+  useEffect(() => {
+    if (lastRefetchKey.current === refetchKey) return
+    lastRefetchKey.current = refetchKey
+    onPromptsChanged()
+  }, [refetchKey, onPromptsChanged])
+
   const renderItem = useCallback(({ item }: { item: FlatItem }) => {
     switch (item.kind) {
       case 'eyebrow':
@@ -365,17 +378,17 @@ export const NowList = React.memo(function NowList({
         // A live tier is a card wherever it sits; everything else is a two-line row.
         if (item.entry.tier === 'needsYou' || item.entry.tier === 'working') {
           const session = item.entry.item.item as MultiSession
-          const Card = item.entry.tier === 'needsYou' ? NeedsYouCard : WorkingCard
-          const card = (
-            <Card
-              session={session}
-              title={item.entry.title.title}
-              serverLabel={multiServer ? session.serverLabel : undefined}
-              serverColor={servers[session.serverId]?.color}
-              dominantProvider={dominantProvider}
-              isFirst={item.isFirst}
-            />
-          )
+          const cardProps = {
+            session,
+            title: item.entry.title.title,
+            serverLabel: multiServer ? session.serverLabel : undefined,
+            serverColor: servers[session.serverId]?.color,
+            dominantProvider,
+            isFirst: item.isFirst,
+          }
+          const card = item.entry.tier === 'needsYou'
+            ? <NeedsYouCard {...cardProps} onPromptsChanged={onPromptsChanged} />
+            : <WorkingCard {...cardProps} />
           return stale ? <View style={{ opacity: 0.6 }}>{card}</View> : card
         }
         return (
@@ -392,7 +405,7 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, collapsedDayBuckets, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, dismissFailure])
+  }, [collapsedServers, toggleServer, collapsedDayBuckets, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, onPromptsChanged, dismissFailure])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">

@@ -88,7 +88,7 @@ function BoardCardFrame({
               onPress={onOpen}
               onLongPress={onLongPress}
               accessibilityRole="button"
-              accessibilityLabel={t('boardTab.openSession', { title })}
+              accessibilityLabel={t('row.openSession', { title })}
               testID={`board-open-${rowId}`}
             >
               {parentLabel ? <Text style={card.headerParent} numberOfLines={1}>{parentLabel}</Text> : null}
@@ -115,8 +115,8 @@ function BoardCardFrame({
               style={styles.askRow}
               onPress={needsYouLine.onPress}
               accessibilityRole="button"
-              accessibilityLabel={needsYouLine.question ? t('boardTab.showQuestion', { title }) : t('boardTab.openSession', { title })}
-              testID={needsYouLine.question ? `board-question-${rowId}` : `board-tail-${rowId}`}
+              accessibilityLabel={needsYouLine.question ? t('row.showQuestion', { title }) : t('row.openSession', { title })}
+              testID={needsYouLine.question ? `question-bar-${rowId}` : `tail-bar-${rowId}`}
             >
               {needsYouLine.question ? <Eye size={16} color={waiting} /> : null}
               <Text style={needsYouLine.question ? styles.ask : styles.tail} numberOfLines={1}>{needsYouLine.text}</Text>

@@ -25,7 +25,7 @@ interface Props {
 type Notice = 'closed' | 'stale' | 'failed'
 
 /** Every open question of one session. Closing it answers nothing, so the session stays in Needs you. */
-export function BoardQuestionModal({ session, title, onClose, onPromptsChanged }: Props) {
+export function SessionQuestionModal({ session, title, onClose, onPromptsChanged }: Props) {
   const { t } = useTranslation('sessions')
   const { t: tTerminal } = useTranslation('terminal')
   const theme = useTheme()
@@ -84,7 +84,7 @@ export function BoardQuestionModal({ session, title, onClose, onPromptsChanged }
     <Modal transparent visible animationType={reduceMotion ? 'none' : 'fade'} onRequestClose={onClose} statusBarTranslucent>
       {/* An RN Modal is a new native root: it does not inherit the app root's Yoga direction. */}
       <View style={[styles.scrim, wide && styles.scrimWide, layoutDirectionStyle(direction)]}>
-        <View style={[styles.sheet, wide ? styles.sheetWide : { paddingTop: insets.top }]} testID="board-question-modal">
+        <View style={[styles.sheet, wide ? styles.sheetWide : { paddingTop: insets.top }]} testID="session-question-modal">
           <View style={styles.header}>
             <View style={styles.headerText}>
               {project ? <Text style={[styles.project, ltrContentStyle]} numberOfLines={1}>{project}</Text> : null}
@@ -94,19 +94,19 @@ export function BoardQuestionModal({ session, title, onClose, onPromptsChanged }
               style={styles.close}
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel={t('boardTab.closeQuestion')}
-              testID="board-question-close"
+              accessibilityLabel={t('question.close')}
+              testID="session-question-close"
             >
               <X size={20} color={theme.text.primary} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.md }]}>
-            {noticeText ? <Text style={styles.notice} testID="board-question-notice">{noticeText}</Text> : null}
+            {noticeText ? <Text style={styles.notice} testID="session-question-notice">{noticeText}</Text> : null}
             {questions.map(({ prompt, question }, i) => {
               const answerable = isAnswerableOnBoard(prompt)
               return (
                 <View key={`${prompt.promptId}:${question.questionId}`} style={styles.question}>
-                  <Text style={styles.counter}>{t('boardTab.questionCount', { current: i + 1, total: questions.length })}</Text>
+                  <Text style={styles.counter}>{t('question.count', { current: i + 1, total: questions.length })}</Text>
                   <Text style={styles.questionText}>{question.text}</Text>
                   {prompt.detail && prompt.questions[0] === question ? <Text style={[styles.detail, ltrContentStyle]}>{prompt.detail}</Text> : null}
                   {answerable ? question.options.map((option) => {
@@ -119,13 +119,13 @@ export function BoardQuestionModal({ session, title, onClose, onPromptsChanged }
                         onPress={() => void reply(prompt, question.questionId, option.optionId)}
                         accessibilityRole="button"
                         accessibilityState={{ selected: picked, disabled: answerPrompt.isPending }}
-                        testID={`board-option-${question.questionId}-${option.optionId}`}
+                        testID={`session-option-${question.questionId}-${option.optionId}`}
                       >
                         <Text style={styles.optionLabel}>{option.label}</Text>
                         {option.description ? <Text style={styles.optionDescription}>{option.description}</Text> : null}
                       </Pressable>
                     )
-                  }) : <Text style={styles.unsupported} testID="board-question-unsupported">{t('boardTab.answerInSession')}</Text>}
+                  }) : <Text style={styles.unsupported} testID="session-question-unsupported">{t('question.answerInSession')}</Text>}
                 </View>
               )
             })}

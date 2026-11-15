@@ -229,7 +229,14 @@
   },
   "row": {
     "waitingFor": "بانتظار {{elapsed}}",
-    "open": "فتح"
+    "open": "فتح",
+    "openSession": "فتح الجلسة {{title}}",
+    "showQuestion": "عرض سؤال {{title}}"
+  },
+  "question": {
+    "close": "إغلاق دون إجابة",
+    "count": "السؤال {{current}} من {{total}}",
+    "answerInSession": "أجب عن هذا السؤال داخل الجلسة."
   },
   "layout": {
     "now": "الآن",
@@ -349,17 +356,12 @@
     "columns": "حالات الجلسات",
     "showBoard": "عرض اللوحة",
     "showList": "عرض القائمة",
-    "openSession": "فتح الجلسة {{title}}",
-    "showQuestion": "عرض سؤال {{title}}",
     "showSubagents_zero": "عرض {{count}} وكيل فرعي",
     "showSubagents_one": "عرض وكيل فرعي واحد",
     "showSubagents_two": "عرض وكيلين فرعيين",
     "showSubagents_few": "عرض {{count}} وكلاء فرعيين",
     "showSubagents_many": "عرض {{count}} وكيلًا فرعيًا",
     "showSubagents_other": "عرض {{count}} وكيل فرعي",
-    "closeQuestion": "إغلاق دون إجابة",
-    "questionCount": "السؤال {{current}} من {{total}}",
-    "answerInSession": "أجب عن هذا السؤال داخل الجلسة.",
     "previousColumn": "العمود السابق",
     "nextColumn": "العمود التالي",
     "orphanHeading": "الوكلاء الفرعيون لجلسات أخرى",

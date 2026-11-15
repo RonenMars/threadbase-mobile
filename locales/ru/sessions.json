@@ -203,7 +203,14 @@
   },
   "row": {
     "waitingFor": "ожидание {{elapsed}}",
-    "open": "Открыть"
+    "open": "Открыть",
+    "openSession": "Открыть сессию {{title}}",
+    "showQuestion": "Показать вопрос сессии {{title}}"
+  },
+  "question": {
+    "close": "Закрыть без ответа",
+    "count": "Вопрос {{current}} из {{total}}",
+    "answerInSession": "На этот вопрос нужно ответить в сессии."
   },
   "layout": {
     "now": "Сейчас",
@@ -323,15 +330,10 @@
     "columns": "Состояния сессий",
     "showBoard": "Показать доску",
     "showList": "Показать список",
-    "openSession": "Открыть сессию {{title}}",
-    "showQuestion": "Показать вопрос сессии {{title}}",
     "showSubagents_one": "Показать {{count}} субагента",
     "showSubagents_few": "Показать {{count}} субагента",
     "showSubagents_many": "Показать {{count}} субагентов",
     "showSubagents_other": "Показать {{count}} субагента",
-    "closeQuestion": "Закрыть без ответа",
-    "questionCount": "Вопрос {{current}} из {{total}}",
-    "answerInSession": "На этот вопрос нужно ответить в сессии.",
     "previousColumn": "Предыдущая колонка",
     "nextColumn": "Следующая колонка",
     "orphanHeading": "Субагенты других сессий",

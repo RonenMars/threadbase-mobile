@@ -1,5 +1,5 @@
 import React from 'react'
-import { screen } from '@testing-library/react-native'
+import { fireEvent, screen } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NeedsYouCard } from '@/components/sessions/now/NeedsYouCard'
 import { renderWithI18n } from '@/test-utils/render'
@@ -11,6 +11,11 @@ jest.mock('@/hooks/useSessionActions', () => ({
     stopWhenIdle: { mutateAsync: jest.fn(), isPending: false },
   }),
 }))
+
+jest.mock('@/components/sessions/shared/SessionQuestionModal', () => {
+  const { Text } = require('react-native')
+  return { SessionQuestionModal: () => <Text>question-modal</Text> }
+})
 
 const CLEAR_HINT = '\x1b[?25l\rnew task? /clear to save 165.2k tokens ·\x1b[?25h'
 
@@ -41,7 +46,7 @@ const session = (overrides: Partial<MultiSession> = {}): MultiSession => ({
 function renderCard(s: MultiSession) {
   return renderWithI18n(
     <QueryClientProvider client={new QueryClient()}>
-      <NeedsYouCard session={s} title="Fix login redirect" />
+      <NeedsYouCard session={s} title="Fix login redirect" onPromptsChanged={jest.fn()} />
     </QueryClientProvider>,
   )
 }
@@ -55,22 +60,32 @@ describe('NeedsYouCard mono line', () => {
   it('shows the open question text instead of the terminal tail', async () => {
     await renderCard(session({ hasOpenPrompt: true, pendingPrompts: [openPrompt] }))
     expect(screen.getByText('Run the migration?')).toBeTruthy()
+    expect(screen.getByTestId('question-bar-sid')).toBeTruthy()
     expect(screen.queryByText(/clear to save/)).toBeNull()
   })
 
-  it('keeps the terminal tail on an older streamer that omits hasOpenPrompt', async () => {
-    await renderCard(session({ hasOpenPrompt: undefined, lastOutput: 'Allow this edit? (y/n)' }))
+  it('falls back to the terminal tail while a prompt is open but its text has not arrived', async () => {
+    await renderCard(session({ hasOpenPrompt: true, pendingPrompts: [], lastOutput: 'Allow this edit? (y/n)' }))
     expect(screen.getByText('Allow this edit? (y/n)')).toBeTruthy()
+    expect(screen.getByTestId('tail-bar-sid')).toBeTruthy()
+    expect(screen.queryByTestId('question-bar-sid')).toBeNull()
   })
 
-  it('shows the last assistant reply for a finished turn', async () => {
+  it('shows nothing on an older streamer that omits hasOpenPrompt', async () => {
+    await renderCard(session({ hasOpenPrompt: undefined, lastOutput: 'Allow this edit? (y/n)' }))
+    expect(screen.queryByText('Allow this edit? (y/n)')).toBeNull()
+  })
+
+  it('does not show the last assistant reply for a finished turn as if it were a question', async () => {
     await renderCard(session({ hasOpenPrompt: false, lastMessageText: 'Pushed the fix.', lastMessageRole: 'assistant' }))
-    expect(screen.getByText('Pushed the fix.')).toBeTruthy()
-    expect(screen.queryByText(/clear to save/)).toBeNull()
+    expect(screen.queryByText('Pushed the fix.')).toBeNull()
+    expect(screen.queryByTestId('question-bar-sid')).toBeNull()
   })
 
-  it('does not show the user\'s own prompt as if it were a reply', async () => {
-    await renderCard(session({ hasOpenPrompt: false, lastMessageText: 'fix it', lastMessageRole: 'user' }))
-    expect(screen.queryByText('fix it')).toBeNull()
+  it('opens the answers on a long press of the question', async () => {
+    await renderCard(session({ hasOpenPrompt: true, pendingPrompts: [openPrompt] }))
+    expect(screen.queryByText('question-modal')).toBeNull()
+    await fireEvent(screen.getByTestId('question-bar-sid'), 'longPress')
+    expect(screen.getByText('question-modal')).toBeTruthy()
   })
 })

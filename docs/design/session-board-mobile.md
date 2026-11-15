@@ -60,7 +60,7 @@ If sub-agents fail to load, one line replaces those cards and the rest of the bo
 
 ## Questions
 
-Tapping the eye or the question opens `BoardQuestionModal`: full height and scrollable on a phone, a centred 560pt panel from 768 up.
+Tapping the eye or the question opens `SessionQuestionModal`: full height and scrollable on a phone, a centred 560pt panel from 768 up.
 There is no inline reply on the card.
 X closes it without answering and the session stays in Needs you.
 Tapping a reply sends it.

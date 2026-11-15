@@ -190,7 +190,14 @@
   },
   "row": {
     "waitingFor": "ממתין {{elapsed}}",
-    "open": "פתח"
+    "open": "פתח",
+    "openSession": "פתיחת הסשן {{title}}",
+    "showQuestion": "הצגת השאלה של {{title}}"
+  },
+  "question": {
+    "close": "סגירה בלי לענות",
+    "count": "שאלה {{current}} מתוך {{total}}",
+    "answerInSession": "יש לענות על השאלה הזו בתוך הסשן."
   },
   "layout": {
     "now": "עכשיו",
@@ -310,14 +317,9 @@
     "columns": "מצבי סשן",
     "showBoard": "הצגת לוח",
     "showList": "הצגת רשימה",
-    "openSession": "פתיחת הסשן {{title}}",
-    "showQuestion": "הצגת השאלה של {{title}}",
     "showSubagents_one": "הצגת סוכן משנה אחד",
     "showSubagents_two": "הצגת {{count}} סוכני משנה",
     "showSubagents_other": "הצגת {{count}} סוכני משנה",
-    "closeQuestion": "סגירה בלי לענות",
-    "questionCount": "שאלה {{current}} מתוך {{total}}",
-    "answerInSession": "יש לענות על השאלה הזו בתוך הסשן.",
     "previousColumn": "העמודה הקודמת",
     "nextColumn": "העמודה הבאה",
     "orphanHeading": "סוכני משנה של סשנים אחרים",
