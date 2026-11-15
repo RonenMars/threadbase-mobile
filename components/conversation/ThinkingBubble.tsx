@@ -19,6 +19,12 @@ export const MODAL_DISMISS_FALLBACK_MS = 1000
 
 interface Props {
   lines: string[]
+  /**
+   * Display-only text shown ahead of `lines`. It is never scraped for a
+   * question card: model-authored text must not be able to raise a card whose
+   * answer sends keystrokes to the PTY.
+   */
+  mirroredLines?: string[]
   fadingOut?: boolean
   onFadeOutComplete?: () => void
   onSendKeys?: (keys: string) => void
@@ -47,7 +53,7 @@ interface Props {
   onWorkingLayout?: () => void
 }
 
-export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, onScrapedCardChange, subStatus, onSessionQuit, onWorkingLayout }: Props) {
+export function ThinkingBubble({ lines, mirroredLines = [], fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, onScrapedCardChange, subStatus, onSessionQuit, onWorkingLayout }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const { t: tc } = useTranslation('common')
@@ -55,7 +61,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
   // useMemo so the Animated.Value is stable and not re-created on re-render
   const opacity = useMemo(() => new Animated.Value(1), [])
   const scrollRef = useRef<ScrollViewInstance>(null)
-  const hasLines = lines.length > 0
+  const hasLines = lines.length > 0 || mirroredLines.length > 0
 
   const questionBlock = useMemo(
     () => (onSendKeys ? parseQuestionBlock(lines.slice(-30)) : null),
@@ -139,9 +145,9 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
 
   useEffect(() => {
     if (hasLines) scrollRef.current?.scrollToEnd({ animated: false })
-  }, [lines.length, hasLines])
+  }, [lines.length, mirroredLines.length, hasLines])
 
-  const visibleLines = lines
+  const visibleLines = [...mirroredLines, ...lines]
     .slice(-60)
     .map(l => stripBoxDrawing(stripAnsi(l)))
     .filter(l => l.length > 0)
@@ -273,7 +279,7 @@ export function ThinkingBubble({ lines, fadingOut = false, onFadeOutComplete, on
             scrollEnabled={false}
           >
             {visibleLines.map((line, i) => (
-              <Text key={i} style={styles.terminalLine} numberOfLines={1}>{line}</Text>
+              <Text key={i} style={styles.terminalLine} numberOfLines={1} testID="thinking-terminal-line">{line}</Text>
             ))}
           </ScrollView>
         ) : null}
