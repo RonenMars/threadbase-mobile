@@ -290,7 +290,7 @@ describe('SessionBoard questions', () => {
   it('sends on tap for a single question, with the revision the row carried', async () => {
     const changed = jest.fn()
     const r = await renderBoard([row(waiting())], changed)
-    await fireEvent.press(r.getByTestId('board-question-w'))
+    await fireEvent.press(r.getByTestId('question-bar-w'))
     await fireEvent.press(r.getByTestId('session-option-q1-no'))
     await waitFor(() => expect(mockAnswer).toHaveBeenCalledTimes(1))
     expect(mockAnswer.mock.calls[0][0]).toMatchObject({ promptId: 'p1', revision: 3, responses: [{ questionId: 'q1', optionIds: ['no'] }] })
@@ -300,7 +300,7 @@ describe('SessionBoard questions', () => {
 
   it('closes without answering, and the session stays in Needs you', async () => {
     const r = await renderBoard([row(waiting())])
-    await fireEvent.press(r.getByTestId('board-question-w'))
+    await fireEvent.press(r.getByTestId('question-bar-w'))
     await fireEvent.press(r.getByTestId('session-question-close'))
     expect(r.queryByTestId('session-question-modal')).toBeNull()
     expect(mockAnswer).not.toHaveBeenCalled()
@@ -310,7 +310,7 @@ describe('SessionBoard questions', () => {
   it('holds a two-question prompt until both have a reply, then sends them in one post', async () => {
     const two = prompt({ questions: [question('q1', 'First?'), question('q2', 'Second?')] })
     const r = await renderBoard([row(waiting({ pendingPrompts: [two] }))])
-    await fireEvent.press(r.getByTestId('board-question-w'))
+    await fireEvent.press(r.getByTestId('question-bar-w'))
     expect(r.getByText('Question 1 of 2')).toBeTruthy()
     expect(r.getByText('Question 2 of 2')).toBeTruthy()
     await fireEvent.press(r.getByTestId('session-option-q1-yes'))
@@ -325,7 +325,7 @@ describe('SessionBoard questions', () => {
   it('shows a question it cannot answer without reply buttons', async () => {
     const secret = prompt({ questions: [{ ...question('q1', 'Password?'), secret: true }] })
     const r = await renderBoard([row(waiting({ pendingPrompts: [secret] }))])
-    await fireEvent.press(r.getByTestId('board-question-w'))
+    await fireEvent.press(r.getByTestId('question-bar-w'))
     expect(r.queryByTestId('session-option-q1-yes')).toBeNull()
     expect(r.getByTestId('session-question-unsupported')).toBeTruthy()
   })
@@ -333,7 +333,7 @@ describe('SessionBoard questions', () => {
   it('keeps the modal open and says so when the send fails', async () => {
     mockAnswer.mockRejectedValue(new Error('offline'))
     const r = await renderBoard([row(waiting())])
-    await fireEvent.press(r.getByTestId('board-question-w'))
+    await fireEvent.press(r.getByTestId('question-bar-w'))
     await fireEvent.press(r.getByTestId('session-option-q1-yes'))
     await waitFor(() => expect(r.getByTestId('session-question-notice')).toHaveTextContent("Couldn't send your answer. Check your connection and try again."))
     expect(r.getByTestId('session-question-modal')).toBeTruthy()
@@ -341,23 +341,23 @@ describe('SessionBoard questions', () => {
 
   it('falls back to the terminal tail, without an eye, while a prompt is open but its text has not arrived', async () => {
     const r = await renderBoard([row(waiting({ hasOpenPrompt: true, pendingPrompts: undefined, lastOutput: 'Allow edit?\n' }))])
-    expect(r.queryByTestId('board-question-w')).toBeNull()
+    expect(r.queryByTestId('question-bar-w')).toBeNull()
     expect(r.getByText('Allow edit?')).toBeTruthy()
-    await fireEvent.press(r.getByTestId('board-tail-w'))
+    await fireEvent.press(r.getByTestId('tail-bar-w'))
     expect(r.queryByTestId('session-question-modal')).toBeNull()
   })
   it('renders no line, and no tap target, when the streamer says no question is open', async () => {
     const r = await renderBoard([row(waiting({ hasOpenPrompt: false, pendingPrompts: undefined, lastOutput: '\x1b[?25l\rnew task? /clear to save 165.2k tokens ·\x1b[?25h' }))])
-    expect(r.queryByTestId('board-tail-w')).toBeNull()
-    expect(r.queryByTestId('board-question-w')).toBeNull()
+    expect(r.queryByTestId('tail-bar-w')).toBeNull()
+    expect(r.queryByTestId('question-bar-w')).toBeNull()
     expect(r.queryByText(/clear to save/)).toBeNull()
   })
 
   it('renders no line for the last assistant reply of a finished turn', async () => {
     const r = await renderBoard([row(waiting({ hasOpenPrompt: false, pendingPrompts: undefined, lastMessageText: 'Pushed the fix.', lastMessageRole: 'assistant' }))])
     expect(r.queryByText('Pushed the fix.')).toBeNull()
-    expect(r.queryByTestId('board-tail-w')).toBeNull()
-    expect(r.queryByTestId('board-question-w')).toBeNull()
+    expect(r.queryByTestId('tail-bar-w')).toBeNull()
+    expect(r.queryByTestId('question-bar-w')).toBeNull()
   })
 })
 

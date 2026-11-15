@@ -116,7 +116,7 @@ function BoardCardFrame({
               onPress={needsYouLine.onPress}
               accessibilityRole="button"
               accessibilityLabel={needsYouLine.question ? t('row.showQuestion', { title }) : t('row.openSession', { title })}
-              testID={needsYouLine.question ? `board-question-${rowId}` : `board-tail-${rowId}`}
+              testID={needsYouLine.question ? `question-bar-${rowId}` : `tail-bar-${rowId}`}
             >
               {needsYouLine.question ? <Eye size={16} color={waiting} /> : null}
               <Text style={needsYouLine.question ? styles.ask : styles.tail} numberOfLines={1}>{needsYouLine.text}</Text>

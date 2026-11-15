@@ -60,7 +60,15 @@ describe('NeedsYouCard mono line', () => {
   it('shows the open question text instead of the terminal tail', async () => {
     await renderCard(session({ hasOpenPrompt: true, pendingPrompts: [openPrompt] }))
     expect(screen.getByText('Run the migration?')).toBeTruthy()
+    expect(screen.getByTestId('question-bar-sid')).toBeTruthy()
     expect(screen.queryByText(/clear to save/)).toBeNull()
+  })
+
+  it('falls back to the terminal tail while a prompt is open but its text has not arrived', async () => {
+    await renderCard(session({ hasOpenPrompt: true, pendingPrompts: [], lastOutput: 'Allow this edit? (y/n)' }))
+    expect(screen.getByText('Allow this edit? (y/n)')).toBeTruthy()
+    expect(screen.getByTestId('tail-bar-sid')).toBeTruthy()
+    expect(screen.queryByTestId('question-bar-sid')).toBeNull()
   })
 
   it('shows nothing on an older streamer that omits hasOpenPrompt', async () => {
@@ -71,13 +79,13 @@ describe('NeedsYouCard mono line', () => {
   it('does not show the last assistant reply for a finished turn as if it were a question', async () => {
     await renderCard(session({ hasOpenPrompt: false, lastMessageText: 'Pushed the fix.', lastMessageRole: 'assistant' }))
     expect(screen.queryByText('Pushed the fix.')).toBeNull()
-    expect(screen.queryByTestId('needs-you-line-sid')).toBeNull()
+    expect(screen.queryByTestId('question-bar-sid')).toBeNull()
   })
 
   it('opens the answers on a long press of the question', async () => {
     await renderCard(session({ hasOpenPrompt: true, pendingPrompts: [openPrompt] }))
     expect(screen.queryByText('question-modal')).toBeNull()
-    await fireEvent(screen.getByTestId('needs-you-line-sid'), 'longPress')
+    await fireEvent(screen.getByTestId('question-bar-sid'), 'longPress')
     expect(screen.getByText('question-modal')).toBeTruthy()
   })
 })

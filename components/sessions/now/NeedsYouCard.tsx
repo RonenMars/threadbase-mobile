@@ -82,7 +82,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
             onLongPress={line.question ? () => setAnswering(true) : undefined}
             accessibilityRole="button"
             accessibilityLabel={line.question ? t('row.showQuestion', { title }) : t('row.openSession', { title })}
-            testID={`needs-you-line-${session.id}`}
+            testID={line.question ? `question-bar-${session.id}` : `tail-bar-${session.id}`}
           >
             <Text style={styles.output} numberOfLines={1}>{line.text}</Text>
           </Pressable>
