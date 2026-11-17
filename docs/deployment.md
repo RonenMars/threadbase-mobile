@@ -560,6 +560,7 @@ curl -s -H "Authorization: Bearer ${T}" -H "x-goog-user-project: threadbase-10d4
 
    The newest row should carry your release notes and a `buildVersion` ending in the UTC time of the archive (`<buildNumber>.<yymmddHHMM>`).
    The Firebase MCP server (`firebase mcp`) lists projects and apps but has no App Distribution release tool, so it cannot do this check; the Firebase CLI's `appdistribution` commands do not list releases either.
+   Both tools, with their exact options, are in [`firebase-cli-and-mcp.md`](./firebase-cli-and-mcp.md).
 
 | Symptom at the upload | Cause | Fix |
 |---|---|---|
