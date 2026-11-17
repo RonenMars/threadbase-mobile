@@ -61,7 +61,7 @@ describe('check-locale-freshness', () => {
     expect(check.status).toBe(0)
   })
 
-  it('reports changed, unrecorded, and stale keys in separate groups in one run', () => {
+  it('reports only the changed key when other keys were added or deleted', () => {
     writeFixture({ 'test.json': { en: { changed: 'Original text', deleted: 'Deleted text' } } })
     expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
 
@@ -72,12 +72,8 @@ describe('check-locale-freshness', () => {
     expect(check.stderr).toContain(
       '1 English source string(s) changed since translations were last confirmed:\n  test.json:changed\n'
     )
-    expect(check.stderr).toContain(
-      '1 English source key(s) missing from the source-hashes file:\n  test.json:added\n'
-    )
-    expect(check.stderr).toContain(
-      '1 source-hashes key(s) absent from English:\n  test.json:deleted\n'
-    )
+    expect(check.stderr).not.toContain('test.json:added')
+    expect(check.stderr).not.toContain('test.json:deleted')
   })
 
   it('blesses added and deleted keys without changing hashes for unchanged keys', () => {
