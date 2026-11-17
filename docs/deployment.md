@@ -520,6 +520,57 @@ cp ../../tb-mobile/.env ../../tb-mobile/.env.signing ../../tb-mobile/.env.signin
 - An iOS build is archived as `<buildNumber>.<yymmddHHMM>` (UTC), which is what Firebase lists it under. Firebase identifies an iOS release by its executable, and a JS-only change does not alter the executable, so without the suffix the upload silently replaced an older release and kept that release's date ([run 37103386597](https://github.com/RonenMars/threadbase-mobile/actions/runs/37103386597)). The script prints Firebase's verdict after the upload: `RELEASE_CREATED` is the expected one.
 - Each install replaces the previous QA build on the device, since every QA build shares the TbDev bundle ID.
 
+### Agent runbook — a local, unpushed QA build
+
+For a QA build of an integration branch that exists only on this machine (several branches and PRs merged locally with `git merge --no-ff`), the steps are the ones above, plus the checks an agent has to make because the script cannot.
+Nothing needs pushing: the script builds the checked-out tree, and `qa.yml` is not involved.
+
+1. **Get the user's go first.** The upload lands on testers' devices.
+   Name the platform (iOS, Android, or one only), the group, the ref and its short SHA, and wait for the answer; see the platform rule in [`AGENTS.md`](../AGENTS.md).
+2. **Build in a clean worktree.** The build is stamped `-dirty` when `git status --porcelain` is not empty, so commit or move aside anything else, and keep handoff notes outside the worktree.
+   Give it its own `node_modules` (`npm ci`) and copy `.env`, `.env.signing` and `.env.signing.android` from the main checkout.
+3. **Look at the shell's Firebase variables before running.**
+   `ship-qa.sh` sources `.env` with `set -a`, so a variable that `.env` defines wins, but one it does not define keeps whatever the shell already exports.
+   `FIREBASE_APP_ID_IOS` is not in `.env`, so a stale export from an old profile line is used silently.
+   Check with `[ -n "$FIREBASE_APP_ID_IOS" ] && echo "${#FIREBASE_APP_ID_IOS} …${FIREBASE_APP_ID_IOS: -8}"` and compare the suffix with the table in [`tbdev.md`](./tbdev.md) (TbDev iOS ends `94bba2`).
+   When in doubt, pass the value for the one run instead of editing a profile.
+4. **Pass a token that has an identity.**
+   `gcloud auth application-default print-access-token`, the script's fallback, returned a token with no identity on this machine (403 `USER_PROJECT_DENIED` at the group lookup).
+   `gcloud auth print-access-token` for the signed-in Owner account works.
+5. **Run it, once.** There is no skip-build flag, so every rerun repeats the archive (about 12 minutes).
+   Keep stdout in a file.
+
+```bash
+cd <worktree>
+FIREBASE_APP_ID_IOS="1:863079924487:ios:710948614c0bdb1694bba2" \
+FIREBASE_ACCESS_TOKEN="$(gcloud auth print-access-token)" \
+  ./scripts/ship-qa.sh --platform ios --groups qa \
+  --release-notes "Integration QA <short-sha>: <what is merged>" > /tmp/ship-qa-ios.log 2>&1
+```
+
+6. **Verify the release, not the exit code.** Success prints `RELEASE_CREATED <id>`.
+   Confirm it with the App Distribution REST API; the quota-project header is required, and without it the call returns `SERVICE_DISABLED` (403) that reads like a permissions problem:
+
+```bash
+T="$(gcloud auth print-access-token)"
+curl -s -H "Authorization: Bearer ${T}" -H "x-goog-user-project: threadbase-10d42" \
+  "https://firebaseappdistribution.googleapis.com/v1/projects/863079924487/apps/1:863079924487:ios:710948614c0bdb1694bba2/releases?pageSize=3" \
+  | jq -r '.releases[]? | [(.name|split("/")[-1]), .createTime, .buildVersion, (.releaseNotes.text // "" | .[0:60])] | @tsv'
+```
+
+   The newest row should carry your release notes and a `buildVersion` ending in the UTC time of the archive (`<buildNumber>.<yymmddHHMM>`).
+   The Firebase MCP server (`firebase mcp`) lists projects and apps but has no App Distribution release tool, so it cannot do this check; the Firebase CLI's `appdistribution` commands do not list releases either.
+
+| Symptom at the upload | Cause | Fix |
+|---|---|---|
+| 403 `USER_PROJECT_DENIED` at the group lookup | The default gcloud credential has no identity | Pass `FIREBASE_ACCESS_TOKEN="$(gcloud auth print-access-token)"` |
+| 403 `SERVICE_DISABLED` from your own curl | The `x-goog-user-project` header is missing | Add `-H "x-goog-user-project: threadbase-10d42"` |
+| 404 after a full, successful archive and export | `FIREBASE_APP_ID_IOS` points at the removed Threadbase iOS app (ends `e094bba2`) | Pass the TbDev ID for the run, and remove the stale export from the shell profile; a `.env` edit changes nothing because `.env` has no such line |
+| `** BUILD INTERRUPTED **` and no process left | The session restarted mid-archive | Rerun; check `ps` first so two archives do not share DerivedData |
+
+Keep the whole run local: do not push the integration branch or open a PR for it.
+Record the merge order, each conflict and its resolution, and the release ID somewhere outside the repo so a later session can audit the build.
+
 ### From GitHub Actions
 
 `.github/workflows/qa.yml` (**QA (Firebase)**) runs the same script on GitHub-hosted runners, one job per platform.
