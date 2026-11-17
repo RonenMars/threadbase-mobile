@@ -4,17 +4,6 @@ inherit = "core"
 [shell_environment_policy.set]
 GH_TOKEN = ""
 
-[mcp_servers.github]
-command = "docker"
-args = [
-    "run",
-    "-i",
-    "--rm",
-    "-e",
-    "GITHUB_PERSONAL_ACCESS_TOKEN",
-    "ghcr.io/github/github-mcp-server",
-]
-
 [mcp_servers.playwright]
 command = "npx"
 args = [
