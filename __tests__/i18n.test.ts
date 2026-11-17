@@ -1,3 +1,5 @@
+import { act, renderHook } from '@testing-library/react-native';
+import { useTranslation } from 'react-i18next';
 import i18n from '../test-utils/i18n-setup';
 
 describe('i18n', () => {
@@ -22,7 +24,31 @@ describe('i18n', () => {
     expect(i18n.t('nonexistent.key' as never, { ns: 'common' })).toBe('nonexistent.key');
   });
 
-  it.skip('runtime locale switch re-renders with new strings (implement when runtime switching is added)', () => {
-    // assert: changing i18n.changeLanguage('he') triggers re-render with Hebrew strings
+  it.each([
+    { locale: 'he', expected: 'הגדרות' },
+    { locale: 'ar', expected: 'الإعدادات' },
+    { locale: 'ru', expected: 'Настройки' },
+  ])('re-renders from English to $locale and back without remounting', async ({ locale, expected }) => {
+    const { result, unmount } = await renderHook(() => {
+      const { t } = useTranslation('settings');
+      return t('header.title');
+    });
+
+    try {
+      expect(result.current).toBe('Settings');
+
+      await act(async () => {
+        await i18n.changeLanguage(locale);
+      });
+      expect(result.current).toBe(expected);
+
+      await act(async () => {
+        await i18n.changeLanguage('en');
+      });
+      expect(result.current).toBe('Settings');
+    } finally {
+      await unmount();
+      await i18n.changeLanguage('en');
+    }
   });
 });
