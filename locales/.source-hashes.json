@@ -201,7 +201,7 @@
   "conversation.json:message.errorBadge": "7f2f6a15cf8d",
   "conversation.json:message.toolFallback": "9a830c714bb2",
   "conversation.json:thinking.label": "e272c597fd1f",
-  "conversation.json:thinking.redacted": "051ada495354",
+  "conversation.json:thinking.redacted": "6d216d752e62",
   "conversation.json:thinking.expand": "f0334271b997",
   "conversation.json:thinking.collapse": "98c7a13d4c91",
   "conversation.json:connection.notConnectedTitle": "8b02f3de3906",
