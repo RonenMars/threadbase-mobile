@@ -6,6 +6,7 @@
  */
 import type { ProviderName } from '@/constants/providers'
 import {
+  dropChromeRegions,
   getTerminalChromeFilter,
   keepTranscriptLine,
   type TerminalChromeFilter,
@@ -254,7 +255,7 @@ export class VirtualTerminal {
    * raw mode is on.
    */
   getLines(): string[] {
-    return this.getRawLines().filter((line) => keepTranscriptLine(line, this.chromeFilter))
+    return this.chromeLines([...this.archived, ...this.gridRows()])
   }
 
   /** `getRawLines` without the kept history: only what was drawn since the last full clear. */
@@ -268,7 +269,14 @@ export class VirtualTerminal {
    * transcript already holds (lib/splitTerminalView.ts).
    */
   getFrameLines(): string[] {
-    return this.getFrameRawLines().filter((line) => keepTranscriptLine(line, this.chromeFilter))
+    return this.chromeLines(this.gridRows())
+  }
+
+  /** Region pass first, while border rows still bound a card, then the per-row filter. */
+  private chromeLines(rows: string[]): string[] {
+    return dropChromeRegions(rows, this.chromeFilter)
+      .filter(isVisibleRow)
+      .filter((line) => keepTranscriptLine(line, this.chromeFilter))
   }
 
   private gridRows(): string[] {
