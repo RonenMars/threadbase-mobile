@@ -12,7 +12,7 @@ import { ConversationListItem } from '@/components/sessions/shared/ConversationL
 import { conversationRowTitle } from '@/components/sessions/shared/rowTitle'
 import type { ConvRowProps } from './types'
 
-export function ConvRow({ conv, onLongPress, forceServerChip = false, trailing }: ConvRowProps) {
+export function ConvRow({ conv, onLongPress, forceServerChip = false, trailing, leading = 'dot', titleLines, metaLead }: ConvRowProps) {
   const router = useRouter()
   const activeServerCount = useServersStore((s) => s.activeServerIds.length)
   const serverColor = useServersStore((s) => s.servers[conv.serverId]?.color)
@@ -50,7 +50,9 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false, trailing }
       forceServerChip={forceServerChip}
       previewMode={previewPref === 'last' ? 'last' : 'first'}
       density="compact"
-      leading="dot"
+      leading={leading}
+      titleLines={titleLines}
+      metaLead={metaLead}
       provider={conv.provider}
       trailing={trailing}
       onPress={handlePress}

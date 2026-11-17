@@ -285,17 +285,14 @@
     "loadFailed": "Couldn't load sub-agents.",
     "loadMore": "Load more",
     "board": {
-      "active": "Active",
-      "all": "All",
-      "summaryActive": "Active now",
-      "summaryParents": "Parents",
-      "summaryTotal": "Total",
       "parentFallback": "Session {{id}}",
       "parentActive": "{{n}} active",
       "unsupported": "This server doesn't list sub-agents yet.",
-      "emptyActive": "No sub-agents running.",
       "empty": "No sub-agents yet.",
-      "openParent": "Open parent session"
+      "openParent": "Open parent session",
+      "headerRunning": "RUNNING · {{n}}",
+      "showAll": "Show all {{n}}",
+      "showLess": "Show less"
     }
   },
   "boardTab": {

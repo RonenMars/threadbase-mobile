@@ -337,17 +337,14 @@
     "loadFailed": "تعذّر تحميل الوكلاء الفرعيين.",
     "loadMore": "تحميل المزيد",
     "board": {
-      "active": "النشطة",
-      "all": "الكل",
-      "summaryActive": "نشطة الآن",
-      "summaryParents": "الجلسات الأصلية",
-      "summaryTotal": "الإجمالي",
       "parentFallback": "جلسة {{id}}",
       "parentActive": "النشطة: {{n}}",
       "unsupported": "هذا الخادم لا يعرض الوكلاء الفرعيين بعد.",
-      "emptyActive": "لا يوجد وكلاء فرعيون قيد التشغيل.",
       "empty": "لا يوجد وكلاء فرعيون بعد.",
-      "openParent": "فتح الجلسة الأصلية"
+      "openParent": "فتح الجلسة الأصلية",
+      "headerRunning": "قيد التشغيل · {{n}}",
+      "showAll": "عرض الكل ({{n}})",
+      "showLess": "عرض أقل"
     }
   },
   "boardTab": {

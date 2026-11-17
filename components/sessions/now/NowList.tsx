@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, FlatList, RefreshControl } from 'react-native'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import type { TFunction } from 'i18next'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
@@ -13,6 +12,7 @@ import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
 import { earlierBucketFor, type EarlierBucket } from '@/components/sessions/hub/hubUtils'
+import { DAY_BUCKET_ORDER, dayBucketLabel } from '@/components/sessions/shared/dayBuckets'
 import { basename } from '@/components/sessions/shared/pathTail'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -70,21 +70,6 @@ type FlatItem =
   | { kind: 'skeleton'; key: string }
 
 const HISTORY_SKELETONS = 2
-
-const DAY_BUCKET_ORDER: EarlierBucket[] = ['last7Days', 'last14Days', 'lastMonth', 'earlier']
-
-function dayBucketLabel(bucket: EarlierBucket, t: TFunction<'sessions'>): string {
-  switch (bucket) {
-    case 'last7Days':
-      return t('live.headerLast7Days')
-    case 'last14Days':
-      return t('live.headerLast14Days')
-    case 'lastMonth':
-      return t('live.headerLastMonth')
-    case 'earlier':
-      return t('live.headerEarlier')
-  }
-}
 
 // Default param (not a direct Date.now() call in the component body) keeps this
 // clear of react-hooks/purity, matching the projectTiers.ts/formatListTime.ts idiom.

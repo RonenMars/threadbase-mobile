@@ -15,6 +15,8 @@ export interface CollapsibleCardProps {
   /** Muted, left-truncated line above the title (e.g. the parent path). */
   parentLabel?: string
   title: string
+  /** Header title line cap; defaults to 1. */
+  titleLines?: number
   activityLine?: string
   count: number
   /** Spine colour; null leaves the spine blank. */
@@ -33,6 +35,7 @@ export function CollapsibleCard({
   id,
   parentLabel,
   title,
+  titleLines,
   activityLine,
   count,
   railColor,
@@ -67,7 +70,7 @@ export function CollapsibleCard({
             accessibilityLabel={accessibilityLabel}
             testID={headerTestID}
           >
-            <CardTitleBlock parentLabel={parentLabel} title={title} activityLine={activityLine} />
+            <CardTitleBlock parentLabel={parentLabel} title={title} activityLine={activityLine} titleLines={titleLines} />
             <CountBadge count={count} />
             <ChevronToggle isOpen={isOpen} />
           </TouchableOpacity>

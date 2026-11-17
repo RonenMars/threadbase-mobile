@@ -298,17 +298,14 @@
     "loadFailed": "לא ניתן לטעון סוכני משנה.",
     "loadMore": "טען עוד",
     "board": {
-      "active": "פעילים",
-      "all": "הכול",
-      "summaryActive": "פעילים עכשיו",
-      "summaryParents": "הורים",
-      "summaryTotal": "סה״כ",
       "parentFallback": "שיחה {{id}}",
       "parentActive": "פעילים: {{n}}",
       "unsupported": "השרת הזה עדיין לא מציג סוכני משנה.",
-      "emptyActive": "אין סוכני משנה פעילים.",
       "empty": "אין עדיין סוכני משנה.",
-      "openParent": "פתיחת השיחה הראשית"
+      "openParent": "פתיחת השיחה הראשית",
+      "headerRunning": "פועלים · {{n}}",
+      "showAll": "הצג הכול ({{n}})",
+      "showLess": "הצג פחות"
     }
   },
   "boardTab": {
