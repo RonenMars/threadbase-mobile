@@ -44,7 +44,7 @@ function nameOf(error: unknown): string | undefined {
     : undefined
 }
 
-function isNotFoundError(error: unknown): boolean {
+export function isNotFoundError(error: unknown): boolean {
   const status = statusOf(error)
   if (status === 404) return true
   return nameOf(error) === 'NotFoundError'
