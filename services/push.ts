@@ -8,13 +8,30 @@ import { useSettingsStore } from '@/stores/settings'
 import type { PushRegisterPayload, PushTestResult } from '@/types/api'
 import i18n from '@/lib/i18n'
 
+let viewedSession: { serverId: string; sessionId: string } | null = null
+
+/** Set by the focused session screen; null when none is open. */
+export function setViewedSession(session: { serverId: string; sessionId: string } | null) {
+  viewedSession = session
+}
+
+// This handler only runs while the app is foregrounded, so a match means the
+// user is already looking at the session the notification is about.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification.request.content.data as { sessionId?: string; serverId?: string }
+    const show = !(
+      viewedSession !== null &&
+      data?.sessionId === viewedSession.sessionId &&
+      data?.serverId === viewedSession.serverId
+    )
+    return {
+      shouldShowBanner: show,
+      shouldShowList: show,
+      shouldPlaySound: show,
+      shouldSetBadge: show,
+    }
+  },
 })
 
 /**

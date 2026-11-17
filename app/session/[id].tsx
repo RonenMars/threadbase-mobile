@@ -13,7 +13,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router'
+import { useLocalSearchParams, useRouter, useNavigation, useFocusEffect } from 'expo-router'
 import type { Href } from 'expo-router'
 import * as Clipboard from 'expo-clipboard'
 import { ArrowsClockwise, ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, TerminalWindow, Trash, Warning } from 'phosphor-react-native'
@@ -24,6 +24,7 @@ import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
+import { setViewedSession } from '@/services/push'
 import { wsManager } from '@/services/ws-client'
 import { useServersStore } from '@/stores/servers'
 import { isTerminalSession } from '@/utils/terminalSession'
@@ -509,6 +510,14 @@ export default function SessionDetailScreen() {
   useEffect(() => {
     useNavLockStore.getState().clear()
   }, [])
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!serverId || !id) return
+      setViewedSession({ serverId, sessionId: id })
+      return () => setViewedSession(null)
+    }, [serverId, id]),
+  )
 
   const isStarting = starting === '1'
   const { data: session, isLoading, error: sessionError } = useSessionDetail(serverId, id)

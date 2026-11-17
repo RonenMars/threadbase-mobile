@@ -98,6 +98,9 @@ jest.mock('@/hooks/useSessionName', () => ({
   useRenameSession: () => ({ mutate: jest.fn() }),
 }))
 jest.mock('expo-router', () => ({
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    require('react').useEffect(() => cb(), [cb])
+  },
   useLocalSearchParams: () => ({ id: 'sess-live', server: 'srv1', starting: mockStarting }),
   useRouter: () => ({ replace: jest.fn(), back: jest.fn() }),
   useNavigation: () => ({

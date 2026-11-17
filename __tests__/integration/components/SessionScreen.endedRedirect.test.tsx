@@ -89,6 +89,9 @@ jest.mock('@/stores/settings', () => ({
   useSettingsStore: () => ({ sessionView: 'chat' }),
 }))
 jest.mock('expo-router', () => ({
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    require('react').useEffect(() => cb(), [cb])
+  },
   useLocalSearchParams: () => mockParams,
   useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
   useNavigation: () => ({ setOptions: jest.fn(), addListener: jest.fn(() => jest.fn()) }),
