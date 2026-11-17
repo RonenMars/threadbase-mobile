@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from 'react'
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { MultiSession, MultiConversation } from '@/types/api'
+import type { ConversationListLeading } from '@/components/sessions/shared/ConversationListItem'
 import type { MultiProjectSummary } from '@/hooks/useProjectSummaries'
 import type { SortBy, SortOrder } from '@/types/ui'
 
@@ -53,6 +54,9 @@ export interface ConvRowProps {
   onLongPress?: (conv: MultiConversation) => void
   forceServerChip?: boolean
   trailing?: ReactNode
+  leading?: ConversationListLeading
+  titleLines?: number
+  metaLead?: string | null
 }
 
 export function isMultiSession(item: MultiConversation | MultiSession): item is MultiSession {

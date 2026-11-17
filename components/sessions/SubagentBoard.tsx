@@ -1,20 +1,27 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { View, Text, Pressable, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { SubagentRow } from '@/components/sessions/hub/SubagentRow'
 import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
+import { SectionEyebrow } from '@/components/sessions/now/SectionEyebrow'
+import { DAY_BUCKET_ORDER, dayBucketLabel } from '@/components/sessions/shared/dayBuckets'
+import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { earlierBucketFor, type EarlierBucket } from '@/components/sessions/hub/hubUtils'
+import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { makeStyles as makeCardStyles } from '@/components/sessions/base/CollapsibleCard.styles'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useAllSubagents, type BoardSubagent } from '@/hooks/useAllSubagents'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
+import { useAllSubagents } from '@/hooks/useAllSubagents'
 import { conversationHref } from '@/lib/conversationHref'
 import { isLiveAttachedPty } from '@/lib/sessionLeavePolicy'
 import type { MultiSession } from '@/types/api'
-import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel } from '@/lib/subagents'
+import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
 
 interface Props {
   serverIds: readonly string[]
@@ -25,17 +32,30 @@ interface Props {
   topInset?: number
 }
 
+/** Children shown before "Show all": a 13-child group would otherwise push every other card off screen. */
+const COLLAPSED_ROWS = 3
+
+// Default param keeps this clear of react-hooks/purity, same idiom as NowList.
+function bucketGroups(groups: SubagentGroup[], now: number = Date.now()): Record<EarlierBucket, SubagentGroup[]> {
+  const buckets: Record<EarlierBucket, SubagentGroup[]> = { last7Days: [], last14Days: [], lastMonth: [], earlier: [] }
+  for (const g of groups) buckets[earlierBucketFor(Date.parse(g.items[0].lastActivity) || 0, now)].push(g)
+  return buckets
+}
+
 /**
- * Every sub-agent across the active servers, grouped under its parent.
- * Read-only: a row opens the transcript, a group header opens the parent.
+ * Every sub-agent across the active servers, grouped under its parent and
+ * sectioned like the Now tab: RUNNING first, then idle parents by recency.
+ * Read-only: a row opens the transcript, a group's footer opens the parent.
  */
 export function SubagentBoard({ serverIds, parentTitles, liveSessions = [], topInset = 0 }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
-  const [onlyActive, setOnlyActive] = useState(false)
+  const insets = useSafeAreaInsets()
   const { openIds, toggleOpen } = useOpenIds()
+  const collapsedDayBuckets = useViewPrefsStore((s) => s.collapsedDayBuckets)
+  const toggleDayBucket = useViewPrefsStore((s) => s.toggleDayBucketCollapsed)
   const [refreshing, setRefreshing] = useState(false)
   const { items, unsupportedServerIds, isLoading, isError, refetch } = useAllSubagents(serverIds)
 
@@ -54,67 +74,82 @@ export function SubagentBoard({ serverIds, parentTitles, liveSessions = [], topI
     return m
   }, [items])
 
-  const groups = useMemo(() => {
-    const rows = items.map((i: BoardSubagent) => i.conversation)
-    const visible = onlyActive ? rows.filter((c) => c.subagentActive === true) : rows
-    return groupSubagentsByParent(visible)
-  }, [items, onlyActive])
-
-  const totalActive = items.filter((i) => i.conversation.subagentActive === true).length
-  const parentCount = new Set(items.map((i) => i.conversation.parentConversationId)).size
+  const groups = useMemo(() => groupSubagentsByParent(items.map((i) => i.conversation)), [items])
+  const running = useMemo(() => groups.filter((g) => g.activeCount > 0), [groups])
+  const buckets = useMemo(() => bucketGroups(groups.filter((g) => g.activeCount === 0)), [groups])
   const allUnsupported = serverIds.length > 0 && unsupportedServerIds.length === serverIds.length
+
+  const renderGroup = (g: SubagentGroup) => {
+    const serverId = serverByRowId.get(g.items[0].id) ?? serverIds[0]
+    const title =
+      parentTitles.get(g.parentId) ??
+      g.items.find((i) => i.parentTitle)?.parentTitle ??
+      t('subagents.board.parentFallback', { id: g.parentId.slice(0, 8) })
+    return (
+      <SubagentGroupCard
+        key={g.parentId}
+        group={g}
+        title={title}
+        isOpen={openIds.has(g.parentId)}
+        onToggle={toggleOpen}
+        onOpenParent={() => {
+          const live = liveSessions.find(
+            (x) => x.serverId === serverId && isLiveAttachedPty(x) && (x.boundConversationId ?? x.conversationId) === g.parentId,
+          )
+          router.push(live ? `/session/${live.id}?server=${serverId}` : conversationHref(g.parentId, serverId))
+        }}
+        serverIdFor={(id) => serverByRowId.get(id) ?? serverId}
+      />
+    )
+  }
 
   let body: React.ReactNode
   if (isLoading) body = <ActivityIndicator color={theme.text.secondary} style={styles.pad} />
   else if (allUnsupported) body = <Text style={[styles.note, styles.pad]}>{t('subagents.board.unsupported')}</Text>
   else if (isError) body = <Text style={[styles.note, styles.pad]}>{t('subagents.loadFailed')}</Text>
-  else if (groups.length === 0)
-    body = (
-      <Text style={[styles.note, styles.pad]}>
-        {onlyActive ? t('subagents.board.emptyActive') : t('subagents.board.empty')}
-      </Text>
-    )
+  else if (groups.length === 0) body = <Text style={[styles.note, styles.pad]}>{t('subagents.board.empty')}</Text>
   else
-    body = groups.map((g) => {
-      const serverId = serverByRowId.get(g.items[0].id) ?? serverIds[0]
-      const title =
-        parentTitles.get(g.parentId) ??
-        g.items.find((i) => i.parentTitle)?.parentTitle ??
-        t('subagents.board.parentFallback', { id: g.parentId.slice(0, 8) })
-      return (
-        <SubagentGroupCard
-          key={g.parentId}
-          group={g}
-          title={title}
-          isOpen={openIds.has(g.parentId)}
-          onToggle={toggleOpen}
-          onOpenParent={() => {
-            const live = liveSessions.find(
-              (x) => x.serverId === serverId && isLiveAttachedPty(x) && (x.boundConversationId ?? x.conversationId) === g.parentId,
-            )
-            router.push(live ? `/session/${live.id}?server=${serverId}` : conversationHref(g.parentId, serverId))
-          }}
-          serverIdFor={(id) => serverByRowId.get(id) ?? serverId}
-        />
-      )
-    })
+    body = (
+      <>
+        {running.length > 0 ? (
+          <>
+            <View style={styles.eyebrow}>
+              <SectionEyebrow label={t('subagents.board.headerRunning', { n: running.length })} tone="working" />
+            </View>
+            {running.map(renderGroup)}
+          </>
+        ) : null}
+        {DAY_BUCKET_ORDER.map((key) => {
+          const bucket = buckets[key]
+          if (bucket.length === 0) return null
+          const expanded = !collapsedDayBuckets.includes(key)
+          return (
+            <React.Fragment key={key}>
+              <View style={styles.eyebrow}>
+                <SectionEyebrow
+                  label={dayBucketLabel(key, t)}
+                  tone="muted"
+                  count={bucket.length}
+                  collapsible
+                  isExpanded={expanded}
+                  onToggle={() => toggleDayBucket(key)}
+                  testID={`subagent-day-bucket-${key}`}
+                />
+              </View>
+              {expanded ? bucket.map(renderGroup) : null}
+            </React.Fragment>
+          )
+        })}
+      </>
+    )
 
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={{ paddingTop: topInset, paddingBottom: spacing.lg * 3 }}
+      contentContainerStyle={{ paddingTop: topInset, paddingBottom: FAB_CLEARANCE + insets.bottom }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.text.secondary} progressViewOffset={topInset} />}
       testID="subagent-board"
     >
-      <View style={styles.summary}>
-        <Stat styles={styles} label={t('subagents.board.summaryActive')} value={totalActive} accent />
-        <Stat styles={styles} label={t('subagents.board.summaryParents')} value={parentCount} />
-        <Stat styles={styles} label={t('subagents.board.summaryTotal')} value={items.length} />
-      </View>
-      <View style={styles.chips}>
-        <Chip styles={styles} selected={!onlyActive} label={t('subagents.board.all')} onPress={() => setOnlyActive(false)} testID="subagent-filter-all" />
-        <Chip styles={styles} selected={onlyActive} label={t('subagents.board.active')} onPress={() => setOnlyActive(true)} testID="subagent-filter-active" />
-      </View>
       {body}
     </ScrollView>
   )
@@ -129,65 +164,82 @@ interface GroupCardProps {
   serverIdFor: (rowId: string) => string
 }
 
-/** One parent session as a collapsible card, laid out like a project card on the Projects tab. */
+/**
+ * One parent session as a collapsible card. The header carries the state (rail,
+ * running count, last activity); the body lists the newest children and ends in
+ * one footer row: Show all on the left, Open parent on the right.
+ */
 export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, serverIdFor }: GroupCardProps) {
   const { t } = useTranslation('sessions')
   const { styles: card, theme } = useThemedStyles(makeCardStyles)
   const styles = useMemo(() => makeStyles(theme), [theme])
+  const [showAll, setShowAll] = useState(false)
+
+  const types = new Set(g.items.map((c) => resolveSubagentType(c)))
+  const sharedType = types.size === 1 ? [...types][0] : undefined
+  const lastActivity = formatListTime(g.items[0].lastActivity)
+  const activityLine = [
+    g.activeCount > 0 ? t('subagents.board.parentActive', { n: g.activeCount }) : null,
+    sharedType ?? null,
+    lastActivity ? t('hub.activityLast', { time: lastActivity }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  const capped = g.items.length > COLLAPSED_ROWS
+  const rows = capped && !showAll ? g.items.slice(0, COLLAPSED_ROWS) : g.items
+
   return (
     <View style={styles.cardWrap} testID={`subagent-group-${g.parentId}`}>
       <CollapsibleCard
         id={g.parentId}
         title={title}
-        activityLine={g.activeCount > 0 ? t('subagents.board.parentActive', { n: g.activeCount }) : undefined}
+        titleLines={2}
+        activityLine={activityLine || undefined}
         count={g.items.length}
-        railColor={g.activeCount > 0 ? theme.text.accent : null}
+        railColor={g.activeCount > 0 ? theme.status.running : theme.border}
         isOpen={isOpen}
         onToggle={onToggle}
         accessibilityLabel={title}
         headerTestID={`subagent-group-toggle-${g.parentId}`}
       >
-        {g.items.map((c) => (
-          <SubagentRow key={c.id} conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }} />
+        {rows.map((c) => (
+          <SubagentRow
+            key={c.id}
+            conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }}
+            showType={sharedType === undefined}
+          />
         ))}
-        <TouchableOpacity
-          onPress={onOpenParent}
-          activeOpacity={0.6}
-          style={card.seeAllRow}
-          accessibilityRole="button"
-          accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
-          testID={`subagent-parent-${g.parentId}`}
-        >
-          <Text style={card.seeAllText}>{t('subagents.board.openParent')}</Text>
-          <CaretRight size={16} color={theme.text.accent} />
-        </TouchableOpacity>
+        <View style={styles.footer}>
+          {capped ? (
+            <TouchableOpacity
+              onPress={() => setShowAll((v) => !v)}
+              activeOpacity={0.6}
+              style={styles.footerLink}
+              accessibilityRole="button"
+              testID={`subagent-show-all-${g.parentId}`}
+            >
+              <Text style={card.seeAllText}>
+                {showAll ? t('subagents.board.showLess') : t('subagents.board.showAll', { n: g.items.length })}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View />
+          )}
+          <TouchableOpacity
+            onPress={onOpenParent}
+            activeOpacity={0.6}
+            style={styles.footerLink}
+            accessibilityRole="button"
+            accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
+            testID={`subagent-parent-${g.parentId}`}
+          >
+            <Text style={card.seeAllText}>{t('subagents.board.openParent')}</Text>
+            <CaretRight size={16} color={theme.text.accent} />
+          </TouchableOpacity>
+        </View>
       </CollapsibleCard>
     </View>
-  )
-}
-
-type Styles = ReturnType<typeof makeStyles>
-
-function Stat({ styles, label, value, accent }: { styles: Styles; label: string; value: number; accent?: boolean }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={[styles.statValue, accent && styles.statValueAccent]}>{value}</Text>
-    </View>
-  )
-}
-
-function Chip({ styles, selected, label, onPress, testID }: { styles: Styles; selected: boolean; label: string; onPress: () => void; testID: string }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      testID={testID}
-    >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
-    </Pressable>
   )
 }
 
@@ -196,22 +248,9 @@ function makeStyles(theme: Theme) {
     scroll: { flex: 1 },
     pad: { paddingVertical: spacing.md, paddingHorizontal: spacing.md },
     note: { color: theme.text.secondary, fontSize: font.sm },
-    summary: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
-    stat: { flex: 1, backgroundColor: theme.bg.card, borderRadius: 12, padding: spacing.sm + 2 },
-    statLabel: { color: theme.text.secondary, fontSize: font.xs - 1, fontWeight: '600' },
-    statValue: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600', marginTop: 4 },
-    statValueAccent: { color: theme.text.accent },
-    chips: { flexDirection: 'row', gap: spacing.xs + 2, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-    chip: { minHeight: 44, paddingHorizontal: spacing.md, borderRadius: 999, justifyContent: 'center', backgroundColor: theme.bg.card },
-    chipSelected: { backgroundColor: `${theme.text.accent}24` },
-    chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
-    chipTextSelected: { color: theme.text.accent },
+    eyebrow: { marginHorizontal: spacing.md },
     cardWrap: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
-    row: { paddingVertical: spacing.sm, gap: 2 },
-    rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
-    label: { flexShrink: 1, color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
-    tag: { color: theme.text.secondary, fontSize: font.xs - 1, backgroundColor: theme.bg.primary, borderRadius: 4, paddingHorizontal: 5, overflow: 'hidden' },
-    meta: { color: theme.text.secondary, fontSize: font.xs },
-    activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.text.accent },
+    footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
+    footerLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
   })
 }

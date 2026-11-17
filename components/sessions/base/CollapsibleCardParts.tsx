@@ -12,12 +12,12 @@ export function CardSpine({ color }: { color: string | null }) {
   return color ? <View style={[styles.spine, { backgroundColor: color }]} /> : <View style={styles.spinePlaceholder} />
 }
 
-export function CardTitleBlock({ parentLabel, title, activityLine }: { parentLabel?: string; title: string; activityLine?: string }) {
+export function CardTitleBlock({ parentLabel, title, activityLine, titleLines = 1 }: { parentLabel?: string; title: string; activityLine?: string; titleLines?: number }) {
   const { styles } = useThemedStyles(makeStyles)
   return (
     <View style={styles.headerBody}>
       {parentLabel ? <Text style={styles.headerParent} numberOfLines={1}>{parentLabel}</Text> : null}
-      <Text style={styles.headerSuffix} numberOfLines={1}>{title}</Text>
+      <Text style={styles.headerSuffix} numberOfLines={titleLines}>{title}</Text>
       {activityLine ? <Text style={styles.headerActivity} numberOfLines={1}>{activityLine}</Text> : null}
     </View>
   )

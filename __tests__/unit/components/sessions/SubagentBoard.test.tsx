@@ -2,6 +2,7 @@ import React from 'react'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import { useRouter } from 'expo-router'
 import { SubagentBoard } from '@/components/sessions/SubagentBoard'
+import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { createWrapper } from '@/test-utils'
 import '@/test-utils/i18n-setup'
 
@@ -16,7 +17,7 @@ const sub = (id: string, parent: string, over: Record<string, unknown> = {}) => 
   title: `title-${id}`,
   projectPath: '/p',
   messageCount: 4,
-  lastActivity: '2026-10-24T10:00:00Z',
+  lastActivity: new Date(Date.now() - 60_000).toISOString(),
   provider: 'claude-code',
   isSubagent: true,
   parentConversationId: parent,
@@ -29,7 +30,12 @@ const renderBoard = () =>
     wrapper: createWrapper(),
   })
 
-beforeEach(() => mockGet.mockReset())
+beforeEach(() => {
+  mockGet.mockReset()
+  useViewPrefsStore.setState({ collapsedDayBuckets: ['last14Days', 'lastMonth', 'earlier'] })
+})
+
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
 
 const expand = async (r: Awaited<ReturnType<typeof renderBoard>>, parentId: string) => {
   await waitFor(() => expect(r.getByTestId(`subagent-group-toggle-${parentId}`)).toBeTruthy())
@@ -37,7 +43,7 @@ const expand = async (r: Awaited<ReturnType<typeof renderBoard>>, parentId: stri
 }
 
 describe('SubagentBoard', () => {
-  it('requests every sub-agent in one call and defaults to all of them', async () => {
+  it('requests every sub-agent in one call and groups them under their parent', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p1')]))
     const r = await renderBoard()
     await expand(r, 'p1')
@@ -45,17 +51,25 @@ describe('SubagentBoard', () => {
     expect(mockGet.mock.calls[0][0]).toContain('include=subagents')
     expect(r.getByTestId('conversation-row-b')).toBeTruthy()
     expect(r.getByText('Parent one')).toBeTruthy()
-
-    await fireEvent.press(r.getByTestId('subagent-filter-active'))
-    await waitFor(() => expect(r.queryByTestId('conversation-row-b')).toBeNull())
+    expect(r.queryByTestId('subagent-filter-active')).toBeNull()
   })
 
-  it('lists All before Active', async () => {
-    mockGet.mockResolvedValue(page([sub('a', 'p1')]))
+  it('puts groups with a running child under RUNNING and the rest under their day bucket', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p2')]))
     const r = await renderBoard()
-    await waitFor(() => expect(r.getByTestId('subagent-filter-all')).toBeTruthy())
-    const labels = r.getAllByTestId(/^subagent-filter-/).map((n) => n.props.testID)
-    expect(labels).toEqual(['subagent-filter-all', 'subagent-filter-active'])
+    await waitFor(() => expect(r.getByText('RUNNING · 1')).toBeTruthy())
+    expect(r.getByText('LAST 7 DAYS')).toBeTruthy()
+    expect(r.getByTestId('subagent-group-toggle-p1')).toBeTruthy()
+    expect(r.getByTestId('subagent-group-toggle-p2')).toBeTruthy()
+  })
+
+  it('collapses an old day bucket and reveals it when its eyebrow is pressed', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { lastActivity: daysAgo(20) })]))
+    const r = await renderBoard()
+    await waitFor(() => expect(r.getByTestId('subagent-day-bucket-lastMonth')).toBeTruthy())
+    expect(r.queryByTestId('subagent-group-toggle-p1')).toBeNull()
+    await fireEvent.press(r.getByTestId('subagent-day-bucket-lastMonth'))
+    expect(r.getByTestId('subagent-group-toggle-p1')).toBeTruthy()
   })
 
   it('starts every group collapsed and toggles its sub-agents like a project card', async () => {
@@ -81,7 +95,7 @@ describe('SubagentBoard', () => {
     expect(r.getByTestId('subagent-group-toggle-p8')).toBeTruthy()
   })
 
-  it('opens the transcript from a row and the parent from the group header', async () => {
+  it('opens the transcript from a row and the parent from the group footer', async () => {
     const push = jest.fn()
     ;(useRouter as jest.Mock).mockReturnValue({ push, back: jest.fn(), replace: jest.fn() })
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true })]))
@@ -153,33 +167,50 @@ describe('SubagentBoard', () => {
     expect(r.queryByText('3')).toBeNull()
   })
 
-  it('shows the empty line when nothing is active, with no resume or input affordance', async () => {
-    mockGet.mockResolvedValue(page([sub('b', 'p1')]))
-    const r = await renderBoard()
-    await waitFor(() => expect(r.queryByTestId('subagent-filter-active')).toBeTruthy())
-    await fireEvent.press(r.getByTestId('subagent-filter-active'))
-    await waitFor(() => expect(r.queryByTestId('conversation-row-b')).toBeNull())
-    expect(r.queryByText(/resume|send/i)).toBeNull()
-  })
-
-  it('shows the live dot only for an active sub-agent and its type tag', async () => {
+  it('shows the live dot only for an active sub-agent, with the type leading its meta line', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true, subagentType: 'Explore' }), sub('b', 'p1')]))
     const r = await renderBoard()
     await expand(r, 'p1')
     await waitFor(() => expect(r.getByTestId('conversation-row-a')).toBeTruthy())
     expect(r.getByTestId('subagent-board-active-a')).toBeTruthy()
     expect(r.queryByTestId('subagent-board-active-b')).toBeNull()
-    expect(r.getByText('Explore')).toBeTruthy()
+    expect(r.getByText(/Explore/)).toBeTruthy()
   })
 
-  it('opens the sub-agent when its type tag is tapped', async () => {
-    const push = jest.fn()
-    ;(useRouter as jest.Mock).mockReturnValue({ push, back: jest.fn(), replace: jest.fn() })
-    mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentType: 'Explore' })]))
+  it('names a type every child shares once, in the group header, not on each row', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentType: 'Explore' }), sub('b', 'p1', { subagentType: 'Explore' })]))
     const r = await renderBoard()
     await expand(r, 'p1')
-    await waitFor(() => expect(r.getByText('Explore')).toBeTruthy())
-    await fireEvent.press(r.getByText('Explore'))
-    expect(push).toHaveBeenLastCalledWith('/conversation/a?server=s1')
+    await waitFor(() => expect(r.getByTestId('conversation-row-a')).toBeTruthy())
+    expect(r.getAllByText(/Explore/)).toHaveLength(1)
+  })
+
+  it('shows three children, then all of them after Show all', async () => {
+    mockGet.mockResolvedValue(
+      page(['a', 'b', 'c', 'd', 'e'].map((id, i) => sub(id, 'p1', { lastActivity: new Date(Date.now() - (i + 1) * 60_000).toISOString() }))),
+    )
+    const r = await renderBoard()
+    await expand(r, 'p1')
+    await waitFor(() => expect(r.getByTestId('conversation-row-a')).toBeTruthy())
+    expect(r.getByTestId('conversation-row-c')).toBeTruthy()
+    expect(r.queryByTestId('conversation-row-d')).toBeNull()
+    await fireEvent.press(r.getByTestId('subagent-show-all-p1'))
+    expect(r.getByTestId('conversation-row-e')).toBeTruthy()
+  })
+
+  it('offers no Show all for a group of three or fewer', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1'), sub('b', 'p1'), sub('c', 'p1')]))
+    const r = await renderBoard()
+    await expand(r, 'p1')
+    await waitFor(() => expect(r.getByTestId('conversation-row-c')).toBeTruthy())
+    expect(r.queryByTestId('subagent-show-all-p1')).toBeNull()
+  })
+
+  it('has no resume or input affordance', async () => {
+    mockGet.mockResolvedValue(page([sub('b', 'p1')]))
+    const r = await renderBoard()
+    await expand(r, 'p1')
+    await waitFor(() => expect(r.getByTestId('conversation-row-b')).toBeTruthy())
+    expect(r.queryByText(/resume|send/i)).toBeNull()
   })
 })

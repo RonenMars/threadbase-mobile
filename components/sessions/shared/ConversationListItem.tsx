@@ -31,6 +31,10 @@ export interface ConversationListItemProps {
   siblings?: readonly string[]
   /** Timestamp shown in the meta column. ISO string, epoch ms, or Date. */
   timestamp?: string | number | Date | null
+  /** Title line cap; defaults to 1. */
+  titleLines?: number
+  /** Leads the meta line, e.g. a sub-agent's type. */
+  metaLead?: string | null
   /** Total messages in the conversation (used by `auto` preview + count chip). */
   messageCount?: number
   /** Git branch shown next to msg count, in JetBrains Mono. */
@@ -124,6 +128,8 @@ export function ConversationListItem(props: ConversationListItemProps) {
     path,
     siblings,
     timestamp,
+    titleLines = 1,
+    metaLead,
     messageCount,
     branch,
     tier,
@@ -201,21 +207,22 @@ export function ConversationListItem(props: ConversationListItemProps) {
   const highlightNeedle = highlight?.trim()
   const renderTitle = () => {
     if (!primaryText) return null
-    if (!highlightNeedle) return <Text style={styles.title} numberOfLines={1}>{primaryText}</Text>
+    if (!highlightNeedle) return <Text style={styles.title} numberOfLines={titleLines}>{primaryText}</Text>
     return (
       <HighlightText
         text={primaryText}
         searchWords={[highlightNeedle]}
         highlightStyle={styles.match}
         style={styles.title}
-        textProps={{ numberOfLines: 1 }}
+        textProps={{ numberOfLines: titleLines }}
       />
     )
   }
 
   const showPreview = !isChip && previewMode !== 'none'
-  const showMeta = !isChip && (showBranch || showCount)
+  const showMeta = !isChip && (showBranch || showCount || Boolean(metaLead))
   const metaPieces: string[] = []
+  if (metaLead) metaPieces.push(metaLead)
   if (showBranch && branch) metaPieces.push(branch)
   if (showCount && typeof messageCount === 'number') metaPieces.push(t('card.messages', { count: messageCount }))
   const metaText = showMeta && metaPieces.length > 0 ? metaPieces.join(' · ') : null
