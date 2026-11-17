@@ -1,5 +1,7 @@
 import { act } from 'react'
 import renderer from 'react-test-renderer'
+import { View } from 'react-native'
+import { dark } from '@/constants/theme'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveDot } from '@/components/sessions/LiveDot'
 
@@ -98,12 +100,30 @@ describe('ConversationListItem', () => {
     expect((tree.root as renderer.ReactTestInstance).findAllByType(LiveDot)).toHaveLength(1)
   })
 
-  it('leaves the External badge off a row and keeps its leading dot', async () => {
+  it('uses one quarter-height green pulsing dot for an External session rail', async () => {
     const tree = await render(
-      <ConversationListItem title="watched" density="compact" leading="dot" tier="external" />,
+      <ConversationListItem
+        title="watched"
+        density="compact"
+        leading="dot"
+        tier="external"
+        testID="external-session"
+      />,
     )
     expect(collectText(tree.toJSON() as unknown as Json)).not.toContain('External')
-    expect((tree.root as renderer.ReactTestInstance).findAllByType(LiveDot)).toHaveLength(1)
+    const root = tree.root as renderer.ReactTestInstance
+    const [rail] = root
+      .findAllByType(View)
+      .filter((node) => node.props.testID === 'external-session-status-marker')
+    const handleLayout = rail.props.onLayout as (event: {
+      nativeEvent: { layout: { height: number } }
+    }) => void
+    act(() => handleLayout({ nativeEvent: { layout: { height: 40 } } }))
+
+    const dots = root.findAllByType(LiveDot)
+    expect(dots).toHaveLength(1)
+    const [dot] = dots
+    expect(dot.props).toMatchObject({ live: true, color: dark.status.running, size: 10 })
   })
 
   it('keeps the leading dot when no state badge renders', async () => {

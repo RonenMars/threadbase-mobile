@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { HighlightText } from 'one-more-highlight/native'
@@ -160,7 +160,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
 
   const tierColor = tier ? colorForToken(theme, tierColorToken(tier)) : null
   const liveRow = tier ? isLiveTier(tier) : false
-  // Rows drop the External word; the rail colour still marks the row as live.
+  // Rows drop the External word; the marker still identifies the live session.
   const badgeTier = tier === 'external' ? undefined : tier
   const serverVisible = shouldShowServer(
     showServer,
@@ -168,9 +168,11 @@ export function ConversationListItem(props: ConversationListItemProps) {
     Boolean(serverLabel),
     forceServerChip,
   )
+  const externalLiveDot = !serverVisible && tier === 'external'
   const stripColor = serverVisible
     ? (serverColor ?? SERVER_COLOR_DEFAULT)
-    : (liveRow ? tierColor : null)
+    : (liveRow && !externalLiveDot ? tierColor : null)
+  const [stripHeight, setStripHeight] = useState(0)
 
   // Path rendering — only consulted when no title.
   const pathParts = useMemo(() => {
@@ -238,14 +240,25 @@ export function ConversationListItem(props: ConversationListItemProps) {
         isChip && styles.rowChip,
       ]}
     >
-      {/* Left server-identity strip (3px). Painted in server color when visible,
-         otherwise the tier colour while live, otherwise nothing — preserves alignment. */}
+      {/* Left server-identity strip or live-state marker. */}
       <View
         style={[
           styles.strip,
+          externalLiveDot && styles.dotRail,
           stripColor ? { backgroundColor: stripColor } : null,
         ]}
-      />
+        testID={externalLiveDot && testID ? `${testID}-status-marker` : undefined}
+        onLayout={externalLiveDot
+          ? ({ nativeEvent }) => {
+              const height = nativeEvent.layout.height
+              setStripHeight((current) => current === height ? current : height)
+            }
+          : undefined}
+      >
+        {externalLiveDot && stripHeight > 0 ? (
+          <LiveDot live color={theme.status.running} size={stripHeight * 0.25} />
+        ) : null}
+      </View>
 
       {/* Leading slot: avatar / dot / depth indent / nothing. */}
       {leading === 'avatar' && !isChip && (
@@ -258,7 +271,9 @@ export function ConversationListItem(props: ConversationListItemProps) {
       {leading === 'dot' && !isChip && (
         <View style={styles.dotSlot}>
           {/* The meta-line StateBadge draws its own dot; the empty slot keeps titles aligned. */}
-          {badgeTier ? null : <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />}
+          {badgeTier || externalLiveDot
+            ? null
+            : <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />}
         </View>
       )}
       {leading === 'depth' && !isChip && (
@@ -354,6 +369,10 @@ function makeStyles(theme: Theme) {
       alignSelf: 'stretch',
       borderRadius: STRIP_RADIUS,
       marginVertical: spacing.xs,
+    },
+    dotRail: {
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     avatar: {
       width: 28,
