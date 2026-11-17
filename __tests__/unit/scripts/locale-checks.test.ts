@@ -61,7 +61,7 @@ describe('check-locale-freshness', () => {
     expect(check.status).toBe(0)
   })
 
-  it('reports only the changed key when other keys were added or deleted', () => {
+  it('lists the changed key apart from added and deleted keys', () => {
     writeFixture({ 'test.json': { en: { changed: 'Original text', deleted: 'Deleted text' } } })
     expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
 
@@ -72,8 +72,34 @@ describe('check-locale-freshness', () => {
     expect(check.stderr).toContain(
       '1 English source string(s) changed since translations were last confirmed:\n  test.json:changed\n'
     )
-    expect(check.stderr).not.toContain('test.json:added')
-    expect(check.stderr).not.toContain('test.json:deleted')
+    expect(check.stderr).toContain('1 English source key(s) missing from the source-hashes file:\n  test.json:added\n')
+    expect(check.stderr).toContain('1 source-hashes key(s) absent from English:\n  test.json:deleted\n')
+  })
+
+  it('fails when an English key has no recorded source hash', () => {
+    writeFixture({ 'test.json': { en: { greeting: 'Hello world' } } })
+    expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
+
+    writeFixture({ 'test.json': { en: { greeting: 'Hello world', farewell: 'Goodbye world' } } })
+    const check = run(FRESHNESS_SCRIPT)
+
+    expect(check.status).toBe(1)
+    expect(check.stderr).toContain('1 English source key(s) missing from the source-hashes file:')
+    expect(check.stderr).toContain('test.json:farewell')
+    expect(check.stderr).toContain('npm run i18n:bless')
+  })
+
+  it('fails when a recorded source key is absent from English', () => {
+    writeFixture({ 'test.json': { en: { greeting: 'Hello world', farewell: 'Goodbye world' } } })
+    expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
+
+    writeFixture({ 'test.json': { en: { greeting: 'Hello world' } } })
+    const check = run(FRESHNESS_SCRIPT)
+
+    expect(check.status).toBe(1)
+    expect(check.stderr).toContain('1 source-hashes key(s) absent from English:')
+    expect(check.stderr).toContain('test.json:farewell')
+    expect(check.stderr).toContain('npm run i18n:bless')
   })
 
   it('blesses added and deleted keys without changing hashes for unchanged keys', () => {
