@@ -64,17 +64,34 @@ function check() {
     .filter((key) => key in current && current[key] !== recorded[key])
     .sort()
 
-  if (drifted.length === 0) {
+  const unrecorded = Object.keys(current).filter((key) => !(key in recorded)).sort()
+  const stale = Object.keys(recorded).filter((key) => !(key in current)).sort()
+
+  if (drifted.length === 0 && unrecorded.length === 0 && stale.length === 0) {
     console.log('Locale freshness OK — no English source strings changed since the last bless.')
     return
   }
 
-  console.error(`${drifted.length} English source string(s) changed since translations were last confirmed:`)
-  for (const key of drifted) {
-    console.error(`  ${key}`)
+  if (drifted.length > 0) {
+    console.error(`${drifted.length} English source string(s) changed since translations were last confirmed:`)
+    for (const key of drifted) {
+      console.error(`  ${key}`)
+    }
+  }
+  if (unrecorded.length > 0) {
+    console.error(`${unrecorded.length} English source key(s) missing from the source-hashes file:`)
+    for (const key of unrecorded) {
+      console.error(`  ${key}`)
+    }
+  }
+  if (stale.length > 0) {
+    console.error(`${stale.length} source-hashes key(s) absent from English:`)
+    for (const key of stale) {
+      console.error(`  ${key}`)
+    }
   }
   console.error(
-    '\nRe-check the other locales for these keys, then run:\n  node scripts/check-locale-freshness.js --bless'
+    '\nRe-check the other locales for these keys, then run:\n  npm run i18n:bless'
   )
   process.exit(1)
 }
