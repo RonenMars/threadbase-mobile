@@ -195,6 +195,7 @@
   "conversation.json:action.copiedCode": "8e3df45a49db",
   "conversation.json:action.scrollToBottom": "c84caa3705d1",
   "conversation.json:action.questionWaiting": "63a2f2f64649",
+  "conversation.json:action.newResponse": "b67568df7ced",
   "conversation.json:message.code": "adac69379a62",
   "conversation.json:message.tokens_one": "88c60e232558",
   "conversation.json:message.tokens_other": "43b4630e588f",
