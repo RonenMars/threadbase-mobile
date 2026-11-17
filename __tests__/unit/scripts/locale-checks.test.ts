@@ -61,6 +61,37 @@ describe('check-locale-freshness', () => {
     expect(check.status).toBe(0)
   })
 
+  it('reports only the changed key when other keys were added or deleted', () => {
+    writeFixture({ 'test.json': { en: { changed: 'Original text', deleted: 'Deleted text' } } })
+    expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
+
+    writeFixture({ 'test.json': { en: { changed: 'Updated text', added: 'Added text' } } })
+    const check = run(FRESHNESS_SCRIPT)
+
+    expect(check.status).toBe(1)
+    expect(check.stderr).toContain(
+      '1 English source string(s) changed since translations were last confirmed:\n  test.json:changed\n'
+    )
+    expect(check.stderr).not.toContain('test.json:added')
+    expect(check.stderr).not.toContain('test.json:deleted')
+  })
+
+  it('blesses added and deleted keys without changing hashes for unchanged keys', () => {
+    writeFixture({ 'test.json': { en: { unchanged: 'Keep this text', deleted: 'Deleted text' } } })
+    expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
+    const hashFile = path.join(dir, '.source-hashes.json')
+    const before: Record<string, string> = JSON.parse(fs.readFileSync(hashFile, 'utf8'))
+
+    writeFixture({ 'test.json': { en: { unchanged: 'Keep this text', added: 'Added text' } } })
+    expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
+    const after: Record<string, string> = JSON.parse(fs.readFileSync(hashFile, 'utf8'))
+
+    expect(Object.keys(after).sort()).toEqual(['test.json:added', 'test.json:unchanged'])
+    expect(after['test.json:unchanged']).toBe(before['test.json:unchanged'])
+    expect(after['test.json:added']).toMatch(/^[a-f0-9]{12}$/)
+    expect(run(FRESHNESS_SCRIPT).status).toBe(0)
+  })
+
   it('fails when an English value changed since the last bless', () => {
     writeFixture({ 'test.json': { en: { greeting: 'Hello world' } } })
     expect(run(FRESHNESS_SCRIPT, ['--bless']).status).toBe(0)
