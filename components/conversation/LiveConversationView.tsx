@@ -138,6 +138,8 @@ export function LiveConversationView({
   const router = useRouter()
   const leaveToHome = useCallback(() => router.replace('/'), [router])
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
+  // A turn finished while the reader was scrolled away from the tail.
+  const [newResponseBelow, setNewResponseBelow] = useState(false)
   const keyboardInset = useKeyboardInset()
   // The list opens pinned to the end (useInitialScrollToEnd).
   const followingTailRef = useRef(true)
@@ -336,6 +338,14 @@ export function LiveConversationView({
     }
   }, [isAgentThinking, thinkingState])
 
+  const wasThinkingRef = useRef(false)
+  useEffect(() => {
+    if (wasThinkingRef.current && !isAgentThinking && !followingTailRef.current) {
+      setNewResponseBelow(true) // eslint-disable-line react-hooks/set-state-in-effect
+    }
+    wasThinkingRef.current = isAgentThinking
+  }, [isAgentThinking])
+
   const handleFadeOutComplete = useCallback(() => setThinkingState('hidden'), [])
 
   // Phase comes gated on `presentation.live` — never re-derive liveness here.
@@ -375,7 +385,10 @@ export function LiveConversationView({
   // A question is asynchronous state: it never moves the reader. When one is
   // waiting off-screen the jump control says so instead.
   const questionWaiting = activeQuestion !== null && showJumpToLatest
-  const jumpLabel = questionWaiting ? t('action.questionWaiting') : t('action.scrollToBottom')
+  const showNewResponseBadge = newResponseBelow && showJumpToLatest
+  const jumpLabel = questionWaiting
+    ? t('action.questionWaiting')
+    : showNewResponseBadge ? t('action.newResponse') : t('action.scrollToBottom')
 
 
   // Await, then transition. The card stays exactly where it is until the server
@@ -400,6 +413,10 @@ export function LiveConversationView({
       throw new Error('not-connected')
     }
     markSessionUsed(sessionId)
+    // Sending is a return to the conversation: re-arm the pin so the tail is
+    // chased through the optimistic row's and the thinking bubble's layout.
+    repin()
+    jumpToLatest()
     let optimisticId: string | undefined
     if (optimisticText) {
       const msg = makeOptimisticMessage(optimisticText)
@@ -488,6 +505,7 @@ export function LiveConversationView({
   const jumpToLatest = useCallback(() => {
     listRef.current?.scrollToEnd({ animated: true })
     setShowJumpToLatest(false)
+    setNewResponseBelow(false)
   }, [])
 
   // One definition of "following the latest" for the screen: it drives the
@@ -498,6 +516,7 @@ export function LiveConversationView({
       contentSize.height - contentOffset.y - layoutMeasurement.height <= FOLLOW_TAIL_THRESHOLD_PX
     followingTailRef.current = atEnd
     setShowJumpToLatest(!atEnd)
+    if (atEnd) setNewResponseBelow(false)
   }, [])
 
   // Taken when the keyboard starts moving, not when it settles: the lift shrinks
@@ -655,6 +674,11 @@ export function LiveConversationView({
           ) : (
             <CaretDown size={20} color="#fff" weight="bold" />
           )}
+          {showNewResponseBadge ? (
+            <View style={styles.newResponseBadge} testID="chat-new-response-badge">
+              <Text style={styles.newResponseBadgeText}>{1}</Text>
+            </View>
+          ) : null}
         </TouchableOpacity>
       ) : null}
       </View>
@@ -769,5 +793,23 @@ function makeStyles(theme: Theme) {
       elevation: 4,
     },
     jumpToLatestQuestion: { backgroundColor: theme.status.waiting },
+    newResponseBadge: {
+      position: 'absolute',
+      top: -6,
+      end: -6,
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
+      paddingHorizontal: 5,
+      backgroundColor: theme.status.failed,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: theme.status.failed,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.9,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    newResponseBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   })
 }

@@ -71,7 +71,8 @@
     "copyCode": "Копировать",
     "copiedCode": "Скопировано",
     "scrollToBottom": "Прокрутить вниз",
-    "questionWaiting": "Ниже ожидает вопрос"
+    "questionWaiting": "Ниже ожидает вопрос",
+    "newResponse": "Ниже новый ответ"
   },
   "message": {
     "code": "Код",
