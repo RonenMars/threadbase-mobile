@@ -4,7 +4,7 @@ import { QueryClient, onlineManager, focusManager } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { AppState, type AppStateStatus } from 'react-native'
 import i18n from '@/lib/i18n'
-import { queryRetryDelay, shouldRetryQuery } from '@/services/error-policy'
+import { isNotFoundError, queryRetryDelay, shouldRetryQuery } from '@/services/error-policy'
 import { useLoadingStateStore, type QueryCategory } from '@/stores/loading-state'
 import { useQueryRecoveryStore } from '@/stores/query-recovery'
 import type { MultiConversation, MultiSession } from '@/types/api'
@@ -38,10 +38,12 @@ function categoryForHash(hash: string): QueryCategory {
 
 function syncQueryRecovery() {
   // Still retrying: at least one failure, but not yet in terminal error (RQ
-  // only flips to error after shouldRetryQuery returns false).
+  // only flips to error after shouldRetryQuery returns false). A 404 being
+  // retried is the startup grace waiting for a transcript that does not exist
+  // yet: pending, not recovering. Past its cap it lands in `error` as usual.
   const recovering = queryClient.getQueryCache().getAll().some((query) => {
-    const { fetchFailureCount, status } = query.state
-    return fetchFailureCount > 0 && status !== 'error'
+    const { fetchFailureCount, fetchFailureReason, status } = query.state
+    return fetchFailureCount > 0 && status !== 'error' && !isNotFoundError(fetchFailureReason)
   })
   useQueryRecoveryStore.getState().setRecovering(recovering)
 }

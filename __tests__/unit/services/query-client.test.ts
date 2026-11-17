@@ -3,6 +3,8 @@ import { onlineManager } from '@tanstack/react-query'
 import { shouldPersistQuery, queryClient } from '@/services/query-client'
 import { NotFoundError } from '@/services/api-client'
 import { useLoadingStateStore } from '@/stores/loading-state'
+import { useQueryRecoveryStore } from '@/stores/query-recovery'
+import { queryRetryDelayWithNotFoundGrace, shouldRetryQueryWithNotFoundGrace } from '@/services/error-policy'
 
 // jest.mock is hoisted above imports and its factory runs during the
 // query-client import (before any top-level const initializes), so the captured
@@ -207,5 +209,47 @@ describe('error banner opt-out (meta.silentError)', () => {
     jest.advanceTimersByTime(0)
     expect(useLoadingStateStore.getState().errors).toHaveLength(1)
     expect(useLoadingStateStore.getState().errors[0].status).toBe(503)
+  })
+})
+
+describe('recovery overlay (silent retry window)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    useQueryRecoveryStore.setState({ recovering: false })
+  })
+  afterEach(() => {
+    jest.clearAllTimers()
+    jest.useRealTimers()
+    queryClient.clear()
+    useQueryRecoveryStore.setState({ recovering: false })
+  })
+
+  // Lands the first failure and parks the query in its retry delay.
+  async function failOnceThenWait(queryKey: readonly unknown[], error: Error) {
+    void queryClient
+      .fetchQuery({
+        queryKey,
+        queryFn: () => Promise.reject(error),
+        retry: shouldRetryQueryWithNotFoundGrace,
+        retryDelay: queryRetryDelayWithNotFoundGrace,
+      })
+      .catch(() => {})
+    await jest.advanceTimersByTimeAsync(0)
+    expect(queryClient.getQueryState(queryKey)?.fetchFailureCount).toBe(1)
+  }
+
+  it('marks recovering while a non-404 is being retried (the control)', async () => {
+    await failOnceThenWait(
+      ['conversation', 'srv1', 'flaky'],
+      Object.assign(new Error('boom'), { status: 503 }),
+    )
+    expect(useQueryRecoveryStore.getState().recovering).toBe(true)
+  })
+
+  // A transcript that does not exist yet is pending, not a failure to recover
+  // from: the startup 404 grace retry used to raise the full-screen overlay.
+  it('does not mark recovering while a 404 grace retry waits', async () => {
+    await failOnceThenWait(['conversation', 'srv1', 'starting'], new NotFoundError('/api/conversations/c1'))
+    expect(useQueryRecoveryStore.getState().recovering).toBe(false)
   })
 })
