@@ -10,7 +10,7 @@ const noop = () => {}
 const COUNTS = { needsYou: 1, working: 2, resumable: 41, cantResume: 3, external: 2 }
 const PROVIDERS = { 'claude-code': 38, 'codex-cli': 11, 'cursor': 2, copilot: 0 }
 
-async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilters; resultCount?: number; onChangeFilters?: (f: ListFilters) => void; boardMode?: boolean } = {}) {
+async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilters; resultCount?: number; onChangeFilters?: (f: ListFilters) => void; boardMode?: boolean; subagentsOnly?: boolean; onChangeSubagentsOnly?: (v: boolean) => void } = {}) {
   await i18n.changeLanguage(locale)
   return renderWithI18n(
     <FilterSortSheet
@@ -28,6 +28,8 @@ async function renderSheet(locale: 'en' | 'he', overrides: { filters?: ListFilte
       treeView={false}
       onChangeTreeView={noop}
       boardMode={overrides.boardMode}
+      subagentsOnly={overrides.subagentsOnly}
+      onChangeSubagentsOnly={overrides.onChangeSubagentsOnly}
     />,
   )
 }
@@ -135,5 +137,27 @@ describe('FilterSortSheet on the board', () => {
     const { getByTestId } = await renderSheet('en', { boardMode: true, filters: { ...DEFAULT_FILTERS, tiers, providers: ['codex-cli'] }, onChangeFilters })
     fireEvent.press(getByTestId('filter-reset'))
     expect(onChangeFilters).toHaveBeenCalledWith({ ...DEFAULT_FILTERS, tiers })
+  })
+})
+
+describe('FilterSortSheet sub-agents only', () => {
+  it('reports a flip on the board', async () => {
+    const onChangeSubagentsOnly = jest.fn()
+    const { getByTestId } = await renderSheet('en', { boardMode: true, onChangeSubagentsOnly })
+    fireEvent(getByTestId('filter-sort-subagents-only-toggle'), 'valueChange', true)
+    expect(onChangeSubagentsOnly).toHaveBeenCalledWith(true)
+  })
+
+  it('is not offered on the list', async () => {
+    const { queryByTestId } = await renderSheet('en', { onChangeSubagentsOnly: jest.fn() })
+    expect(queryByTestId('filter-sort-subagents-only-toggle')).toBeNull()
+  })
+
+  it('counts as a change, and Reset turns it off', async () => {
+    const onChangeSubagentsOnly = jest.fn()
+    const { getByTestId } = await renderSheet('en', { boardMode: true, subagentsOnly: true, onChangeSubagentsOnly })
+    expect(getByTestId('filter-reset').props.accessibilityState.disabled).toBeFalsy()
+    fireEvent.press(getByTestId('filter-reset'))
+    expect(onChangeSubagentsOnly).toHaveBeenCalledWith(false)
   })
 })

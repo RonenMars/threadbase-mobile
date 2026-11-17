@@ -47,6 +47,8 @@ export interface BoardColumnListProps {
   serverIdFor: (rowId: string, fallback: string) => string
   /** Sub-agents could not load: one line where their cards would be. */
   subagentsFailed: boolean
+  /** Every card is a sub-agent group, so "of other sessions" would mislabel them. */
+  hideOrphanHeading?: boolean
   refreshing: boolean
   onRefresh: () => void
   onEndReached?: () => void
@@ -63,6 +65,7 @@ export function BoardColumnList({
   searchQuery,
   serverIdFor,
   subagentsFailed,
+  hideOrphanHeading = false,
   refreshing,
   onRefresh,
   onEndReached,
@@ -77,9 +80,9 @@ export function BoardColumnList({
 
   const rows = useMemo<Row[]>(() => {
     const firstOrphan = cards.findIndex((c) => c.kind === 'orphan')
-    if (firstOrphan < 0) return cards
+    if (firstOrphan < 0 || hideOrphanHeading) return cards
     return [...cards.slice(0, firstOrphan), { kind: 'heading', key: 'orphan-heading' }, ...cards.slice(firstOrphan)]
-  }, [cards])
+  }, [cards, hideOrphanHeading])
 
   const renderItem = useCallback(
     ({ item: row }: { item: Row }) => {
