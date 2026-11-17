@@ -278,6 +278,8 @@ Full diagnosis, including how to create the profiles if none are installed, is i
 
 Always use `/expo-local-ship` when the user says "ship", "TestFlight", "build the app", "submit", or anything release-related.
 
+**Firebase QA from a local, unpushed branch:** `scripts/ship-qa.sh` builds the checked-out tree, so no push is needed. Follow [docs/deployment.md](docs/deployment.md) → "Agent runbook — a local, unpushed QA build" before running it: a stale shell-exported `FIREBASE_APP_ID_IOS` silently beats `.env` and surfaces as a 404 only after the ~12-minute archive, and success means a release verified through the REST API, not an exit code.
+
 **Always commit `app.json` before shipping:** After bumping the build number (and version if changed), stage and commit `app.json` *before* running the archive/upload step. Never ship with an uncommitted `app.json`.
 
 **Version bumps after a ship:** Local `ship-*` scripts call `scripts/land-version-bump.sh` (dirty-tree commit + push). GitHub Actions Deploy re-derives the bump onto a fresh `origin/main` worktree instead. Both paths land on `main` via `scripts/admin-merge-pr.sh` (open PR + admin squash-merge). `land-version-bump.sh` is a no-op under `CI`/`GITHUB_ACTIONS`. Naming convention:

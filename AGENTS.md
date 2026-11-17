@@ -32,6 +32,7 @@ Keep this file to repository-specific behavior and safeguards. Agent tooling is 
 - Commit the `app.json` build/version bump before archive or upload.
 - Version bumps land through `scripts/admin-merge-pr.sh`, never by pushing directly to `main`. Follow the branch and commit formats in [docs/deployment.md](docs/deployment.md).
 - `/ship-expo-cloud` is opt-in only. Invoke it only when the user explicitly types that command, and obtain confirmation before any EAS build or submit command.
+- Firebase QA (`scripts/ship-qa.sh`) builds whatever is checked out, so a local, unpushed integration branch can ship without a push. Follow [docs/deployment.md](docs/deployment.md) → "Agent runbook — a local, unpushed QA build": check the shell's `FIREBASE_APP_ID_*` first (a stale export causes a 404 after a full build), pass `FIREBASE_ACCESS_TOKEN="$(gcloud auth print-access-token)"`, and verify the release through the REST API rather than trusting the exit code.
 - **Before deploying to QA, Beta, or Production via the respective workflows, always ask which platform(s) to deploy to: iOS, Android, or both.** Do not assume or default to `all`; get explicit confirmation of the platform choice in every deployment request unless the user specified it in their message.
 
 ## Server compatibility
