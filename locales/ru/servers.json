@@ -69,6 +69,7 @@
     "editOrder": "Изменить порядок",
     "lockOrder": "Зафиксировать порядок",
     "treeView": "Древовидный вид",
+    "subagentsOnly": "Только субагенты",
     "sortProjectName": "Проект",
     "newestFirst": "Сначала новые",
     "oldestFirst": "Сначала старые",

@@ -62,6 +62,8 @@ import { InlineError } from '@/components/alerts/InlineError'
 import { useClaimInline } from '@/hooks/useClaimInline'
 import { SubagentBoard } from '@/components/sessions/SubagentBoard'
 import { SessionBoard } from '@/components/sessions/board/SessionBoard'
+import { useAllSubagents } from '@/hooks/useAllSubagents'
+import { groupSubagentsByParent } from '@/lib/subagents'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { serverCause } from '@/types/alerts'
 import { PROVIDER_COLOR } from '@/constants/providers'
@@ -187,6 +189,7 @@ export default function ProjectsHub() {
   const [sortBy, setSortBy] = useState<SortBy>('state')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [filters, setFilters] = useState<ListFilters>(DEFAULT_FILTERS)
+  const [subagentsOnly, setSubagentsOnly] = useState(false)
   // The grouped views sort by recency when the Now list is in state order.
   const groupedSortBy: SortBy = sortBy === 'state' ? 'lastActivity' : sortBy
   // The board always shows every state, so a tier filter left by the list does not count there.
@@ -195,6 +198,7 @@ export default function ProjectsHub() {
     sortBy !== 'state' ||
     sortOrder !== 'desc' ||
     !isDefaultFilters(sheetFilters) ||
+    (showBoard && subagentsOnly) ||
     (activeServerIds.length > 1 && displayedServerIds.length < activeServerIds.length)
 
   const [classicConvSearch, setClassicConvSearch] = useState('')
@@ -369,7 +373,13 @@ export default function ProjectsHub() {
   )
   const tierCounts = useMemo(() => countByTier(displayedItems), [displayedItems])
   const providerCounts = useMemo(() => countByProvider(displayedItems), [displayedItems])
-  const resultCount = displayedItems.length
+  // Same query key as the board's own, so this shares its data and fetches nothing extra.
+  const boardSubagents = useAllSubagents(activeServerIds, { enabled: showBoard && subagentsOnly })
+  const subagentGroupCount = useMemo(
+    () => groupSubagentsByParent(boardSubagents.items.map((i) => i.conversation)).length,
+    [boardSubagents.items],
+  )
+  const resultCount = showBoard && subagentsOnly ? subagentGroupCount : displayedItems.length
   // Preset visibility is the loaded catalog, not the badge counts. Those follow
   // the active filter, so unchecking Needs you would otherwise hide the preset.
   const needsYouAvailable = useMemo(() => countByTier(mergedClassicItems).needsYou, [mergedClassicItems])
@@ -634,6 +644,7 @@ export default function ProjectsHub() {
           onEndReached={loadMoreConversations}
           topInset={chromeHeight}
           onScroll={onScroll}
+          subagentsOnly={subagentsOnly}
         />
       ) : showSubagents ? (
         <SubagentBoard serverIds={displayedServerIds} parentTitles={subagentParentTitles} liveSessions={visibleSessions} topInset={chromeHeight} />
@@ -738,6 +749,8 @@ export default function ProjectsHub() {
         treeView={sessionsTreeView}
         onChangeTreeView={setSessionsTreeView}
         boardMode={showBoard}
+        subagentsOnly={subagentsOnly}
+        onChangeSubagentsOnly={setSubagentsOnly}
       />
       <NewSessionServerPicker
         visible={pickerVisible}

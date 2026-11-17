@@ -53,6 +53,9 @@ interface Props {
   onChangeTreeView: (v: boolean) => void
   /** The board shows every state in columns, so Show, the presets and Tree view have nothing to act on. */
   boardMode?: boolean
+  /** Board only: hide the session cards and show the sub-agents alone. */
+  subagentsOnly?: boolean
+  onChangeSubagentsOnly?: (v: boolean) => void
 }
 
 const ORDER_OPTIONS: readonly SortBy[] = ['state', 'lastActivity', 'projectName']
@@ -99,6 +102,8 @@ export function FilterSortSheet({
   treeView,
   onChangeTreeView,
   boardMode = false,
+  subagentsOnly = false,
+  onChangeSubagentsOnly,
 }: Props) {
   const activeServerIds = useServersStore((s) => s.activeServerIds)
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
@@ -130,7 +135,8 @@ export function FilterSortSheet({
     order === DEFAULT_ORDER &&
     direction === DEFAULT_DIRECTION &&
     isDefaultFilters(boardMode ? { ...filters, tiers: DEFAULT_FILTERS.tiers } : filters) &&
-    displayedServerIds.length === activeServerIds.length
+    displayedServerIds.length === activeServerIds.length &&
+    !subagentsOnly
   const noResults = resultCount === 0
 
   const handleReset = () => {
@@ -138,6 +144,7 @@ export function FilterSortSheet({
     onChangeDirection(DEFAULT_DIRECTION)
     // On the board the Show section is hidden, so its choice waits for the list untouched.
     onChangeFilters(boardMode ? { ...DEFAULT_FILTERS, tiers: filters.tiers } : DEFAULT_FILTERS)
+    onChangeSubagentsOnly?.(false)
     if (showServerFilter) setDisplayedServerIds(activeServerIds)
   }
 
@@ -358,6 +365,22 @@ export function FilterSortSheet({
             isEditingOrder={isEditingOrder}
             onReorder={reorderServers}
           />
+        </View>
+      ) : null}
+
+      {/* Sub-agents only (board) */}
+      {boardMode && onChangeSubagentsOnly ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{eyebrow(t('servers:filter.subagentsOnly'))}</Text>
+            <Switch
+              value={subagentsOnly}
+              onValueChange={onChangeSubagentsOnly}
+              trackColor={{ false: theme.border, true: theme.text.accent }}
+              thumbColor="#fff"
+              testID="filter-sort-subagents-only-toggle"
+            />
+          </View>
         </View>
       ) : null}
 

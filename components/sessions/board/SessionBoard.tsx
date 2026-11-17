@@ -33,6 +33,8 @@ interface Props {
   onEndReached?: () => void
   topInset?: number
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+  /** Hides the session cards, so every sub-agent group stands as its own card. */
+  subagentsOnly?: boolean
 }
 
 /**
@@ -52,6 +54,7 @@ export function SessionBoard({
   onEndReached,
   topInset = 0,
   onScroll,
+  subagentsOnly = false,
 }: Props) {
   const { t } = useTranslation('sessions')
   const { width } = useWindowDimensions()
@@ -62,8 +65,8 @@ export function SessionBoard({
   const setBoardColumn = useSettingsStore((s) => s.setBoardColumn)
 
   const entries = useMemo(
-    () => buildNowEntries(items, searchQuery, conversationsFromServer, names, nameOrigins),
-    [items, searchQuery, conversationsFromServer, names, nameOrigins],
+    () => (subagentsOnly ? [] : buildNowEntries(items, searchQuery, conversationsFromServer, names, nameOrigins)),
+    [items, searchQuery, conversationsFromServer, names, nameOrigins, subagentsOnly],
   )
 
   const subagents = useAllSubagents(activeServerIds)
@@ -163,6 +166,7 @@ export function SessionBoard({
       searchQuery={searchQuery}
       serverIdFor={serverIdFor}
       subagentsFailed={subagents.isError}
+      hideOrphanHeading={subagentsOnly}
       refreshing={refreshing}
       onRefresh={onRefresh}
       onEndReached={id === 'earlier' ? onEndReached : undefined}
