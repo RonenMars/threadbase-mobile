@@ -73,7 +73,8 @@
     "copyCode": "نسخ",
     "copiedCode": "تم النسخ",
     "scrollToBottom": "التمرير للأسفل",
-    "questionWaiting": "سؤال في انتظارك بالأسفل"
+    "questionWaiting": "سؤال في انتظارك بالأسفل",
+    "newResponse": "رد جديد بالأسفل"
   },
   "message": {
     "code": "كود",

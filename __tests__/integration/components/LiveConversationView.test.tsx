@@ -430,6 +430,61 @@ describe('LiveConversationView — optimistic sent message', () => {
     expect(input.props.value).toBe('')
   })
 
+  it('scrolls a reader who had scrolled up back to the end when they send', async () => {
+    await renderView()
+    const list = screen.getByTestId('live-conversation-list')
+    await act(async () => list!.props.onScrollBeginDrag())
+    await act(async () => list!.props.onScroll(SCROLLED_UP))
+    scrollToEndMock.mockClear()
+
+    await fireEvent.changeText(screen.getByTestId('chat-message-input'), 'hello there')
+    await fireEvent.press(screen.getByTestId('chat-send-button'))
+
+    expect(scrollToEndMock).toHaveBeenCalled()
+    expect(screen.queryByTestId('chat-jump-to-latest')).toBeNull()
+  })
+
+  describe('new response badge', () => {
+    async function finishTurn(view: Awaited<ReturnType<typeof renderView>>) {
+      mockSessionStatus = 'waiting_input'
+      await view.rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
+    }
+
+    it('marks the jump control when a turn ends while the reader is scrolled up', async () => {
+      mockSessionStatus = 'running'
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      expect(screen.queryByTestId('chat-new-response-badge')).toBeNull()
+
+      await finishTurn(view)
+      expect(screen.getByTestId('chat-new-response-badge')).toBeTruthy()
+
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(AT_BOTTOM))
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+      expect(screen.queryByTestId('chat-new-response-badge')).toBeNull()
+    })
+
+    it('stays off when the turn ends with the reader at the end', async () => {
+      mockSessionStatus = 'running'
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(AT_BOTTOM))
+      await finishTurn(view)
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      expect(screen.queryByTestId('chat-new-response-badge')).toBeNull()
+    })
+
+    it('clears when the reader taps the jump control', async () => {
+      mockSessionStatus = 'running'
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      await finishTurn(view)
+      await fireEvent.press(screen.getByTestId('chat-jump-to-latest'))
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      expect(screen.queryByTestId('chat-new-response-badge')).toBeNull()
+    })
+  })
+
   // Copilot has no transcript, so its echo never arrives: the optimistic bubble must not
   // keep the thinking indicator up once the turn it started has ended.
   it('drops the thinking indicator when the turn ends even though no echo ever arrives', async () => {
@@ -883,16 +938,16 @@ describe('LiveConversationView — text refused while a prompt is open', () => {
     expect(screen.queryByTestId('chat-jump-to-latest')).toBeNull()
   })
 
-  // Positive control: an ordinary failure still alerts and leaves the scroll
-  // position alone.
-  it('still alerts and stays put on an ordinary send failure', async () => {
+  // Positive control: an ordinary failure still alerts and keeps the draft. The
+  // send itself has already moved the reader to the end, before the refusal.
+  it('still alerts and keeps the draft on an ordinary send failure', async () => {
     mockMutateAsync.mockRejectedValueOnce(new NetworkError('Failed to reach server'))
 
     const input = await dragThenSend('keep me')
 
     expect(input.props.value).toBe('keep me')
     expect(alertSpy).toHaveBeenCalledWith(expect.any(String), 'Failed to reach server')
-    expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
+    expect(screen.queryByTestId('chat-jump-to-latest')).toBeNull()
   })
 
   it('shows the server message inline under the composer once the send has settled', async () => {

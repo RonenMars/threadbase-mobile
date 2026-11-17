@@ -69,7 +69,8 @@
     "copyCode": "Copy",
     "copiedCode": "Copied",
     "scrollToBottom": "Scroll to bottom",
-    "questionWaiting": "Question waiting below"
+    "questionWaiting": "Question waiting below",
+    "newResponse": "New response below"
   },
   "message": {
     "code": "Code",
