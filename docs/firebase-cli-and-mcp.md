@@ -55,6 +55,39 @@ The CLI's login is separate from gcloud's.
 | `--debug` | Verbose output; keeps a debug log. |
 | `--token <token>` | Deprecated. |
 
+### Project selection: `-P`, `firebase use` and `.firebaserc`
+
+Every command needs to know which Firebase project it acts on.
+Either name it on the command, or set it once for a directory:
+
+- `-P, --project <alias_or_project_id>` on the command: `firebase appdistribution:groups:list -P threadbase-10d42`.
+- `firebase use` stores an **active project** for the working directory, and `.firebaserc` in that directory holds the **aliases**, short names for project IDs.
+
+`firebase use` only runs in a Firebase project directory, meaning one that holds a `firebase.json`.
+Anywhere else it stops with `firebase use must be run from a Firebase project directory`.
+Observed on 15.36.0, in a scratch directory containing only `{}` as `firebase.json`:
+
+```bash
+firebase use --alias tb threadbase-10d42   # "Created alias tb ...", and it also becomes the active project
+firebase use tb                            # "Now using alias tb (threadbase-10d42)"
+firebase use                               # prints: threadbase-10d42
+firebase appdistribution:groups:list       # works with no -P
+firebase use --unalias tb                  # remove an alias
+firebase use --clear                       # clear the active project selection
+firebase use --add                         # interactive: pick a project, name an alias (not run)
+```
+
+The resulting `.firebaserc` is JSON:
+
+```json
+{ "projects": { "tb": "threadbase-10d42" }, "targets": {}, "etags": {} }
+```
+
+This repo deliberately has no `firebase.json` and no `.firebaserc`.
+`ship-qa.sh` calls the REST API with explicit app IDs and reads neither, and adding them to a worktree would leave untracked files.
+So in agent shells always pass `-P threadbase-10d42`.
+A developer who wants aliases can make a scratch directory outside the repo with a `firebase.json` containing `{}` and run `firebase use` there; the alias then applies only to commands run from that directory.
+
 ### App Distribution commands
 
 ```text
@@ -129,9 +162,59 @@ claude mcp remove firebase -s user
 
 The official instructions use `npx` instead (`claude mcp add firebase npx -- -y firebase-tools@latest mcp`), and the Claude plugin route is `claude plugin marketplace add firebase/firebase-tools` then `claude plugin install firebase@firebase`.
 This repo uses the Homebrew binary so no second copy of `firebase-tools` is fetched.
-Codex needs its own registration; it does not read Claude's config.
+Codex needs its own registration; it does not read Claude's config (see "Other MCP clients" below).
 
 The tools appear only after a session starts, and they are deferred: load them with `ToolSearch("firebase")` before calling one.
+
+### Other MCP clients
+
+Every client launches the same command, `/opt/homebrew/bin/firebase mcp`, over stdio.
+Only where the config lives differs.
+The `npx` form in the official docs (`"command": "npx", "args": ["-y", "firebase-tools@latest", "mcp"]`) also works, but fetches its own copy of `firebase-tools`; this repo's examples use the Homebrew binary.
+Restart the client after editing its config.
+
+**Codex** — syntax checked against `codex-cli` 0.169.0 (`codex mcp add --help`: `codex mcp add [OPTIONS] <NAME> (--url <URL> | -- <COMMAND>...)`):
+
+```bash
+codex mcp add firebase -- /opt/homebrew/bin/firebase mcp
+codex mcp list                      # firebase should be listed
+codex mcp remove firebase
+```
+
+The command writes this table to `~/.codex/config.toml`, which can also be edited by hand:
+
+```toml
+[mcp_servers.firebase]
+command = "/opt/homebrew/bin/firebase"
+args = ["mcp"]
+```
+
+`--env KEY=VALUE` passes environment variables to the server; `-c 'mcp_servers.firebase.args=["mcp","--only","core"]'` overrides one value for a single run.
+Firebase was **not** registered with Codex on this machine as of 2026-11-17; the commands above are what to run if the user asks for it.
+Only the `add --help` text was checked, so run `codex mcp list` after adding.
+
+**Claude Desktop** — Settings → Developer → Edit Config, which opens `claude_desktop_config.json`:
+
+```json
+{ "mcpServers": { "firebase": { "command": "/opt/homebrew/bin/firebase", "args": ["mcp"] } } }
+```
+
+**Cursor** — `~/.cursor/mcp.json` for every project, or `.cursor/mcp.json` for one (do not commit it here):
+
+```json
+{ "mcpServers": { "firebase": { "command": "/opt/homebrew/bin/firebase", "args": ["mcp"] } } }
+```
+
+**VS Code Copilot** — `.vscode/mcp.json` in a workspace, or the user settings for every project:
+
+```json
+{ "servers": { "firebase": { "type": "stdio", "command": "/opt/homebrew/bin/firebase", "args": ["mcp"] } } }
+```
+
+(In user settings the same object sits under an `"mcp"` key.)
+
+The Claude Desktop, Cursor and VS Code snippets are the official ones with the `npx` command swapped for the Homebrew path; they were not run here.
+To limit what a client sees, append `"--only", "core"` to `args` (see the options below).
 
 ### `firebase mcp` options
 
