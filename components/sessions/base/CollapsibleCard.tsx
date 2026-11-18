@@ -17,12 +17,15 @@ export interface CollapsibleCardProps {
   title: string
   /** Header title line cap; defaults to 1. */
   titleLines?: number
+  /** Muted line directly under the title. */
+  subtitle?: string
   activityLine?: string
   count: number
   /** Spine colour; null leaves the spine blank. */
   railColor: string | null
   isOpen: boolean
   onToggle: (id: string) => void
+  onLongPress?: () => void
   accessibilityLabel: string
   headerTestID: string
   /** Rendered inside the card, under the header, only while open. */
@@ -36,11 +39,13 @@ export function CollapsibleCard({
   parentLabel,
   title,
   titleLines,
+  subtitle,
   activityLine,
   count,
   railColor,
   isOpen,
   onToggle,
+  onLongPress,
   accessibilityLabel,
   headerTestID,
   children,
@@ -63,6 +68,7 @@ export function CollapsibleCard({
         <View style={styles.spineRowBody}>
           <TouchableOpacity
             onPress={handleToggle}
+            onLongPress={onLongPress}
             activeOpacity={0.75}
             style={styles.header}
             accessibilityRole="button"
@@ -70,7 +76,7 @@ export function CollapsibleCard({
             accessibilityLabel={accessibilityLabel}
             testID={headerTestID}
           >
-            <CardTitleBlock parentLabel={parentLabel} title={title} activityLine={activityLine} titleLines={titleLines} />
+            <CardTitleBlock parentLabel={parentLabel} title={title} subtitle={subtitle} activityLine={activityLine} titleLines={titleLines} />
             <CountBadge count={count} />
             <ChevronToggle isOpen={isOpen} />
           </TouchableOpacity>
