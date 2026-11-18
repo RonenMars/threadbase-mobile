@@ -11,7 +11,7 @@ We use [Maestro](https://maestro.mobile.dev/) for automated E2E testing on iOS a
 The `E2E` GitHub Actions workflow defaults to Android and runs on `ubuntu-24.04` with Android API 35 Google APIs `x86_64` `pixel_6` emulators and Maestro CLI 2.8.0.
 One job assembles the Release APK and caches it for the exact tested SHA plus the executing workflow revision.
 Three parallel emulator jobs download that APK, install it with `adb`, and each run a duration-weighted shard of `test:e2e:mock` through `e2e/run-maestro.js`.
-iOS is the same shape on `macos-26`: one arm64-only `xcodebuild` job, then three simulator shards.
+iOS is the same shape: one arm64-only `xcodebuild` job on the `xcode-27` runner image (Xcode 27.2, the SDK the shipping workflows use), then three simulator shards on `macos-26` (iOS 26 runtimes, which `e2e/check-sim.js` is validated against).
 Shard assignment uses historical flow seconds from `e2e/mock-suite-durations.json`.
 Those estimates are labeled as historical weights in the job summary and are not suite membership.
 A `flows=` dispatch stays on one shard in the supplied order.

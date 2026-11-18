@@ -344,7 +344,7 @@ jobs:
     name: iOS Release build
     needs: resolve
     if: ${{ needs.resolve.outputs.ios == 'true' }}
-    runs-on: macos-26
+    runs-on: xcode-27
     # A cold DerivedData miss (run 32161343357) spent ~57m on the compile.
     timeout-minutes: 90
     steps:
@@ -352,11 +352,11 @@ jobs:
         with:
           ref: ${{ needs.resolve.outputs.sha }}
 
-      - name: Select Xcode 26
-        # expo-modules-jsi's Package.swift requires swift-tools 6.2 (Xcode 26)
-        # and its Swift sources build only on Xcode 26.4+ (Expo issue #47875), so
-        # the iOS job runs on macos-26 and pins the same toolchain as deploy.yml.
-        run: sudo xcode-select -s /Applications/Xcode_26.4.1.app
+      - name: Select Xcode 27
+        # Builds with the same SDK the shipping workflows use (deploy.yml), so a
+        # PR shows an Xcode 27 compile failure before a release does. The shards
+        # below stay on macos-26: check-sim.js is validated against iOS 26 runtimes.
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
 
       - name: Record Xcode identity
         id: toolchain
