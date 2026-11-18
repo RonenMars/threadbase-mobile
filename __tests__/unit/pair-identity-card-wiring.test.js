@@ -32,4 +32,12 @@ describe('pair identity card wiring', () => {
       expect(fs.readFileSync(file, 'utf8')).toContain('<PairCameraIdentityCard')
     },
   )
+
+  // Without onReject a mismatching code has no way out except the user knowing to abandon the form.
+  it.each(scanners.map((file) => [path.relative(ROOT, file), file]))(
+    '%s lets the user reject a mismatching code',
+    (_relative, file) => {
+      expect(fs.readFileSync(file, 'utf8')).toContain('onReject=')
+    },
+  )
 })

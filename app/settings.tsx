@@ -430,6 +430,11 @@ await refreshServerInfo(serverId)
     if (result) void applyScanResult(result)
   }
 
+  const rejectCameraIdentity = () => {
+    pendingScan.current = null
+    setCameraFingerprint(null)
+  }
+
   const handleScanQrSuccess = (result: ExchangeResult) => {
     setQrScannerOpen(false)
     if (result.serverPublicKey) {
@@ -997,6 +1002,7 @@ await refreshServerInfo(serverId)
         visible={cameraFingerprint !== null}
         fingerprint={cameraFingerprint}
         onDone={finishCameraIdentity}
+        onReject={rejectCameraIdentity}
       />
     </SafeAreaView>
   )

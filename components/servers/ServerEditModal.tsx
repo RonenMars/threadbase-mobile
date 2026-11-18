@@ -237,10 +237,12 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         to appear while this one is still up silently drops it. That is what made
         Save look dead — handleSave sets confirmTarget and returns without saving,
         so with the gate unable to present the form just sat there with no gate,
-        no server added and no error. Yield to whichever child needs the window.
+        no server added and no error. Yield to whichever child needs the window,
+        the identity card included: a scan of a pinned server opens it while this
+        form is still up, and iOS then leaves an invisible modal over the app.
       */}
       <Modal
-        visible={visible && confirmTarget === null && !scannerOpen}
+        visible={visible && confirmTarget === null && !scannerOpen && cameraFingerprint === null}
         transparent
         animationType="fade"
         onRequestClose={handleDismiss}
@@ -345,6 +347,10 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         visible={cameraFingerprint !== null}
         fingerprint={cameraFingerprint}
         onDone={() => setCameraFingerprint(null)}
+        onReject={() => {
+          setCameraFingerprint(null)
+          onClose()
+        }}
       />
     </>
   )

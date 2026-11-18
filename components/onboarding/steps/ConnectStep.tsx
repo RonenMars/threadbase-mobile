@@ -199,6 +199,11 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
     if (result) commitScan(result)
   }
 
+  const rejectCameraIdentity = () => {
+    pendingScan.current = null
+    setCameraFingerprint(null)
+  }
+
   const backToOptionsControl = (
     <TouchableOpacity
       testID="onboarding-connect-back-to-choose"
@@ -302,6 +307,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
           visible={cameraFingerprint !== null}
           fingerprint={cameraFingerprint}
           onDone={finishCameraIdentity}
+          onReject={rejectCameraIdentity}
         />
       </View>
     )
@@ -454,6 +460,7 @@ export function ConnectStep({ onPaired, onAdvance }: Props) {
         visible={cameraFingerprint !== null}
         fingerprint={cameraFingerprint}
         onDone={finishCameraIdentity}
+        onReject={rejectCameraIdentity}
       />
     </View>
   )

@@ -10,15 +10,16 @@ const FINGERPRINT = '3cfe 00ad 6d01 6dd3 782c 8628 4b1d a1d2'
 describe('PairCameraIdentityCard', () => {
   it('renders nothing when there is no fingerprint', async () => {
     const { queryByTestId } = await renderWithI18n(
-      <PairCameraIdentityCard visible fingerprint={null} onDone={jest.fn()} />,
+      <PairCameraIdentityCard visible fingerprint={null} onDone={jest.fn()} onReject={jest.fn()} />,
     )
     expect(queryByTestId('pair-camera-identity-card')).toBeNull()
   })
 
-  it('shows the fingerprint and a single Done that proceeds', async () => {
+  it('shows the fingerprint with "It matches" proceeding and "Doesn\'t match" rejecting', async () => {
     const onDone = jest.fn()
-    const { getByTestId, queryByTestId } = await renderWithI18n(
-      <PairCameraIdentityCard visible fingerprint={FINGERPRINT} onDone={onDone} />,
+    const onReject = jest.fn()
+    const { getByTestId, getByText, queryByTestId } = await renderWithI18n(
+      <PairCameraIdentityCard visible fingerprint={FINGERPRINT} onDone={onDone} onReject={onReject} />,
     )
     expect(getByTestId('pair-camera-identity-card')).toBeTruthy()
     expect(getByTestId('identity-fingerprint')).toBeTruthy()
@@ -26,13 +27,29 @@ describe('PairCameraIdentityCard', () => {
     expect(queryByTestId('pair-confirm-add-btn')).toBeNull()
     expect(queryByTestId('pair-confirm-cancel-btn')).toBeNull()
 
+    expect(getByText('It matches')).toBeTruthy()
+    expect(getByText("Doesn't match")).toBeTruthy()
+
     fireEvent.press(getByTestId('pair-camera-identity-done'))
     expect(onDone).toHaveBeenCalledTimes(1)
+    expect(onReject).not.toHaveBeenCalled()
+  })
+
+  it('rejects without proceeding when the code does not match', async () => {
+    const onDone = jest.fn()
+    const onReject = jest.fn()
+    const { getByTestId } = await renderWithI18n(
+      <PairCameraIdentityCard visible fingerprint={FINGERPRINT} onDone={onDone} onReject={onReject} />,
+    )
+
+    fireEvent.press(getByTestId('pair-camera-identity-reject'))
+    expect(onReject).toHaveBeenCalledTimes(1)
+    expect(onDone).not.toHaveBeenCalled()
   })
 
   it('keeps the identity sheet opaque in the Glass theme', async () => {
     const { getByTestId } = await renderWithI18n(
-      <PairCameraIdentityCard visible fingerprint={FINGERPRINT} onDone={jest.fn()} />,
+      <PairCameraIdentityCard visible fingerprint={FINGERPRINT} onDone={jest.fn()} onReject={jest.fn()} />,
     )
 
     expect(StyleSheet.flatten(getByTestId('pair-camera-identity-sheet').props.style)).toMatchObject({
