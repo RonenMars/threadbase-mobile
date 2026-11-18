@@ -88,8 +88,11 @@
     "headerNeedsYou_other": "NEEDS YOU · {{count}}",
     "headerWorking_one": "WORKING · {{count}}",
     "headerWorking_other": "WORKING · {{count}}",
-    "headerLast7Days": "LAST 7 DAYS",
-    "headerLast14Days": "LAST 14 DAYS",
+    "headerLastHour": "LAST HOUR",
+    "headerToday": "TODAY",
+    "headerYesterday": "YESTERDAY",
+    "headerLastWeek": "LAST WEEK",
+    "headerThisMonth": "THIS MONTH",
     "headerLastMonth": "LAST MONTH",
     "headerEarlier": "EARLIER"
   },

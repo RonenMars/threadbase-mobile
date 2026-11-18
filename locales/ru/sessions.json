@@ -112,8 +112,11 @@
     "headerWorking_few": "РАБОТАЕТ · {{count}}",
     "headerWorking_many": "РАБОТАЕТ · {{count}}",
     "headerWorking_other": "РАБОТАЕТ · {{count}}",
-    "headerLast7Days": "ПОСЛЕДНИЕ 7 ДНЕЙ",
-    "headerLast14Days": "ПОСЛЕДНИЕ 14 ДНЕЙ",
+    "headerLastHour": "ПОСЛЕДНИЙ ЧАС",
+    "headerToday": "СЕГОДНЯ",
+    "headerYesterday": "ВЧЕРА",
+    "headerLastWeek": "ПРОШЛАЯ НЕДЕЛЯ",
+    "headerThisMonth": "ЭТОТ МЕСЯЦ",
     "headerLastMonth": "ПОСЛЕДНИЙ МЕСЯЦ",
     "headerEarlier": "РАНЕЕ"
   },

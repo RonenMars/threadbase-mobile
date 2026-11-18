@@ -11,8 +11,7 @@ import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessAct
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
-import { earlierBucketFor, type EarlierBucket } from '@/components/sessions/hub/hubUtils'
-import { DAY_BUCKET_ORDER, dayBucketLabel } from '@/components/sessions/shared/dayBuckets'
+import { dayBucketLabel, groupByDayBucket, isDayBucketOpen } from '@/components/sessions/shared/dayBuckets'
 import { basename } from '@/components/sessions/shared/pathTail'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -70,14 +69,6 @@ type FlatItem =
   | { kind: 'skeleton'; key: string }
 
 const HISTORY_SKELETONS = 2
-
-// Default param (not a direct Date.now() call in the component body) keeps this
-// clear of react-hooks/purity, matching the projectTiers.ts/formatListTime.ts idiom.
-function bucketEarlierEntries(earlier: Entry[], now: number = Date.now()): Record<EarlierBucket, Entry[]> {
-  const buckets: Record<EarlierBucket, Entry[]> = { last7Days: [], last14Days: [], lastMonth: [], earlier: [] }
-  for (const e of earlier) buckets[earlierBucketFor(e.item.ms, now)].push(e)
-  return buckets
-}
 
 function entryKey(e: Entry): string {
   return `${e.item.kind}:${e.item.item.serverId}::${e.item.item.id}`
@@ -159,7 +150,8 @@ function CantResumeConversationRow({
 
 /**
  * The default view: a flat list ordered by state, not by clock.
- * Needs you → Working → Earlier (last 7 days, 14 days, month, earlier accordions).
+ * Needs you → Working → Earlier, sectioned by date (last hour, today, yesterday,
+ * weekdays, last week, this month, last month, then month and year accordions).
  * With more than one server
  * the history is grouped per server instead, since the rows carry their own
  * times; the two live sections stay global because "needs you" outranks the
@@ -186,7 +178,7 @@ export const NowList = React.memo(function NowList({
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const inset = listTopInset(topInset)
-  const { t } = useTranslation('sessions')
+  const { t, i18n } = useTranslation('sessions')
   const router = useRouter()
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -194,8 +186,8 @@ export const NowList = React.memo(function NowList({
   const nameOrigins = useSessionNamesStore((s) => s.nameOrigin)
   const collapsedServers = useViewPrefsStore((s) => s.collapsedServers)
   const toggleServer = useViewPrefsStore((s) => s.toggleServerCollapsed)
-  const collapsedDayBuckets = useViewPrefsStore((s) => s.collapsedDayBuckets)
-  const toggleDayBucket = useViewPrefsStore((s) => s.toggleDayBucketCollapsed)
+  const dayBucketOpen = useViewPrefsStore((s) => s.dayBucketOpen)
+  const toggleDayBucket = useViewPrefsStore((s) => s.toggleDayBucket)
   const fetchStatuses = useServerFetchStatusStore((s) => s.statuses)
   const dismissedFailureAt = useServerFetchStatusStore((s) => s.dismissedFailureAt)
   const dismissFailure = useServerFetchStatusStore((s) => s.dismissFailure)
@@ -269,15 +261,12 @@ export const NowList = React.memo(function NowList({
         if (warming.has(id)) appendSkeletons(out, id)
       }
     } else {
-      const buckets = bucketEarlierEntries(earlier)
+      const buckets = groupByDayBucket(earlier, (e) => e.item.ms)
       const warmingHere = warming.size > 0
-      let anyBucketHasRows = false
-      for (const bucketKey of DAY_BUCKET_ORDER) {
-        const bucket = buckets[bucketKey]
-        if (bucket.length === 0) continue
-        anyBucketHasRows = true
-        out.push({ kind: 'eyebrow', key: `eyebrow-${bucketKey}`, tone: 'muted', label: dayBucketLabel(bucketKey, t), count: bucket.length, bucketKey })
-        if (collapsedDayBuckets.includes(bucketKey)) continue
+      const anyBucketHasRows = buckets.length > 0
+      for (const { key: bucketKey, items: bucket } of buckets) {
+        out.push({ kind: 'eyebrow', key: `eyebrow-${bucketKey}`, tone: 'muted', label: dayBucketLabel(bucketKey, t, i18n.language), count: bucket.length, bucketKey })
+        if (!isDayBucketOpen(dayBucketOpen, bucketKey)) continue
         out.push(...bucket.map(toRow))
       }
       if (warmingHere) {
@@ -291,7 +280,7 @@ export const NowList = React.memo(function NowList({
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, displayedServerIds, servers, collapsedServers, collapsedDayBuckets, warming, fetchStatuses, dismissedFailureAt, t])
+  }, [entries, order, sortDirection, multiServer, displayedServerIds, servers, collapsedServers, dayBucketOpen, warming, fetchStatuses, dismissedFailureAt, t, i18n.language])
 
   const highlight = searchQuery.trim() || undefined
 
@@ -313,7 +302,7 @@ export const NowList = React.memo(function NowList({
             tone={item.tone}
             count={item.count}
             collapsible={item.bucketKey != null}
-            isExpanded={item.bucketKey ? !collapsedDayBuckets.includes(item.bucketKey) : undefined}
+            isExpanded={item.bucketKey ? isDayBucketOpen(dayBucketOpen, item.bucketKey) : undefined}
             onToggle={item.bucketKey ? () => toggleDayBucket(item.bucketKey!) : undefined}
             testID={item.bucketKey ? `day-bucket-${item.bucketKey}` : undefined}
           />
@@ -390,7 +379,7 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, collapsedDayBuckets, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, onPromptsChanged, dismissFailure])
+  }, [collapsedServers, toggleServer, dayBucketOpen, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, onPromptsChanged, dismissFailure])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">
