@@ -15,6 +15,7 @@ import {
 } from '@/services/uploads'
 import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 import { useDraftsStore } from '@/stores/drafts'
+import { attachmentDraftKey, useAttachmentDraftsStore } from '@/stores/attachmentDrafts'
 import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
@@ -49,11 +50,18 @@ export interface ComposerState {
   handleToggleMic: () => Promise<void>
 }
 
+const NO_ATTACHMENTS: ComposerAttachment[] = []
+
 export function useComposerState({ serverId, sessionId, onSend }: UseComposerStateOptions): ComposerState {
   const { t } = useTranslation('common')
   const { t: tConversation } = useTranslation('conversation')
   const [inputText, setInputText] = useState('')
-  const [attachments, setAttachments] = useState<ComposerAttachment[]>([])
+  // Store-backed so attachments survive leaving the session, like the draft text. An upload that
+  // finishes after the screen unmounted still lands on the session it was picked for.
+  const attachmentKey = attachmentDraftKey(serverId, sessionId)
+  const attachments = useAttachmentDraftsStore((s) => s.byKey[attachmentKey]) ?? NO_ATTACHMENTS
+  const setAttachments = (fn: (prev: ComposerAttachment[]) => ComposerAttachment[]) =>
+    useAttachmentDraftsStore.getState().update(attachmentKey, fn)
   const [isUploading, setIsUploading] = useState(false)
   const [attachError, setAttachError] = useState<string | null>(null)
   const [slashBoardVisible, setSlashBoardVisible] = useState(false)
@@ -110,7 +118,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
 
   const resetComposer = () => {
     setInputText('')
-    setAttachments([])
+    setAttachments(() => [])
     setAttachError(null)
     clearDraft(serverId, sessionId)
   }
