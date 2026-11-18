@@ -64,19 +64,18 @@ jobs:
   deploy-ios:
     name: Ship iOS
     if: ${{ inputs.platform == 'ios' || inputs.platform == 'all' }}
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 90
     permissions:
       contents: write
       pull-requests: write
     env:
-      # expo-modules-jsi's Package.swift declares swift-tools-version 6.2, which
-      # needs Xcode 26+, and its Swift 6 sources need Xcode 26.4+ (Expo issue
-      # #47875; 26.3 failed on an abs() overload ambiguity, and 57.0.6 then on
-      # RuntimeScheduler.h's SWIFT_RETURNS_RETAINED annotations). macos-15 tops
-      # out at 26.3, so the job runs on macos-26 and pins the toolchain rather
-      # than trusting the image default, which moves between image refreshes.
-      DEVELOPER_DIR: /Applications/Xcode_26.4.1.app/Contents/Developer
+      # App Store Connect rejects uploads built with an SDK older than iOS 27
+      # from April 2027 (ITMS-90725), so the job runs on the xcode-27 image.
+      # expo-modules-jsi's Swift 6 sources also need Xcode 26.4+ (Expo issue
+      # #47875). The image's default Xcode moves between refreshes, so the
+      # toolchain is pinned rather than trusted.
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
     steps:
       - name: Confirm App Store production deployment
         if: ${{ inputs.target == 'production' }}

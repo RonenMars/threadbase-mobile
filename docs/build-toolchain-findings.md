@@ -20,7 +20,7 @@ Not done: the "build time delta over 3 runs" acceptance criterion. It needs runs
 
 ## Feature 27 — EAS precompiled community libs: not applicable today
 
-- The shipping paths are local `ship-*` scripts and `deploy.yml` on `macos-26`; EAS is opt-in only (`docs/deployment.md`, Path C) and no workflow or `package.json` script calls `eas`.
+- The shipping paths are local `ship-*` scripts and `deploy.yml` on the `xcode-27` runner image (Xcode 27.2; App Store Connect requires the iOS 27 SDK from April 2027, ITMS-90725); EAS is opt-in only (`docs/deployment.md`, Path C) and no workflow or `package.json` script calls `eas`.
 - `eas.json` has a `production` profile and nothing that disables precompile, so the opt-in path would not be blocked.
 - The same CI log shows the gap this feature targets: `RNReanimated`, `RNScreens`, `react-native-safe-area-context`, `RNSVG`, `RNWorklets` and `RNCAsyncStorage` each print `building from source (prebuilt tarball not found)`. Those prebuilts are not shipped in the npm packages, so they cannot be picked up on the Actions path.
 - Revisit only if the iOS pipeline moves to EAS (Feature 4).
