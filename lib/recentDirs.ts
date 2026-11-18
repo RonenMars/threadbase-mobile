@@ -21,7 +21,7 @@ interface SessionLike {
   startedAt?: string | null
 }
 
-function canonical(path: string): string {
+export function canonical(path: string): string {
   return path.trim().replace(/[\\/]+$/, '')
 }
 

@@ -16,7 +16,14 @@
     "addDirectory": "Add this folder",
     "extraDirsTitle": "Also include ({{selected}}/{{max}})",
     "extraDirsHint": "The session starts in the folder you're in and can also work in these.",
-    "removeDirectory": "Remove {{name}}"
+    "removeDirectory": "Remove {{name}}",
+    "pinnedDirs": "Pinned ({{total}})",
+    "hidePinnedDirs": "Hide pinned folders",
+    "showPinnedDirs": "Show pinned folders",
+    "pinFolder": "Pin this folder",
+    "unpinFolder": "Unpin this folder",
+    "unpinDirectory": "Unpin {{name}}",
+    "pinFailed": "Couldn't update pinned folders"
   },
   "starting": {
     "secondsLeft": "{{seconds}}s",

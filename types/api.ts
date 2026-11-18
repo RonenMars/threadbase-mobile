@@ -552,6 +552,12 @@ export interface ServerInfo {
    */
   recentDirs?: boolean
   /**
+   * Additive: the server serves /api/pinned-dirs, the browse screen's pinned
+   * folders, kept in its runtime.db. Absent on older servers, where browse
+   * shows no pinning.
+   */
+  pinnedDirs?: boolean
+  /**
    * Additive: the server publishes the provider-neutral prompt contract
    * (`prompt_snapshot` / `prompt_event` frames, POST /prompt/answer). Absent on
    * older servers. Informational: the client negotiates by frame presence, not

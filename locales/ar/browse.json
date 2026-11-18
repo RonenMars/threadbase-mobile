@@ -16,7 +16,14 @@
     "addDirectory": "أضف هذا المجلد",
     "extraDirsTitle": "تضمين أيضًا ({{selected}}/{{max}})",
     "extraDirsHint": "تبدأ الجلسة في المجلد الحالي ويمكنها العمل في هذه المجلدات أيضًا.",
-    "removeDirectory": "إزالة {{name}}"
+    "removeDirectory": "إزالة {{name}}",
+    "pinnedDirs": "المثبّتة ({{total}})",
+    "hidePinnedDirs": "إخفاء المجلدات المثبّتة",
+    "showPinnedDirs": "إظهار المجلدات المثبّتة",
+    "pinFolder": "تثبيت هذا المجلد",
+    "unpinFolder": "إلغاء تثبيت هذا المجلد",
+    "unpinDirectory": "إلغاء تثبيت {{name}}",
+    "pinFailed": "تعذّر تحديث المجلدات المثبّتة"
   },
   "starting": {
     "secondsLeft": "{{seconds}} ث",
