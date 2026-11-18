@@ -199,8 +199,7 @@
     "working": "يعمل"
   },
   "capability": {
-    "externalOnly": "للعرض فقط",
-    "liveControl": "تحكم مباشر"
+    "externalOnly": "للعرض فقط"
   },
   "timeBucket": {
     "all": "الكل",
