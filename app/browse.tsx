@@ -642,6 +642,9 @@ function makeStyles(theme: Theme) {
   },
   listContainer: {
     flex: 1,
+    // Loading skeletons are taller than the space left above the footer and would
+    // paint behind the (background-less) "Also include" tray; FlashList clips itself.
+    overflow: 'hidden',
   },
   recents: {
     borderBottomWidth: 1,
