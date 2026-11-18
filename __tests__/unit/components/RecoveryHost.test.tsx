@@ -4,8 +4,11 @@ import { useQueryRecoveryStore } from '@/stores/query-recovery'
 import { useServersStore } from '@/stores/servers'
 import type { ServerConfig } from '@/types/api'
 import { renderWithI18n } from '@/test-utils/render'
+import { addSafeBreadcrumb, captureSafeMessage } from '@/services/sentry'
 
 jest.mock('@/hooks/useQueryRecoveryAlerts', () => ({ useQueryRecoveryAlerts: jest.fn() }))
+jest.mock('@/services/sentry', () => ({ addSafeBreadcrumb: jest.fn(), captureSafeMessage: jest.fn() }))
+jest.mock('@/services/query-client', () => ({ describeRecovery: () => ({ sessions_paused: 1, online: true }) }))
 
 function server(id: string): ServerConfig {
   return { id, url: `https://${id}.test`, apiKey: 'k', isConnected: true, serverInfo: null, connectionError: null }
@@ -14,6 +17,7 @@ function server(id: string): ServerConfig {
 const oneServer = { a: server('a') }
 
 beforeEach(() => {
+  jest.clearAllMocks()
   jest.useFakeTimers()
   useQueryRecoveryStore.setState({ recovering: false, nestedRetryCount: 0 })
   useServersStore.setState({ servers: oneServer })
@@ -53,5 +57,25 @@ describe('RecoveryHost overlay timeout', () => {
     const { queryByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
     expect(queryByTestId('recovery-overlay')).toBeNull()
+  })
+
+  it('reports what held the flag once, only when the cap is reached', async () => {
+    await renderWithI18n(<RecoveryHost />)
+    await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    await act(async () => jest.advanceTimersByTime(RECOVERY_OVERLAY_MAX_MS - 1))
+    expect(captureSafeMessage).not.toHaveBeenCalled()
+    await act(async () => jest.advanceTimersByTime(1))
+    expect(addSafeBreadcrumb).toHaveBeenCalledWith('recovery_overlay_expired', { sessions_paused: 1, online: true })
+    expect(captureSafeMessage).toHaveBeenCalledTimes(1)
+    expect(captureSafeMessage).toHaveBeenCalledWith('recovery_overlay_expired')
+  })
+
+  it('reports nothing when the recovery ends before the cap', async () => {
+    await renderWithI18n(<RecoveryHost />)
+    await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    await act(async () => jest.advanceTimersByTime(RECOVERY_OVERLAY_MAX_MS - 1))
+    await act(async () => useQueryRecoveryStore.setState({ recovering: false }))
+    await act(async () => jest.advanceTimersByTime(RECOVERY_OVERLAY_MAX_MS))
+    expect(captureSafeMessage).not.toHaveBeenCalled()
   })
 })

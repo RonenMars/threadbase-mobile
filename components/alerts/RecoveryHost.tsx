@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { RecoveryOverlay } from '@/components/ui/RecoveryOverlay'
 import { useQueryRecoveryAlerts } from '@/hooks/useQueryRecoveryAlerts'
+import { describeRecovery } from '@/services/query-client'
+import { addSafeBreadcrumb, captureSafeMessage } from '@/services/sentry'
 import { selectIsRecovering, useQueryRecoveryStore } from '@/stores/query-recovery'
 import { useServersStore } from '@/stores/servers'
 
@@ -21,7 +23,11 @@ export function RecoveryHost() {
 
   useEffect(() => {
     if (!showOverlay) return
-    const timer = setTimeout(() => setExpired(true), RECOVERY_OVERLAY_MAX_MS)
+    const timer = setTimeout(() => {
+      addSafeBreadcrumb('recovery_overlay_expired', describeRecovery())
+      captureSafeMessage('recovery_overlay_expired')
+      setExpired(true)
+    }, RECOVERY_OVERLAY_MAX_MS)
     return () => {
       clearTimeout(timer)
       setExpired(false)
