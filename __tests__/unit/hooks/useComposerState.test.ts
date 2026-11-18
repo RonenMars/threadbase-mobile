@@ -4,6 +4,7 @@ import { onlineManager } from '@tanstack/react-query'
 import { useComposerState } from '@/hooks/useComposerState'
 import { pickFromCamera, uploadAttachment } from '@/services/uploads'
 import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
+import { useAttachmentDraftsStore } from '@/stores/attachmentDrafts'
 
 // ── mocks ────────────────────────────────────────────────────────────────────
 // jest.mock factories are hoisted so we cannot reference outer consts inside them.
@@ -75,6 +76,7 @@ describe('useComposerState', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    useAttachmentDraftsStore.setState({ byKey: {} })
     mockVoice.listening = false
   })
   afterEach(() => {
@@ -410,5 +412,48 @@ describe('path escaping for @references', () => {
     ]
     const refs = attachments.map((a) => `@${escapePath(a.path)}`).join(' ')
     expect(refs).toBe('@/tmp/file1.jpg @/tmp/file2.png')
+  })
+})
+
+describe('attachments are kept per session', () => {
+  const photo = { uri: 'file:///tmp/photo.jpg', base64: 'ZmFrZQ==', filename: 'photo.jpg', mimeType: 'image/jpeg' }
+  const uploaded = { id: 'att-1', path: '/tmp/photo.jpg', originalName: 'photo.jpg', mimeType: 'image/jpeg', sizeBytes: 4 }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    useAttachmentDraftsStore.setState({ byKey: {} })
+    ;(pickFromCamera as jest.Mock).mockResolvedValue(photo)
+    ;(uploadAttachment as jest.Mock).mockResolvedValue(uploaded)
+  })
+
+  it('restores them when the session screen is left and reopened', async () => {
+    const first = await renderComposer()
+    await tapTakePhoto(first.result)
+    expect(first.result.current.attachments).toHaveLength(1)
+    await first.unmount()
+
+    const second = await renderComposer()
+    expect(second.result.current.attachments).toEqual([{ ...uploaded, localUri: photo.uri }])
+  })
+
+  it('does not show them in another session', async () => {
+    const first = await renderComposer()
+    await tapTakePhoto(first.result)
+    await first.unmount()
+
+    const other = await renderHook(() =>
+      useComposerState({ serverId: 'srv1', sessionId: 'sess2', onSend: jest.fn() }),
+    )
+    expect(other.result.current.attachments).toHaveLength(0)
+  })
+
+  it('drops them once the message is sent', async () => {
+    const first = await renderComposer(jest.fn().mockResolvedValue(undefined))
+    await tapTakePhoto(first.result)
+    await act(async () => { await first.result.current.handleSend() })
+    await first.unmount()
+
+    const second = await renderComposer()
+    expect(second.result.current.attachments).toHaveLength(0)
   })
 })
