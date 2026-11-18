@@ -79,7 +79,11 @@ test.describe('with a seeded server', () => {
 
   test('open a conversation and read its messages', async ({ page }) => {
     await page.goto('/')
-    await page.getByTestId('day-bucket-earlier').click({ timeout: 20_000 })
+    // Old fixture conversations land in month-N (or year-YYYY once the calendar
+    // year turns) buckets, so the key moves with the date; all of them start collapsed.
+    const oldBuckets = page.locator('[data-testid^="day-bucket-month-"], [data-testid^="day-bucket-year-"]')
+    await expect(oldBuckets.first()).toBeVisible({ timeout: 20_000 })
+    for (const bucket of await oldBuckets.all()) await bucket.click()
     await page.getByTestId('conversation-row-conv-111').click()
     await expect(
       page.getByText('Can you summarize the checkout retry telemetry before the release?'),
