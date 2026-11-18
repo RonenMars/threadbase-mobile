@@ -20,7 +20,7 @@ import { BoardSessionCard } from './BoardSessionCard'
 
 export type BoardCardModel =
   | { kind: 'entry'; key: string; entry: NowEntry; group: SubagentGroup | undefined }
-  | { kind: 'orphan'; key: string; group: SubagentGroup; title: string; serverId: string }
+  | { kind: 'orphan'; key: string; group: SubagentGroup; title: string; serverId: string; parentTitle?: string }
 
 type Row = BoardCardModel | { kind: 'heading'; key: string }
 
@@ -92,7 +92,9 @@ export function BoardColumnList({
           <SubagentGroupCard
             group={row.group}
             title={row.title}
-            isOpen={openIds.has(row.group.parentId)}
+            parentTitle={row.parentTitle}
+            cardId={row.key}
+            isOpen={openIds.has(row.key)}
             onToggle={onToggle}
             onOpenParent={() => router.push(conversationHref(row.group.parentId, row.serverId))}
             serverIdFor={(id) => serverIdFor(id, row.serverId)}

@@ -152,6 +152,10 @@ interface GroupCardProps {
   onToggle: (parentId: string) => void
   onOpenParent: () => void
   serverIdFor: (rowId: string) => string
+  /** Open-state key and toggle id when one parent renders several cards; defaults to the parent id. */
+  cardId?: string
+  /** A card for one sub-agent: the parent's title is the subtitle and the parent opens on long press, with no footer link. */
+  parentTitle?: string
 }
 
 /**
@@ -159,7 +163,7 @@ interface GroupCardProps {
  * running count, last activity); the body lists the newest children and ends in
  * one footer row: Show all on the left, Open parent on the right.
  */
-export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, serverIdFor }: GroupCardProps) {
+export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenParent, serverIdFor, cardId = g.parentId, parentTitle }: GroupCardProps) {
   const { t } = useTranslation('sessions')
   const { styles: card, theme } = useThemedStyles(makeCardStyles)
   const styles = useMemo(() => makeStyles(theme), [theme])
@@ -182,16 +186,18 @@ export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenPar
   return (
     <View style={styles.cardWrap} testID={`subagent-group-${g.parentId}`}>
       <CollapsibleCard
-        id={g.parentId}
+        id={cardId}
         title={title}
         titleLines={2}
+        subtitle={parentTitle}
         activityLine={activityLine || undefined}
         count={g.items.length}
         railColor={g.activeCount > 0 ? theme.status.running : theme.border}
         isOpen={isOpen}
         onToggle={onToggle}
+        onLongPress={parentTitle ? onOpenParent : undefined}
         accessibilityLabel={title}
-        headerTestID={`subagent-group-toggle-${g.parentId}`}
+        headerTestID={`subagent-group-toggle-${cardId}`}
       >
         {rows.map((c) => (
           <SubagentRow
@@ -200,34 +206,36 @@ export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenPar
             showType={sharedType === undefined}
           />
         ))}
-        <View style={styles.footer}>
-          {capped ? (
+        {parentTitle ? null : (
+          <View style={styles.footer}>
+            {capped ? (
+              <TouchableOpacity
+                onPress={() => setShowAll((v) => !v)}
+                activeOpacity={0.6}
+                style={styles.footerLink}
+                accessibilityRole="button"
+                testID={`subagent-show-all-${g.parentId}`}
+              >
+                <Text style={card.seeAllText}>
+                  {showAll ? t('subagents.board.showLess') : t('subagents.board.showAll', { n: g.items.length })}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <View />
+            )}
             <TouchableOpacity
-              onPress={() => setShowAll((v) => !v)}
+              onPress={onOpenParent}
               activeOpacity={0.6}
               style={styles.footerLink}
               accessibilityRole="button"
-              testID={`subagent-show-all-${g.parentId}`}
+              accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
+              testID={`subagent-parent-${g.parentId}`}
             >
-              <Text style={card.seeAllText}>
-                {showAll ? t('subagents.board.showLess') : t('subagents.board.showAll', { n: g.items.length })}
-              </Text>
+              <Text style={card.seeAllText}>{t('subagents.board.openParent')}</Text>
+              <CaretRight size={16} color={theme.text.accent} />
             </TouchableOpacity>
-          ) : (
-            <View />
-          )}
-          <TouchableOpacity
-            onPress={onOpenParent}
-            activeOpacity={0.6}
-            style={styles.footerLink}
-            accessibilityRole="button"
-            accessibilityLabel={`${t('subagents.board.openParent')}: ${title}`}
-            testID={`subagent-parent-${g.parentId}`}
-          >
-            <Text style={card.seeAllText}>{t('subagents.board.openParent')}</Text>
-            <CaretRight size={16} color={theme.text.accent} />
-          </TouchableOpacity>
-        </View>
+          </View>
+        )}
       </CollapsibleCard>
     </View>
   )

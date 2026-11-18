@@ -99,18 +99,24 @@ export function SessionBoard({
       earlier: buckets.earlier.map(toCard),
     }
     const q = searchQuery.trim().toLowerCase()
-    for (const g of groups) {
+    // Sub-agents only: one card per sub-agent instead of one per parent.
+    const cardGroups = subagentsOnly
+      ? groups.flatMap((g) => g.items.map((item) => ({ ...g, items: [item], activeCount: item.subagentActive === true ? 1 : 0 })))
+      : groups
+    for (const g of cardGroups) {
       if (claimed.has(g.parentId)) continue
-      const title =
+      const parentTitle =
         g.items.find((i) => i.parentTitle)?.parentTitle ??
         t('subagents.board.parentFallback', { id: g.parentId.slice(0, 8) })
-      const matches = !q || [title, ...g.items.map(resolveSubagentLabel)].some((s) => s.toLowerCase().includes(q))
+      const title = subagentsOnly ? resolveSubagentLabel(g.items[0]) : parentTitle
+      const matches = !q || [parentTitle, ...g.items.map(resolveSubagentLabel)].some((s) => s.toLowerCase().includes(q))
       if (!matches) continue
       const serverId = serverByRowId.get(g.items[0].id) ?? activeServerIds[0] ?? ''
-      out[g.activeCount > 0 ? 'working' : 'earlier'].push({ kind: 'orphan', key: `orphan:${g.parentId}`, group: g, title, serverId })
+      const key = subagentsOnly ? `orphan:${g.parentId}:${g.items[0].id}` : `orphan:${g.parentId}`
+      out[g.activeCount > 0 ? 'working' : 'earlier'].push({ kind: 'orphan', key, group: g, title, serverId, parentTitle: subagentsOnly ? parentTitle : undefined })
     }
     return out
-  }, [entries, groups, serverByRowId, searchQuery, activeServerIds, order, direction, t])
+  }, [entries, groups, serverByRowId, searchQuery, activeServerIds, order, direction, subagentsOnly, t])
 
   const counts = useMemo(
     () => ({ needsYou: board.needsYou.length, working: board.working.length, external: board.external.length, earlier: board.earlier.length }),

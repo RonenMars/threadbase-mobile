@@ -250,6 +250,25 @@ describe('SessionBoard cards', () => {
     expect(r.getAllByText('Sub-agents of other sessions')).toHaveLength(1)
   })
 
+  it('gives every sub-agent its own card, sorted by its own state, when only sub-agents show', async () => {
+    mockGet.mockResolvedValue({ conversations: [sub('a1', 'p', true), sub('a2', 'p', true), sub('a3', 'p', false)], hasMore: false, offset: 0, total: 3 })
+    const r = await render(
+      <SessionBoard items={[row(running)]} searchQuery="" conversationsFromServer={false} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={jest.fn()} subagentsOnly />,
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(r.getByTestId('board-column-working')).toHaveTextContent('Working2'))
+    expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1')
+    expect(r.queryByText('Scan the worktrees')).toBeNull()
+    await fireEvent.press(r.getByTestId('subagent-group-toggle-orphan:p:a1'))
+    expect(r.getByTestId('conversation-row-a1')).toBeTruthy()
+    expect(r.queryByTestId('conversation-row-a2')).toBeNull()
+    expect(r.getAllByText('Session p')).toHaveLength(3)
+    expect(r.queryByText('Open parent session')).toBeNull()
+    expect(mockPush).not.toHaveBeenCalled()
+    await fireEvent(r.getByTestId('subagent-group-toggle-orphan:p:a1'), 'longPress')
+    expect(mockPush).toHaveBeenCalledTimes(1)
+  })
+
   it('shows one line when sub-agents fail to load and keeps the rest of the board', async () => {
     mockGet.mockRejectedValue(new Error('down'))
     const r = await renderBoard()
