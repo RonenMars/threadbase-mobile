@@ -1,5 +1,6 @@
 import {
   resolveColdStartRoute,
+  resolveTapRoute,
   sessionRouteFromNotificationData,
   sessionRouteFromUrl,
 } from '@/lib/coldStartDeepLink'
@@ -8,6 +9,7 @@ describe('sessionRouteFromUrl', () => {
   it('parses the shape the live activity and notifications emit', () => {
     expect(sessionRouteFromUrl('threadbase://session/abc?server=srv-1')).toEqual({
       sessionId: 'abc',
+      serverId: 'srv-1',
       path: '/session/abc?server=srv-1',
     })
   })
@@ -15,6 +17,7 @@ describe('sessionRouteFromUrl', () => {
   it('parses the TbDev scheme', () => {
     expect(sessionRouteFromUrl('threadbase-dev://session/abc?server=srv-1')).toEqual({
       sessionId: 'abc',
+      serverId: 'srv-1',
       path: '/session/abc?server=srv-1',
     })
   })
@@ -48,6 +51,7 @@ describe('sessionRouteFromNotificationData', () => {
   it('builds the same route from payload fields', () => {
     expect(sessionRouteFromNotificationData({ sessionId: 'abc', serverId: 'srv-1' })).toEqual({
       sessionId: 'abc',
+      serverId: 'srv-1',
       path: '/session/abc?server=srv-1',
     })
   })
@@ -127,5 +131,48 @@ describe('resolveColdStartRoute', () => {
         notificationData: { sessionId: 'abc' },
       })?.path,
     ).toBe('/session/abc')
+  })
+})
+
+describe('resolveTapRoute', () => {
+  const ID = 'e0049db9-ac52-40b3-bf43-a44ef604db00'
+  const target = { sessionId: ID, serverId: 'srv-1', path: `/session/${ID}?server=srv-1` as const }
+
+  it('opens an external session as its conversation', async () => {
+    const fetchSession = jest.fn().mockResolvedValue({
+      id: ID,
+      status: 'idle',
+      ptyAttached: false,
+      ownership: 'external',
+      lifecycle: 'detached',
+    })
+    const resolved = await resolveTapRoute(target, fetchSession)
+    expect(fetchSession).toHaveBeenCalledWith(ID, 'srv-1')
+    expect(resolved.path).toBe(`/conversation/${ID}?server=srv-1`)
+  })
+
+  it('keeps a live managed session on the session screen', async () => {
+    const resolved = await resolveTapRoute(
+      target,
+      jest.fn().mockResolvedValue({ id: ID, status: 'waiting_input', ptyAttached: true, lifecycle: 'attached' }),
+    )
+    expect(resolved.path).toBe(target.path)
+  })
+
+  it('falls back to the session screen when the request fails', async () => {
+    const resolved = await resolveTapRoute(target, jest.fn().mockRejectedValue(new Error('404')))
+    expect(resolved.path).toBe(target.path)
+  })
+
+  it('falls back to the session screen when the request outlasts the timeout', async () => {
+    const resolved = await resolveTapRoute(target, () => new Promise(() => {}), 10)
+    expect(resolved.path).toBe(target.path)
+  })
+
+  it('skips the request without a known server', async () => {
+    const fetchSession = jest.fn()
+    const noServer = { sessionId: ID, path: `/session/${ID}` as const }
+    expect(await resolveTapRoute(noServer, fetchSession)).toBe(noServer)
+    expect(fetchSession).not.toHaveBeenCalled()
   })
 })

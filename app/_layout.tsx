@@ -57,7 +57,8 @@ import { ThemeProvider, useTheme, useIsGlass } from '@/contexts/ThemeContext'
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
 import { installClientLogCapture, clientLog } from '@/lib/clientLog'
-import { resolveColdStartRoute, sessionRouteFromNotificationData } from '@/lib/coldStartDeepLink'
+import { resolveColdStartRoute, resolveTapRoute, sessionRouteFromNotificationData } from '@/lib/coldStartDeepLink'
+import { createApiForServer } from '@/services/api-client'
 import { useTranslation } from 'react-i18next'
 import { RootErrorBoundary } from '@/components/RootErrorBoundary'
 import { CacheAlertSync } from '@/components/servers/CacheAlertSync'
@@ -362,7 +363,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         response.notification.request.content.data as { sessionId?: string; serverId?: string },
         isKnownServer,
       )
-      if (target) router.push(target.path)
+      if (target) void resolveTapRoute(target, fetchSessionForTap).then((r) => router.push(r.path))
     })
     return () => sub.remove()
   }, [router])
@@ -399,7 +400,9 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         isKnownServer,
       )
       if (!target) return
-      router.push(target.path)
+      const resolved = await resolveTapRoute(target, fetchSessionForTap)
+      if (cancelled) return
+      router.push(resolved.path)
     })()
     return () => {
       cancelled = true
@@ -412,6 +415,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       {children}
     </>
   )
+}
+
+/** The session's state at tap time, so a push opens what the session is now. */
+function fetchSessionForTap(sessionId: string, serverId: string) {
+  return createApiForServer(serverId).get<Session>(`/api/sessions/${sessionId}`)
 }
 
 function BiometricLockGate({ children }: { children: React.ReactNode }) {

@@ -2,6 +2,7 @@ import {
   deriveConversationPresentation,
   deriveSessionPresentation,
   failureTitleKind,
+  historyConversationIdFor,
   isWorkingTurn,
   sessionMessageCount,
   sessionOpensAsHistory,
@@ -239,6 +240,74 @@ describe('sessionOpensAsHistory', () => {
   it('falls back to idle+detached when lifecycle is absent', () => {
     expect(sessionOpensAsHistory({ status: 'idle', ptyAttached: false })).toBe(true)
     expect(sessionOpensAsHistory({ status: 'running', ptyAttached: false })).toBe(false)
+  })
+})
+
+describe('historyConversationIdFor', () => {
+  const ID = 'e0049db9-ac52-40b3-bf43-a44ef604db00'
+  const BOUND = '11111111-2222-4333-8444-555555555555'
+
+  // The push for an external turn opened /session/<id>: lifecycle `detached`
+  // reads as live, so the screen fell through to "Session ended".
+  it('opens an external session as its conversation', () => {
+    expect(
+      historyConversationIdFor({
+        id: ID,
+        status: 'idle',
+        ptyAttached: false,
+        ownership: 'external',
+        lifecycle: 'detached',
+      }),
+    ).toBe(ID)
+  })
+
+  it('prefers the bound conversation id', () => {
+    expect(
+      historyConversationIdFor({
+        id: ID,
+        boundConversationId: BOUND,
+        status: 'idle',
+        ptyAttached: false,
+        ownership: 'external',
+      }),
+    ).toBe(BOUND)
+  })
+
+  it('opens an ended managed session with history as its conversation', () => {
+    expect(
+      historyConversationIdFor({
+        id: ID,
+        conversationId: ID,
+        status: 'idle',
+        ptyAttached: false,
+        lifecycle: 'completed',
+      }),
+    ).toBe(ID)
+  })
+
+  it('keeps a live managed session on the session screen', () => {
+    expect(
+      historyConversationIdFor({
+        id: ID,
+        conversationId: ID,
+        status: 'running',
+        ptyAttached: true,
+        ownership: 'managed',
+        lifecycle: 'attached',
+      }),
+    ).toBeNull()
+  })
+
+  it('keeps an ended managed session with no conversation on the session screen', () => {
+    expect(
+      historyConversationIdFor({ id: ID, status: 'idle', ptyAttached: false, lifecycle: 'completed' }),
+    ).toBeNull()
+  })
+
+  it('never opens a non-uuid id as a conversation', () => {
+    expect(
+      historyConversationIdFor({ id: 'disc_123', status: 'idle', ptyAttached: false, ownership: 'external' }),
+    ).toBeNull()
   })
 })
 
