@@ -1301,9 +1301,7 @@ export default function SessionDetailScreen() {
   const presentation = deriveSessionPresentation(session)
   const capabilityLabel = presentation.capabilities.isExternalOnly
     ? t('sessions:capability.externalOnly')
-    : presentation.live
-      ? t('sessions:capability.liveControl')
-      : null
+    : null
 
   // A live PTY may not have a conversationId yet (no JSONL written), but it can
   // already be showing an interactive prompt. LiveConversationView needs the

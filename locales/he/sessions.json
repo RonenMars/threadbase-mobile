@@ -163,8 +163,7 @@
     "working": "עובד"
   },
   "capability": {
-    "externalOnly": "צפייה בלבד",
-    "liveControl": "שליטה חיה"
+    "externalOnly": "צפייה בלבד"
   },
   "timeBucket": {
     "all": "הכל",

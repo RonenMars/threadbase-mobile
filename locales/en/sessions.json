@@ -151,8 +151,7 @@
     "working": "Working"
   },
   "capability": {
-    "externalOnly": "View only",
-    "liveControl": "Live control"
+    "externalOnly": "View only"
   },
   "timeBucket": {
     "all": "All",

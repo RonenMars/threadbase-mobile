@@ -808,7 +808,6 @@
   "sessions.json:phase.acting": "4d0ca98f75a5",
   "sessions.json:phase.working": "3b4dfc971393",
   "sessions.json:capability.externalOnly": "5559dd041f77",
-  "sessions.json:capability.liveControl": "702a888139dd",
   "sessions.json:timeBucket.all": "6a72085653e4",
   "sessions.json:timeBucket.today": "24345a14377f",
   "sessions.json:timeBucket.7d": "fd4a4c2d5245",
