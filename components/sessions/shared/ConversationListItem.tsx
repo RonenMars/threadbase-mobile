@@ -276,7 +276,6 @@ export function ConversationListItem(props: ConversationListItemProps) {
         </View>
       )}
       {leading === 'dot' && !isChip && (
-        // Keep the empty leading slot so titles stay aligned with status-bearing rows.
         <View style={styles.dotSlot} />
       )}
       {leading === 'depth' && !isChip && (
