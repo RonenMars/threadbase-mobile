@@ -26,6 +26,9 @@ jest.mock('@/hooks/useSessionActions', () => ({
   }),
 }))
 
+const mockSetString = jest.fn()
+jest.mock('expo-clipboard', () => ({ setStringAsync: (v: string) => mockSetString(v) }))
+
 const NOW = Date.now()
 
 // Fixtures are offsets from NOW, but the cards render their elapsed label against
@@ -430,6 +433,41 @@ describe('NowList', () => {
       const header = (getByTestId('now-list-scroll').props.data as { key: string; collapsible?: boolean }[]).find((f) => f.key === 'server-server-1')
       expect(header?.collapsible).toBe(false)
       expect(getByTestId('conversation-row-c1')).toBeTruthy()
+    })
+  })
+
+  describe('long press', () => {
+    it('opens a reduced sheet on an alive external card: no managed End actions, Terminate offered', async () => {
+      const external = session({ id: 'x', status: 'running', ownership: 'external', processLiveness: 'alive', sessionName: 'Outside CLI' })
+      const { getByTestId, queryByTestId } = await renderList([asItem(external)])
+      await fireEvent(getByTestId('first-session-card'), 'longPress')
+      for (const id of ['open', 'copy-id', 'rename', 'favorite', 'terminate']) {
+        expect(getByTestId(`session-action-${id}`)).toBeTruthy()
+      }
+      for (const id of ['when-done', 'force', 'delete']) {
+        expect(queryByTestId(`session-action-${id}`)).toBeNull()
+      }
+    })
+
+    it('offers no Terminate on an external row whose process is gone', async () => {
+      const gone = session({ id: 'g', status: 'idle', ownership: 'external', processLiveness: 'gone', sessionName: 'Finished outside' })
+      const { getByTestId, queryByTestId } = await renderList([asItem(gone)])
+      await fireEvent(getByTestId('first-session-card'), 'longPress')
+      expect(getByTestId('session-action-open')).toBeTruthy()
+      expect(queryByTestId('session-action-terminate')).toBeNull()
+    })
+
+    it('copies the id from a history conversation sheet', async () => {
+      mockSetString.mockClear()
+      const { getByTestId, queryByTestId } = await renderList([asConv(conversation({ id: 'conv-42' }))])
+      await fireEvent(getByTestId('conversation-row-conv-42'), 'longPress')
+      expect(getByTestId('session-action-open')).toBeTruthy()
+      expect(getByTestId('session-action-favorite')).toBeTruthy()
+      expect(queryByTestId('session-action-rename')).toBeNull()
+      expect(queryByTestId('session-action-terminate')).toBeNull()
+      await fireEvent.press(getByTestId('session-action-copy-id'))
+      expect(mockSetString).toHaveBeenCalledWith('conv-42')
+      expect(queryByTestId('session-action-copy-id')).toBeNull()
     })
   })
 })

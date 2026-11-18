@@ -4,10 +4,13 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
-import { QuickAccessActionSheet } from '@/components/quick-access/QuickAccessActionSheet'
+import { ArrowSquareOut, CopySimple, Star } from 'phosphor-react-native'
+import { SessionActionSheet, type SessionActionItem } from '@/components/sessions/SessionActionSheet'
+import { getProviderLabel } from '@/components/sessions/providerLabel'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
 import { listTopInset } from '@/components/sessions/shared/listTopInset'
@@ -179,6 +182,7 @@ export const NowList = React.memo(function NowList({
   const insets = useSafeAreaInsets()
   const inset = listTopInset(topInset)
   const { t, i18n } = useTranslation('sessions')
+  const { t: tCommon } = useTranslation('common')
   const router = useRouter()
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -434,26 +438,46 @@ export const NowList = React.memo(function NowList({
         const favId = buildFavoriteId(activeConv.serverId, 'conversation', activeConv.id)
         const isFav = favorites.some((f) => f.id === favId)
         const label = activeConv.title || activeConv.projectPath || activeConv.id
-        return (
-          <QuickAccessActionSheet
-            item={{ type: 'conversation', id: favId, label, serverId: activeConv.serverId }}
-            isFavorite={isFav}
-            onClose={() => setActiveConv(null)}
-            onNewSession={() => setActiveConv(null)}
-            onBrowse={() => setActiveConv(null)}
-            onOpenSession={() => {
-              setActiveConv(null)
+        const close = () => setActiveConv(null)
+        const items: SessionActionItem[] = [
+          {
+            key: 'open',
+            label: t('endSession.open'),
+            icon: ArrowSquareOut,
+            onPress: () => {
               useNavLockStore.getState().lock()
               router.push(conversationHref(activeConv.id, activeConv.serverId, searchQuery))
-            }}
-            onTogglePin={() => {
+            },
+            testID: 'session-action-open',
+          },
+          {
+            key: 'copy',
+            label: t('card.copyId'),
+            icon: CopySimple,
+            onPress: () => void Clipboard.setStringAsync(activeConv.id),
+            testID: 'session-action-copy-id',
+          },
+          {
+            key: 'favorite',
+            label: isFav ? tCommon('favorite.remove') : tCommon('favorite.add'),
+            icon: Star,
+            onPress: () => {
               if (isFav) {
                 unpinItem(favId)
               } else {
                 pinItem({ type: 'conversation', id: favId, label, serverId: activeConv.serverId, conversationId: activeConv.id })
               }
-              setActiveConv(null)
-            }}
+            },
+            testID: 'session-action-favorite',
+          },
+        ]
+        return (
+          <SessionActionSheet
+            visible
+            title={label}
+            meta={[getProviderLabel(activeConv.provider, t), activeConv.serverLabel].filter(Boolean).join(' · ')}
+            items={items}
+            onClose={close}
           />
         )
       })() : null}
