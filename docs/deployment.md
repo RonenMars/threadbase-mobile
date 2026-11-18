@@ -534,6 +534,9 @@ Nothing needs pushing: the script builds the checked-out tree, and `qa.yml` is n
    `FIREBASE_APP_ID_IOS` is not in `.env`, so a stale export from an old profile line is used silently.
    Check with `[ -n "$FIREBASE_APP_ID_IOS" ] && echo "${#FIREBASE_APP_ID_IOS} …${FIREBASE_APP_ID_IOS: -8}"` and compare the suffix with the table in [`tbdev.md`](./tbdev.md) (TbDev iOS ends `94bba2`).
    When in doubt, pass the value for the one run instead of editing a profile.
+   The iOS build also needs `FIREBASE_API_KEY_IOS` and `FIREBASE_PROJECT_ID` (or `GOOGLE_CLOUD_QUOTA_PROJECT`): the in-app update banner is built from them.
+   Without them `ship-qa.sh --platform ios` stops before building, because a binary made that way never shows an update banner and its testers cannot update themselves; the QA workflow takes both from repository secrets and variables.
+   `--no-update-check` builds without the banner on purpose.
 4. **Pass a token that has an identity.**
    `gcloud auth application-default print-access-token`, the script's fallback, returned a token with no identity on this machine (403 `USER_PROJECT_DENIED` at the group lookup).
    `gcloud auth print-access-token` for the signed-in Owner account works.
