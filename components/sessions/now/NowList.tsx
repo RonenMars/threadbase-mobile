@@ -4,6 +4,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
@@ -445,6 +446,10 @@ export const NowList = React.memo(function NowList({
               setActiveConv(null)
               useNavLockStore.getState().lock()
               router.push(conversationHref(activeConv.id, activeConv.serverId, searchQuery))
+            }}
+            onCopyId={() => {
+              void Clipboard.setStringAsync(activeConv.id)
+              setActiveConv(null)
             }}
             onTogglePin={() => {
               if (isFav) {

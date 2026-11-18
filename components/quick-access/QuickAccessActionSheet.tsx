@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, Pressable, Modal, StyleSheet } from 'react-native'
-import { ArrowRight, FolderOpen, Star, X } from 'phosphor-react-native'
+import { ArrowRight, CopySimple, FolderOpen, Star, X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import type { ChipItem } from './QuickAccessChip'
@@ -16,12 +16,15 @@ interface Props {
   onBrowse: () => void
   onOpenSession: () => void
   onTogglePin: () => void
+  /** Shows a Copy ID row; only passed where the item has an ID worth copying. */
+  onCopyId?: () => void
 }
 
 export function QuickAccessActionSheet({
-  item, isFavorite, onClose, onNewSession, onBrowse, onOpenSession, onTogglePin,
+  item, isFavorite, onClose, onNewSession, onBrowse, onOpenSession, onTogglePin, onCopyId,
 }: Props) {
   const { t } = useTranslation('shared')
+  const { t: tSessions } = useTranslation('sessions')
   const { styles, theme } = useThemedStyles(makeStyles)
   if (!item) return null
 
@@ -48,6 +51,13 @@ export function QuickAccessActionSheet({
             <Text style={[styles.rowText, styles.rowTextPrimary]}>{t('quickAccess.openSession')}</Text>
           </Pressable>
         )}
+
+        {onCopyId ? (
+          <Pressable style={styles.row} onPress={onCopyId} testID="quick-access-copy-id">
+            <CopySimple size={18} color={theme.text.secondary} />
+            <Text style={styles.rowText}>{tSessions('card.copyId')}</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable style={styles.row} onPress={onTogglePin}>
           <Star size={18} color={theme.text.secondary} weight={isFavorite ? 'fill' : 'regular'} />

@@ -45,8 +45,9 @@ function RenameSessionOverlay({ session, currentName, onClose }: {
 /**
  * Tap, long-press and ⋮ behaviour shared by every session row and card: an
  * external session opens the read-only conversation, a managed one
- * opens the PTY screen. Long-press and ⋮ open the action sheet on managed
- * sessions only; its End session group appears while the PTY is live.
+ * opens the PTY screen. Long-press opens the action sheet on both; ⋮ only on
+ * managed sessions. Managed sessions get an End session group while the PTY is
+ * live; an external one gets just Terminate, while its process is alive.
  * `swipe` carries the same actions for a `SwipeableRow`.
  * Render `overlays` once next to the row.
  */
@@ -89,8 +90,6 @@ export function useSessionRowActions(session: MultiSession, title: string) {
   }, [open])
 
   const handleLongPress = () => {
-    // External sessions are read-only — the managed actions never appear.
-    if (isExternal) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     setMenuVisible(true)
   }
@@ -125,6 +124,19 @@ export function useSessionRowActions(session: MultiSession, title: string) {
       testID: 'session-action-favorite',
     },
   ]
+  // External sessions are read-only: no managed end-session actions, only terminating the outside process.
+  if (isExternal && isExternalLive(session)) {
+    items.push({
+      key: 'terminate',
+      label: t('endSession.terminate'),
+      hint: t('endSession.terminateHint'),
+      icon: Power,
+      destructive: true,
+      endSection: true,
+      onPress: requestTerminate,
+      testID: 'session-action-terminate',
+    })
+  }
   if (canEnd) {
     const endItems: SessionActionItem[] = []
     // Waiting for input means there is no turn left to finish.
@@ -197,15 +209,23 @@ export function useSessionRowActions(session: MultiSession, title: string) {
     <RenameSessionOverlay session={session} currentName={title} onClose={() => setRenameVisible(false)} />
   ) : null
 
-  const overlays = isExternal ? renameOverlay : (
+  const sheet = (
+    <SessionActionSheet
+      visible={menuVisible}
+      title={title}
+      meta={meta}
+      items={items}
+      onClose={() => setMenuVisible(false)}
+    />
+  )
+  const overlays = isExternal ? (
     <>
-      <SessionActionSheet
-        visible={menuVisible}
-        title={title}
-        meta={meta}
-        items={items}
-        onClose={() => setMenuVisible(false)}
-      />
+      {sheet}
+      {renameOverlay}
+    </>
+  ) : (
+    <>
+      {sheet}
       <EndSessionDialogs
         dialog={end.dialog}
         provider={session.provider}
