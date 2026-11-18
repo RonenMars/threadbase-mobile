@@ -505,3 +505,30 @@ export function sessionOpensAsHistory(s: SessionPresentationInput): boolean {
   }
   return s.ptyAttached === false && s.status === 'idle'
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * The conversation a session opens as, or null when the session screen is the
+ * right surface. Shared by the session screen and the push tap so both agree.
+ *
+ * External sessions always open as their conversation, as the list does: the
+ * streamer reports them `detached`, which reads as live, yet there is no PTY
+ * here to show, so the session screen fell through to "Session ended".
+ *
+ * A managed session opens as history only when it has a conversation, not by
+ * promptCount, which counts only prompts sent through the app.
+ */
+export function historyConversationIdFor(
+  s: SessionPresentationInput & {
+    id: string
+    boundConversationId?: string | null
+    conversationId?: string | null
+  },
+): string | null {
+  const convId = s.boundConversationId ?? s.conversationId ?? s.id
+  if (!UUID_RE.test(convId)) return null
+  if (s.ownership === 'external') return convId
+  const hasConversation = !!(s.boundConversationId ?? s.conversationId)
+  return hasConversation && sessionOpensAsHistory(s) ? convId : null
+}

@@ -1,4 +1,6 @@
 import type { Href } from 'expo-router'
+import { conversationHref } from '@/lib/conversationHref'
+import { historyConversationIdFor } from '@/lib/sessionPresentation'
 
 /**
  * Cold-start routing for taps that launch the app from a terminated state.
@@ -15,12 +17,14 @@ import type { Href } from 'expo-router'
  *  the nav guard without re-parsing the path they were just handed. */
 export interface SessionRoute {
   sessionId: string
+  serverId?: string
   path: Href
 }
 
 function route(sessionId: string, serverId: string | null | undefined): SessionRoute {
   return {
     sessionId,
+    serverId: serverId || undefined,
     path: serverId ? `/session/${sessionId}?server=${serverId}` : `/session/${sessionId}`,
   }
 }
@@ -74,4 +78,39 @@ export function resolveColdStartRoute(
       ? sessionRouteFromNotificationData(launch.notificationData, isKnownServer)
       : null)
   )
+}
+
+/** How long a tap waits for the session's current state before opening the
+ *  session screen anyway, which resolves the same route once it loads. */
+export const TAP_STATUS_TIMEOUT_MS = 3000
+
+/**
+ * Asks the streamer what the session is now, at tap time, and opens the
+ * surface that fits: a push can be tapped hours after it was sent, and an
+ * external session has no live screen at all. Any failure or a slow answer
+ * keeps the session route; the session screen applies the same rule
+ * (`historyConversationIdFor`) when its own fetch lands.
+ */
+export async function resolveTapRoute(
+  target: SessionRoute,
+  fetchSession: (sessionId: string, serverId: string) => Promise<Parameters<typeof historyConversationIdFor>[0]>,
+  timeoutMs = TAP_STATUS_TIMEOUT_MS,
+): Promise<SessionRoute> {
+  const { serverId } = target
+  if (!serverId) return target
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const session = await Promise.race([
+      fetchSession(target.sessionId, serverId),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), timeoutMs)
+      }),
+    ])
+    const convId = session ? historyConversationIdFor(session) : null
+    return convId ? { ...target, path: conversationHref(convId, serverId) } : target
+  } catch {
+    return target
+  } finally {
+    clearTimeout(timer)
+  }
 }

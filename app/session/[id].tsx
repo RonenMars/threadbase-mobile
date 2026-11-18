@@ -19,7 +19,7 @@ import * as Clipboard from 'expo-clipboard'
 import { ArrowsClockwise, ArrowUUpLeft, CopySimple, HourglassMedium, InfoIcon, Lightning, PencilSimple, Power, Sparkle, Star, StopCircle, GitDiff, TerminalWindow, Trash, Warning } from 'phosphor-react-native'
 import { SessionStatusBadge } from '@/components/sessions/SessionStatusBadge'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
-import { deriveSessionPresentation, failureTitleKind, sessionOpensAsHistory } from '@/lib/sessionPresentation'
+import { deriveSessionPresentation, failureTitleKind, historyConversationIdFor } from '@/lib/sessionPresentation'
 import { useSessionDetail } from '@/hooks/useSession'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
@@ -865,17 +865,13 @@ export default function SessionDetailScreen() {
     // session to resumable/ended before the guard's own home navigation has
     // unmounted this screen, and this redirect must not win that race and
     // strand the user on the conversation view instead of the homepage.
-    if (isPending || isLeaving || endSession.deleting) return
-    const hasConversation = !!(session?.boundConversationId ?? session?.conversationId)
-    if (
-      session != null &&
-      sessionOpensAsHistory(session) &&
-      hasConversation &&
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(historyNavigationId ?? '')
-    ) {
-      router.replace(`/conversation/${historyNavigationId}?server=${serverId}`)
-    }
-  }, [isPending, isLeaving, endSession.deleting, session, historyNavigationId, serverId, router])
+    //
+    // An external session always opens as its conversation (a push or a
+    // favourite lands here; the list already routes it there).
+    if (isPending || isLeaving || endSession.deleting || session == null) return
+    const convId = historyConversationIdFor(session)
+    if (convId) router.replace(`/conversation/${convId}?server=${serverId}`)
+  }, [isPending, isLeaving, endSession.deleting, session, serverId, router])
 
   // Codex bind race: before boundConversationId arrives, history may 404 on the
   // placeholder id. When the streamer first publishes the rollout UUID, switch
