@@ -114,7 +114,7 @@ describe('NowList', () => {
 
     expect(getByText('NEEDS YOU · 1')).toBeTruthy()
     expect(getByText('WORKING · 1')).toBeTruthy()
-    expect(getByText('LAST 7 DAYS')).toBeTruthy()
+    expect(getByText('LAST HOUR')).toBeTruthy()
     expect(getByTestId('session-row-w')).toBeTruthy()
     expect(getByTestId('session-row-r')).toBeTruthy()
     expect(getByTestId('first-session-card')).toBeTruthy()
@@ -187,7 +187,7 @@ describe('NowList', () => {
     const ms = NOW - 120_000
     const { getByText, queryByText } = await renderList([asItem(old, ms)])
 
-    expect(getByText('LAST 7 DAYS')).toBeTruthy()
+    expect(getByText('LAST HOUR')).toBeTruthy()
     expect(queryByText('EARLIER')).toBeNull()
     expect(getByText(formatListTime(ms))).toBeTruthy()
     expect(queryByText(formatListTime(startedAt))).toBeNull()
@@ -305,7 +305,7 @@ describe('NowList', () => {
     expect(getByTestId(`session-row-${id}`)).toBeTruthy()
     expect(queryByTestId(`conversation-row-${id}`)).toBeNull()
     expect(getByText('NEEDS YOU · 1')).toBeTruthy()
-    expect(queryByText('LAST 7 DAYS')).toBeNull()
+    expect(queryByText('LAST HOUR')).toBeNull()
   })
 
   it('does not repeat a held session as a conversation row', async () => {
@@ -352,29 +352,30 @@ describe('NowList', () => {
     }
   })
 
-  it('collapses the earlier day buckets except Last 7 days, and expands one on press', async () => {
+  it('opens the recent day buckets, collapses the older ones, and expands one on press', async () => {
     const dayMs = 86_400_000
-    const c7 = asConv(conversation({ id: 'c7', sessionName: 'Fix the resume collision copy' }), NOW - 1_000)
-    const c14 = asConv(conversation({ id: 'c14', sessionName: 'Scan all worktrees for stale ones' }), NOW - 10 * dayMs)
-    const cMonth = asConv(conversation({ id: 'cmonth', sessionName: 'Report slow streamer requests' }), NOW - 20 * dayMs)
-    const cEarlier = asConv(conversation({ id: 'cearlier', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 40 * dayMs)
+    const cHour = asConv(conversation({ id: 'chour', sessionName: 'Fix the resume collision copy' }), NOW - 1_000)
+    const cWeekday = asConv(conversation({ id: 'cweekday', sessionName: 'Scan all worktrees for stale ones' }), NOW - 3 * dayMs)
+    const cYear = asConv(conversation({ id: 'cyear', sessionName: 'Nightly eval sweep, 200 prompts' }), NOW - 400 * dayMs)
+    const weekdayKey = `weekday-${new Date(NOW - 3 * dayMs).getDay()}`
+    const yearKey = `year-${new Date(NOW - 400 * dayMs).getFullYear()}`
     try {
-      const { getByText, getByTestId, queryByTestId } = await renderList([c7, c14, cMonth, cEarlier])
+      const { getByText, getByTestId, queryByTestId } = await renderList([cHour, cWeekday, cYear])
 
-      expect(getByText('LAST 7 DAYS')).toBeTruthy()
-      expect(getByTestId('conversation-row-c7')).toBeTruthy()
+      expect(getByText('LAST HOUR')).toBeTruthy()
+      expect(getByTestId('conversation-row-chour')).toBeTruthy()
 
-      expect(getByText('LAST 14 DAYS')).toBeTruthy()
-      expect(getByText('LAST MONTH')).toBeTruthy()
-      expect(getByText('EARLIER')).toBeTruthy()
-      expect(queryByTestId('conversation-row-c14')).toBeNull()
-      expect(queryByTestId('conversation-row-cmonth')).toBeNull()
-      expect(queryByTestId('conversation-row-cearlier')).toBeNull()
+      expect(getByTestId(`day-bucket-${weekdayKey}`)).toBeTruthy()
+      expect(getByText(yearKey.slice('year-'.length))).toBeTruthy()
+      expect(queryByTestId('conversation-row-cweekday')).toBeNull()
+      expect(queryByTestId('conversation-row-cyear')).toBeNull()
 
-      fireEvent.press(getByTestId('day-bucket-last14Days'))
-      await waitFor(() => expect(getByTestId('conversation-row-c14')).toBeTruthy())
+      fireEvent.press(getByTestId(`day-bucket-${weekdayKey}`))
+      await waitFor(() => expect(getByTestId('conversation-row-cweekday')).toBeTruthy())
+      fireEvent.press(getByTestId('day-bucket-lastHour'))
+      await waitFor(() => expect(queryByTestId('conversation-row-chour')).toBeNull())
     } finally {
-      useViewPrefsStore.setState({ collapsedDayBuckets: ['last14Days', 'lastMonth', 'earlier'] })
+      useViewPrefsStore.setState({ dayBucketOpen: {} })
     }
   })
 

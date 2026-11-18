@@ -9,9 +9,8 @@ import { SubagentRow } from '@/components/sessions/hub/SubagentRow'
 import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
 import { SectionEyebrow } from '@/components/sessions/now/SectionEyebrow'
-import { DAY_BUCKET_ORDER, dayBucketLabel } from '@/components/sessions/shared/dayBuckets'
+import { dayBucketLabel, groupByDayBucket, isDayBucketOpen } from '@/components/sessions/shared/dayBuckets'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
-import { earlierBucketFor, type EarlierBucket } from '@/components/sessions/hub/hubUtils'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { makeStyles as makeCardStyles } from '@/components/sessions/base/CollapsibleCard.styles'
@@ -35,27 +34,20 @@ interface Props {
 /** Children shown before "Show all": a 13-child group would otherwise push every other card off screen. */
 const COLLAPSED_ROWS = 3
 
-// Default param keeps this clear of react-hooks/purity, same idiom as NowList.
-function bucketGroups(groups: SubagentGroup[], now: number = Date.now()): Record<EarlierBucket, SubagentGroup[]> {
-  const buckets: Record<EarlierBucket, SubagentGroup[]> = { last7Days: [], last14Days: [], lastMonth: [], earlier: [] }
-  for (const g of groups) buckets[earlierBucketFor(Date.parse(g.items[0].lastActivity) || 0, now)].push(g)
-  return buckets
-}
-
 /**
  * Every sub-agent across the active servers, grouped under its parent and
  * sectioned like the Now tab: RUNNING first, then idle parents by recency.
  * Read-only: a row opens the transcript, a group's footer opens the parent.
  */
 export function SubagentBoard({ serverIds, parentTitles, liveSessions = [], topInset = 0 }: Props) {
-  const { t } = useTranslation('sessions')
+  const { t, i18n } = useTranslation('sessions')
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { openIds, toggleOpen } = useOpenIds()
-  const collapsedDayBuckets = useViewPrefsStore((s) => s.collapsedDayBuckets)
-  const toggleDayBucket = useViewPrefsStore((s) => s.toggleDayBucketCollapsed)
+  const dayBucketOpen = useViewPrefsStore((s) => s.dayBucketOpen)
+  const toggleDayBucket = useViewPrefsStore((s) => s.toggleDayBucket)
   const [refreshing, setRefreshing] = useState(false)
   const { items, unsupportedServerIds, isLoading, isError, refetch } = useAllSubagents(serverIds)
 
@@ -76,7 +68,7 @@ export function SubagentBoard({ serverIds, parentTitles, liveSessions = [], topI
 
   const groups = useMemo(() => groupSubagentsByParent(items.map((i) => i.conversation)), [items])
   const running = useMemo(() => groups.filter((g) => g.activeCount > 0), [groups])
-  const buckets = useMemo(() => bucketGroups(groups.filter((g) => g.activeCount === 0)), [groups])
+  const buckets = useMemo(() => groupByDayBucket(groups.filter((g) => g.activeCount === 0), (g) => Date.parse(g.items[0].lastActivity) || 0), [groups])
   const allUnsupported = serverIds.length > 0 && unsupportedServerIds.length === serverIds.length
 
   const renderGroup = (g: SubagentGroup) => {
@@ -119,15 +111,13 @@ export function SubagentBoard({ serverIds, parentTitles, liveSessions = [], topI
             {running.map(renderGroup)}
           </>
         ) : null}
-        {DAY_BUCKET_ORDER.map((key) => {
-          const bucket = buckets[key]
-          if (bucket.length === 0) return null
-          const expanded = !collapsedDayBuckets.includes(key)
+        {buckets.map(({ key, items: bucket }) => {
+          const expanded = isDayBucketOpen(dayBucketOpen, key)
           return (
             <React.Fragment key={key}>
               <View style={styles.eyebrow}>
                 <SectionEyebrow
-                  label={dayBucketLabel(key, t)}
+                  label={dayBucketLabel(key, t, i18n.language)}
                   tone="muted"
                   count={bucket.length}
                   collapsible

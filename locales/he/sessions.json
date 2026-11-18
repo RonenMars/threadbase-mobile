@@ -100,8 +100,11 @@
     "headerWorking_one": "עובד · {{count}}",
     "headerWorking_two": "עובד · {{count}}",
     "headerWorking_other": "עובד · {{count}}",
-    "headerLast7Days": "7 הימים האחרונים",
-    "headerLast14Days": "14 הימים האחרונים",
+    "headerLastHour": "השעה האחרונה",
+    "headerToday": "היום",
+    "headerYesterday": "אתמול",
+    "headerLastWeek": "השבוע שעבר",
+    "headerThisMonth": "החודש",
     "headerLastMonth": "החודש האחרון",
     "headerEarlier": "מוקדם יותר"
   },

@@ -32,7 +32,7 @@ const renderBoard = () =>
 
 beforeEach(() => {
   mockGet.mockReset()
-  useViewPrefsStore.setState({ collapsedDayBuckets: ['last14Days', 'lastMonth', 'earlier'] })
+  useViewPrefsStore.setState({ dayBucketOpen: {} })
 })
 
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString()
@@ -58,17 +58,18 @@ describe('SubagentBoard', () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p2')]))
     const r = await renderBoard()
     await waitFor(() => expect(r.getByText('RUNNING · 1')).toBeTruthy())
-    expect(r.getByText('LAST 7 DAYS')).toBeTruthy()
+    expect(r.getByText('LAST HOUR')).toBeTruthy()
     expect(r.getByTestId('subagent-group-toggle-p1')).toBeTruthy()
     expect(r.getByTestId('subagent-group-toggle-p2')).toBeTruthy()
   })
 
   it('collapses an old day bucket and reveals it when its eyebrow is pressed', async () => {
-    mockGet.mockResolvedValue(page([sub('a', 'p1', { lastActivity: daysAgo(20) })]))
+    const key = `year-${new Date(daysAgo(400)).getFullYear()}`
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { lastActivity: daysAgo(400) })]))
     const r = await renderBoard()
-    await waitFor(() => expect(r.getByTestId('subagent-day-bucket-lastMonth')).toBeTruthy())
+    await waitFor(() => expect(r.getByTestId(`subagent-day-bucket-${key}`)).toBeTruthy())
     expect(r.queryByTestId('subagent-group-toggle-p1')).toBeNull()
-    await fireEvent.press(r.getByTestId('subagent-day-bucket-lastMonth'))
+    await fireEvent.press(r.getByTestId(`subagent-day-bucket-${key}`))
     expect(r.getByTestId('subagent-group-toggle-p1')).toBeTruthy()
   })
 

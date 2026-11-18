@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { isDayBucketOpen } from '@/components/sessions/shared/dayBuckets'
 
 export const VIEW_PREFS_STORAGE_KEY = 'threadbase_view_prefs'
 
@@ -12,16 +13,16 @@ interface PersistedState {
   // state stays the same across them. `null` = follow the count-based default
   // (collapsed when there are many sessions); a boolean is an explicit choice.
   sessionsHeaderCollapsed: boolean | null
-  // Now tab's single-server "earlier" day buckets currently collapsed.
-  // Default = only last7Days expanded.
-  collapsedDayBuckets: string[]
+  // Now tab / sub-agent board day buckets the user explicitly opened (true) or
+  // closed (false). A bucket with no entry follows isDayBucketOpen's default.
+  dayBucketOpen: Record<string, boolean>
 }
 
 interface ViewPrefsStore extends PersistedState {
   toggleServerCollapsed: (serverId: string) => void
   setRecentsOpen: (open: boolean) => void
   setSessionsHeaderCollapsed: (collapsed: boolean) => void
-  toggleDayBucketCollapsed: (bucket: string) => void
+  toggleDayBucket: (bucket: string) => void
   hydrate: () => Promise<void>
 }
 
@@ -29,7 +30,7 @@ const DEFAULTS: PersistedState = {
   collapsedServers: [],
   recentsOpen: true,
   sessionsHeaderCollapsed: null,
-  collapsedDayBuckets: ['last14Days', 'lastMonth', 'earlier'],
+  dayBucketOpen: {},
 }
 
 export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
@@ -46,12 +47,8 @@ export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
 
   setSessionsHeaderCollapsed: (sessionsHeaderCollapsed) => set({ sessionsHeaderCollapsed }),
 
-  toggleDayBucketCollapsed: (bucket) =>
-    set((s) => ({
-      collapsedDayBuckets: s.collapsedDayBuckets.includes(bucket)
-        ? s.collapsedDayBuckets.filter((b) => b !== bucket)
-        : [...s.collapsedDayBuckets, bucket],
-    })),
+  toggleDayBucket: (bucket) =>
+    set((s) => ({ dayBucketOpen: { ...s.dayBucketOpen, [bucket]: !isDayBucketOpen(s.dayBucketOpen, bucket) } })),
 
   hydrate: async () => {
     try {
@@ -62,7 +59,10 @@ export const useViewPrefsStore = create<ViewPrefsStore>((set) => ({
         collapsedServers: Array.isArray(parsed.collapsedServers) ? parsed.collapsedServers : s.collapsedServers,
         recentsOpen: parsed.recentsOpen ?? s.recentsOpen,
         sessionsHeaderCollapsed: parsed.sessionsHeaderCollapsed ?? s.sessionsHeaderCollapsed,
-        collapsedDayBuckets: Array.isArray(parsed.collapsedDayBuckets) ? parsed.collapsedDayBuckets : s.collapsedDayBuckets,
+        dayBucketOpen:
+          parsed.dayBucketOpen && typeof parsed.dayBucketOpen === 'object' && !Array.isArray(parsed.dayBucketOpen)
+            ? parsed.dayBucketOpen
+            : s.dayBucketOpen,
       }))
     } catch {
       // storage unavailable or corrupted — ignore
@@ -75,7 +75,7 @@ useViewPrefsStore.subscribe((state) => {
     collapsedServers: state.collapsedServers,
     recentsOpen: state.recentsOpen,
     sessionsHeaderCollapsed: state.sessionsHeaderCollapsed,
-    collapsedDayBuckets: state.collapsedDayBuckets,
+    dayBucketOpen: state.dayBucketOpen,
   }
   AsyncStorage.setItem(VIEW_PREFS_STORAGE_KEY, JSON.stringify(payload)).catch(() => {})
 })
