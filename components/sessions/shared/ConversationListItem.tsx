@@ -276,12 +276,8 @@ export function ConversationListItem(props: ConversationListItemProps) {
         </View>
       )}
       {leading === 'dot' && !isChip && (
-        <View style={styles.dotSlot}>
-          {/* The meta-line StateBadge draws its own dot; the empty slot keeps titles aligned. */}
-          {badgeTier || externalLiveDot
-            ? null
-            : <LiveDot live={liveRow} color={tierColor ?? theme.text.accent} size={6} />}
-        </View>
+        // Keep the empty leading slot so titles stay aligned with status-bearing rows.
+        <View style={styles.dotSlot} />
       )}
       {leading === 'depth' && !isChip && (
         <View style={[styles.depthSlot, { width: indentPx + 12 }]} />
