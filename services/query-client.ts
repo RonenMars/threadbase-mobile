@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import NetInfo from '@react-native-community/netinfo'
-import { QueryClient, onlineManager, focusManager } from '@tanstack/react-query'
+import { QueryClient, onlineManager, focusManager, type Query } from '@tanstack/react-query'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { AppState, type AppStateStatus } from 'react-native'
 import i18n from '@/lib/i18n'
@@ -36,16 +36,38 @@ function categoryForHash(hash: string): QueryCategory {
   return 'other'
 }
 
+function isRecoveringQuery(query: Query): boolean {
+  const { fetchFailureCount, fetchFailureReason, status } = query.state
+  return fetchFailureCount > 0 && status !== 'error' && !isNotFoundError(fetchFailureReason)
+}
+
 function syncQueryRecovery() {
   // Still retrying: at least one failure, but not yet in terminal error (RQ
   // only flips to error after shouldRetryQuery returns false). A 404 being
   // retried is the startup grace waiting for a transcript that does not exist
   // yet: pending, not recovering. Past its cap it lands in `error` as usual.
-  const recovering = queryClient.getQueryCache().getAll().some((query) => {
-    const { fetchFailureCount, fetchFailureReason, status } = query.state
-    return fetchFailureCount > 0 && status !== 'error' && !isNotFoundError(fetchFailureReason)
-  })
+  const recovering = queryClient.getQueryCache().getAll().some(isRecoveringQuery)
   useQueryRecoveryStore.getState().setRecovering(recovering)
+}
+
+/**
+ * What is holding the recovery flag, as sanitizer-safe scalars: a count per
+ * `<category>_<fetchStatus>` plus the retry count and the online/focus state
+ * that decide whether a paused retry can resume. No keys, ids or error text.
+ */
+export function describeRecovery(): Record<string, number | boolean> {
+  const counts: Record<string, number> = {}
+  for (const query of queryClient.getQueryCache().getAll()) {
+    if (!isRecoveringQuery(query)) continue
+    const key = `${categoryForHash(query.queryHash)}_${query.state.fetchStatus}`
+    counts[key] = (counts[key] ?? 0) + 1
+  }
+  return {
+    ...counts,
+    nested_retries: useQueryRecoveryStore.getState().nestedRetryCount,
+    online: onlineManager.isOnline(),
+    focused: focusManager.isFocused(),
+  }
 }
 
 export const queryClient = new QueryClient({

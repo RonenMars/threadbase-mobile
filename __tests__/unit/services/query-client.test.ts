@@ -1,6 +1,6 @@
 import type { NetInfoState } from '@react-native-community/netinfo'
-import { onlineManager } from '@tanstack/react-query'
-import { shouldPersistQuery, queryClient } from '@/services/query-client'
+import { focusManager, onlineManager } from '@tanstack/react-query'
+import { describeRecovery, shouldPersistQuery, queryClient } from '@/services/query-client'
 import { NotFoundError } from '@/services/api-client'
 import { useLoadingStateStore } from '@/stores/loading-state'
 import { useQueryRecoveryStore } from '@/stores/query-recovery'
@@ -251,5 +251,46 @@ describe('recovery overlay (silent retry window)', () => {
   it('does not mark recovering while a 404 grace retry waits', async () => {
     await failOnceThenWait(['conversation', 'srv1', 'starting'], new NotFoundError('/api/conversations/c1'))
     expect(useQueryRecoveryStore.getState().recovering).toBe(false)
+  })
+})
+
+describe('describeRecovery', () => {
+  function seed(queryKey: readonly unknown[], state: { fetchStatus: 'paused' | 'fetching'; status: 'pending' | 'error'; fetchFailureCount: number }) {
+    queryClient.getQueryCache().build(queryClient, { queryKey }).setState(state)
+  }
+
+  beforeEach(() => {
+    queryClient.clear()
+    onlineManager.setOnline(true)
+  })
+
+  it('counts only the queries holding the recovery flag, per category and fetch status', () => {
+    seed(['sessions', 'a'], { fetchStatus: 'paused', status: 'pending', fetchFailureCount: 1 })
+    seed(['sessions', 'b'], { fetchStatus: 'paused', status: 'pending', fetchFailureCount: 2 })
+    seed(['browse', 'a'], { fetchStatus: 'fetching', status: 'pending', fetchFailureCount: 1 })
+    seed(['conversations', 'a'], { fetchStatus: 'paused', status: 'error', fetchFailureCount: 3 })
+    seed(['session', 'a'], { fetchStatus: 'fetching', status: 'pending', fetchFailureCount: 0 })
+
+    expect(describeRecovery()).toEqual({
+      sessions_paused: 2,
+      browse_fetching: 1,
+      nested_retries: 0,
+      online: true,
+      focused: true,
+    })
+  })
+
+  it('reports a backgrounded app, which is the other thing that keeps a retry paused', () => {
+    focusManager.setFocused(false)
+    try {
+      expect(describeRecovery().focused).toBe(false)
+    } finally {
+      focusManager.setFocused(undefined)
+    }
+  })
+
+  it('reports an offline manager, which is what keeps a retry paused', () => {
+    onlineManager.setOnline(false)
+    expect(describeRecovery().online).toBe(false)
   })
 })
