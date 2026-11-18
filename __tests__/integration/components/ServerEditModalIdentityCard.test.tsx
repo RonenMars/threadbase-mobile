@@ -12,11 +12,13 @@ import { ServerEditModal } from '@/components/servers/ServerEditModal'
 
 const mockCardVisible = jest.fn()
 let mockCardDone: (() => void) | undefined
+let mockCardReject: (() => void) | undefined
 
 jest.mock('@/components/pair/PairCameraIdentityCard', () => ({
-  PairCameraIdentityCard: (props: { visible: boolean; onDone: () => void }) => {
+  PairCameraIdentityCard: (props: { visible: boolean; onDone: () => void; onReject: () => void }) => {
     mockCardVisible(props.visible)
     mockCardDone = props.onDone
+    mockCardReject = props.onReject
     return null
   },
 }))
@@ -49,6 +51,7 @@ describe('ServerEditModal — yielding the window to the identity card', () => {
   beforeEach(() => {
     mockCardVisible.mockReset()
     mockCardDone = undefined
+    mockCardReject = undefined
   })
 
   it('hides the form while the identity card is up and restores it on Done', async () => {
@@ -64,5 +67,19 @@ describe('ServerEditModal — yielding the window to the identity card', () => {
 
     await waitFor(() => expect(mockCardVisible).toHaveBeenLastCalledWith(false))
     expect(screen.getByTestId('server-edit-url-input')).toBeTruthy()
+  })
+
+  it('closes the form without adding anything when the code does not match', async () => {
+    const onClose = jest.fn()
+    const screen = await render(<ServerEditModal visible serverId={null} onClose={onClose} />)
+
+    await fireEvent.press(screen.getByLabelText('Scan QR code'))
+    await fireEvent.press(await screen.findByTestId('fake-scan'))
+    await waitFor(() => expect(mockCardVisible).toHaveBeenLastCalledWith(true))
+
+    await act(async () => mockCardReject?.())
+
+    expect(onClose).toHaveBeenCalledTimes(1)
+    await waitFor(() => expect(mockCardVisible).toHaveBeenLastCalledWith(false))
   })
 })

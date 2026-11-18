@@ -347,6 +347,10 @@ export function ServerEditModal({ visible, serverId, onClose }: Props) {
         visible={cameraFingerprint !== null}
         fingerprint={cameraFingerprint}
         onDone={() => setCameraFingerprint(null)}
+        onReject={() => {
+          setCameraFingerprint(null)
+          onClose()
+        }}
       />
     </>
   )
