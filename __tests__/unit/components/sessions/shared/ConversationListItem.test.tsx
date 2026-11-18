@@ -126,11 +126,18 @@ describe('ConversationListItem', () => {
     expect(dot.props).toMatchObject({ live: true, color: dark.status.running, size: 10 })
   })
 
-  it('keeps the leading dot when no state badge renders', async () => {
+  it('keeps an empty leading slot when no state badge renders', async () => {
     const tree = await render(
       <ConversationListItem title="plain conversation" density="compact" leading="dot" />,
     )
-    expect((tree.root as renderer.ReactTestInstance).findAllByType(LiveDot)).toHaveLength(1)
+    const root = tree.root as renderer.ReactTestInstance
+    expect(root.findAllByType(LiveDot)).toHaveLength(0)
+    expect(root.findAllByType(View).map((node) => ({
+      style: node.props.style,
+      children: node.props.children,
+    }))).toEqual(expect.arrayContaining([
+      expect.objectContaining({ style: expect.objectContaining({ width: 12 }), children: undefined }),
+    ]))
   })
 
   it('shows the server chip when multi-server and showServer=auto', async () => {

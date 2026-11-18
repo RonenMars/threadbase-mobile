@@ -30,6 +30,7 @@ type Story = StoryObj<typeof ConversationListItem>
 
 /** At 3 messages or fewer, `auto` previews the first message. */
 export const ShortConversation: Story = {
+  name: 'Short conversation without status',
   args: { ...base, messageCount: 3, previewMode: 'auto' },
 }
 
