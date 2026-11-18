@@ -16,7 +16,14 @@
     "addDirectory": "הוסף תיקייה זו",
     "extraDirsTitle": "כלול גם ({{selected}}/{{max}})",
     "extraDirsHint": "הסשן מתחיל בתיקייה הנוכחית ויכול לעבוד גם בתיקיות אלה.",
-    "removeDirectory": "הסר את {{name}}"
+    "removeDirectory": "הסר את {{name}}",
+    "pinnedDirs": "מוצמדות ({{total}})",
+    "hidePinnedDirs": "הסתרת תיקיות מוצמדות",
+    "showPinnedDirs": "הצגת תיקיות מוצמדות",
+    "pinFolder": "הצמדת התיקייה הזו",
+    "unpinFolder": "ביטול הצמדת התיקייה הזו",
+    "unpinDirectory": "ביטול הצמדה של {{name}}",
+    "pinFailed": "לא ניתן לעדכן את התיקיות המוצמדות"
   },
   "starting": {
     "secondsLeft": "{{seconds}} שנ׳",

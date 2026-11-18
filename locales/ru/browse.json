@@ -16,7 +16,14 @@
     "addDirectory": "Добавить эту папку",
     "extraDirsTitle": "Также включить ({{selected}}/{{max}})",
     "extraDirsHint": "Сессия запускается в текущей папке и может работать также в этих.",
-    "removeDirectory": "Удалить {{name}}"
+    "removeDirectory": "Удалить {{name}}",
+    "pinnedDirs": "Закреплённые ({{total}})",
+    "hidePinnedDirs": "Скрыть закреплённые папки",
+    "showPinnedDirs": "Показать закреплённые папки",
+    "pinFolder": "Закрепить эту папку",
+    "unpinFolder": "Открепить эту папку",
+    "unpinDirectory": "Открепить {{name}}",
+    "pinFailed": "Не удалось обновить закреплённые папки"
   },
   "starting": {
     "secondsLeft": "{{seconds}} с",

@@ -15,9 +15,11 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { runOnJS } from 'react-native-reanimated'
 import { FlashList } from '@shopify/flash-list'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder, X } from 'phosphor-react-native'
+import { CaretDown, CaretRight, ClockCounterClockwise, File, Folder, PushPin, PushPinSlash, X } from 'phosphor-react-native'
 import { useBrowse, useCreateDirectory } from '@/hooks/useBrowse'
+import { usePinDir, usePinnedDirs, useUnpinDir } from '@/hooks/usePinnedDirs'
 import { useRecentDirs } from '@/hooks/useRecentDirs'
+import { findPinnedDir, type PinnedDirEntry } from '@/lib/pinnedDirs'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { NetworkError, NotFoundError } from '@/services/api-client'
@@ -77,6 +79,8 @@ export default function BrowseScreen() {
   const [keyboardHeight, setKeyboardHeight] = useState(0)
   const isRecentsOpen = useViewPrefsStore((s) => s.recentsOpen)
   const setRecentsOpen = useViewPrefsStore((s) => s.setRecentsOpen)
+  const isPinnedOpen = useViewPrefsStore((s) => s.pinnedOpen)
+  const setPinnedOpen = useViewPrefsStore((s) => s.setPinnedOpen)
   const [showAllRecents, setShowAllRecents] = useState(false)
   const [selectedProvider, setSelectedProvider] = useState<ProviderName>(CLAUDE_CODE_PROVIDER)
   // `isLoading` and not `isPending`: in react-query v5 a disabled query (no
@@ -120,6 +124,10 @@ export default function BrowseScreen() {
   const recentDirs: RecentDir[] = useRecentDirs(serverId, MAX_RECENT_DIRS)
   const previewRecentDirs = recentDirs.slice(0, PREVIEW_RECENT_DIRS)
   const hasMoreRecents = recentDirs.length > PREVIEW_RECENT_DIRS
+  const pinned = usePinnedDirs(serverId)
+  const pinDir = usePinDir(serverId)
+  const unpinDir = useUnpinDir(serverId)
+  const currentPinned = findPinnedDir(pinned.dirs, currentPath)
 
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
@@ -293,7 +301,7 @@ export default function BrowseScreen() {
   }, [currentPath, selectedProvider, serverId, isStarting, navigateToStartScreen])
 
   const handleStartFromRecent = useCallback(
-    (dir: RecentDir) => {
+    (dir: Pick<RecentDir, 'path' | 'name'>) => {
       if (isStarting) return
       setIsStarting(true)
       setShowAllRecents(false)
@@ -301,6 +309,16 @@ export default function BrowseScreen() {
       navigateToStartScreen(dir.path, dir.name)
     },
     [serverId, isStarting, navigateToStartScreen],
+  )
+
+  const onPinError = useCallback((err: Error) => Alert.alert(t('nav.pinFailed'), err.message), [t])
+  const togglePinCurrent = useCallback(() => {
+    if (currentPinned) unpinDir.mutate(currentPinned.path, { onError: onPinError })
+    else pinDir.mutate(currentPath, { onError: onPinError })
+  }, [currentPinned, currentPath, pinDir, unpinDir, onPinError])
+  const unpinOne = useCallback(
+    (dir: PinnedDirEntry) => unpinDir.mutate(dir.path, { onError: onPinError }),
+    [unpinDir, onPinError],
   )
 
   const renderItem = useCallback(
@@ -348,6 +366,9 @@ export default function BrowseScreen() {
     (error instanceof NetworkError && error.code === 'BROWSE_ROOT_NOT_SET') ||
     error?.message?.includes('not configured')
   )
+  const pinnedToggleLabel = isPinnedOpen ? t('nav.hidePinnedDirs') : t('nav.showPinnedDirs')
+  const pinCurrentLabel = currentPinned ? t('nav.unpinFolder') : t('nav.pinFolder')
+  const pinBusy = pinDir.isPending || unpinDir.isPending
   const recentsToggleLabel = isRecentsOpen ? t('nav.hideRecentDirs') : t('nav.showRecentDirs')
   // Every control on this screen talks to the same server, so a failed listing
   // or an unreachable server makes all of them dead ends. Only closing — the
@@ -374,7 +395,77 @@ export default function BrowseScreen() {
             </TouchableOpacity>
           </React.Fragment>
         ))}
+        {pinned.supported ? (
+          <TouchableOpacity
+            style={[styles.pinToggle, actionsDisabled && styles.actionDisabled]}
+            onPress={togglePinCurrent}
+            disabled={actionsDisabled || pinBusy}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={pinCurrentLabel}
+            testID="browse-pin-toggle"
+          >
+            <PushPin size={18} color={theme.text.accent} weight={currentPinned ? 'fill' : 'regular'} />
+          </TouchableOpacity>
+        ) : null}
       </View>
+
+      {/* Pinned folders accordion (servers that report pinnedDirs, once something is pinned) */}
+      {pinned.supported && pinned.dirs.length > 0 ? (
+        <View style={styles.recents}>
+          <TouchableOpacity
+            style={[styles.recentsHeader, isGlass && styles.recentsHeaderGlass, actionsDisabled && styles.actionDisabled]}
+            onPress={() => setPinnedOpen(!isPinnedOpen)}
+            disabled={actionsDisabled}
+            accessibilityRole="button"
+            accessibilityLabel={pinnedToggleLabel}
+          >
+            <GlassFill />
+            <Text style={[styles.recentsHeaderText, copyStyle]}>
+              {t('nav.pinnedDirs', { total: pinned.dirs.length })}
+            </Text>
+            {isPinnedOpen ? (
+              <CaretDown size={14} color={theme.text.secondary} weight="bold" />
+            ) : (
+              <CaretRight size={14} color={theme.text.secondary} weight="bold" />
+            )}
+          </TouchableOpacity>
+          {isPinnedOpen ? (
+            <View style={styles.recentsList}>
+              {pinned.dirs.map((dir) => (
+                <View key={dir.path} style={[styles.recentRow, actionsDisabled && styles.actionDisabled]}>
+                  <TouchableOpacity
+                    style={styles.pinnedStart}
+                    onPress={() => handleStartFromRecent(dir)}
+                    disabled={isStarting || actionsDisabled}
+                    testID={`pinned-dir-${dir.path}`}
+                  >
+                    <PushPin size={18} color={theme.text.secondary} weight="fill" />
+                    <View style={styles.recentTextWrap}>
+                      <Text style={[styles.recentName, ltrContentStyle]} numberOfLines={1}>
+                        {dir.name}
+                      </Text>
+                      <Text style={[styles.recentPath, ltrContentStyle]} numberOfLines={1}>
+                        {dir.path}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => unpinOne(dir)}
+                    disabled={actionsDisabled || pinBusy}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('nav.unpinDirectory', { name: dir.name })}
+                    testID={`unpin-dir-${dir.path}`}
+                  >
+                    <PushPinSlash size={18} color={theme.text.secondary} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
 
       {/* Recent directories accordion (only when this server has prior sessions) */}
       {recentDirs.length > 0 ? (
@@ -677,6 +768,15 @@ function makeStyles(theme: Theme) {
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+  },
+  pinToggle: {
+    marginStart: 'auto',
+    paddingStart: spacing.sm,
+  },
+  pinnedStart: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   recentTextWrap: {
     flex: 1,
