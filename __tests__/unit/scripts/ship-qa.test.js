@@ -56,6 +56,8 @@ function run(args, vars = {}, files = {}) {
     env: {
       PATH: `${bin}:${process.env.PATH}`,
       FIREBASE_ACCESS_TOKEN: 'test-access-token',
+      FIREBASE_API_KEY_IOS: 'test-api-key',
+      FIREBASE_PROJECT_ID: 'test-project',
       ...vars,
     },
     encoding: 'utf8',
@@ -124,5 +126,39 @@ describe('ship-qa.sh', () => {
     const res = run(['--platform', 'android'], { FIREBASE_APP_ID_ANDROID: 'app' });
     expect(res.status).toBe(1);
     expect(res.stderr).toContain('.env.signing.android missing');
+  });
+
+  describe('iOS in-app update check', () => {
+    const ios = { FIREBASE_APP_ID_IOS: 'app' };
+
+    it.each([
+      [{ FIREBASE_API_KEY_IOS: '' }, 'FIREBASE_API_KEY_IOS'],
+      [{ FIREBASE_PROJECT_ID: '' }, 'FIREBASE_PROJECT_ID'],
+    ])('refuses a build that would have no update banner (%j)', (missing, name) => {
+      const res = run(['--platform', 'ios'], { ...ios, ...missing });
+      expect(res.status).toBe(1);
+      expect(res.stderr).toContain(`${name}`);
+      expect(res.stderr).toContain('no in-app update banner');
+    });
+
+    it('takes the project from GOOGLE_CLOUD_QUOTA_PROJECT', () => {
+      const res = run(['--platform', 'ios'], { ...ios, FIREBASE_PROJECT_ID: '', GOOGLE_CLOUD_QUOTA_PROJECT: 'p' });
+      expect(res.status).toBe(42);
+    });
+
+    it('reads the key from .env', () => {
+      const res = run(['--platform', 'ios'], { ...ios, FIREBASE_API_KEY_IOS: '' }, { '.env': 'FIREBASE_API_KEY_IOS=k\n' });
+      expect(res.status).toBe(42);
+    });
+
+    it('builds without the check only when asked', () => {
+      const res = run(['--platform', 'ios', '--no-update-check'], { ...ios, FIREBASE_API_KEY_IOS: '', FIREBASE_PROJECT_ID: '' });
+      expect(res.status).toBe(42);
+    });
+
+    it('does not apply to android', () => {
+      const res = run(['--platform', 'android'], { FIREBASE_APP_ID_ANDROID: 'app', FIREBASE_API_KEY_IOS: '', FIREBASE_PROJECT_ID: '' }, { '.env.signing.android': '' });
+      expect(res.stderr).not.toContain('update banner');
+    });
   });
 });

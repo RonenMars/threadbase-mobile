@@ -15,7 +15,7 @@
 # so it installs beside the store app instead of replacing it.
 #
 # Usage:
-#   ./scripts/ship-qa.sh --platform ios     [--groups qa] [--release-notes "..."]
+#   ./scripts/ship-qa.sh --platform ios     [--groups qa] [--release-notes "..."] [--no-update-check]
 #   ./scripts/ship-qa.sh --platform android [--groups qa] [--release-notes "..."]
 #
 # Requires:
@@ -25,6 +25,9 @@
 #                                                 locally, gcloud ADC is used as a fallback
 #   EXPO_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN/ORG/PROJECT (shell, .env, or .env.signing*)
 #   iOS:     an installed Ad Hoc profile per target (app + widgets) granting App Groups
+#            FIREBASE_API_KEY_IOS and FIREBASE_PROJECT_ID (or GOOGLE_CLOUD_QUOTA_PROJECT): the
+#            in-app update banner is built from them. Without them the script stops, because
+#            such a build never shows an update banner; --no-update-check builds it anyway.
 #   Android: .env.signing.android (the Play upload key)
 #
 # Build numbers are used as-is (app.json on iOS, build.gradle on Android); nothing is bumped or committed.
@@ -34,12 +37,14 @@ set -euo pipefail
 PLATFORM=""
 TESTER_GROUPS="qa"
 RELEASE_NOTES=""
+UPDATE_CHECK=1
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --platform)      PLATFORM="$2"; shift 2 ;;
     --groups)        TESTER_GROUPS="$2"; shift 2 ;;
     --release-notes) RELEASE_NOTES="$2"; shift 2 ;;
+    --no-update-check) UPDATE_CHECK=0; shift ;;
     -h|--help) sed -n '1,30p' "$0"; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; exit 2 ;;
   esac
@@ -99,6 +104,21 @@ else
   APP_ID_VAR=FIREBASE_APP_ID_ANDROID
 fi
 [[ -n "$FIREBASE_APP_ID" ]] || { echo "$APP_ID_VAR is not set (Firebase console → Project settings → Your apps)" >&2; exit 1; }
+
+# Without the key and project ID the iOS build leaves the in-app update check
+# out and says so on one line in a long log. Testers on it never see the update
+# banner and cannot update themselves, so refuse before spending a build on it.
+FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-${GOOGLE_CLOUD_QUOTA_PROJECT:-}}"
+if [[ "$PLATFORM" == ios && "$UPDATE_CHECK" == 1 ]]; then
+  missing=()
+  [[ -n "${FIREBASE_API_KEY_IOS:-}" ]] || missing+=(FIREBASE_API_KEY_IOS)
+  [[ -n "$FIREBASE_PROJECT_ID" ]] || missing+=("FIREBASE_PROJECT_ID (or GOOGLE_CLOUD_QUOTA_PROJECT)")
+  if (( ${#missing[@]} )); then
+    echo "This build would have no in-app update banner: ${missing[*]} not set." >&2
+    echo "Set them (the QA workflow takes them from repo secrets/vars), or pass --no-update-check to build without." >&2
+    exit 1
+  fi
+fi
 
 # App Distribution's Firebase CLI auth path is unreliable with GitHub WIF ADC,
 # so CI passes a short-lived OAuth access token from google-github-actions/auth.
@@ -196,7 +216,6 @@ PY
   # the Podfile adds the package when asked, and AppDelegate compiles the check
   # only when it is there. Without the key the build ships as before.
   QA_UPDATE_SETTINGS=()
-  FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID:-${GOOGLE_CLOUD_QUOTA_PROJECT:-}}"
   if [[ -n "${FIREBASE_API_KEY_IOS:-}" && -n "$FIREBASE_PROJECT_ID" ]]; then
     export TB_QA_APP_DISTRIBUTION=1
     QA_UPDATE_SETTINGS=(
@@ -228,7 +247,7 @@ PY
       trap remove_qa_package EXIT
     fi
   else
-    echo "  in-app update check: off (FIREBASE_API_KEY_IOS or the project ID is not set)"
+    echo "  in-app update check: off (--no-update-check)"
   fi
 
   echo "▸ Pod install"

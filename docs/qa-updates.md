@@ -26,6 +26,9 @@ Signing, provisioning, authentication, workflow configuration, and dependencies 
 
 ### Diagnosing a missing prompt
 
+A build with no prompt at all and no `qa_update:` message in Sentry was most likely made without the update check: a local `ship-qa.sh` run without `FIREBASE_API_KEY_IOS` and a project ID used to build without it and print one line.
+It now stops instead, unless `--no-update-check` is passed.
+
 Each update check records one token in `UserDefaults` (`qaUpdateCheckResult`): `none`, `prompted`, `no_presenter` or `failed:<error domain>:<code>`.
 The JS layer reads it through `AppDistribution.takeUpdateCheckResult` on launch and on each foreground, and `reportQAUpdateCheck` (`services/sentry.ts`) sends it to Sentry as the message `qa_update:<token>`.
 It goes through the normal consent gate and sanitizer, and only in enforced-tracking (QA) builds, so a store build neither records nor sends anything.
