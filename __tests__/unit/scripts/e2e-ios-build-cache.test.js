@@ -59,7 +59,7 @@ describe('e2e.yml iOS exact-build app cache', () => {
   });
 
   it('selects Xcode and records the toolchain before the binary cache lookup', () => {
-    const selectXcode = stepIndex(steps, (step) => step.name === 'Select Xcode 26');
+    const selectXcode = stepIndex(steps, (step) => step.name === 'Select Xcode 27');
     const toolchain = stepIndex(steps, (step) => step.id === 'toolchain');
     const cache = stepIndex(steps, (step) => step.id === 'ios-app-cache');
     const setupNode = stepIndex(steps, (step) =>
