@@ -33,8 +33,9 @@ import {
 import { isPreviewableImage, type ComposerAttachment } from '@/services/uploads'
 import { lendComposerFocus, returnComposerFocus, useComposerFocus } from '@/hooks/useComposerFocus'
 import { AttachmentPreview } from '@/components/conversation/AttachmentPreview'
-import { FileMentionPanel } from '@/components/conversation/FileMentionBoard'
-import type { ComposerMention } from '@/hooks/useFileMentions'
+import { FileMentionPanel, SkillMentionPanel } from '@/components/conversation/FileMentionBoard'
+import type { ComposerMention, ComposerSlash } from '@/hooks/useFileMentions'
+import type { SkillEntry } from '@/lib/slashToken'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { layoutDirectionStyle, ltrContentStyle, textDirectionStyle, useAppDirection, useDirectionStyle } from '@/lib/rtl'
@@ -84,6 +85,11 @@ export interface ChatComposerProps {
   /** Caret to apply once, after a mention is inserted. */
   selection?: { start: number; end: number }
   onSelectionChange?: (e: TextInputSelectionChangeEvent) => void
+  /** Open `/` token at the start of the prompt; null closes the skills picker. */
+  slash?: ComposerSlash | null
+  /** The marked skill: its name at the start of the text shows in the accent color with an X. */
+  skill?: SkillEntry | null
+  onClearSkill?: () => void
 }
 
 const CHIP_THUMB_SIZE = 20
@@ -137,6 +143,9 @@ export function ChatComposer({
   mention = null,
   selection,
   onSelectionChange,
+  slash = null,
+  skill = null,
+  onClearSkill,
 }: ChatComposerProps) {
   const { t } = useTranslation('terminal')
   const { t: tCommon } = useTranslation('common')
@@ -237,8 +246,46 @@ export function ChatComposer({
       </TouchableOpacity>
     ) : null
 
+  const boardsAllowed = !disabled && !voice.listening
   const mentionBoard =
-    mention !== null && !disabled && !voice.listening ? <FileMentionPanel mention={mention} /> : null
+    (boardsAllowed && mention !== null ? <FileMentionPanel mention={mention} /> : null) ??
+    (boardsAllowed && slash !== null ? <SkillMentionPanel slash={slash} /> : null)
+
+  // A controlled TextInput takes styled children in place of `value`; that is
+  // how the skill name gets its color. The X sits at the name's top end, found
+  // by measuring the name in the input's font (it is always the first word).
+  const [skillWidth, setSkillWidth] = useState(0)
+  const markedSkill = skill !== null && !disabled && value.startsWith(skill.name) ? skill : null
+  const inputChildren = markedSkill ? (
+    <>
+      <Text testID="skill-chip-name" style={styles.skillName}>{markedSkill.name}</Text>
+      <Text>{value.slice(markedSkill.name.length)}</Text>
+    </>
+  ) : undefined
+  const inputValue = markedSkill ? undefined : disabled ? '' : value
+  const skillClear = (testID: string) =>
+    markedSkill && onClearSkill ? (
+      <TouchableOpacity
+        testID={testID}
+        style={[styles.skillClear, { start: spacing.sm + skillWidth - 4 }]}
+        onPress={onClearSkill}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={t('skills.clear', { name: markedSkill.name })}
+      >
+        <X size={9} weight="bold" color={theme.text.onAccent} />
+      </TouchableOpacity>
+    ) : null
+  const skillMeasure = markedSkill ? (
+    <Text
+      style={styles.skillMeasure}
+      onLayout={(e) => setSkillWidth(e.nativeEvent.layout.width)}
+      accessible={false}
+      importantForAccessibility="no-hide-descendants"
+    >
+      {markedSkill.name}
+    </Text>
+  ) : null
 
   const previewImages = attachments.filter(isPreviewableImage)
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
@@ -407,7 +454,7 @@ export function ChatComposer({
               ref={inputRef}
               testID="chat-message-input"
               style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, inputDirection, disabled && styles.disabled]}
-              value={disabled ? '' : value}
+              value={inputValue}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
               selection={selection}
@@ -419,7 +466,11 @@ export function ChatComposer({
               scrollEnabled
               textAlignVertical="top"
               editable={!disabled && !voice.listening}
-            />
+            >
+              {inputChildren}
+            </TextInput>
+            {skillMeasure}
+            {skillClear('skill-chip-clear')}
             <TouchableOpacity
               testID="expand-input-button"
               accessibilityRole="button"
@@ -434,11 +485,12 @@ export function ChatComposer({
           </View>
         ) : (
           <>
+            <View style={styles.inputWrapper}>
             <TextInput
               ref={inputRef}
               testID="chat-message-input"
               style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, inputDirection, disabled && styles.disabled]}
-              value={disabled ? '' : value}
+              value={inputValue}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
               selection={selection}
@@ -451,7 +503,12 @@ export function ChatComposer({
               scrollEnabled
               textAlignVertical="top"
               editable={!disabled && !voice.listening}
-            />
+            >
+              {inputChildren}
+            </TextInput>
+            {skillMeasure}
+            {skillClear('skill-chip-clear')}
+            </View>
             <TouchableOpacity
               testID="expand-input-button"
               accessibilityRole="button"
@@ -499,11 +556,12 @@ export function ChatComposer({
               {errors}
               {chips}
               {mentionBoard}
+              <View style={styles.flex}>
               <TextInput
                 ref={expandedInputRef}
                 testID="message-input-expanded"
                 style={[styles.inputExpandedField, inputDirection, disabled && styles.disabled]}
-                value={disabled ? '' : value}
+                value={inputValue}
                 onChangeText={disabled ? undefined : onChangeText}
                 onFocus={() => onInputFocus('expanded')}
                 selection={selection}
@@ -521,7 +579,11 @@ export function ChatComposer({
                 textAlignVertical="top"
                 autoFocus
                 editable={!disabled && !voice.listening}
-              />
+              >
+                {inputChildren}
+              </TextInput>
+              {skillClear('skill-chip-clear-expanded')}
+              </View>
               <View style={styles.expandedToolbar}>
                 <TouchableOpacity
                   testID="minimize-input-button"
@@ -619,6 +681,19 @@ function makeStyles(theme: Theme) {
     },
     expandBtn: { justifyContent: 'flex-end', alignSelf: 'flex-end', paddingBottom: spacing.sm, paddingHorizontal: spacing.xs },
     inputWrapper: { flex: 1, position: 'relative' },
+    skillName: { color: theme.text.accent, fontWeight: '600' },
+    // Same font as the input, so its width is the name's width in the input.
+    skillMeasure: { position: 'absolute', opacity: 0, fontSize: font.base, fontWeight: '600' },
+    skillClear: {
+      position: 'absolute',
+      top: 2,
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      backgroundColor: theme.text.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     expandBtnAndroid: { position: 'absolute', top: 4, end: 4 },
     expandedToolbar: {
       flexDirection: 'row',
