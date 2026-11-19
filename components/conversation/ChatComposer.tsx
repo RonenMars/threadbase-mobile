@@ -267,7 +267,7 @@ export function ChatComposer({
     markedSkill && onClearSkill ? (
       <TouchableOpacity
         testID={testID}
-        style={[styles.skillClear, { start: spacing.sm + skillWidth - 4 }]}
+        style={[styles.skillClear, { start: spacing.sm + skillWidth + 1 }]}
         onPress={onClearSkill}
         hitSlop={8}
         accessibilityRole="button"
