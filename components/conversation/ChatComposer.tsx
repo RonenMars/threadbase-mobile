@@ -749,7 +749,7 @@ function makeStyles(theme: Theme) {
       alignItems: 'center',
     },
     sendBtn: {
-      width: 52,
+      width: 60,
       backgroundColor: theme.text.accent,
       borderRadius: 10,
       minHeight: 44,

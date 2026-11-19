@@ -214,6 +214,7 @@ describe('ChatComposer', () => {
   it('extends the send and mic touch targets past their visible edge', async () => {
     await renderComposer({ value: 'hello', micGranted: true })
     expect(screen.getByTestId('chat-send-button').props.hitSlop).toBe(10)
+    expect(StyleSheet.flatten(screen.getByTestId('chat-send-button').props.style).width).toBe(60)
     await renderComposer({ value: '', micGranted: true })
     expect(screen.getByTestId('chat-mic-button').props.hitSlop).toBe(10)
   })
