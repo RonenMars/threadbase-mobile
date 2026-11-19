@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   View,
@@ -29,7 +29,13 @@ import {
   ArrowsOut,
   ArrowsIn,
   Sparkle,
+  MarkdownLogo,
 } from 'phosphor-react-native'
+// The package index also re-exports the ExpensiMark parser, which needs
+// `expensify-common`; importing the component directly keeps that out.
+import MarkdownTextInput from '@expensify/react-native-live-markdown/src/MarkdownTextInput'
+import type { MarkdownStyle } from '@expensify/react-native-live-markdown'
+import { parseLiveMarkdown, parseNoMarkdown } from '@/lib/markdown/liveRanges'
 import { isPreviewableImage, type ComposerAttachment } from '@/services/uploads'
 import { lendComposerFocus, returnComposerFocus, useComposerFocus } from '@/hooks/useComposerFocus'
 import { AttachmentPreview } from '@/components/conversation/AttachmentPreview'
@@ -156,6 +162,8 @@ export function ChatComposer({
   const inputAreaPadding = useKeyboardGapPadding(restingPad)
   const expandedInputAreaPadding = useKeyboardGapPadding(restingPad)
   const [expanded, setExpanded] = useState(false)
+  const [liveMarkdown, setLiveMarkdown] = useState(false)
+  const markdownStyle = useMemo(() => makeMarkdownStyle(theme), [theme])
   const expandedKeyboardInset = useKeyboardInset()
 
   // iOS sometimes drops the software keyboard across a background/foreground
@@ -499,9 +507,13 @@ export function ChatComposer({
               {errors}
               {chips}
               {mentionBoard}
-              <TextInput
+              <MarkdownTextInput
                 ref={expandedInputRef}
                 testID="message-input-expanded"
+                // Swapping the parser restyles in place; swapping the component
+                // would remount the input and drop the keyboard.
+                parser={liveMarkdown ? parseLiveMarkdown : parseNoMarkdown}
+                markdownStyle={markdownStyle}
                 style={[styles.inputExpandedField, inputDirection, disabled && styles.disabled]}
                 value={disabled ? '' : value}
                 onChangeText={disabled ? undefined : onChangeText}
@@ -534,6 +546,17 @@ export function ChatComposer({
                   hitSlop={8}
                 >
                   <ArrowsIn size={22} color={theme.text.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID="markdown-toggle-button"
+                  style={[styles.iconBtn, liveMarkdown && styles.iconBtnActive]}
+                  onPress={() => setLiveMarkdown((on) => !on)}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: liveMarkdown }}
+                  accessibilityLabel={t('input.markdownToggleLabel')}
+                  hitSlop={8}
+                >
+                  <MarkdownLogo size={24} color={liveMarkdown ? theme.text.accent : theme.text.primary} />
                 </TouchableOpacity>
                 {attachButton}
                 <TouchableOpacity
@@ -571,6 +594,18 @@ export function ChatComposer({
       {expanded ? null : preview}
     </Reanimated.View>
   )
+}
+
+function makeMarkdownStyle(theme: Theme): MarkdownStyle {
+  const code = { color: theme.text.primary, backgroundColor: theme.bg.card, borderColor: theme.border, fontSize: font.sm }
+  return {
+    syntax: { color: theme.text.secondary },
+    link: { color: theme.text.accent },
+    h1: { fontSize: font.xl },
+    blockquote: { borderColor: theme.border },
+    code,
+    pre: code,
+  }
 }
 
 function makeStyles(theme: Theme) {
@@ -645,6 +680,9 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       justifyContent: 'center',
       alignItems: 'center',
+    },
+    iconBtnActive: {
+      borderColor: theme.text.accent,
     },
     iconBtn: {
       width: 52,

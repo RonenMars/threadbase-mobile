@@ -1,0 +1,68 @@
+# Maestro E2E — live markdown toggle in the expanded composer
+# The expanded editor's markdown toggle swaps the native input's parser in
+# place: typing markdown with it on, and turning it off again, keeps the draft
+# and the editor alive. Styling itself is not asserted; Maestro cannot read it.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node e2e/run-maestro.js test e2e/composer_live_markdown.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-mentions"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 12000
+
+- tapOn:
+    id: "expand-input-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "message-input-expanded"
+    timeout: 8000
+
+- tapOn:
+    id: "markdown-toggle-button"
+
+# Drafts survive `clearState` (SecureStore), so clear whatever a previous run left.
+- tapOn:
+    id: "message-input-expanded"
+
+- eraseText: 200
+
+- inputText: "**bold** and `code`"
+
+- assertVisible:
+    id: "message-input-expanded"
+    text: ".*bold.* and .*code.*"
+
+- tapOn:
+    id: "markdown-toggle-button"
+
+- assertVisible:
+    id: "message-input-expanded"
+    text: ".*bold.* and .*code.*"
+
+- tapOn:
+    id: "minimize-input-button"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 8000
+
+- tapOn:
+    id: "chat-message-input"
+    point: "95%,90%"
+
+- eraseText: 200

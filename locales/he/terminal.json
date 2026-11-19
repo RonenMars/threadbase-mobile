@@ -56,6 +56,7 @@
     "attachLabel": "צירוף קובץ",
     "expandLabel": "הרחב קלט",
     "minimizeLabel": "מזער קלט",
+    "markdownToggleLabel": "עיצוב Markdown בזמן הקלדה",
     "suggestionLabel": "שלח הצעה: {{text}}",
     "suggestionHint": "לחץ והחזק כדי לערוך לפני השליחה"
   },

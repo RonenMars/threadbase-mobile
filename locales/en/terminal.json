@@ -56,6 +56,7 @@
     "attachLabel": "Attach file",
     "expandLabel": "Expand input",
     "minimizeLabel": "Minimize input",
+    "markdownToggleLabel": "Live markdown formatting",
     "suggestionLabel": "Send suggestion: {{text}}",
     "suggestionHint": "Hold to edit before sending"
   },
