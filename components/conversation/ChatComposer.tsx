@@ -267,13 +267,13 @@ export function ChatComposer({
     markedSkill && onClearSkill ? (
       <TouchableOpacity
         testID={testID}
-        style={[styles.skillClear, { start: spacing.sm + skillWidth + 1 }]}
+        style={[styles.skillClear, { start: spacing.sm + skillWidth - 6 }]}
         onPress={onClearSkill}
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={t('skills.clear', { name: markedSkill.name })}
       >
-        <X size={9} weight="bold" color={theme.text.onAccent} />
+        <X size={8} weight="bold" color={theme.text.onAccent} />
       </TouchableOpacity>
     ) : null
   const skillMeasure = markedSkill ? (
@@ -686,10 +686,10 @@ function makeStyles(theme: Theme) {
     skillMeasure: { position: 'absolute', opacity: 0, fontSize: font.base, fontWeight: '600' },
     skillClear: {
       position: 'absolute',
-      top: 2,
-      width: 14,
-      height: 14,
-      borderRadius: 7,
+      top: -4,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
       backgroundColor: theme.text.accent,
       alignItems: 'center',
       justifyContent: 'center',
