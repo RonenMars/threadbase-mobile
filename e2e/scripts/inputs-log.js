@@ -1,8 +1,9 @@
 // Maestro runScript — reads (and with MODE=reset, clears) the mock's log of
 // POST /api/sessions/:id/input. MODE=assert-empty throws when anything was
 // sent, which fails the flow step; the message names what leaked.
+// MODE=assert-last throws unless the last prompt sent is exactly EXPECT.
 // runScript http.request is host-side; rewrite the emulator alias.
-/* global E2E_MOCK_SERVER_URL, MODE */
+/* global E2E_MOCK_SERVER_URL, MODE, EXPECT */
 const mockUrl = String(
   typeof E2E_MOCK_SERVER_URL === 'string' && E2E_MOCK_SERVER_URL.length > 0
     ? E2E_MOCK_SERVER_URL
@@ -21,4 +22,8 @@ if (response.status !== 200) {
 const inputs = JSON.parse(response.body).inputs
 if (MODE === 'assert-empty' && inputs.length > 0) {
   throw new Error(`stray input reached the PTY: ${JSON.stringify(inputs)}`)
+}
+const last = inputs[inputs.length - 1]
+if (MODE === 'assert-last' && !(last && last.input === EXPECT)) {
+  throw new Error(`last input was ${JSON.stringify(last)}, expected ${JSON.stringify(EXPECT)}`)
 }

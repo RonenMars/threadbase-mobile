@@ -1,0 +1,172 @@
+# Maestro E2E — composer `/` skills picker
+# Claude session: `/` at the start of the prompt opens the skills panel over the
+# mock's GET /api/sessions/:id/skills (SKILLS in mock-server.js), and typing
+# filters it. Picking a skill writes its name without the `/`, marked with an X.
+# Deleting a character of the name drops the mark, the X removes the name, and
+# sending a marked skill delivers `/<name> <rest>` to the PTY.
+# A Codex session must show no panel: the list is Claude Code's only.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node e2e/run-maestro.js test e2e/skill_mentions.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+# Earlier flows share this mock process; start the log from empty.
+- runScript:
+    file: scripts/inputs-log.js
+    env:
+      MODE: "reset"
+
+# --- Claude Code session --------------------------------------------------------
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-mentions"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 12000
+
+# Drafts live in SecureStore, which `clearState` does not wipe, so a previous run's
+# text is still in the composer. Tap at the end of the text, then clear it.
+- tapOn:
+    id: "chat-message-input"
+    point: "95%,90%"
+
+- eraseText: 200
+
+# Typing filters: `td` matches tdd by name, and nothing else in the list.
+- inputText: "/td"
+
+- extendedWaitUntil:
+    visible:
+      id: "skill-mention-board"
+    timeout: 8000
+
+- assertVisible:
+    id: "skill-mention-row-tdd"
+
+- assertNotVisible:
+    id: "skill-mention-row-ship"
+
+# 1. Deleting one character of a picked name drops the mark and keeps the text.
+- tapOn:
+    id: "skill-mention-row-tdd"
+
+- assertVisible:
+    id: "skill-chip-clear"
+
+- assertNotVisible:
+    id: "skill-mention-board"
+
+- eraseText: 2
+
+- assertNotVisible:
+    id: "skill-chip-clear"
+
+- assertVisible:
+    id: "chat-message-input"
+    text: "td"
+
+# 2. The X removes the picked name.
+- eraseText: 10
+
+- inputText: "/sh"
+
+- extendedWaitUntil:
+    visible:
+      id: "skill-mention-row-ship"
+    timeout: 8000
+
+- tapOn:
+    id: "skill-mention-row-ship"
+
+- tapOn:
+    id: "skill-chip-clear"
+
+- assertNotVisible:
+    id: "skill-chip-clear"
+
+# iOS reports an empty field's placeholder as its accessibility label, which
+# Maestro matches as text, so the placeholder is excluded from the pattern.
+- assertNotVisible:
+    id: "chat-message-input"
+    text: "(?!Send a message…$).*[0-9a-zA-Z].*"
+
+# 3. Sending a marked skill delivers `/<name> <rest>`.
+- inputText: "/td"
+
+- extendedWaitUntil:
+    visible:
+      id: "skill-mention-row-tdd"
+    timeout: 8000
+
+- tapOn:
+    id: "skill-mention-row-tdd"
+
+- inputText: "add tests"
+
+# Android CI's IME covers the bar; tap session chrome to blur (05_chat_flow.yaml).
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          point: "50%, 25%"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-send-button"
+    timeout: 15000
+
+- tapOn:
+    id: "chat-send-button"
+
+- waitForAnimationToEnd
+
+# The mock echoes the prompt as a terminal line labelled "Line <n>: <content>".
+- extendedWaitUntil:
+    visible:
+      text: ".*/tdd add tests"
+    timeout: 8000
+
+- runScript:
+    file: scripts/inputs-log.js
+    env:
+      MODE: "assert-last"
+      EXPECT: "/tdd add tests"
+
+# --- Codex session: no panel ---------------------------------------------------------
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-mentions-codex"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 12000
+
+- tapOn:
+    id: "chat-message-input"
+    point: "95%,90%"
+
+- eraseText: 200
+
+- inputText: "/"
+
+# The typed `/` is the positive control: the input took the character, so an
+# absent panel is the gate working and not a keyboard that never opened.
+- assertVisible:
+    id: "chat-message-input"
+    text: "/"
+
+- assertNotVisible:
+    id: "skill-mention-board"
