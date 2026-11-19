@@ -507,6 +507,40 @@ describe('sanitizeEvent — allowlist', () => {
     assertNoLeaks(JSON.stringify(out))
   })
 
+  // Sentry resolves an RN source map from the frame's `app:///` bundle path plus
+  // the bundle's debug ID in `debug_meta`; without both, frames stay minified.
+  it('keeps the app bundle frame path and its sourcemap debug_meta image', () => {
+    const debugId = '3f2c9a1e-5b7d-4c8a-9e1f-0a2b3c4d5e6f'
+    const event = baseEvent()
+    const frames = ((event.exception as { values: { stacktrace: { frames: Record<string, unknown>[] } }[] })
+      .values[0].stacktrace.frames)
+    frames.push({ function: 'captureSafeMessage', filename: 'app:///main.jsbundle', abs_path: 'app:///main.jsbundle', lineno: 1, colno: 4403377 })
+    event.debug_meta = { images: [{ type: 'sourcemap', code_file: 'app:///main.jsbundle', debug_id: debugId }] }
+
+    const out = sanitizeEvent(event) as Record<string, unknown>
+    const exc = (out.exception as { values: Record<string, unknown>[] }).values[0]
+    const outFrames = (exc.stacktrace as { frames: Record<string, unknown>[] }).frames
+    expect(outFrames[1].filename).toBe('app:///main.jsbundle')
+    expect(outFrames[1].abs_path).toBe('app:///main.jsbundle')
+    expect(out.debug_meta).toEqual({ images: [{ type: 'sourcemap', code_file: 'app:///main.jsbundle', debug_id: debugId }] })
+  })
+
+  it('drops debug_meta images that are not app bundle sourcemaps', () => {
+    const event = baseEvent()
+    event.debug_meta = {
+      images: [
+        { type: 'macho', code_file: 'app:///Threadbase', debug_id: '3f2c9a1e-5b7d-4c8a-9e1f-0a2b3c4d5e6f' },
+        { type: 'sourcemap', code_file: LEAKS.absPath, debug_id: '3f2c9a1e-5b7d-4c8a-9e1f-0a2b3c4d5e6f' },
+        { type: 'sourcemap', code_file: LEAKS.serverUrl, debug_id: '3f2c9a1e-5b7d-4c8a-9e1f-0a2b3c4d5e6f' },
+        { type: 'sourcemap', code_file: 'app:///main.jsbundle', debug_id: LEAKS.apiKey },
+        { type: 'sourcemap', code_file: 'app:///../main.jsbundle', debug_id: '3f2c9a1e-5b7d-4c8a-9e1f-0a2b3c4d5e6f' },
+      ],
+    }
+    const out = sanitizeEvent(event) as Record<string, unknown>
+    expect(out.debug_meta).toBeUndefined()
+    assertNoLeaks(JSON.stringify(out))
+  })
+
   it('returns null for garbage / unsanitizable input', () => {
     expect(sanitizeEvent(null)).toBeNull()
     expect(sanitizeEvent(undefined)).toBeNull()
