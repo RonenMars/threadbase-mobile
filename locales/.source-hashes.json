@@ -1277,6 +1277,7 @@
   "terminal.json:input.attachLabel": "0c431f496995",
   "terminal.json:input.expandLabel": "44e7b48df8a8",
   "terminal.json:input.minimizeLabel": "58dbd6a3f245",
+  "terminal.json:input.markdownToggleLabel": "f6881bbc092d",
   "terminal.json:input.suggestionLabel": "e145a648c957",
   "terminal.json:input.suggestionHint": "41c5041f10a0",
   "terminal.json:mentions.close": "78a683fab370",

@@ -2260,6 +2260,30 @@ PODS:
     - ReactNativeDependencies
     - RNWorklets (>= 0.8.0)
     - Yoga
+  - RNLiveMarkdown (0.1.374):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-bridging
+    - React-Core
+    - React-Core-prebuilt
+    - React-cxxstableapi
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNWorklets
+    - Yoga
   - RNReanimated (4.7.1):
     - hermes-engine
     - RCTRequired
@@ -2705,6 +2729,7 @@ DEPENDENCIES:
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - "RNCMaskedView (from `../node_modules/@react-native-masked-view/masked-view`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - "RNLiveMarkdown (from `../node_modules/@expensify/react-native-live-markdown`)"
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - "RNSentry (from `../node_modules/@sentry/react-native`)"
@@ -3000,6 +3025,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-masked-view/masked-view"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
+  RNLiveMarkdown:
+    :path: "../node_modules/@expensify/react-native-live-markdown"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -3063,7 +3090,7 @@ SPEC CHECKSUMS:
   ExpoStatusBar: 38eff05a54229c9a388cb56cef29117b8dc77eb1
   ExpoSystemUI: bfbae2409cccd81019ac00a8f57a8724f0534cfd
   ExpoUI: 9a96576076acd2bc5ac11b8f9ea8bbb7945d95ad
-  ExpoWidgets: b57900a45e7d050055e54a9f2f38304ef41ff2d8
+  ExpoWidgets: f8f0165f63c831d36e42339fcb6c66b31f21662e
   EXStructuredHeaders: d38b81fb2ff838c15bf28135deb247e76293d2b9
   EXUpdates: 43d25293037d061f3e720f4af910d219ea3a6e0d
   EXUpdatesInterface: 1c6a522d0eb0485f4de3fa55d0316288763b3f10
@@ -3157,6 +3184,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: a5164c3ebbe90d992022b5d9cbabbf770a6d7d05
   RNCMaskedView: 89bb912716973f9715102cfe932f3ca6793b21f9
   RNGestureHandler: e19fcf39b0212e0eb8bc7ca1e645500eb492f6be
+  RNLiveMarkdown: a66e07ef904cbcadfcd18b7281b5ec854b838488
   RNReanimated: 3018727dbf272754d0f31ef73f619e49ade7baf0
   RNScreens: 9e5d11963f4616812cd86380d8b27b95cfd72153
   RNSentry: 3cbf06d950d99c59f52035316146024280d02930

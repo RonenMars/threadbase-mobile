@@ -11,6 +11,7 @@ import { ChatComposer, type ChatComposerProps } from '@/components/conversation/
 import { lendComposerFocus, returnComposerFocus } from '@/hooks/useComposerFocus'
 import { DirectionRoot } from '@/lib/direction-root'
 import { renderWithI18n } from '@/test-utils/render'
+import { parseLiveMarkdown, parseNoMarkdown } from '@/lib/markdown/liveRanges'
 import i18n from '@/test-utils/i18n-setup'
 
 // Capture every AppState 'change' listener so a test can drive a background →
@@ -165,6 +166,21 @@ describe('ChatComposer', () => {
     await fireEvent.press(screen.getByTestId('expand-input-button'))
     const safeTop = screen.getByTestId('expanded-composer-safe-top')
     expect(StyleSheet.flatten(safeTop.props.style).paddingTop).toBe(59)
+  })
+
+  it('toggles live markdown on the expanded input only', async () => {
+    await renderComposer({ value: '**draft**' })
+    await fireEvent.press(screen.getByTestId('expand-input-button'))
+    const toggle = () => screen.getByTestId('markdown-toggle-button')
+    const parser = () => screen.getByTestId('message-input-expanded').props.parser
+    expect(toggle().props.accessibilityState).toEqual({ checked: false })
+    expect(parser()).toBe(parseNoMarkdown)
+    await fireEvent.press(toggle())
+    expect(toggle().props.accessibilityState).toEqual({ checked: true })
+    expect(parser()).toBe(parseLiveMarkdown)
+    expect(screen.getByTestId('chat-message-input').props.parser).toBeUndefined()
+    await fireEvent.press(toggle())
+    expect(parser()).toBe(parseNoMarkdown)
   })
   // The gap used to switch discretely on keyboard visibility, jumping 26 pt at
   // the start of every open and the end of every close while the lift animated.
