@@ -519,6 +519,7 @@ const EVENT_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'breadcrumbs',
   'contexts',
   'user',
+  'debug_meta',
 ])
 
 /** Only these `contexts.*` blocks survive, and only their safe sub-fields. */
@@ -550,6 +551,29 @@ function sanitizeExceptionValue(exc: unknown): unknown {
   return out
 }
 
+// The SDK's fixed in-app bundle path (`app:///main.jsbundle`, `app:///index.android.bundle`).
+// Sentry keys source-map lookup on it, and a bare bundle name carries no user data.
+const APP_BUNDLE_PATH = /^app:\/\/\/[\w.-]+$/
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function scrubFramePath(path: string): string {
+  return APP_BUNDLE_PATH.test(path) ? path : scrubString(path)
+}
+
+/** Keep only JS-bundle sourcemap images: the debug ID that resolves a minified frame. */
+function sanitizeDebugMeta(value: unknown): { images: Record<string, string>[] } | undefined {
+  const images = (value as { images?: unknown[] } | undefined)?.images
+  if (!Array.isArray(images)) return undefined
+  const kept = images.flatMap((image) => {
+    const { type, code_file, debug_id } = (image ?? {}) as Record<string, unknown>
+    if (type !== 'sourcemap') return []
+    if (typeof code_file !== 'string' || !APP_BUNDLE_PATH.test(code_file)) return []
+    if (typeof debug_id !== 'string' || !UUID.test(debug_id)) return []
+    return [{ type, code_file, debug_id }]
+  })
+  return kept.length ? { images: kept.slice(0, 5) } : undefined
+}
+
 function sanitizeStackFrame(frame: unknown): unknown {
   if (!frame || typeof frame !== 'object') return {}
   const f = frame as Record<string, unknown>
@@ -558,8 +582,8 @@ function sanitizeStackFrame(frame: unknown): unknown {
   if (typeof f.function === 'string') out.function = scrubString(f.function)
   if (typeof f.module === 'string') out.module = scrubString(f.module)
   // filename may be an absolute path — reduce to basename via scrubbing.
-  if (typeof f.filename === 'string') out.filename = scrubString(f.filename)
-  if (typeof f.abs_path === 'string') out.abs_path = scrubString(f.abs_path)
+  if (typeof f.filename === 'string') out.filename = scrubFramePath(f.filename)
+  if (typeof f.abs_path === 'string') out.abs_path = scrubFramePath(f.abs_path)
   if (typeof f.lineno === 'number') out.lineno = f.lineno
   if (typeof f.colno === 'number') out.colno = f.colno
   if (typeof f.in_app === 'boolean') out.in_app = f.in_app
@@ -787,6 +811,11 @@ export function sanitizeEvent(
         case 'event_id': {
           const id = sanitizeEventId(value)
           if (id !== undefined) out.event_id = id
+          break
+        }
+        case 'debug_meta': {
+          const meta = sanitizeDebugMeta(value)
+          if (meta) out.debug_meta = meta
           break
         }
         case 'sdk':
