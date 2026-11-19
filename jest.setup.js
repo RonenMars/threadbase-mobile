@@ -64,6 +64,13 @@ jest.mock('expo-haptics', () => ({
   NotificationFeedbackType: { Success: 'Success', Warning: 'Warning', Error: 'Error' },
 }))
 
+// ─── react-native-context-menu-view ─────────────────────────────────────────
+// Native-only menu; tests drive it through onPress with a fake nativeEvent.
+jest.mock('react-native-context-menu-view', () => {
+  const { View } = require('react-native')
+  return { __esModule: true, default: View }
+})
+
 // ─── expo-clipboard ──────────────────────────────────────────────────────────
 jest.mock('expo-clipboard', () => ({
   setStringAsync: jest.fn().mockResolvedValue(undefined),

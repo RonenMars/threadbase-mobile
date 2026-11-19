@@ -145,5 +145,14 @@
     "tokens": "{{pre}} → {{post}} טוקנים",
     "expand": "הצג את סיכום הדחיסה",
     "collapse": "הסתר את סיכום הדחיסה"
+  },
+  "messageMenu": {
+    "copy": "העתקת ההודעה",
+    "selectText": "בחירת טקסט",
+    "copyMarkdown": "העתקה כ-Markdown",
+    "copyCode": "העתקת הקוד",
+    "quote": "ציטוט ההודעה",
+    "selectTitle": "בחירת טקסט",
+    "done": "סיום"
   }
 }

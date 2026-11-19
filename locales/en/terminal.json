@@ -59,7 +59,8 @@
     "expandLabel": "Expand input",
     "minimizeLabel": "Minimize input",
     "suggestionLabel": "Send suggestion: {{text}}",
-    "suggestionHint": "Hold to edit before sending"
+    "suggestionHint": "Hold to edit before sending",
+    "removeQuoteLabel": "Remove quote"
   },
   "mentions": {
     "close": "Close file suggestions",
