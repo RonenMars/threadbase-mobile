@@ -57,7 +57,8 @@
     "expandLabel": "הרחב קלט",
     "minimizeLabel": "מזער קלט",
     "suggestionLabel": "שלח הצעה: {{text}}",
-    "suggestionHint": "לחץ והחזק כדי לערוך לפני השליחה"
+    "suggestionHint": "לחץ והחזק כדי לערוך לפני השליחה",
+    "removeQuoteLabel": "הסרת הציטוט"
   },
   "mentions": {
     "close": "סגירת הצעות קבצים",

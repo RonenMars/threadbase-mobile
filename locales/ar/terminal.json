@@ -57,7 +57,8 @@
     "expandLabel": "توسيع حقل الإدخال",
     "minimizeLabel": "تصغير حقل الإدخال",
     "suggestionLabel": "إرسال الاقتراح: {{text}}",
-    "suggestionHint": "اضغط مطولًا للتعديل قبل الإرسال"
+    "suggestionHint": "اضغط مطولًا للتعديل قبل الإرسال",
+    "removeQuoteLabel": "إزالة الاقتباس"
   },
   "mentions": {
     "close": "إغلاق اقتراحات الملفات",

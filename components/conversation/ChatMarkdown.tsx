@@ -46,6 +46,8 @@ interface Props {
   highlight?: string
   matchAnchor?: MatchAnchor
   activeMatch?: boolean
+  /** Off inside a long-press menu, where native selection would steal the gesture. */
+  selectable?: boolean
 }
 
 function contains(haystack: string, needle: string): boolean {
@@ -113,7 +115,7 @@ function Spans({ spans, styles }: { spans: InlineSpan[]; styles: ReturnType<type
   )
 }
 
-export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMatch }: Props) {
+export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMatch, selectable = true }: Props) {
   const { styles, theme } = useThemedStyles(makeStyles)
   const textRef = useRef<HighlightLayoutHandle>(null)
   const needle = highlight && highlight.length > 0 ? highlight : undefined
@@ -153,13 +155,13 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
           searchWords={[needle as string]}
           highlightStyle={activeMatch ? styles.match : styles.matchInactive}
           style={style}
-          textProps={{ selectable: true }}
+          textProps={{ selectable }}
           onMatchesLayout={isAnchor ? reportMatchLayout : undefined}
         />
       )
     }
     return (
-      <Text style={style} selectable>
+      <Text style={style} selectable={selectable}>
         <Spans spans={block.kind === 'code' || block.kind === 'rule' ? [] : block.spans} styles={styles} />
       </Text>
     )
@@ -170,7 +172,7 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
       {blocks.map((block, i) => {
         switch (block.kind) {
           case 'code':
-            return <CodeBlock key={i} code={block.code} language={block.language} />
+            return <CodeBlock key={i} code={block.code} language={block.language} selectable={selectable} />
 
           case 'rule':
             return <View key={i} style={styles.rule} />

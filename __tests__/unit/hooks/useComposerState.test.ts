@@ -164,6 +164,26 @@ describe('useComposerState', () => {
     expect(result.current.inputText).toBe('')
   })
 
+  it('handleSend puts a quote ahead of the prompt in both payload and optimistic text, then clears it', async () => {
+    const onSend = jest.fn().mockResolvedValue(undefined)
+    const { result } = await renderComposer(onSend)
+    await act(() => { result.current.setQuote('first line\nsecond line') })
+    await act(() => { result.current.handleInputChange('why?') })
+    await act(async () => { await result.current.handleSend() })
+    const quoted = '> first line\n> second line\n\nwhy?'
+    expect(onSend).toHaveBeenCalledWith(quoted, quoted)
+    expect(result.current.quote).toBeNull()
+  })
+
+  it('a quote alone does not send', async () => {
+    const onSend = jest.fn()
+    const { result } = await renderComposer(onSend)
+    await act(() => { result.current.setQuote('quoted') })
+    await act(async () => { await result.current.handleSend() })
+    expect(onSend).not.toHaveBeenCalled()
+    expect(result.current.quote).toBe('quoted')
+  })
+
   it('handleSend(text) sends that text through the same path, not the composer text', async () => {
     const onSend = jest.fn().mockResolvedValue(undefined)
     const { result } = await renderComposer(onSend)

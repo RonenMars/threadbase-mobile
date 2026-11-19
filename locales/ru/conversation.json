@@ -140,5 +140,14 @@
   },
   "question": {
     "label": "Вопрос"
+  },
+  "messageMenu": {
+    "copy": "Копировать сообщение",
+    "selectText": "Выбрать текст",
+    "copyMarkdown": "Копировать как Markdown",
+    "copyCode": "Копировать код",
+    "quote": "Цитировать сообщение",
+    "selectTitle": "Выбор текста",
+    "done": "Готово"
   }
 }
