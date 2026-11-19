@@ -145,6 +145,14 @@ const MENTIONS_TREE = {
   },
 }
 
+// The `/` skills picker's list (skill_mentions.yaml), the shape the streamer's
+// GET /api/sessions/:id/skills returns.
+const SKILLS = [
+  { name: 'tdd', description: 'Test-driven development.', source: 'user' },
+  { name: 'ship', description: 'Ship the current branch.', source: 'project' },
+  { name: 'ponytail:ponytail-audit', description: 'Audit for over-engineering.', source: 'plugin' },
+]
+
 // Sessions pushed through /__test__/session-update. The list route replays them,
 // because the client refetches the list when a frame names a session it has not
 // seen, and a fixtures-only reply would undo every update sent before it.
@@ -619,6 +627,10 @@ async function handleRequest(req, res) {
   // MENTIONS_TREE folders, which feed the composer's `@` picker
   // (file_mentions.yaml). Other flows only need the breadcrumb row to render
   // the requested cwd.
+  if (method === 'GET' && /^\/api\/sessions\/[^/]+\/skills$/.test(p)) {
+    return json(res, 200, { skills: SKILLS })
+  }
+
   if (method === 'GET' && p === '/api/browse') {
     const listing = MENTIONS_TREE[url.searchParams.get('path')]
     return json(res, 200, listing ?? { directories: [] })

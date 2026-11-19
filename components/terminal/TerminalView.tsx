@@ -177,6 +177,7 @@ export function TerminalView({
     serverId,
     projectPath,
     provider,
+    sessionId,
     text: inputText,
     onChangeText: handleInputChange,
   })
@@ -260,7 +261,7 @@ export function TerminalView({
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
-        onSend={handleSend}
+        onSend={() => handleSend(fileMentions.skillPayload)}
         // Send only, and only while the card is answerable. A pending ghost
         // blocks nothing, so an answer the server never confirms cannot strand
         // the composer — which is what makes the five exits from `active` a
@@ -294,6 +295,9 @@ export function TerminalView({
         mention={fileMentions.mention}
         selection={fileMentions.selection}
         onSelectionChange={fileMentions.onSelectionChange}
+        slash={fileMentions.slash}
+        skill={fileMentions.skill}
+        onClearSkill={fileMentions.clearSkill}
       />
 
       <SlashCommandBoard

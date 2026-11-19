@@ -1,12 +1,14 @@
 import React from 'react'
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
-import { At, CaretRight, File, Folder, X } from 'phosphor-react-native'
+import { At, CaretRight, File, Folder, Lightning, X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { useMentionEntries, type MentionListState } from '@/hooks/useMentionEntries'
-import type { ComposerMention } from '@/hooks/useFileMentions'
+import { useSkillEntries } from '@/hooks/useSkillEntries'
+import type { ComposerMention, ComposerSlash } from '@/hooks/useFileMentions'
 import type { MentionEntry } from '@/lib/mentionToken'
+import type { SkillEntry } from '@/lib/slashToken'
 import type { RtlStyleKit } from '@/lib/rtl'
 
 interface BoardProps {
@@ -30,18 +32,13 @@ export function FileMentionBoard({ dir, query, list, onSelect, onDismiss }: Boar
 
   let body: React.ReactNode
   if (list.status === 'loading') {
-    body = (
-      <View style={styles.message}>
-        <ActivityIndicator size="small" color={theme.text.secondary} />
-      </View>
-    )
+    body = <BoardMessage />
   } else if (list.status === 'unsupported') {
-    body = <Text style={[styles.message, styles.messageText]}>{t('mentions.unsupported')}</Text>
+    body = <BoardMessage text={t('mentions.unsupported')} />
   } else if (list.status === 'error') {
-    body = <Text style={[styles.message, styles.messageText]}>{t('mentions.error')}</Text>
+    body = <BoardMessage text={t('mentions.error')} />
   } else if (list.entries.length === 0) {
-    const emptyText = query ? t('mentions.empty', { query }) : t('mentions.emptyFolder')
-    body = <Text style={[styles.message, styles.messageText]}>{emptyText}</Text>
+    body = <BoardMessage text={query ? t('mentions.empty', { query }) : t('mentions.emptyFolder')} />
   } else {
     body = (
       <FlatList
@@ -56,25 +53,63 @@ export function FileMentionBoard({ dir, query, list, onSelect, onDismiss }: Boar
   }
 
   return (
-    <View style={styles.board} testID="file-mention-board">
+    <MentionBoardShell
+      testIDPrefix="file-mention"
+      icon={<At size={14} color={theme.text.accent} />}
+      title={location}
+      closeLabel={t('mentions.close')}
+      onDismiss={onDismiss}
+    >
+      {body}
+    </MentionBoardShell>
+  )
+}
+
+interface ShellProps {
+  testIDPrefix: string
+  icon: React.ReactNode
+  title: string
+  closeLabel: string
+  onDismiss: () => void
+  children: React.ReactNode
+}
+
+/** Header with a close X over the body; shared by the `@` and `/` pickers. */
+function MentionBoardShell({ testIDPrefix, icon, title, closeLabel, onDismiss, children }: ShellProps) {
+  const { styles, theme } = useThemedStyles(makeStyles)
+  return (
+    <View style={styles.board} testID={`${testIDPrefix}-board`}>
       <View style={styles.header}>
-        <At size={14} color={theme.text.accent} />
+        {icon}
         <Text style={styles.location} numberOfLines={1} ellipsizeMode="head">
-          {location}
+          {title}
         </Text>
         <TouchableOpacity
-          testID="file-mention-close"
+          testID={`${testIDPrefix}-close`}
           onPress={onDismiss}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={t('mentions.close')}
+          accessibilityLabel={closeLabel}
         >
           <X size={14} color={theme.text.secondary} />
         </TouchableOpacity>
       </View>
-      {body}
+      {children}
     </View>
   )
+}
+
+/** A line of text in place of the list; no text shows the loading spinner. */
+function BoardMessage({ text }: { text?: string }) {
+  const { styles, theme } = useThemedStyles(makeStyles)
+  if (text === undefined) {
+    return (
+      <View style={styles.message}>
+        <ActivityIndicator size="small" color={theme.text.secondary} />
+      </View>
+    )
+  }
+  return <Text style={[styles.message, styles.messageText]}>{text}</Text>
 }
 
 interface RowProps {
@@ -115,6 +150,72 @@ export function FileMentionPanel({ mention }: { mention: ComposerMention }) {
   const { serverId, projectPath, token, onSelect, onDismiss } = mention
   const list = useMentionEntries(serverId, projectPath, token.dir, token.query)
   return <FileMentionBoard dir={token.dir} query={token.query} list={list} onSelect={onSelect} onDismiss={onDismiss} />
+}
+
+/** The `/` picker: the session's Claude Code skills and commands. */
+export function SkillMentionPanel({ slash }: { slash: ComposerSlash }) {
+  const { t } = useTranslation('terminal')
+  const { styles, theme } = useThemedStyles(makeStyles)
+  const { token, onSelect, onDismiss } = slash
+  const list = useSkillEntries(slash.serverId, slash.sessionId, token.query)
+
+  let body: React.ReactNode
+  if (list.status === 'loading') {
+    body = <BoardMessage />
+  } else if (list.status === 'unsupported') {
+    body = <BoardMessage text={t('skills.unsupported')} />
+  } else if (list.status === 'error') {
+    body = <BoardMessage text={t('skills.error')} />
+  } else if (list.skills.length === 0) {
+    body = <BoardMessage text={token.query ? t('skills.empty', { query: token.query }) : t('skills.none')} />
+  } else {
+    body = (
+      <FlatList
+        data={list.skills}
+        keyExtractor={(item) => item.name}
+        renderItem={({ item }) => <SkillRow skill={item} onPress={() => onSelect(item)} styles={styles} />}
+        style={styles.list}
+        keyboardShouldPersistTaps="always"
+        showsVerticalScrollIndicator={false}
+      />
+    )
+  }
+
+  return (
+    <MentionBoardShell
+      testIDPrefix="skill-mention"
+      icon={<Lightning size={14} color={theme.text.accent} />}
+      title={t('skills.title')}
+      closeLabel={t('skills.close')}
+      onDismiss={onDismiss}
+    >
+      {body}
+    </MentionBoardShell>
+  )
+}
+
+function SkillRow({ skill, onPress, styles }: { skill: SkillEntry; onPress: () => void; styles: ReturnType<typeof makeStyles> }) {
+  return (
+    <TouchableOpacity
+      testID={`skill-mention-row-${skill.name}`}
+      style={styles.row}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={skill.description ? `${skill.name}, ${skill.description}` : skill.name}
+    >
+      <View style={styles.skillText}>
+        <Text style={styles.name} numberOfLines={1}>
+          {skill.name}
+        </Text>
+        {skill.description ? (
+          <Text style={styles.description} numberOfLines={1}>
+            {skill.description}
+          </Text>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  )
 }
 
 function makeStyles(theme: Theme, rtl: RtlStyleKit) {
@@ -158,6 +259,12 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       flex: 1,
       color: theme.text.primary,
       fontSize: font.sm,
+    },
+    skillText: { flex: 1, paddingVertical: spacing.xs },
+    description: {
+      ...rtl.copy,
+      color: theme.text.secondary,
+      fontSize: font.xs,
     },
     message: {
       padding: spacing.md,

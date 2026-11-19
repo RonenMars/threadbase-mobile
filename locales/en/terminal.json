@@ -68,6 +68,15 @@
     "folderLabel": "Folder {{name}}",
     "fileLabel": "File {{name}}"
   },
+  "skills": {
+    "title": "Skills",
+    "close": "Close skill suggestions",
+    "unsupported": "Skills aren't available for this session.",
+    "error": "Couldn't load skills. Check your connection.",
+    "empty": "No skills match “{{query}}”",
+    "none": "No skills found for this session.",
+    "clear": "Remove skill {{name}}"
+  },
   "preview": {
     "openLabel": "Preview {{name}}",
     "close": "Close preview",
