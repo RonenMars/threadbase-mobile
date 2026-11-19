@@ -416,6 +416,7 @@ export function ChatComposer({
     <TouchableOpacity
       testID="chat-mic-button"
       style={styles.sendBtn}
+      hitSlop={10}
       onPress={onToggleMic}
       accessibilityLabel={t('voice.stop')}
     >
@@ -425,6 +426,7 @@ export function ChatComposer({
     <TouchableOpacity
       testID="chat-send-button"
       style={[styles.sendBtn, (disabled || sendDisabled) && styles.disabled]}
+      hitSlop={10}
       onPress={handleSend}
       disabled={disabled || sendDisabled}
       accessibilityLabel={t('action.sendInput')}
@@ -435,6 +437,7 @@ export function ChatComposer({
     <TouchableOpacity
       testID="chat-mic-button"
       style={[styles.sendBtn, disabled && styles.disabled]}
+      hitSlop={10}
       onPress={onToggleMic}
       disabled={disabled}
       accessibilityLabel={t('voice.start')}
@@ -445,6 +448,7 @@ export function ChatComposer({
     <TouchableOpacity
       testID="chat-send-button"
       style={[styles.sendBtn, styles.disabled]}
+      hitSlop={10}
       disabled
       accessibilityLabel={t('action.sendInput')}
     >
@@ -626,6 +630,7 @@ export function ChatComposer({
                 <TouchableOpacity
                   testID="expanded-send-button"
                   style={[styles.sendBtn, (!hasContent || disabled || sendDisabled) && styles.disabled]}
+                  hitSlop={10}
                   onPress={() => {
                     handleSend()
                     minimizeOnCloseRef.current = true
