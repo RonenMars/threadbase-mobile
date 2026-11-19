@@ -12,7 +12,7 @@ export function CardSpine({ color }: { color: string | null }) {
   return color ? <View style={[styles.spine, { backgroundColor: color }]} /> : <View style={styles.spinePlaceholder} />
 }
 
-export function CardTitleBlock({ parentLabel, title, subtitle, activityLine, titleLines = 1 }: { parentLabel?: string; title: string; subtitle?: string; activityLine?: string; titleLines?: number }) {
+export function CardTitleBlock({ parentLabel, title, subtitle, activityLine, titleLines = 1, extra }: { parentLabel?: string; title: string; subtitle?: string; activityLine?: string; titleLines?: number; extra?: React.ReactNode }) {
   const { styles } = useThemedStyles(makeStyles)
   return (
     <View style={styles.headerBody}>
@@ -20,6 +20,7 @@ export function CardTitleBlock({ parentLabel, title, subtitle, activityLine, tit
       <Text style={styles.headerSuffix} numberOfLines={titleLines}>{title}</Text>
       {subtitle ? <Text style={styles.headerActivity} numberOfLines={1}>{subtitle}</Text> : null}
       {activityLine ? <Text style={styles.headerActivity} numberOfLines={1}>{activityLine}</Text> : null}
+      {extra}
     </View>
   )
 }
