@@ -36,6 +36,9 @@ export type WSMessage =
   // subscribers, never routed through session_update (it can fire every scrape
   // tick). `phase: null` clears it. Additive; old streamers never send it.
   | { type: 'session_phase'; sessionId: string; phase: AgentPhase | null; updatedAt: string }
+  // A parent conversation's sub-agent count changed. `total` is the full count
+  // (never a delta); the HTTP `?parent=` read stays authoritative. Additive.
+  | { type: 'subagents_changed'; parentId: string; total: number; updatedAt: string }
   // Liveness only. Carries nothing to render; its job is to reset the silence
   // watchdog in useTerminalStream on an otherwise idle socket (#946).
   | { type: 'ping'; ts: number }

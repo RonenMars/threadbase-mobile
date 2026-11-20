@@ -1,7 +1,10 @@
 import React from 'react'
+import { act } from 'react'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import { useRouter } from 'expo-router'
 import { SubagentSection } from '@/components/conversation/SubagentSection'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { SUBAGENT_COUNT_POLL_MS, applySubagentsChanged } from '@/hooks/useSubagents'
 import { createWrapper } from '@/test-utils'
 import '@/test-utils/i18n-setup'
 
@@ -26,10 +29,53 @@ const child = (id: string, over: Record<string, unknown> = {}) => ({
 beforeEach(() => mockGet.mockReset())
 
 describe('SubagentSection', () => {
-  it('fetches nothing while collapsed', async () => {
+  it('fetches only the count (limit=1), never the list, while collapsed, and shows it', async () => {
+    mockGet.mockResolvedValue({ conversations: [child('a')], hasMore: true, offset: 0, total: 2 })
     const r = await render(<SubagentSection serverId="s1" parentId="p1" />, { wrapper: createWrapper() })
-    expect(mockGet).not.toHaveBeenCalled()
-    expect(r.getByTestId('subagent-toggle')).toBeTruthy()
+    await waitFor(() => expect(r.getByText('Sub-agents (2)')).toBeTruthy())
+    expect(mockGet).toHaveBeenCalledTimes(1)
+    expect(mockGet.mock.calls[0][0]).toBe('/api/conversations?parent=p1&limit=1')
+    expect(r.queryByTestId('subagent-row-a')).toBeNull()
+  })
+
+  it('moves the collapsed header when subagents_changed is applied for this parent only', async () => {
+    mockGet.mockResolvedValue({ conversations: [child('a')], hasMore: true, offset: 0, total: 2 })
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const r = await render(<SubagentSection serverId="s1" parentId="p1" />, { wrapper })
+    await waitFor(() => expect(r.getByText('Sub-agents (2)')).toBeTruthy())
+
+    // React Query notifies observers on a timer, so let it flush before asserting "unchanged".
+    const apply = (serverId: string, parentId: string, total: number) =>
+      act(async () => {
+        applySubagentsChanged(qc, serverId, parentId, total)
+        await new Promise((res) => setTimeout(res, 20))
+      })
+    await apply('s1', 'other', 9)
+    await apply('s2', 'p1', 8)
+    expect(r.getByText('Sub-agents (2)')).toBeTruthy()
+    expect(qc.getQueryData(['subagent-count', 's1', 'other'])).toBeUndefined()
+
+    await apply('s1', 'p1', 3)
+    await waitFor(() => expect(r.getByText('Sub-agents (3)')).toBeTruthy())
+  })
+
+  it('polls the count as a fallback when no frame arrives', async () => {
+    jest.useFakeTimers()
+    try {
+      mockGet.mockResolvedValueOnce({ conversations: [child('a')], hasMore: true, offset: 0, total: 1 })
+      mockGet.mockResolvedValue({ conversations: [child('a')], hasMore: true, offset: 0, total: 2 })
+      const r = await render(<SubagentSection serverId="s1" parentId="p1" />, { wrapper: createWrapper() })
+      await waitFor(() => expect(r.getByText('Sub-agents (1)')).toBeTruthy())
+      await act(async () => {
+        jest.advanceTimersByTime(SUBAGENT_COUNT_POLL_MS + 100)
+      })
+      await waitFor(() => expect(r.getByText('Sub-agents (2)')).toBeTruthy())
+    } finally {
+      jest.useRealTimers()
+    }
   })
 
   it('on expand lists children with label fallback, type tag and active dot, and opens read-only on tap', async () => {

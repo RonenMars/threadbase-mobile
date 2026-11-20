@@ -1,10 +1,13 @@
-import { useInfiniteQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, type QueryClient } from '@tanstack/react-query'
 import { createApiForServer } from '@/services/api-client'
 import { isSubagentPageSupported } from '@/lib/subagents'
 import type { Conversation, ConversationPage } from '@/types/api'
 
 const LIMIT = 50
 export const SUBAGENT_POLL_MS = 5000
+// Backstop for the count only: the `subagents_changed` frame is the fast path,
+// this heals a frame a backgrounded socket missed and an older streamer.
+export const SUBAGENT_COUNT_POLL_MS = 15000
 
 interface SubagentPage {
   items: Conversation[]
@@ -56,4 +59,34 @@ export function useSubagents(serverId: string, parentId: string, opts?: { enable
     isFetchingNextPage: query.isFetchingNextPage,
     refetch: query.refetch,
   }
+}
+
+/**
+ * Live sub-agent count for the header, independent of expansion. The streamer
+ * pushes `subagents_changed` (full total, never a delta); polling `?parent=`
+ * with `limit=1` backs it up. `null` = unknown or unsupported by the streamer.
+ */
+export function useSubagentCount(serverId: string, parentId: string): number | null {
+  const { data } = useQuery({
+    queryKey: ['subagent-count', serverId, parentId] as const,
+    queryFn: async ({ signal }): Promise<number | null> => {
+      const raw = await createApiForServer(serverId).get<ConversationPage | Conversation[]>(
+        `/api/conversations?parent=${encodeURIComponent(parentId)}&limit=1`,
+        { signal },
+      )
+      if (Array.isArray(raw) || typeof raw?.total !== 'number') return null
+      return isSubagentPageSupported((raw.conversations ?? []).filter(Boolean), parentId) ? raw.total : null
+    },
+    enabled: !!serverId && !!parentId,
+    refetchInterval: SUBAGENT_COUNT_POLL_MS,
+  })
+
+  return data ?? null
+}
+
+/** Apply a `subagents_changed` frame: existing queries only, so an unmounted parent costs nothing. */
+export function applySubagentsChanged(qc: QueryClient, serverId: string, parentId: string, total: number) {
+  qc.setQueriesData({ queryKey: ['subagent-count', serverId, parentId] }, total)
+  // Only refetches the list if it is mounted, i.e. the section is expanded.
+  void qc.invalidateQueries({ queryKey: ['subagents', serverId, parentId] })
 }
