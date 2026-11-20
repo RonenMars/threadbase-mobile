@@ -474,6 +474,18 @@ describe('SessionBoard from 768 up', () => {
     expect(selected(r, 'working')).toBe(true)
   })
 
+  it('keeps the start column when a Needs you card lands before the settled board paints', async () => {
+    const raf = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(() => 0)
+    try {
+      const r = await renderBoard()
+      await waitFor(() => expect(r.queryByTestId('board-pane-needsYou')).toBeNull())
+      await r.rerender(board([...items, row(waiting())]))
+      expect(selected(r, 'working')).toBe(true)
+    } finally {
+      raf.mockRestore()
+    }
+  })
+
   it('hides the arrows when every column fits and moves one column at a time when not', async () => {
     const r = await renderBoard()
     await settle(r, 'external')
