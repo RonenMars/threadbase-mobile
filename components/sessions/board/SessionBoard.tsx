@@ -6,7 +6,7 @@ import { buildNowEntries, type NowEntry } from '@/components/sessions/now/nowEnt
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { TABLET_BREAKPOINT } from '@/constants/theme'
 import { useAllSubagents } from '@/hooks/useAllSubagents'
-import { bucketBoard, startingColumn, subagentParentKeys, type BoardColumnId } from '@/lib/boardColumns'
+import { bucketBoard, firstNonEmptyColumn, startingColumn, subagentParentKeys, type BoardColumnId } from '@/lib/boardColumns'
 import { promptRefetchKey } from '@/lib/boardPrompts'
 import { groupSubagentsByParent, resolveSubagentLabel } from '@/lib/subagents'
 import { useServersStore } from '@/stores/servers'
@@ -125,7 +125,9 @@ export function SessionBoard({
 
   // Unset until the user moves, so a Needs you card that arrives after the first paint still decides where the board starts.
   const [picked, setPicked] = useState<BoardColumnId | null>(null)
-  const column = picked ?? startingColumn(board, rememberedColumn)
+  const preferred = picked ?? startingColumn(board, rememberedColumn)
+  // Sub-agents only hides the session cards, so the remembered column can be empty while another holds every card.
+  const column = subagentsOnly && board[preferred].length === 0 ? firstNonEmptyColumn(board) : preferred
   const selectColumn = useCallback((id: BoardColumnId) => {
     setPicked(id)
     setBoardColumn(id)

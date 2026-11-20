@@ -63,7 +63,6 @@ import { useClaimInline } from '@/hooks/useClaimInline'
 import { SubagentBoard } from '@/components/sessions/SubagentBoard'
 import { SessionBoard } from '@/components/sessions/board/SessionBoard'
 import { useAllSubagents } from '@/hooks/useAllSubagents'
-import { groupSubagentsByParent } from '@/lib/subagents'
 import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { serverCause } from '@/types/alerts'
 import { PROVIDER_COLOR } from '@/constants/providers'
@@ -375,11 +374,7 @@ export default function ProjectsHub() {
   const providerCounts = useMemo(() => countByProvider(displayedItems), [displayedItems])
   // Same query key as the board's own, so this shares its data and fetches nothing extra.
   const boardSubagents = useAllSubagents(activeServerIds, { enabled: showBoard && subagentsOnly })
-  const subagentGroupCount = useMemo(
-    () => groupSubagentsByParent(boardSubagents.items.map((i) => i.conversation)).length,
-    [boardSubagents.items],
-  )
-  const resultCount = showBoard && subagentsOnly ? subagentGroupCount : displayedItems.length
+  const resultCount = showBoard && subagentsOnly ? boardSubagents.items.length : displayedItems.length
   // Preset visibility is the loaded catalog, not the badge counts. Those follow
   // the active filter, so unchecking Needs you would otherwise hide the preset.
   const needsYouAvailable = useMemo(() => countByTier(mergedClassicItems).needsYou, [mergedClassicItems])

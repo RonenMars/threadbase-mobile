@@ -269,6 +269,17 @@ describe('SessionBoard cards', () => {
     expect(mockPush).toHaveBeenCalledTimes(1)
   })
 
+  it('moves off an empty remembered column when only finished sub-agents show', async () => {
+    useSettingsStore.setState({ boardColumn: 'working' })
+    mockGet.mockResolvedValue({ conversations: [sub('a1', 'p', false)], hasMore: false, offset: 0, total: 1 })
+    const r = await render(
+      <SessionBoard items={[row(running)]} searchQuery="" conversationsFromServer={false} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={jest.fn()} subagentsOnly />,
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1'))
+    expect(selected(r, 'earlier')).toBe(true)
+  })
+
   it('shows one line when sub-agents fail to load and keeps the rest of the board', async () => {
     mockGet.mockRejectedValue(new Error('down'))
     const r = await renderBoard()
