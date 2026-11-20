@@ -3,11 +3,15 @@ import { View, Text, ScrollView, RefreshControl, StyleSheet, ActivityIndicator, 
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as Haptics from 'expo-haptics'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { SubagentRow } from '@/components/sessions/hub/SubagentRow'
 import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
+import { CardSpine, CardTitleBlock } from '@/components/sessions/base/CollapsibleCardParts'
+import { Card } from '@/components/ui/Card'
+import { MessagePreview } from '@/components/sessions/shared/MessagePreview'
 import { SectionEyebrow } from '@/components/sessions/now/SectionEyebrow'
 import { dayBucketLabel, groupByDayBucket, isDayBucketOpen } from '@/components/sessions/shared/dayBuckets'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
@@ -16,6 +20,7 @@ import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { makeStyles as makeCardStyles } from '@/components/sessions/base/CollapsibleCard.styles'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
+import { useNavLockStore } from '@/stores/navLock'
 import { useAllSubagents } from '@/hooks/useAllSubagents'
 import { conversationHref } from '@/lib/conversationHref'
 import { isLiveAttachedPty } from '@/lib/sessionLeavePolicy'
@@ -169,12 +174,17 @@ export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenPar
   const styles = useMemo(() => makeStyles(theme), [theme])
   const [showAll, setShowAll] = useState(false)
 
+  const router = useRouter()
+  // A one-sub-agent card has nothing to expand: the card itself carries what the row would have shown.
+  const solo = parentTitle !== undefined
+
   const types = new Set(g.items.map((c) => resolveSubagentType(c)))
   const sharedType = types.size === 1 ? [...types][0] : undefined
   const lastActivity = formatListTime(g.items[0].lastActivity)
   const activityLine = [
-    g.activeCount > 0 ? t('subagents.board.parentActive', { n: g.activeCount }) : null,
+    g.activeCount > 0 && !solo ? t('subagents.board.parentActive', { n: g.activeCount }) : null,
     sharedType ?? null,
+    solo ? t('card.messages', { count: g.items[0].messageCount }) : null,
     lastActivity ? t('hub.activityLast', { time: lastActivity }) : null,
   ]
     .filter(Boolean)
@@ -182,6 +192,44 @@ export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenPar
 
   const capped = g.items.length > COLLAPSED_ROWS
   const rows = capped && !showAll ? g.items.slice(0, COLLAPSED_ROWS) : g.items
+
+  if (solo) {
+    const c = g.items[0]
+    const label = resolveSubagentLabel(c)
+    return (
+      <View style={styles.cardWrap} testID={`subagent-group-${g.parentId}`}>
+        <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
+          <View style={card.spineRow}>
+            <CardSpine color={g.activeCount > 0 ? theme.status.running : theme.border} />
+            <TouchableOpacity
+              style={[card.spineRowBody, card.header]}
+              activeOpacity={0.75}
+              onPress={() => {
+                Haptics.selectionAsync()
+                useNavLockStore.getState().lock()
+                router.push(`/conversation/${c.id}?server=${serverIdFor(c.id)}`)
+              }}
+              onLongPress={onOpenParent}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              testID={`subagent-group-toggle-${cardId}`}
+            >
+              {c.subagentActive === true ? (
+                <View style={styles.activeDot} accessibilityLabel={t('subagents.active')} testID={`subagent-board-active-${c.id}`} />
+              ) : null}
+              <CardTitleBlock
+                title={label}
+                titleLines={2}
+                subtitle={parentTitle}
+                activityLine={activityLine || undefined}
+                extra={<MessagePreview mode="first" firstMessage={c.firstMessage} preview={c.preview} rowTitle={label} />}
+              />
+            </TouchableOpacity>
+          </View>
+        </Card>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.cardWrap} testID={`subagent-group-${g.parentId}`}>
@@ -249,6 +297,7 @@ function makeStyles(theme: Theme) {
     eyebrow: { marginHorizontal: spacing.md },
     cardWrap: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
     footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
+    activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.status.running },
     footerLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
   })
 }

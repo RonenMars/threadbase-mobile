@@ -251,7 +251,7 @@ describe('SessionBoard cards', () => {
   })
 
   it('gives every sub-agent its own card, sorted by its own state, when only sub-agents show', async () => {
-    mockGet.mockResolvedValue({ conversations: [sub('a1', 'p', true), sub('a2', 'p', true), sub('a3', 'p', false)], hasMore: false, offset: 0, total: 3 })
+    mockGet.mockResolvedValue({ conversations: [{ ...sub('a1', 'p', true), preview: 'Audit lockfile drift' }, sub('a2', 'p', true), sub('a3', 'p', false)], hasMore: false, offset: 0, total: 3 })
     const r = await render(
       <SessionBoard items={[row(running)]} searchQuery="" conversationsFromServer={false} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={jest.fn()} subagentsOnly />,
       { wrapper: createWrapper() },
@@ -259,14 +259,19 @@ describe('SessionBoard cards', () => {
     await waitFor(() => expect(r.getByTestId('board-column-working')).toHaveTextContent('Working2'))
     expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1')
     expect(r.queryByText('Scan the worktrees')).toBeNull()
-    await fireEvent.press(r.getByTestId('subagent-group-toggle-orphan:p:a1'))
-    expect(r.getByTestId('conversation-row-a1')).toBeTruthy()
-    expect(r.queryByTestId('conversation-row-a2')).toBeNull()
+    // One sub-agent per card: no count badge or expandable body, the card carries the row's extras.
+    expect(r.queryByTestId('conversation-row-a1')).toBeNull()
+    expect(r.getByTestId('subagent-board-active-a1')).toBeTruthy()
+    expect(r.queryByTestId('subagent-board-active-a3')).toBeNull()
+    expect(r.getAllByText(/2 messages/)).toHaveLength(3)
+    expect(r.getByText('Audit lockfile drift')).toBeTruthy()
     expect(r.getAllByText('Session p')).toHaveLength(3)
     expect(r.queryByText('Open parent session')).toBeNull()
     expect(mockPush).not.toHaveBeenCalled()
+    await fireEvent.press(r.getByTestId('subagent-group-toggle-orphan:p:a1'))
+    expect(mockPush).toHaveBeenLastCalledWith('/conversation/a1?server=server-1')
     await fireEvent(r.getByTestId('subagent-group-toggle-orphan:p:a1'), 'longPress')
-    expect(mockPush).toHaveBeenCalledTimes(1)
+    expect(mockPush).toHaveBeenCalledTimes(2)
   })
 
   it('moves off an empty remembered column when only finished sub-agents show', async () => {
