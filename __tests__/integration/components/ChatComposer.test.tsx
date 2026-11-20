@@ -211,6 +211,14 @@ describe('ChatComposer', () => {
     expect(props.onSend).toHaveBeenCalled()
   })
 
+  it('extends the send and mic touch targets past their visible edge', async () => {
+    await renderComposer({ value: 'hello', micGranted: true })
+    expect(screen.getByTestId('chat-send-button').props.hitSlop).toBe(10)
+    expect(StyleSheet.flatten(screen.getByTestId('chat-send-button').props.style).width).toBe(56)
+    await renderComposer({ value: '', micGranted: true })
+    expect(screen.getByTestId('chat-mic-button').props.hitSlop).toBe(10)
+  })
+
   // Keyboard decision D1 (docs/audits/composer-keyboard/): sending is part of
   // composing, so the keyboard stays and the user can type the next message.
   it('keeps the keyboard up when a message is sent', async () => {
