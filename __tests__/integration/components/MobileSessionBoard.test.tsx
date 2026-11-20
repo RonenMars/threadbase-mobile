@@ -39,6 +39,7 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 }))
 
 const mockSetPage = jest.fn()
+const mockSnapPage = jest.fn()
 const mockPager: { select?: (position: number) => void } = {}
 jest.mock('react-native-pager-view', () => {
   const R = jest.requireActual<typeof import('react')>('react')
@@ -46,7 +47,7 @@ jest.mock('react-native-pager-view', () => {
   return {
     __esModule: true,
     default: R.forwardRef(function MockPager({ children, testID, onPageSelected }: MockPagerProps, ref: React.Ref<{ setPage: (n: number) => void }>) {
-      R.useImperativeHandle(ref, () => ({ setPage: mockSetPage, setPageWithoutAnimation: mockSetPage }))
+      R.useImperativeHandle(ref, () => ({ setPage: mockSetPage, setPageWithoutAnimation: mockSnapPage }))
       mockPager.select = (position) => onPageSelected({ nativeEvent: { position } })
       return R.createElement(View, { testID }, children)
     }),
@@ -129,7 +130,21 @@ const board = (list: MergedItem[], onPromptsChanged: () => void = jest.fn(), sea
 const renderBoard = (list: MergedItem[] = items, onPromptsChanged?: () => void, searchQuery?: string, conversationsFromServer?: boolean) =>
   render(board(list, onPromptsChanged, searchQuery, conversationsFromServer), { wrapper: createWrapper() })
 
-const selected = (r: Awaited<ReturnType<typeof renderBoard>>, id: BoardColumnId) => r.getByTestId(`board-column-${id}`).props.accessibilityState.selected
+type Rendered = Awaited<ReturnType<typeof renderBoard>>
+const selected = (r: Rendered, id: BoardColumnId) => r.getByTestId(`board-column-${id}`).props.accessibilityState.selected
+// The board holds every column until its sub-agent query lands, then drops the empty ones.
+type Node = { props: { entering?: object }; children: (Node | string)[] | null }
+const countAnimated = (node: Node | string | null): number =>
+  node == null || typeof node === 'string' ? 0 : (node.props.entering ? 1 : 0) + (node.children ?? []).reduce((n, c) => n + countAnimated(c), 0)
+const animated = (r: Rendered) => {
+  const tree = r.toJSON() as Node | Node[] | null
+  return Array.isArray(tree) ? tree.reduce((n, c) => n + countAnimated(c), 0) : countAnimated(tree)
+}
+// Animations start a frame after the board settles, so a test that moves cards waits for both.
+const settle = async (r: Rendered, hidden: BoardColumnId) => {
+  await waitFor(() => expect(r.queryByTestId(`board-column-${hidden}`)).toBeNull())
+  await waitFor(() => expect(animated(r)).toBeGreaterThan(0))
+}
 
 beforeEach(() => {
   useServersStore.setState({ activeServerIds: ['server-1'] })
@@ -137,18 +152,20 @@ beforeEach(() => {
   mockGet.mockReset()
   mockGet.mockResolvedValue({ conversations: [], hasMore: false, offset: 0, total: 0 })
   mockSetPage.mockClear()
+  mockSnapPage.mockClear()
   mockPush.mockClear()
   mockAnswer.mockReset()
   mockAnswer.mockResolvedValue()
 })
 
 describe('SessionBoard columns', () => {
-  it('starts on the first column with sessions and counts each column in cards', async () => {
+  it('starts on the first column with sessions, counts each column in cards, and hides the empty ones', async () => {
     const r = await renderBoard()
+    await settle(r, 'external')
     expect(selected(r, 'working')).toBe(true)
     expect(r.getByTestId('board-column-working')).toHaveTextContent('Working1')
     expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1')
-    expect(r.getByTestId('board-column-external')).toHaveTextContent('External0')
+    expect(r.queryByTestId('board-column-needsYou')).toBeNull()
   })
 
   it('starts on Needs you when something waits, whatever was remembered', async () => {
@@ -157,27 +174,70 @@ describe('SessionBoard columns', () => {
     expect(selected(r, 'needsYou')).toBe(true)
   })
 
-  it('starts on the remembered column when nothing waits, even an empty one', async () => {
+  it('starts on the remembered column when nothing waits, and leaves it once it turns out empty', async () => {
     useSettingsStore.setState({ boardColumn: 'external' })
     const r = await renderBoard()
     expect(selected(r, 'external')).toBe(true)
+    await settle(r, 'external')
+    expect(selected(r, 'working')).toBe(true)
     expect(r.getByTestId('board-pager')).toBeTruthy()
   })
 
   it('turns the pager from a chip, and a swipe moves the selected chip and is remembered', async () => {
     const r = await renderBoard()
+    await settle(r, 'external')
     await fireEvent.press(r.getByTestId('board-column-earlier'))
-    expect(mockSetPage).toHaveBeenCalledWith(3)
+    expect(mockSetPage).toHaveBeenCalledWith(1)
     expect(useSettingsStore.getState().boardColumn).toBe('earlier')
     await act(async () => mockPager.select?.(0))
-    expect(selected(r, 'needsYou')).toBe(true)
-    expect(useSettingsStore.getState().boardColumn).toBe('needsYou')
+    expect(selected(r, 'working')).toBe(true)
+    expect(useSettingsStore.getState().boardColumn).toBe('working')
     expect(mockSetPage).toHaveBeenCalledTimes(1)
   })
 
-  it('tells an empty column apart with its own hint', async () => {
+  it('keeps Earlier, with its hint, when the board is empty', async () => {
+    const r = await renderBoard([])
+    await settle(r, 'working')
+    expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier0')
+    expect(r.getByText('Finished sessions show in this column.')).toBeTruthy()
+  })
+
+  it('paints the first load in place, with nothing animated', async () => {
     const r = await renderBoard()
-    expect(r.getByText('Sessions started outside Threadbase show in this column.')).toBeTruthy()
+    expect(animated(r)).toBe(0)
+    await settle(r, 'external')
+    expect(mockSetPage).not.toHaveBeenCalled()
+    expect(mockSnapPage).toHaveBeenCalledWith(0)
+  })
+
+  it('shows a column when a card lands in it, without moving the user off the one on screen', async () => {
+    const r = await renderBoard()
+    await settle(r, 'external')
+    await r.rerender(board([...items, row(waiting())]))
+    expect(r.getByTestId('board-column-needsYou')).toHaveTextContent('Needs you1')
+    expect(selected(r, 'working')).toBe(true)
+    await fireEvent.press(r.getByTestId('board-column-earlier'))
+    expect(mockSetPage).toHaveBeenLastCalledWith(2)
+    const terminal = session({ id: 'e', status: 'running', ownership: 'external', processLiveness: 'alive' })
+    await r.rerender(board([...items, row(waiting()), row(terminal)]))
+    expect(r.getByTestId('board-column-external')).toHaveTextContent('External1')
+    expect(selected(r, 'earlier')).toBe(true)
+    // A page appeared before the one on screen, so the pager snaps to keep it, and slides only when the user asked.
+    expect(mockSnapPage).toHaveBeenLastCalledWith(3)
+    expect(mockSetPage).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides a column the move emptied and slides to where its card went', async () => {
+    const r = await renderBoard([row(running), items[1]])
+    await settle(r, 'external')
+    expect(selected(r, 'working')).toBe(true)
+    await r.rerender(board([row({ ...running, status: 'waiting_input', hasOpenPrompt: true, pendingPrompts: [prompt()] }), items[1]]))
+    expect(selected(r, 'needsYou')).toBe(true)
+    // Needs you landed before the page on screen: snap to keep Working in view, then slide on the next frame.
+    expect(mockSnapPage).toHaveBeenLastCalledWith(1)
+    await waitFor(() => expect(mockSetPage).toHaveBeenLastCalledWith(0))
+    await waitFor(() => expect(r.queryByTestId('board-column-working')).toBeNull())
+    expect(r.getByTestId('board-column-needsYou')).toHaveTextContent('Needs you1')
   })
 
   it('refetches when the set of open prompts changes, not on first paint', async () => {
@@ -223,7 +283,7 @@ describe('SessionBoard cards', () => {
     mockGet.mockResolvedValue({ conversations: [sub('a1', 'e', true), sub('a2', 'e', false)], hasMore: false, offset: 0, total: 2 })
     const r = await renderBoard([row(terminal)])
     await waitFor(() => expect(r.getByTestId('board-column-working')).toHaveTextContent('Working1'))
-    expect(r.getByTestId('board-column-external')).toHaveTextContent('External0')
+    await settle(r, 'external')
     expect(r.queryByText('Sub-agents of other sessions')).toBeNull()
   })
 
@@ -232,7 +292,7 @@ describe('SessionBoard cards', () => {
     const r = await renderBoard([row(terminal)])
     await waitFor(() => expect(r.getByTestId('board-toggle-e')).toHaveTextContent('1'))
     expect(r.getByTestId('board-column-external')).toHaveTextContent('External1')
-    expect(r.getByTestId('board-column-working')).toHaveTextContent('Working0')
+    await settle(r, 'working')
   })
 
   it('keeps a waiting session in Needs you while its sub-agents run', async () => {
@@ -240,7 +300,7 @@ describe('SessionBoard cards', () => {
     const r = await renderBoard([row(waiting())])
     await waitFor(() => expect(r.getByTestId('board-toggle-w')).toHaveTextContent('1'))
     expect(r.getByTestId('board-column-needsYou')).toHaveTextContent('Needs you1')
-    expect(r.getByTestId('board-column-working')).toHaveTextContent('Working0')
+    await settle(r, 'working')
   })
 
   it('searches orphan sub-agents by their label', async () => {
@@ -404,18 +464,19 @@ describe('SessionBoard from 768 up', () => {
     mockWindowWidth = 390
   })
 
-  it('lays columns out side by side, folds an empty one, and unfolds it when a session lands', async () => {
+  it('lays columns out side by side, hides an empty one, and shows it when a session lands', async () => {
     const r = await renderBoard()
     expect(r.queryByTestId('board-pager')).toBeNull()
     expect(r.getByTestId('board-pane-working')).toBeTruthy()
-    expect(r.getByTestId('board-strip-needsYou')).toBeTruthy()
+    await waitFor(() => expect(r.queryByTestId('board-pane-needsYou')).toBeNull())
     await r.rerender(board([...items, row(waiting())]))
-    expect(r.queryByTestId('board-strip-needsYou')).toBeNull()
     expect(r.getByTestId('board-pane-needsYou')).toBeTruthy()
+    expect(selected(r, 'working')).toBe(true)
   })
 
   it('hides the arrows when every column fits and moves one column at a time when not', async () => {
     const r = await renderBoard()
+    await settle(r, 'external')
     expect(r.queryByTestId('board-arrow-next')).toBeNull()
     const track = r.getByTestId('board-track')
     await act(async () => {
@@ -423,7 +484,7 @@ describe('SessionBoard from 768 up', () => {
       fireEvent(track, 'contentSizeChange', 1200, 600)
     })
     await fireEvent.press(r.getByTestId('board-arrow-next'))
-    expect(selected(r, 'external')).toBe(true)
+    expect(selected(r, 'earlier')).toBe(true)
     await fireEvent.press(r.getByTestId('board-arrow-previous'))
     expect(selected(r, 'working')).toBe(true)
   })

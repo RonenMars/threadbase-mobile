@@ -12,7 +12,7 @@ export default meta
 
 function Live() {
   const [selected, setSelected] = useState<BoardColumnId>('needsYou')
-  return <BoardChips counts={{ needsYou: 2, working: 4, external: 0, earlier: 24 }} selected={selected} onSelect={setSelected} />
+  return <BoardChips columns={['needsYou', 'working', 'earlier']} counts={{ needsYou: 2, working: 4, external: 0, earlier: 24 }} selected={selected} onSelect={setSelected} animate />
 }
 
 export const Default: StoryObj<typeof BoardChips> = { render: () => <Live /> }
