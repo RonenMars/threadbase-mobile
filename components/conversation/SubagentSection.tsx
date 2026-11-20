@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { CaretDown, CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
-import { useSubagents } from '@/hooks/useSubagents'
+import { useSubagentCount, useSubagents } from '@/hooks/useSubagents'
 import { conversationHref } from '@/lib/conversationHref'
 import { resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
 import { getProviderLabel } from '@/components/sessions/providerLabel'
@@ -18,7 +18,8 @@ interface Props {
 }
 
 /**
- * Collapsed by default; children are requested only after the first expand.
+ * Collapsed by default; children are requested only after the first expand,
+ * but the header count is live either way (`useSubagentCount`).
  * Rows are read-only transcripts: no status badge, no resume, no input.
  */
 export function SubagentSection({ serverId, parentId }: Props) {
@@ -29,6 +30,8 @@ export function SubagentSection({ serverId, parentId }: Props) {
   const [expanded, setExpanded] = useState(false)
   const { items, isLoading, unsupported, isError, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     useSubagents(serverId, parentId, { enabled: expanded })
+
+  const count = useSubagentCount(serverId, parentId)
 
   const toggle = useCallback(() => {
     if (expanded) setExpanded(false)
@@ -44,9 +47,10 @@ export function SubagentSection({ serverId, parentId }: Props) {
   )
 
   const Caret = expanded ? CaretDown : CaretRight
-  const header = expanded && !isLoading && !unsupported && !isError
-    ? t('subagents.titleCount', { n: items.length })
-    : t('subagents.title')
+  // Collapsed or not, the header follows the live count; the loaded list is
+  // the fallback while the count is unknown.
+  const shown = count ?? (expanded && !isLoading && !unsupported && !isError ? items.length : null)
+  const header = shown != null ? t('subagents.titleCount', { n: shown }) : t('subagents.title')
 
   let body: React.ReactNode = null
   if (expanded) {
