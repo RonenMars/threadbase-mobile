@@ -1,0 +1,131 @@
+# Maestro E2E — Claude's terminal-only question rows (#1586)
+# The mock reports questionOther, so single-select cards offer "Type something."
+# and "Chat about this". The answer bodies are read back from the mock's
+# /answer log, because the ghost card only proves that an answer went out.
+#
+#   A. A card shaped like the JSONL lists neither row; the app draws both.
+#      "Type something." opens an input whose Send stays disabled until there is
+#      text, Back closes it, and Send posts { other: <text> }.
+#   B. A card built from the screen lists both rows marked terminalRow; each
+#      shows once. "Chat about this" posts the row's label, then the composer
+#      takes focus with the question as its placeholder.
+#
+# Requires: mock server on localhost:7071 — MOCK_PORTS=7071,7072 node e2e/mock-server.js
+# Usage: node e2e/run-maestro.js test e2e/question_terminal_rows.yaml (or via npm run test:e2e:mock)
+
+appId: com.ronenmars.threadbase
+---
+- runFlow: setup.yaml
+
+- assertVisible:
+    id: "hub-screen"
+
+- runFlow:
+    file: open-deeplink.yaml
+    env:
+      DEEPLINK: "threadbase:///session/session-abc123"
+
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+    timeout: 12000
+
+# Earlier flows share this mock process; start the log from empty.
+- runScript:
+    file: scripts/answers-log.js
+    env:
+      MODE: "reset"
+
+# --- A: a card shaped like the JSONL ------------------------------------------
+- runScript:
+    file: scripts/trigger-question.js
+    env:
+      TOOL_USE_ID: "qo-jsonl"
+      QUESTION: "Which store should hold sessions?"
+      TERMINAL_ROWS: "0"
+- extendedWaitUntil:
+    visible:
+      id: "question-card"
+    timeout: 8000
+- assertVisible: "Type something."
+- assertVisible: "Chat about this"
+
+- tapOn: "Type something."
+- extendedWaitUntil:
+    visible:
+      id: "question-other-input"
+    timeout: 4000
+- assertVisible:
+    text: "Send"
+    enabled: false
+    below:
+      id: "question-other-input"
+    above:
+      text: "Chat about this"
+# A bare "Back" also matches the header's back button.
+- tapOn:
+    text: "Back"
+    below:
+      id: "question-other-input"
+- assertNotVisible:
+    id: "question-other-input"
+
+- tapOn: "Type something."
+- tapOn:
+    id: "question-other-input"
+- inputText: "Use the existing Redis"
+# The keyboard moves the card; until layout settles, Send's frame is its old one.
+- waitForAnimationToEnd
+- tapOn:
+    text: "Send"
+    enabled: true
+    below:
+      id: "question-other-input"
+- extendedWaitUntil:
+    visible:
+      id: "question-card-ghost"
+    timeout: 8000
+- runScript:
+    file: scripts/answers-log.js
+    env:
+      MODE: "assert-last"
+      TOOL_USE_ID: "qo-jsonl"
+      EXPECT: '{"Which store should hold sessions?":{"other":"Use the existing Redis"}}'
+
+# --- B: a card built from the screen ------------------------------------------
+- runScript:
+    file: scripts/trigger-question.js
+    env:
+      TOOL_USE_ID: "qo-screen"
+      QUESTION: "Which cache should front the API?"
+      TERMINAL_ROWS: "1"
+- extendedWaitUntil:
+    visible:
+      id: "question-card"
+    timeout: 8000
+- assertVisible: "Chat about this"
+- assertNotVisible:
+    text: "Chat about this"
+    index: 1
+- assertNotVisible:
+    text: "Type something."
+    index: 1
+
+- tapOn: "Chat about this"
+# iOS reports an empty field's placeholder as its accessibility label.
+- extendedWaitUntil:
+    visible:
+      id: "chat-message-input"
+      text: "Which cache should front the API\\?"
+    timeout: 8000
+- runScript:
+    file: scripts/answers-log.js
+    env:
+      MODE: "assert-last"
+      TOOL_USE_ID: "qo-screen"
+      EXPECT: '{"Which cache should front the API?":"Chat about this"}'
+# No tap into the composer: the text lands there only if the app focused it.
+- inputText: "Tell me more about the eviction policy"
+- assertVisible:
+    id: "chat-message-input"
+    text: "Tell me more about the eviction policy"

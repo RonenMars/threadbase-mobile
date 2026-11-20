@@ -71,6 +71,10 @@ let nextAnswerReply = { status: 200, reason: null }
 // an echo, so a flow reads the log through POST /__test__/inputs instead.
 const inputLog = []
 
+// Every body POSTed to /api/sessions/:id/answer, oldest first, read through
+// POST /__test__/answers. The card's ghost proves an answer went out, not what it said.
+const answerLog = []
+
 // ── terminal-scrollback scenario ────────────────────────────────────────────
 // Claude Code wipes its whole scrollback (ESC[2J ESC[3J ESC[H) whenever a live
 // frame taller than the viewport changes above it, then repaints only the
@@ -527,6 +531,8 @@ async function handleRequest(req, res) {
       // Without this the grouped views treat the mock as a pre-summary
       // streamer and render the upgrade prompt instead of a tree.
       projectSummary: true,
+      // Offers Claude's "Type something." and "Chat about this" rows on question cards.
+      questionOther: true,
     })
   }
 
@@ -819,6 +825,19 @@ async function handleRequest(req, res) {
     return json(res, 200, { ok: true, inputs })
   }
 
+  // Returns the /answer log; { reset: true } clears it after reading.
+  if (method === 'POST' && p === '/__test__/answers') {
+    let body
+    try {
+      body = await readJsonBody(req)
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+    const answers = answerLog.slice()
+    if (body?.reset) answerLog.length = 0
+    return json(res, 200, { ok: true, answers })
+  }
+
   // Arms the next /permission/answer reply, e.g. { status: 409, reason: 'gate_mismatch' }.
   if (method === 'POST' && p === '/__test__/answer-reply') {
     let body
@@ -866,6 +885,7 @@ async function handleRequest(req, res) {
     if (typeof body?.toolUseId !== 'string') {
       return json(res, 400, { error: 'Expected { toolUseId, answers }' })
     }
+    answerLog.push(body)
     return json(res, 200, { ok: true })
   }
 
