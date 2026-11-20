@@ -1,4 +1,3 @@
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { pathSegments } from '@/components/sessions/shared/pathTail'
 import {
   deriveSessionPresentation,
@@ -164,12 +163,6 @@ export function latestActivityMs(node: TreeNode): number {
   }
   if (node.conversationActivityMs > latest) latest = node.conversationActivityMs
   return latest
-}
-
-export function latestActivityLabel(node: TreeNode): string {
-  const latest = latestActivityMs(node)
-  if (latest === 0) return ''
-  return formatListTime(latest)
 }
 
 export function activeSessionColor(node: TreeNode): string | null {

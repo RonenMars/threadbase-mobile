@@ -11,7 +11,7 @@ import { LiveDot } from '@/components/sessions/LiveDot'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
 import { StateBadge, isLiveTier } from '@/components/sessions/StateBadge'
 import { tierColorToken, type SessionTier } from '@/lib/sessionPresentation'
-import { formatListTime, formatListTimeAccessible } from './formatListTime'
+import { DateTime } from '@/components/ui/DateTime'
 import { pathDisplay, type PathDisplayMode } from './pathDisplay'
 import { MessagePreview, type MessagePreviewMode } from './MessagePreview'
 import { ServerChip, type ServerChipVariant } from './ServerChip'
@@ -194,8 +194,6 @@ export function ConversationListItem(props: ConversationListItemProps) {
   // The visible primary line: title when present, otherwise the path suffix.
   const primaryText = title?.trim() || pathParts?.suffix || ''
 
-  const timeText = timestamp ? formatListTime(timestamp) : ''
-  const timeA11y = timestamp ? formatListTimeAccessible(timestamp) : undefined
 
   // Chip density skips most of the chrome — used in QuickAccessChip.
   const isChip = density === 'chip'
@@ -320,15 +318,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
           under the time would make only the non-dominant rows taller. */}
       {!isChip ? (
         <View style={[styles.tail, isCompact && styles.tailCompact]}>
-          {timeText ? (
-            <Text
-              style={styles.time}
-              accessibilityLabel={timeA11y}
-              numberOfLines={1}
-            >
-              {timeText}
-            </Text>
-          ) : null}
+          <DateTime value={timestamp} style={styles.time} numberOfLines={1} />
 
           {serverVisible && serverLabel ? (
             <ServerChip

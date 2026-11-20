@@ -45,6 +45,7 @@ import { usePermissionsStatus, type PermissionStatus } from '@/hooks/usePermissi
 import { removeServerAndUnregisterPush } from '@/services/server-removal'
 import { sendTestPush, serverSupportsPushPrefs } from '@/services/push'
 import { QuietHoursEditor } from '@/components/settings/QuietHoursEditor'
+import { DateTimeFormatPicker } from '@/components/settings/DateTimeFormatPicker'
 import { queryClient } from '@/services/query-client'
 
 function getAddServerActionLabel(action: AddServerAction, t: TFunction<'settings'>): string {
@@ -292,6 +293,10 @@ export default function SettingsScreen() {
     setLocale,
     sessionView,
     setSessionView,
+    dateFormat,
+    setDateFormat,
+    timeFormat,
+    setTimeFormat,
     biometricLock,
     setBiometricLock,
     anonymousDiagnosticsEnabled,
@@ -589,6 +594,17 @@ await refreshServerInfo(serverId)
             </View>
             <ThemePicker current={colorScheme} tab={themeTab} onChange={setColorScheme} />
           </View>
+        </View>
+
+        <SectionHeader title={t('section.dateTime')} />
+        <View style={[s.card, isGlass && s.cardGlass]}>
+          <GlassFill material />
+          <DateTimeFormatPicker
+            dateFormat={dateFormat}
+            timeFormat={timeFormat}
+            onChangeDate={setDateFormat}
+            onChangeTime={setTimeFormat}
+          />
         </View>
 
         <SectionHeader title={t('notifications.whenAddingServer')} />

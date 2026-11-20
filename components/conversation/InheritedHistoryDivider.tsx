@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { useDateTimeFormat } from '@/hooks/useDateTimeFormat'
 import { useTheme } from '@/contexts/ThemeContext'
 import { spacing, type Theme } from '@/constants/theme'
 import type { InheritedHistorySeam } from '@/utils/inheritedHistory'
@@ -20,7 +20,8 @@ export function InheritedHistoryDivider({ seam }: Props) {
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
 
-  const forkedTime = seam.kind === 'divider' ? formatListTime(seam.forkedAt) : ''
+  const { formatList } = useDateTimeFormat()
+  const forkedTime = seam.kind === 'divider' ? formatList(seam.forkedAt) : ''
   let label: string
   if (seam.kind === 'unavailable') label = t('inheritedHistory.unavailable')
   else if (forkedTime) label = t('inheritedHistory.forkedAt', { time: forkedTime })

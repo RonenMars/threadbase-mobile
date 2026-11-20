@@ -10,7 +10,7 @@ import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
 import { SectionEyebrow } from '@/components/sessions/now/SectionEyebrow'
 import { dayBucketLabel, groupByDayBucket, isDayBucketOpen } from '@/components/sessions/shared/dayBuckets'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { useDateTimeFormat } from '@/hooks/useDateTimeFormat'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { makeStyles as makeCardStyles } from '@/components/sessions/base/CollapsibleCard.styles'
@@ -169,9 +169,10 @@ export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenPar
   const styles = useMemo(() => makeStyles(theme), [theme])
   const [showAll, setShowAll] = useState(false)
 
+  const { formatList } = useDateTimeFormat()
   const types = new Set(g.items.map((c) => resolveSubagentType(c)))
   const sharedType = types.size === 1 ? [...types][0] : undefined
-  const lastActivity = formatListTime(g.items[0].lastActivity)
+  const lastActivity = formatList(g.items[0].lastActivity)
   const activityLine = [
     g.activeCount > 0 ? t('subagents.board.parentActive', { n: g.activeCount }) : null,
     sharedType ?? null,

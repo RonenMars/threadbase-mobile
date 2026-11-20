@@ -348,3 +348,17 @@ describe("MessageBubble – queued", () => {
     await i18n.changeLanguage("en");
   });
 });
+
+describe("MessageBubble – time", () => {
+  it("shows the message time as HH:mm", async () => {
+    const ts = "2024-01-01T10:07:00Z";
+    const expected = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }).format(Date.parse(ts));
+    const { getByTestId } = await render(<MessageBubble message={makeMessage({ timestamp: ts })} />);
+    expect(getByTestId("message-time").props.children).toBe(expected);
+  });
+
+  it("shows no time for an optimistic message with an empty timestamp", async () => {
+    const { queryByTestId } = await render(<MessageBubble message={makeMessage({ timestamp: "" })} />);
+    expect(queryByTestId("message-time")).toBeNull();
+  });
+});

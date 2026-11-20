@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
 import { InlineError } from '@/components/alerts/InlineError'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { useDateTimeFormat } from '@/hooks/useDateTimeFormat'
 import { formatMinutesAgo } from '@/lib/alertLabels'
 import { useAlertStore } from '@/stores/alerts'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
@@ -52,8 +52,9 @@ export function ServerHeaderRow({
   const serverColor = useServersStore((s) => s.servers[serverId]?.color) ?? SERVER_COLOR_DEFAULT
   const alertRaisedAt = useAlertStore((s) => s.alerts.find((a) => a.cause === serverCause(serverId))?.raisedAt)
   const lastCheckedAt = useServerFetchStatusStore((s) => s.statuses[serverId]?.lastCheckedAt)
+  const { formatList } = useDateTimeFormat()
   const raisedAt = alertRaisedAt ?? lastCheckedAt
-  const since = raisedAt != null ? formatListTime(raisedAt) : ''
+  const since = raisedAt != null ? formatList(raisedAt) : ''
   const ago = raisedAt != null ? formatMinutesAgo(raisedAt, t) : ''
   const failureTitle = since
     ? t('common:alert.inline.unreachableSince', { time: since })

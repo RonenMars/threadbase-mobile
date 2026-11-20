@@ -14,7 +14,8 @@
     "language": "Language",
     "session": "Session",
     "privacy": "Privacy",
-    "anonymousDiagnostics": "Anonymous diagnostics"
+    "anonymousDiagnostics": "Anonymous diagnostics",
+    "dateTime": "Date & time"
   },
   "session": {
     "chatView": "Chat view",
@@ -50,6 +51,22 @@
     "theme": "Theme",
     "dark": "Dark",
     "light": "Light"
+  },
+  "dateTime": {
+    "dateLabel": "Date format",
+    "timeLabel": "Time format",
+    "default": "Default",
+    "date": {
+      "auto": "Device default",
+      "dmy": "Day, month",
+      "mdy": "Month, day",
+      "ymd": "Year-month-day"
+    },
+    "time": {
+      "h24": "24-hour",
+      "h12": "12-hour",
+      "auto": "Device default"
+    }
   },
   "notifications": {
     "whenAddingServer": "When Adding A New Server",

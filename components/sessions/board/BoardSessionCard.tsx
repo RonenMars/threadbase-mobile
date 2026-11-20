@@ -8,7 +8,7 @@ import { CardBody, CardSpine, ChevronToggle, CountBadge } from '@/components/ses
 import { ConvRow } from '@/components/sessions/hub/ConvRow'
 import type { NowEntry } from '@/components/sessions/now/nowEntries'
 import { MessagePreview } from '@/components/sessions/shared/MessagePreview'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { useDateTimeFormat } from '@/hooks/useDateTimeFormat'
 import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
 import { getSessionTierLabel } from '@/components/sessions/StateBadge'
@@ -67,10 +67,11 @@ function BoardCardFrame({
   const { styles: card, theme } = useThemedStyles(makeCardStyles)
   const styles = useThemedStyles(makeStyles).styles
   const { isRTL } = useAppDirection()
+  const { formatList } = useDateTimeFormat()
   const subagentCount = group?.items.length ?? 0
   const parentLabel = pathDisplay(projectPath, { mode: 'smart' }).suffix || undefined
   const tierLabel = tier ? getSessionTierLabel(tier, t) : undefined
-  const activity = [tierLabel, formatListTime(ms)].filter(Boolean).join(' · ')
+  const activity = [tierLabel, formatList(ms)].filter(Boolean).join(' · ')
   const needsYou = tier === 'needsYou'
   const waiting = theme.status.waiting
   const frameStyle = needsYou

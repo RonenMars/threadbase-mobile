@@ -14,6 +14,13 @@ import {
   DEFAULT_SESSION_LEAVE_ACTION,
   type SessionLeaveAction,
 } from '@/lib/sessionLeavePolicy'
+import {
+  coerceDateFormat,
+  coerceTimeFormat,
+  DEFAULT_DATE_TIME_FORMAT,
+  type DateFormat,
+  type TimeFormat,
+} from '@/lib/dateTimeFormat'
 import { getLocales } from 'expo-localization'
 import { resolveSupportedLocale, SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
 
@@ -79,6 +86,10 @@ interface SettingsStore {
   /** Browse yellow note for `version_unverified`. Default off. */
   showProviderVersionWarning: boolean
   locale: SupportedLocale
+  /** How dates are written everywhere the app shows one. One choice per device. */
+  dateFormat: DateFormat
+  /** 24-hour, 12-hour, or whatever the device uses. One choice per device. */
+  timeFormat: TimeFormat
   biometricLock: boolean
   /** Standing Anonymous Diagnostics consent (Sentry). Default OFF. See
    * services/sentry.ts and docs/specs/anonymous-diagnostics-consent-v0.1.md. */
@@ -119,6 +130,8 @@ interface SettingsStore {
   setTerminalRenderMarkdown: (v: boolean) => void
   setShowProviderVersionWarning: (v: boolean) => void
   setLocale: (locale: SupportedLocale) => void
+  setDateFormat: (v: DateFormat) => void
+  setTimeFormat: (v: TimeFormat) => void
   setBiometricLock: (v: boolean) => void
   setAnonymousDiagnosticsEnabled: (v: boolean) => void
   setCrashReportingNoticeDismissed: (v: boolean) => void
@@ -163,6 +176,8 @@ interface PersistedSettings {
   terminalRenderMarkdown: boolean
   showProviderVersionWarning: boolean
   locale: SupportedLocale
+  dateFormat: DateFormat
+  timeFormat: TimeFormat
   biometricLock: boolean
   anonymousDiagnosticsEnabled: boolean
   crashReportingNoticeDismissed: boolean
@@ -215,6 +230,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   terminalRenderMarkdown: true,
   showProviderVersionWarning: false,
   locale: DEFAULT_LOCALE,
+  dateFormat: DEFAULT_DATE_TIME_FORMAT.date,
+  timeFormat: DEFAULT_DATE_TIME_FORMAT.time,
   biometricLock: false,
   anonymousDiagnosticsEnabled: false,
   crashReportingNoticeDismissed: false,
@@ -251,6 +268,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   setShowProviderVersionWarning: (showProviderVersionWarning) =>
     set({ showProviderVersionWarning }),
   setLocale: (locale) => set({ locale }),
+  setDateFormat: (dateFormat) => set({ dateFormat }),
+  setTimeFormat: (timeFormat) => set({ timeFormat }),
   setBiometricLock: (biometricLock) => set({ biometricLock }),
   setAnonymousDiagnosticsEnabled: (anonymousDiagnosticsEnabled) => set({ anonymousDiagnosticsEnabled }),
   setCrashReportingNoticeDismissed: (crashReportingNoticeDismissed) =>
@@ -297,6 +316,8 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
         locale: SUPPORTED_LOCALES.some(({ code }) => code === parsed.locale)
           ? parsed.locale
           : DEFAULT_LOCALE,
+        dateFormat: coerceDateFormat(parsed.dateFormat),
+        timeFormat: coerceTimeFormat(parsed.timeFormat),
         biometricLock: parsed.biometricLock ?? state.biometricLock,
         anonymousDiagnosticsEnabled: parsed.anonymousDiagnosticsEnabled ?? state.anonymousDiagnosticsEnabled,
         crashReportingNoticeDismissed:
@@ -356,6 +377,8 @@ export function persistSettingsNow(): Promise<void> {
     terminalRenderMarkdown: state.terminalRenderMarkdown,
     showProviderVersionWarning: state.showProviderVersionWarning,
     locale: state.locale,
+    dateFormat: state.dateFormat,
+    timeFormat: state.timeFormat,
     biometricLock: state.biometricLock,
     anonymousDiagnosticsEnabled: state.anonymousDiagnosticsEnabled,
     crashReportingNoticeDismissed: state.crashReportingNoticeDismissed,

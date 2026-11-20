@@ -504,3 +504,41 @@ describe('SettingsStore – sessionView', () => {
     expect(useSettingsStore.getState().sessionView).toBe(saved)
   })
 })
+
+describe('SettingsStore – date and time format', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ dateFormat: 'auto', timeFormat: '24h' })
+  })
+
+  it('defaults to device date order and 24-hour time', () => {
+    expect(useSettingsStore.getState().dateFormat).toBe('auto')
+    expect(useSettingsStore.getState().timeFormat).toBe('24h')
+  })
+
+  it('persists both choices to the settings blob', async () => {
+    useSettingsStore.getState().setDateFormat('ymd')
+    useSettingsStore.getState().setTimeFormat('12h')
+    await Promise.resolve()
+    const payload = JSON.parse((AsyncStorage.setItem as jest.Mock).mock.calls.at(-1)[1])
+    expect(payload.dateFormat).toBe('ymd')
+    expect(payload.timeFormat).toBe('12h')
+  })
+
+  it('restores both choices on hydrate', async () => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ dateFormat: 'mdy', timeFormat: 'auto', notifications: DEFAULT_NOTIFICATIONS }),
+    )
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().dateFormat).toBe('mdy')
+    expect(useSettingsStore.getState().timeFormat).toBe('auto')
+  })
+
+  it('falls back to the defaults for missing or unknown stored values', async () => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValueOnce(
+      JSON.stringify({ dateFormat: 'iso', notifications: DEFAULT_NOTIFICATIONS }),
+    )
+    await useSettingsStore.getState().hydrate()
+    expect(useSettingsStore.getState().dateFormat).toBe('auto')
+    expect(useSettingsStore.getState().timeFormat).toBe('24h')
+  })
+})

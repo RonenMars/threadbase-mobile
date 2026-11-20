@@ -1,4 +1,5 @@
 import { formatListTime, formatListTimeAccessible } from '@/components/sessions/shared/formatListTime'
+import type { DateTimeFormatPrefs } from '@/lib/dateTimeFormat'
 
 // Fixed "now" for deterministic assertions:
 // Friday, 15 May 2026, 14:35 local time.
@@ -154,5 +155,36 @@ describe('formatListTimeAccessible', () => {
 
   it('returns "" for null', () => {
     expect(formatListTimeAccessible(null)).toBe('')
+  })
+})
+
+describe('formatListTime – format preference', () => {
+  const sameYear = new Date(2026, 4, 8, 15, 0, 0).getTime()
+  const lastYear = new Date(2025, 11, 31, 15, 0, 0).getTime()
+  const withFormat = (when: number, format: DateTimeFormatPrefs) =>
+    formatListTime(when, { now: NOW, locale: 'en-GB', format })
+
+  it('mdy reorders an older same-year date', () => {
+    expect(withFormat(sameYear, { date: 'mdy', time: '24h' })).toBe('May 8 15:00')
+  })
+
+  it('ymd writes the full numeric date, even in the same year', () => {
+    expect(withFormat(sameYear, { date: 'ymd', time: '24h' })).toBe('2026-05-08 15:00')
+    expect(withFormat(lastYear, { date: 'ymd', time: '24h' })).toBe('2025-12-31 15:00')
+  })
+
+  it('12h switches the clock on every branch', () => {
+    const same = formatListTime(NOW - 5 * 60 * 1000, { now: NOW, locale: 'en-US', format: { date: 'auto', time: '12h' } })
+    expect(same).toMatch(/^2:30\s?PM$/)
+    expect(withFormat(sameYear, { date: 'dmy', time: '12h' })).toMatch(/^8 May 3:00\s?pm$/i)
+  })
+
+  it('"now" is unaffected by the preference', () => {
+    expect(withFormat(NOW - 10_000, { date: 'ymd', time: '12h' })).toBe('now')
+  })
+
+  it('accessible label follows the clock choice', () => {
+    expect(formatListTimeAccessible(NOW, { locale: 'en-US', format: { date: 'auto', time: '12h' } })).toMatch(/2:35\s?PM/)
+    expect(formatListTimeAccessible(NOW, { locale: 'en-US' })).toMatch(/14:35/)
   })
 })

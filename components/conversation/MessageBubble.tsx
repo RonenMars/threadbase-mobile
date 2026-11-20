@@ -8,6 +8,7 @@ import { GlassFill } from '@/components/ui/GlassFill'
 import type { Message, MessageContent } from '@/types/api'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { parseMarkdownFor } from '@/lib/markdown'
+import { DateTime } from '@/components/ui/DateTime'
 import { ChatMarkdown } from '@/components/conversation/ChatMarkdown'
 import type { RtlStyleKit } from '@/lib/rtl'
 import type { MatchAnchor } from '@/components/conversation/matchAnchor'
@@ -129,8 +130,17 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
             activeMatch={activeMatch}
           />
         ))}
-        {message.tokens ? (
-          <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
+        {message.tokens || message.timestamp ? (
+          <View style={styles.footer}>
+            {message.tokens ? <Text style={styles.footerText}>{t('message.tokens', { count: message.tokens })}</Text> : null}
+            {/* Optimistic sends carry timestamp '' until the server echoes them; DateTime draws nothing for that. */}
+            <DateTime
+              value={message.timestamp}
+              variant="time"
+              testID="message-time"
+              style={[styles.footerText, isUser && styles.footerTextUser]}
+            />
+          </View>
         ) : null}
       </View>
       {queued ? <Text style={styles.queuedLabel}>{t('message.queued')}</Text> : null}
@@ -189,11 +199,16 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       color: theme.text.accent,
       fontSize: font.xs,
     },
-    tokens: {
+    footer: {
+      flexDirection: 'row',
+      alignSelf: 'flex-end',
+      gap: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    footerText: {
       color: theme.text.secondary,
       fontSize: font.xs,
-      marginTop: spacing.xs,
-      alignSelf: 'flex-end',
     },
+    footerTextUser: { color: theme.text.onAccent, opacity: 0.7 },
   })
 }

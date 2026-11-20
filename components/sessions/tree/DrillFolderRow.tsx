@@ -3,7 +3,7 @@ import { font, spacing, type Theme } from '@/constants/theme'
 import { MONO_FONT } from '@/constants/mono'
 import { useTheme } from '@/contexts/ThemeContext'
 import { LiveDot } from '@/components/sessions/LiveDot'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { DateTime } from '@/components/ui/DateTime'
 
 interface Props {
   name: string
@@ -18,7 +18,6 @@ interface Props {
 export function DrillFolderRow({ name, count, timestampMs, dotColor, live, onPress }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
-  const time = timestampMs > 0 ? formatListTime(timestampMs) : ''
   const color = dotColor ?? theme.border
 
   return (
@@ -34,7 +33,7 @@ export function DrillFolderRow({ name, count, timestampMs, dotColor, live, onPre
       <View style={styles.pill}>
         <Text style={styles.pillText}>{count}</Text>
       </View>
-      {time ? <Text style={styles.time}>{time}</Text> : null}
+      <DateTime value={timestampMs > 0 ? timestampMs : null} style={styles.time} />
     </TouchableOpacity>
   )
 }

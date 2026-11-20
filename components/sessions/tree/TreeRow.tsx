@@ -2,7 +2,8 @@ import { View, Text, TouchableOpacity, Pressable } from 'react-native'
 import { CaretDown, CaretRight, ChatCircle } from 'phosphor-react-native'
 import { spacing } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
-import { activeSessionColor, hasLiveSession, latestActivityLabel } from './treeUtils'
+import { activeSessionColor, hasLiveSession, latestActivityMs } from './treeUtils'
+import { DateTime } from '@/components/ui/DateTime'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { makeStyles } from './TreeRow.styles'
 import type { TreeNode } from './types'
@@ -23,7 +24,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
   const isLeaf = !hasChildren
   const isMixed = hasChildren && hasItems
   const accentColor = activeSessionColor(node)
-  const timeLabel = latestActivityLabel(node)
+  const latestMs = latestActivityMs(node)
   const isLive = hasLiveSession(node)
 
   const handlePress = () => {
@@ -108,7 +109,7 @@ export function TreeRow({ node, depth, depthOffset, isExpanded, onToggle, onSele
             </Text>
           </View>
         )}
-        {timeLabel ? <Text style={styles.time}>{timeLabel}</Text> : null}
+        <DateTime value={latestMs > 0 ? latestMs : null} style={styles.time} />
       </View>
     </TouchableOpacity>
   )

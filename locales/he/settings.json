@@ -14,7 +14,8 @@
     "language": "שפה",
     "session": "סשן",
     "privacy": "פרטיות",
-    "anonymousDiagnostics": "אבחון אנונימי"
+    "anonymousDiagnostics": "אבחון אנונימי",
+    "dateTime": "תאריך ושעה"
   },
   "session": {
     "chatView": "תצוגת צ'אט",
@@ -50,6 +51,22 @@
     "theme": "ערכת נושא",
     "dark": "כהה",
     "light": "בהיר"
+  },
+  "dateTime": {
+    "dateLabel": "פורמט תאריך",
+    "timeLabel": "פורמט שעה",
+    "default": "ברירת מחדל",
+    "date": {
+      "auto": "ברירת המחדל של המכשיר",
+      "dmy": "יום, חודש",
+      "mdy": "חודש, יום",
+      "ymd": "שנה-חודש-יום"
+    },
+    "time": {
+      "h24": "24 שעות",
+      "h12": "12 שעות",
+      "auto": "ברירת המחדל של המכשיר"
+    }
   },
   "notifications": {
     "whenAddingServer": "בעת הוספת שרת חדש",

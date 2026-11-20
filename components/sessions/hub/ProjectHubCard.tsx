@@ -14,7 +14,7 @@ import { ConvRow } from './ConvRow'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
 import { useProjectConversations } from '@/hooks/useProjectConversations'
 import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { useDateTimeFormat } from '@/hooks/useDateTimeFormat'
 import { makeStyles } from '@/components/sessions/base/CollapsibleCard.styles'
 import { omitConversationsCoveredByLiveSessions } from '@/components/sessions/now/mergedItems'
 import type { ProjectHubCardProps } from './types'
@@ -28,6 +28,7 @@ import { sessionActivityMs } from '@/lib/sessionActivity'
 // what made the accordions feel unresponsive on a host with many projects.
 export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen, onToggle, forceServerChip = false }: ProjectHubCardProps) {
   const { t, i18n } = useTranslation('sessions')
+  const { formatList } = useDateTimeFormat()
   const { styles, theme } = useThemedStyles(makeStyles)
   const router = useRouter()
   const [activeConv, setActiveConv] = useState<MultiConversation | null>(null)
@@ -70,7 +71,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     const liveCount = group.sessions.filter(isPresentationLive).length - externalLiveSessions
     const externalCount = externalLiveSessions + group.liveExternalCount
     const lastActivity = group.latestActivityMs > 0
-      ? formatListTime(group.latestActivityMs, {
+      ? formatList(group.latestActivityMs, {
           locale: i18n.language,
           labels: {
             now: t('hub.timeNow'),
@@ -85,7 +86,7 @@ export const ProjectHubCard = React.memo(function ProjectHubCard({ group, isOpen
     if (todaySessionCount > 0) pieces.push(t('hub.activityToday', { total: todaySessionCount }))
     if (lastActivity) pieces.push(t('hub.activityLast', { time: lastActivity }))
     return pieces.join(' · ')
-  }, [group.sessions, group.liveExternalCount, group.latestActivityMs, todaySessionCount, i18n.language, t])
+  }, [group.sessions, group.liveExternalCount, group.latestActivityMs, todaySessionCount, i18n.language, formatList, t])
 
   const renderSheet = (activeConv: MultiConversation) => {
         const favId = buildFavoriteId(activeConv.serverId, 'conversation', activeConv.id)

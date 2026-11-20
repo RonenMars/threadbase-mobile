@@ -4,7 +4,7 @@ import type { TFunction } from 'i18next'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { MONO_FONT } from '@/constants/mono'
 import { useTheme } from '@/contexts/ThemeContext'
-import { formatListTime, formatListTimeAccessible } from '@/components/sessions/shared/formatListTime'
+import { DateTime } from '@/components/ui/DateTime'
 import type { SessionStatusLabel } from '@/lib/sessionPresentation'
 
 interface Props {
@@ -36,8 +36,6 @@ export function CantResumeRow({ title, statusLabel, timestamp, onPress, onLongPr
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
   const reason = cantResumeReason(statusLabel, t)
-  const time = timestamp ? formatListTime(timestamp) : ''
-  const timeA11y = timestamp ? formatListTimeAccessible(timestamp) : undefined
 
   return (
     <Pressable
@@ -52,9 +50,7 @@ export function CantResumeRow({ title, statusLabel, timestamp, onPress, onLongPr
         <Text style={styles.title} numberOfLines={1}>{title}</Text>
         <Text style={styles.reason} numberOfLines={1}>{reason}</Text>
       </View>
-      {time ? (
-        <Text style={styles.time} accessibilityLabel={timeA11y} numberOfLines={1}>{time}</Text>
-      ) : null}
+      <DateTime value={timestamp} style={styles.time} numberOfLines={1} />
     </Pressable>
   )
 }

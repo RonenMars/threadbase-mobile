@@ -9,7 +9,7 @@ import { useSubagents } from '@/hooks/useSubagents'
 import { conversationHref } from '@/lib/conversationHref'
 import { resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
 import { getProviderLabel } from '@/components/sessions/providerLabel'
-import { formatListTime } from '@/components/sessions/shared/formatListTime'
+import { useDateTimeFormat } from '@/hooks/useDateTimeFormat'
 import type { Conversation } from '@/types/api'
 
 interface Props {
@@ -23,6 +23,7 @@ interface Props {
  */
 export function SubagentSection({ serverId, parentId }: Props) {
   const { t } = useTranslation('sessions')
+  const { formatList } = useDateTimeFormat()
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
@@ -79,7 +80,7 @@ export function SubagentSection({ serverId, parentId }: Props) {
                   {[
                     getProviderLabel(c.provider, t),
                     t('card.messages', { count: c.messageCount }),
-                    formatListTime(c.lastActivity),
+                    formatList(c.lastActivity),
                   ]
                     .filter(Boolean)
                     .join(' · ')}

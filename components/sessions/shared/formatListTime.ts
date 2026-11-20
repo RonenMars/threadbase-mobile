@@ -1,8 +1,17 @@
-// Convention: same-day items show HH:mm, all other items show the date label
+// Convention: same-day items show the time (HH:mm unless the user picked 12-hour), all other items show the date label
 // followed by the time (e.g. "Yesterday 14:35", "Mon 09:07", "8 May 14:35").
 // See design/scratch/time-format-research.md for the cross-app analysis.
 
+import {
+  DEFAULT_DATE_TIME_FORMAT,
+  formatDatePart,
+  formatTimeOfDay,
+  type DateTimeFormatPrefs,
+} from '@/lib/dateTimeFormat'
+
 export interface FormatListTimeOptions {
+  /** The device's date/time format choice; defaults to the app default. */
+  format?: DateTimeFormatPrefs
   /** Reference "now" for testing; defaults to Date.now(). */
   now?: number | Date
   /** Locale tag (e.g. "en-US"); defaults to runtime locale. */
@@ -51,11 +60,8 @@ export function formatListTime(
 
   const days = dayDiff(ts, nowMs)
 
-  const timePart = new Intl.DateTimeFormat(locale, {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(tsDate)
+  const format = options.format ?? DEFAULT_DATE_TIME_FORMAT
+  const timePart = formatTimeOfDay(tsDate, format.time, locale)
 
   // Today: HH:mm only.
   if (days <= 0) return timePart
@@ -69,19 +75,9 @@ export function formatListTime(
     return `${weekday} ${timePart}`
   }
 
-  // Same calendar year: "D MMM HH:mm".
-  if (tsDate.getFullYear() === nowDate.getFullYear()) {
-    const datePart = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(tsDate)
-    return `${datePart} ${timePart}`
-  }
-
-  // Older: "D MMM YY HH:mm".
-  const datePart = new Intl.DateTimeFormat(locale, {
-    day: 'numeric',
-    month: 'short',
-    year: '2-digit',
-  }).format(tsDate)
-  return `${datePart} ${timePart}`
+  // Same calendar year the year is left off; older dates carry it.
+  const sameYear = tsDate.getFullYear() === nowDate.getFullYear()
+  return `${formatDatePart(tsDate, format.date, !sameYear, locale)} ${timePart}`
 }
 
 /**
@@ -90,18 +86,20 @@ export function formatListTime(
  */
 export function formatListTimeAccessible(
   input: string | number | Date | null | undefined,
-  options: Pick<FormatListTimeOptions, 'locale'> = {},
+  options: Pick<FormatListTimeOptions, 'locale' | 'format'> = {},
 ): string {
   if (input == null) return ''
   const ts = toEpoch(input)
   if (!Number.isFinite(ts)) return ''
 
+  const hour12 = (options.format ?? DEFAULT_DATE_TIME_FORMAT).time
   return new Intl.DateTimeFormat(options.locale, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    hour: '2-digit',
+    hour: hour12 === '12h' ? 'numeric' : '2-digit',
     minute: '2-digit',
+    ...(hour12 === 'auto' ? {} : { hour12: hour12 === '12h' }),
   }).format(new Date(ts))
 }
