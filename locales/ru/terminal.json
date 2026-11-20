@@ -56,6 +56,7 @@
     "attachLabel": "Прикрепить файл",
     "expandLabel": "Развернуть поле ввода",
     "minimizeLabel": "Свернуть поле ввода",
+    "markdownToggleLabel": "Форматирование Markdown при вводе",
     "suggestionLabel": "Отправить подсказку: {{text}}",
     "suggestionHint": "Удерживайте, чтобы изменить перед отправкой"
   },

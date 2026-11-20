@@ -56,6 +56,7 @@
     "attachLabel": "إرفاق ملف",
     "expandLabel": "توسيع حقل الإدخال",
     "minimizeLabel": "تصغير حقل الإدخال",
+    "markdownToggleLabel": "تنسيق Markdown أثناء الكتابة",
     "suggestionLabel": "إرسال الاقتراح: {{text}}",
     "suggestionHint": "اضغط مطولًا للتعديل قبل الإرسال"
   },
