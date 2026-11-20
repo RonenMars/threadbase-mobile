@@ -60,4 +60,16 @@ describe('ColumnPager.web', () => {
     await fireEvent.scroll(pager, scrollTo(0))
     expect(change).toHaveBeenCalledWith(0)
   })
+
+  it('sends a drag onto a disabled page back to the one it left', async () => {
+    const change = jest.fn()
+    const scrollToSpy = jest.spyOn(ScrollView.prototype, 'scrollTo').mockImplementation(() => {})
+    const r = await render(<ColumnPager index={0} onIndexChange={change} enabled={[true, false, false]}>{pages}</ColumnPager>)
+    await fireEvent(r.getByTestId('board-pager'), 'layout', { nativeEvent: { layout: { width: 300 } } })
+    await fireEvent.scroll(r.getByTestId('board-pager'), scrollTo(300))
+    expect(scrollToSpy).toHaveBeenCalledWith(expect.objectContaining({ x: 0 }))
+    expect(change).toHaveBeenLastCalledWith(0)
+    expect(r.getByTestId('board-pager').props.scrollEnabled).toBe(false)
+    scrollToSpy.mockRestore()
+  })
 })

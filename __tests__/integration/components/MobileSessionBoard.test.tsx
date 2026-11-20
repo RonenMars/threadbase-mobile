@@ -31,7 +31,7 @@ jest.mock('@/services/api-client', () => ({
   createApiForServer: () => ({ get: () => mockGet() }),
 }))
 
-type MockPagerProps = { children: React.ReactNode; testID: string; onPageSelected: (e: { nativeEvent: { position: number } }) => void }
+type MockPagerProps = { children: React.ReactNode; testID: string; scrollEnabled?: boolean; onPageSelected: (e: { nativeEvent: { position: number } }) => void }
 let mockWindowWidth = 390
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
@@ -39,14 +39,15 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 }))
 
 const mockSetPage = jest.fn()
-const mockPager: { select?: (position: number) => void } = {}
+const mockPager: { select?: (position: number) => void; scrollEnabled?: boolean } = {}
 jest.mock('react-native-pager-view', () => {
   const R = jest.requireActual<typeof import('react')>('react')
   const { View } = jest.requireActual<typeof import('react-native')>('react-native')
   return {
     __esModule: true,
-    default: R.forwardRef(function MockPager({ children, testID, onPageSelected }: MockPagerProps, ref: React.Ref<{ setPage: (n: number) => void }>) {
+    default: R.forwardRef(function MockPager({ children, testID, scrollEnabled, onPageSelected }: MockPagerProps, ref: React.Ref<{ setPage: (n: number) => void }>) {
       R.useImperativeHandle(ref, () => ({ setPage: mockSetPage, setPageWithoutAnimation: mockSetPage }))
+      mockPager.scrollEnabled = scrollEnabled
       mockPager.select = (position) => onPageSelected({ nativeEvent: { position } })
       return R.createElement(View, { testID }, children)
     }),
@@ -283,6 +284,41 @@ describe('SessionBoard cards', () => {
     )
     await waitFor(() => expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1'))
     expect(selected(r, 'earlier')).toBe(true)
+  })
+
+  describe('swiping when only sub-agents show', () => {
+    const renderSubagentsOnly = async () => {
+      const r = await render(
+        <SessionBoard items={[row(running)]} searchQuery="" conversationsFromServer={false} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={jest.fn()} subagentsOnly />,
+        { wrapper: createWrapper() },
+      )
+      await waitFor(() => expect(r.getByTestId('board-column-earlier')).toHaveTextContent('Earlier1'))
+      return r
+    }
+
+    it('blocks the swipe when no other column holds a card', async () => {
+      mockGet.mockResolvedValue({ conversations: [sub('a1', 'p', false)], hasMore: false, offset: 0, total: 1 })
+      await renderSubagentsOnly()
+      expect(mockPager.scrollEnabled).toBe(false)
+    })
+
+    it('sends a swipe toward only empty columns back where it started', async () => {
+      mockGet.mockResolvedValue({ conversations: [sub('a1', 'p', true), sub('a2', 'p', false)], hasMore: false, offset: 0, total: 2 })
+      const r = await renderSubagentsOnly()
+      expect(selected(r, 'working')).toBe(true)
+      expect(mockPager.scrollEnabled).toBe(true)
+      await act(async () => mockPager.select?.(0))
+      expect(mockSetPage).toHaveBeenLastCalledWith(1)
+      expect(selected(r, 'working')).toBe(true)
+    })
+
+    it('carries a swipe past an empty column to the next one that holds a card', async () => {
+      mockGet.mockResolvedValue({ conversations: [sub('a1', 'p', true), sub('a2', 'p', false)], hasMore: false, offset: 0, total: 2 })
+      const r = await renderSubagentsOnly()
+      await act(async () => mockPager.select?.(2))
+      expect(mockSetPage).toHaveBeenLastCalledWith(3)
+      expect(selected(r, 'earlier')).toBe(true)
+    })
   })
 
   it('shows one line when sub-agents fail to load and keeps the rest of the board', async () => {

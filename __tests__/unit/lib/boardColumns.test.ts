@@ -1,5 +1,5 @@
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
-import { boardColumnFor, boardScrollX, bucketBoard, firstNonEmptyColumn, startingColumn, subagentParentKeys } from '@/lib/boardColumns'
+import { boardColumnFor, boardScrollX, bucketBoard, firstNonEmptyColumn, startingColumn, subagentParentKeys, swipeLanding } from '@/lib/boardColumns'
 import type { SessionTier } from '@/lib/sessionPresentation'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -138,5 +138,27 @@ describe('boardScrollX', () => {
 
   it('measures from the right edge on RTL web, where scrollLeft runs negative', () => {
     expect(boardScrollX(300, { content: 1200, viewport: 800, rtl: true, web: true })).toBe(-100)
+  })
+})
+
+describe('swipeLanding', () => {
+  const enabled = [false, true, false, true]
+
+  it('lets a swipe settle on an enabled page', () => {
+    expect(swipeLanding(1, 3, enabled)).toBe(3)
+  })
+
+  it('carries a swipe past disabled pages in its direction', () => {
+    expect(swipeLanding(1, 2, enabled)).toBe(3)
+    expect(swipeLanding(3, 2, enabled)).toBe(1)
+  })
+
+  it('sends a swipe back when nothing enabled lies that way', () => {
+    expect(swipeLanding(1, 0, enabled)).toBe(1)
+    expect(swipeLanding(3, 2, [false, false, false, true])).toBe(3)
+  })
+
+  it('never redirects a settle on the page already shown', () => {
+    expect(swipeLanding(2, 2, enabled)).toBe(2)
   })
 })
