@@ -145,7 +145,7 @@
     "react-native-css": "^3.0.7",
     "react-native-draggable-flatlist": "^4.0.3",
     "react-native-gesture-handler": "~3.3.0",
-    "react-native-get-random-values": "~2.0.0",
+    "react-native-get-random-values": "~2.1.0",
     "react-native-keyboard-controller": "1.22.7",
     "react-native-markdown-display": "^7.0.2",
     "react-native-pager-view": "9.0.7",
