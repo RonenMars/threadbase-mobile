@@ -6,6 +6,8 @@ export interface QuestionOption {
   preview?: string
   /** Prompt-contract only: the opaque id the answer carries instead of the label. */
   optionId?: string
+  /** Screen card only: Claude's "Type something." (`other`) or "Chat about this" (`chat`) row. */
+  terminalRow?: 'other' | 'chat'
 }
 export interface QuestionItem {
   question: string

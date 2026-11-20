@@ -90,6 +90,10 @@ export interface ChatComposerProps {
   /** The marked skill: its name at the start of the text shows in the accent color with an X. */
   skill?: SkillEntry | null
   onClearSkill?: () => void
+  /** Replaces the default placeholder, e.g. with the question a "Chat about this" left open. */
+  placeholder?: string | null
+  /** Focuses the inline input whenever this changes after mount. */
+  focusRequest?: number
 }
 
 const CHIP_THUMB_SIZE = 20
@@ -146,6 +150,8 @@ export function ChatComposer({
   slash = null,
   skill = null,
   onClearSkill,
+  placeholder = null,
+  focusRequest,
 }: ChatComposerProps) {
   const { t } = useTranslation('terminal')
   const { t: tCommon } = useTranslation('common')
@@ -173,6 +179,12 @@ export function ChatComposer({
   // owes when it closes, are decided by the focus machine.
   const inputRef = useRef<TextInputInstance>(null)
   const expandedInputRef = useRef<TextInputInstance>(null)
+  const firstFocusRequest = useRef(focusRequest)
+  useEffect(() => {
+    if (focusRequest === firstFocusRequest.current) return
+    firstFocusRequest.current = undefined
+    inputRef.current?.focus()
+  }, [focusRequest])
   const { onInputFocus, onInputBlur, onExpand, onMinimize } = useComposerFocus({
     inlineRef: inputRef,
     expandedRef: expandedInputRef,
@@ -460,7 +472,7 @@ export function ChatComposer({
               selection={selection}
               onSelectionChange={onSelectionChange}
               onBlur={onInputBlur}
-              placeholder={disabled ? t('status.starting') : t('input.placeholder')}
+              placeholder={disabled ? t('status.starting') : placeholder ?? t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
               multiline
               scrollEnabled
@@ -497,7 +509,7 @@ export function ChatComposer({
               onSelectionChange={onSelectionChange}
               onBlur={onInputBlur}
               onKeyPress={onWebKeyPress}
-              placeholder={disabled ? t('status.starting') : t('input.placeholder')}
+              placeholder={disabled ? t('status.starting') : placeholder ?? t('input.placeholder')}
               placeholderTextColor={theme.text.secondary}
               multiline
               scrollEnabled
@@ -573,7 +585,7 @@ export function ChatComposer({
                   if (minimizeOnCloseRef.current) return
                   onInputBlur()
                 }}
-                placeholder={disabled ? t('status.starting') : t('input.placeholder')}
+                placeholder={disabled ? t('status.starting') : placeholder ?? t('input.placeholder')}
                 placeholderTextColor={theme.text.secondary}
                 multiline
                 textAlignVertical="top"

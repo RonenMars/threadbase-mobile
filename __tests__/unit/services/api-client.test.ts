@@ -9,6 +9,7 @@ import {
   QUESTION_GONE_CODE,
   PROMPT_PENDING_CODE,
   isAnswerRefusedError,
+  isQuestionClosedError,
   isPromptPendingError,
   isPermissionAnswerRejectedError,
   isPermissionGateClosedError,
@@ -667,6 +668,20 @@ describe('api.post – reason fallback on the prompt-safety refusals', () => {
     expect((err as NetworkError).code).toBe('unsupported_prompt_shape')
     expect((err as NetworkError).message).toBe('This question has more than one part; answer it in the terminal')
     expect(isAnswerRefusedError(err as Error)).toBe(true)
+  })
+
+  // "Type something." refusals: deterministic for the text sent, so never
+  // retried. The card stays up and keeps the text.
+  it.each([[400, 'invalid_text'], [409, 'text_field_timeout']])('classifies a %i %s as a refusal, not a close', async (status, reason) => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status,
+      json: jest.fn().mockResolvedValue({ ok: false, reason }),
+    })
+    const err = await api.post('/api/sessions/sess1/answer', { toolUseId: 't1', answers: {} }).catch((e: Error) => e)
+    expect((err as NetworkError).code).toBe(reason)
+    expect(isAnswerRefusedError(err as Error)).toBe(true)
+    expect(isQuestionClosedError(err as Error)).toBe(false)
   })
 
   it('maps a 400 incomplete_answer the same way', async () => {

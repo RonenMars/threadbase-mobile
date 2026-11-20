@@ -14,6 +14,7 @@ import { useComposerState } from '@/hooks/useComposerState'
 import { useFileMentions } from '@/hooks/useFileMentions'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
+import { useChatAboutQuestion } from '@/hooks/useChatAboutQuestion'
 import { useQuestionCancel } from '@/hooks/useQuestionCancel'
 import { isPromptPendingError } from '@/services/api-client'
 import { TerminalOutput } from '@/components/terminal/TerminalOutput'
@@ -199,6 +200,7 @@ export function TerminalView({
       : t('dialog.sendFailedGeneric')
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage ?? cancelErrorMessage
+  const chatAbout = useChatAboutQuestion(serverId)
   const sendNoticeMessage = answerNoticeMessage ?? cancelNoticeMessage
   // message_pagination.total, not what the byte-bounded seed has loaded.
   const historyHeaderText = t('history.header', { count: totalMessages })
@@ -246,6 +248,7 @@ export function TerminalView({
           onSendKeys={(keys) => sendKeys.mutate(keys)}
           activeQuestion={activeQuestion}
           onAnswer={handleAnswerQuestion}
+          onChatAbout={chatAbout.onChatAbout}
           onAnswerPermission={handleAnswerPermission}
           onAnswerPrompt={handleAnswerPrompt}
           answerPhase={answerPhase}
@@ -261,7 +264,12 @@ export function TerminalView({
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
-        onSend={() => handleSend(fileMentions.skillPayload)}
+        onSend={() => {
+          chatAbout.clear()
+          handleSend(fileMentions.skillPayload)
+        }}
+        placeholder={chatAbout.placeholder}
+        focusRequest={chatAbout.focusRequest}
         // Send only, and only while the card is answerable. A pending ghost
         // blocks nothing, so an answer the server never confirms cannot strand
         // the composer — which is what makes the five exits from `active` a
@@ -285,6 +293,7 @@ export function TerminalView({
         promptSuggestion={chipSuggestion}
         onSendSuggestion={(text) => {
           dismissSuggestion()
+          chatAbout.clear()
           handleSend(text)
         }}
         onFillSuggestion={(text) => {

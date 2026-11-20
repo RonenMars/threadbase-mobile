@@ -356,7 +356,17 @@ export interface AskOption {
   label: string
   description: string
   preview?: string
+  /** Screen card only: one of Claude's own rows under the model's options. */
+  terminalRow?: 'other' | 'chat'
 }
+
+/** POST /answer value: a label, labels for multi-select, or free text for "Type something.". */
+export type QuestionAnswerValue = string | string[] | { other: string }
+export type QuestionAnswers = Record<string, QuestionAnswerValue>
+
+/** The label POST /answer takes for Claude's "Chat about this" row. Wire text, never translated. */
+// eslint-disable-next-line i18next/no-literal-string -- wire value the streamer matches, not UI copy
+export const CHAT_ABOUT_ANSWER = 'Chat about this'
 
 export interface AskQuestion {
   question: string
@@ -557,6 +567,12 @@ export interface ServerInfo {
    * shows no pinning.
    */
   pinnedDirs?: boolean
+  /**
+   * Additive: POST /answer takes free text (`{ other }`) and "Chat about this"
+   * on a single-select, single-question card. Absent on older servers, where
+   * either row declines the whole question, so both stay hidden.
+   */
+  questionOther?: boolean
   /**
    * Additive: the server publishes the provider-neutral prompt contract
    * (`prompt_snapshot` / `prompt_event` frames, POST /prompt/answer). Absent on

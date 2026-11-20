@@ -432,6 +432,191 @@ describe('QuestionCard', () => {
   })
 })
 
+// Claude paints "Type something." and "Chat about this" under the model's
+// options. A server that answers both (GET /api/info questionOther) gets the
+// app's own rows; the host passes the two callbacks only then. A screen card
+// already lists both rows (marked terminalRow), a JSONL card lists neither.
+describe('QuestionCard — the terminal-only rows', () => {
+  const SCREEN_BLOCK: QuestionBlock = {
+    ...BASE_BLOCK,
+    toolUseId: 'screen:1',
+    questions: [{
+      ...BASE_BLOCK.questions[0],
+      options: [
+        { label: 'Alpha' },
+        { label: 'Beta' },
+        { label: 'Type something.', terminalRow: 'other' },
+        { label: 'Chat about this', terminalRow: 'chat' },
+      ],
+    }],
+  }
+
+  async function renderRows(over: Partial<React.ComponentProps<typeof QuestionCard>> = {}) {
+    const props = {
+      block: BASE_BLOCK,
+      onSelect: jest.fn(),
+      onSubmitOther: jest.fn(),
+      onChatAbout: jest.fn(),
+      ...over,
+    }
+    const utils = await render(<QuestionCard {...props} />)
+    return { ...utils, ...props }
+  }
+
+  it('adds both rows to a structured card that lists neither', async () => {
+    const { getByLabelText } = await renderRows()
+    expect(getByLabelText('Type something.')).toBeTruthy()
+    expect(getByLabelText('Chat about this')).toBeTruthy()
+  })
+
+  it('shows each row once on a screen card that already lists them', async () => {
+    const { getAllByText, getAllByRole } = await renderRows({ block: SCREEN_BLOCK })
+    expect(getAllByText('Type something.')).toHaveLength(1)
+    expect(getAllByText('Chat about this')).toHaveLength(1)
+    expect(getAllByRole('button')).toHaveLength(4)
+  })
+
+  // Gate off: an older server declines the whole question on either row, so
+  // a screen card's own copies are hidden too.
+  it('hides both rows when the host does not offer them', async () => {
+    const { queryByText, getAllByRole } = await render(<QuestionCard block={SCREEN_BLOCK} onSelect={jest.fn()} />)
+    expect(queryByText('Type something.')).toBeNull()
+    expect(queryByText('Chat about this')).toBeNull()
+    expect(getAllByRole('button')).toHaveLength(2)
+  })
+
+  it('recognises the rows by their marker, not their text', async () => {
+    const marked: QuestionBlock = {
+      ...SCREEN_BLOCK,
+      questions: [{ ...SCREEN_BLOCK.questions[0], options: [{ label: 'Alpha' }, { label: 'Write it yourself', terminalRow: 'other' }] }],
+    }
+    const { queryByText } = await render(<QuestionCard block={marked} onSelect={jest.fn()} />)
+    expect(queryByText('Write it yourself')).toBeNull()
+  })
+
+  it('keeps the real option indexes on a screen card', async () => {
+    const { getByLabelText, onSelect } = await renderRows({ block: SCREEN_BLOCK })
+    await fireEvent.press(getByLabelText('Beta'))
+    expect(onSelect).toHaveBeenCalledWith(0, 1)
+  })
+
+  it.each([
+    ['multi-select', { ...BASE_BLOCK, questions: [{ ...BASE_BLOCK.questions[0], multiSelect: true }] }],
+    ['multi-question', { ...BASE_BLOCK, unsupportedShape: true, questions: [BASE_BLOCK.questions[0], { ...BASE_BLOCK.questions[0], question: 'Second?' }] }],
+    ['two questions', { ...BASE_BLOCK, questions: [BASE_BLOCK.questions[0], { ...BASE_BLOCK.questions[0], question: 'Second?' }] }],
+    ['unsupported-shape', { ...BASE_BLOCK, unsupportedShape: 'unknown' }],
+  ] as [string, QuestionBlock][])('offers neither row on a %s card', async (_name, block) => {
+    const { queryByLabelText } = await renderRows({ block })
+    expect(queryByLabelText('Type something.')).toBeNull()
+    expect(queryByLabelText('Chat about this')).toBeNull()
+  })
+
+  // The scraped card answers with raw keys, so its rows stay what they were.
+  it('leaves a card the terminal scrape built as it was', async () => {
+    const { getAllByText, getByLabelText, queryByTestId, onSelect } = await renderRows({ block: { ...SCREEN_BLOCK, source: 'pty', toolUseId: undefined } })
+    expect(getAllByText('Type something.')).toHaveLength(1)
+    await fireEvent.press(getByLabelText('Type something.'))
+    expect(onSelect).toHaveBeenCalledWith(0, 2)
+    expect(queryByTestId('question-other-input')).toBeNull()
+  })
+
+  describe('"Type something."', () => {
+    it('opens an input instead of sending', async () => {
+      const { getByLabelText, getByTestId, onSelect, onSubmitOther } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      expect(getByTestId('question-other-input')).toBeTruthy()
+      expect(onSelect).not.toHaveBeenCalled()
+      expect(onSubmitOther).not.toHaveBeenCalled()
+    })
+
+    it('enables Send only for text that is not whitespace', async () => {
+      const { getByLabelText, getByTestId, getByRole, onSubmitOther } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      expect(getByRole('button', { name: 'Send' })).toBeDisabled()
+      await fireEvent.changeText(getByTestId('question-other-input'), '   \n ')
+      await fireEvent.press(getByRole('button', { name: 'Send' }))
+      expect(onSubmitOther).not.toHaveBeenCalled()
+      await fireEvent.changeText(getByTestId('question-other-input'), 'use a map\nnot a list')
+      expect(getByRole('button', { name: 'Send' })).not.toBeDisabled()
+    })
+
+    it('sends the text as typed', async () => {
+      const { getByLabelText, getByTestId, getByRole, onSubmitOther } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      await fireEvent.changeText(getByTestId('question-other-input'), ' use a map\nnot a list ')
+      await fireEvent.press(getByRole('button', { name: 'Send' }))
+      expect(onSubmitOther).toHaveBeenCalledWith(0, ' use a map\nnot a list ')
+    })
+
+    it('sends another option immediately and discards the draft', async () => {
+      const { getByLabelText, getByTestId, queryByTestId, onSelect, onSubmitOther } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      await fireEvent.changeText(getByTestId('question-other-input'), 'draft')
+      await fireEvent.press(getByLabelText('indicator only'))
+      expect(onSelect).toHaveBeenCalledWith(0, 1)
+      expect(queryByTestId('question-other-input')).toBeNull()
+      await fireEvent.press(getByLabelText('Type something.'))
+      expect(getByTestId('question-other-input').props.value).toBe('')
+      expect(onSubmitOther).not.toHaveBeenCalled()
+    })
+
+    it.each(['the row again', 'Back'])('collapses on %s', async (target) => {
+      const { getByLabelText, getByTestId, queryByTestId } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      expect(getByTestId('question-other-input')).toBeTruthy()
+      await fireEvent.press(getByLabelText(target === 'Back' ? 'Back' : 'Type something.'))
+      expect(queryByTestId('question-other-input')).toBeNull()
+    })
+
+    it('locks Send while the answer is in flight', async () => {
+      const { getByLabelText, getByTestId, getByRole, rerender, onSelect, onSubmitOther, onChatAbout } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      await fireEvent.changeText(getByTestId('question-other-input'), 'mine')
+      await rerender(<QuestionCard block={BASE_BLOCK} onSelect={onSelect} onSubmitOther={onSubmitOther} onChatAbout={onChatAbout} busy />)
+      expect(getByRole('button', { name: 'Send' })).toBeDisabled()
+      await fireEvent.press(getByRole('button', { name: 'Send' }))
+      expect(onSubmitOther).not.toHaveBeenCalled()
+    })
+
+    // A refused or failed answer leaves the same prompt up and unlocks it: the
+    // repaint must not lose what the user typed.
+    it('keeps the text when the card unlocks after a failed answer', async () => {
+      const { getByLabelText, getByTestId, rerender, onSelect, onSubmitOther, onChatAbout } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      await fireEvent.changeText(getByTestId('question-other-input'), 'mine')
+      const props = { onSelect, onSubmitOther, onChatAbout }
+      await rerender(<QuestionCard block={BASE_BLOCK} {...props} busy />)
+      await rerender(<QuestionCard block={{ ...BASE_BLOCK }} {...props} />)
+      expect(getByTestId('question-other-input').props.value).toBe('mine')
+      expect(getByTestId('question-other-input').props.editable).not.toBe(false)
+    })
+
+    it('drops the draft when the next prompt arrives', async () => {
+      const { getByLabelText, getByTestId, queryByTestId, rerender, onSelect, onSubmitOther, onChatAbout } = await renderRows()
+      await fireEvent.press(getByLabelText('Type something.'))
+      await fireEvent.changeText(getByTestId('question-other-input'), 'mine')
+      const next: QuestionBlock = { ...BASE_BLOCK, questions: [{ ...BASE_BLOCK.questions[0], question: 'Another?' }] }
+      await rerender(<QuestionCard block={next} onSelect={onSelect} onSubmitOther={onSubmitOther} onChatAbout={onChatAbout} />)
+      expect(queryByTestId('question-other-input')).toBeNull()
+    })
+  })
+
+  describe('"Chat about this"', () => {
+    it('sends at once through its own callback', async () => {
+      const { getByLabelText, onSelect, onChatAbout } = await renderRows({ block: SCREEN_BLOCK })
+      await fireEvent.press(getByLabelText('Chat about this'))
+      expect(onChatAbout).toHaveBeenCalledWith(0)
+      expect(onSelect).not.toHaveBeenCalled()
+    })
+
+    it('does nothing while the card is locked', async () => {
+      const { getByLabelText, onChatAbout } = await renderRows({ ghost: true })
+      await fireEvent.press(getByLabelText('Chat about this'))
+      expect(onChatAbout).not.toHaveBeenCalled()
+    })
+  })
+})
+
 describe('QuestionCard theming', () => {
   afterEach(() => {
     mockTheme.current = THEMES.dark

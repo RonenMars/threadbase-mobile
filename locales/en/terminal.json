@@ -15,7 +15,9 @@
     "questionClosed": "That question isn't open anymore.",
     "promptChanged": "That prompt changed — check it and answer again.",
     "sendPending": "Waiting for the prompt to close; try again in a moment.",
-    "sendEscape": "Send Escape to dismiss it"
+    "sendEscape": "Send Escape to dismiss it",
+    "invalidText": "The terminal can't take that text. Remove tabs or other control characters, or shorten it, and send again.",
+    "textFieldTimeout": "The terminal didn't take your text in time. It's still here; send it again."
   },
   "rawKeyboard": {
     "menu": "Raw keys",

@@ -200,3 +200,22 @@ describe('POST /api/sessions/:id/permission/answer', () => {
     ws.close()
   })
 })
+
+// Claude's "Type something." and "Chat about this" rows are offered only when
+// the server says it accepts them, and the e2e flow proves the wire body by
+// reading back what POST /answer received.
+describe('question terminal rows', () => {
+  it('reports questionOther from GET /api/info', async () => {
+    const info = await (await fetch(`${BASE}/api/info`, { headers: { Authorization: 'Bearer test-key' } })).json()
+    expect(info.questionOther).toBe(true)
+  })
+
+  it('logs each POST /answer body for /__test__/answers, and clears it on reset', async () => {
+    await post('/__test__/answers', { reset: true })
+    const body = { toolUseId: 'q-1', answers: { 'Which store?': { other: 'Redis' } } }
+    expect((await post('/api/sessions/sess-1/answer', body)).status).toBe(200)
+
+    expect((await (await post('/__test__/answers', { reset: true })).json()).answers).toEqual([body])
+    expect((await (await post('/__test__/answers', {})).json()).answers).toEqual([])
+  })
+})

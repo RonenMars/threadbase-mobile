@@ -1187,6 +1187,51 @@ describe('LiveConversationView virtualized paging', () => {
   })
 })
 
+// Kept above the session_update cache test: after it, a question arriving on a
+// fresh mount never opens the card in this file.
+describe('LiveConversationView — "Chat about this"', () => {
+  beforeEach(() => {
+    mockHistorical = []
+    mockLive = []
+    mockPtyLines = []
+    mockSendInputState = { isError: false, error: null }
+    for (const key of Object.keys(wsHandlers)) delete wsHandlers[key]
+  })
+
+  function setQuestionOther(supported: boolean) {
+    useServersStore.setState({
+      servers: {
+        srv1: {
+          id: 'srv1',
+          url: 'http://srv1',
+          apiKey: 'key',
+          isConnected: true,
+          connectionError: null,
+          serverInfo: { version: '1', machineName: 'mac', platform: 'macOS', activeSessions: 0, ...(supported ? { questionOther: true } : {}) },
+        },
+      },
+    })
+  }
+
+  it('hides the terminal rows on a server without questionOther', async () => {
+    setQuestionOther(false)
+    await renderView()
+    await act(async () => dispatchWs('question', { ...QUESTION_MESSAGE, toolUseId: 'q-chat' }))
+    expect(screen.getByTestId('question-card')).toBeTruthy()
+    expect(screen.queryAllByLabelText('Chat about this')).toHaveLength(0)
+  })
+
+  it('puts the question in the composer placeholder once the answer lands', async () => {
+    setQuestionOther(true)
+    await renderView()
+    await act(async () => dispatchWs('question', { ...QUESTION_MESSAGE, toolUseId: 'q-chat' }))
+
+    await act(async () => { fireEvent.press(screen.getAllByLabelText('Chat about this')[0]) })
+
+    await waitFor(() => expect(screen.getByTestId('chat-message-input').props.placeholder).toBe('Which approach?'))
+  })
+})
+
 describe('LiveConversationView — session_update cache write', () => {
   const key = ['session', 'srv1', 'sess1']
   const cached: Session = {

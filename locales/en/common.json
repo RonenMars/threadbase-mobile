@@ -102,7 +102,11 @@
     "unsupportedShape": "This prompt needs an answer this app can't send yet — answer it in the terminal.",
     "openFullScreen": "Open full screen",
     "minimize": "Minimize",
-    "waiting": "A question is waiting for your answer"
+    "waiting": "A question is waiting for your answer",
+    "typeSomething": "Type something.",
+    "chatAboutThis": "Chat about this",
+    "otherPlaceholder": "Type your answer",
+    "send": "Send"
   },
   "errorBanner": {
     "titleSessions": "Sessions didn't load.",

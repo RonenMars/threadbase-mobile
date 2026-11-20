@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import { isPermissionAnswerRejectedError, isPermissionGateClosedError, isPromptClosedError, isPromptStaleError, isQuestionClosedError } from '@/services/api-client'
+import { NetworkError, isPermissionAnswerRejectedError, isPermissionGateClosedError, isPromptClosedError, isPromptStaleError, isQuestionClosedError } from '@/services/api-client'
 import { generateUUID } from '@/services/device-id'
 import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import type { useSessionActions } from '@/hooks/useSessionActions'
+import type { QuestionAnswers } from '@/types/api'
 import { isCodexTrustQuitOption } from '@/utils/parseQuestionBlock'
 import { permissionAnswerKeys } from '@/utils/permissionAnswerKeys'
 
@@ -91,14 +92,18 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
     }
   }, [activeQuestion, answerPermission, clearQuestion, markPending, onSessionQuit, questionKey, requestReplay, resetAndUnsuppress])
 
-  const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: Record<string, string | string[]>) => {
+  // Resolves true once the server wrote the answer, so a caller can act on it
+  // landing ("Chat about this" focuses the composer); a failure resolves false.
+  const handleAnswerQuestion = useCallback(async (toolUseId: string, answers: QuestionAnswers): Promise<boolean> => {
     const answeredKey = questionKey
-    if (!activeQuestion) return
+    if (!activeQuestion) return false
     try {
       await respondToQuestion.mutateAsync({ toolUseId, answers })
       markPending(answeredKey)
+      return true
     } catch (err) {
       if (isQuestionClosedError(err instanceof Error ? err : null)) clearQuestion()
+      return false
     }
   }, [activeQuestion, clearQuestion, markPending, questionKey, respondToQuestion])
 
@@ -152,10 +157,18 @@ export function useQuestionAnswer({ serverId, sessionId, respondToQuestion, answ
       : answerPrompt.isError && !isPromptClosed && !isPromptStale
         ? answerPrompt.error
         : null
+  // The free-text refusals carry a reason and no message, like the gate ones.
+  const freeTextRefusal = answerFailure === respondToQuestion.error && answerFailure instanceof NetworkError
+    ? answerFailure.code
+    : undefined
   const answerErrorMessage = answerFailure
     ? answerFailure === answerPermission.error && isGateRejectedError
       ? t('answer.promptChanged')
-      : answerFailure instanceof Error
+      : freeTextRefusal === 'invalid_text'
+        ? t('answer.invalidText')
+        : freeTextRefusal === 'text_field_timeout'
+          ? t('answer.textFieldTimeout')
+          : answerFailure instanceof Error
         ? answerFailure.message
         : t('answer.failed')
     : null

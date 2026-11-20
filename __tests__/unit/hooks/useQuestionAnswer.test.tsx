@@ -351,6 +351,61 @@ describe('useQuestionAnswer – an answer the server refuses to write', () => {
   )
 })
 
+describe('useQuestionAnswer – the "Type something." and "Chat about this" answers', () => {
+  // The refusals carry only a reason, so the error's own message would read
+  // "Server returned 400/409". The text the user typed is still on the card.
+  it.each([
+    ['invalid_text', 400, "The terminal can't take that text. Remove tabs or other control characters, or shorten it, and send again."],
+    ['text_field_timeout', 409, "The terminal didn't take your text in time. It's still here; send it again."],
+  ])('reads %s as its own error, not the bare status', async (code, status, message) => {
+    const refused = mutation({ isError: true, error: new NetworkError(`Server returned ${status}`, code) })
+    const { result } = await setup({ respondToQuestion: refused })
+    expect(result.current.answerErrorMessage).toBe(message)
+    expect(result.current.answerNoticeMessage).toBeNull()
+  })
+
+  it('keeps the card up when free text is refused', async () => {
+    const refused = mutation({ mutateAsync: jest.fn().mockRejectedValue(new NetworkError('Server returned 409', 'text_field_timeout')) })
+    const { result } = await setup({ respondToQuestion: refused })
+    await act(() => __wsTest.emit('question', question))
+
+    let landed: boolean | undefined
+    await act(async () => {
+      landed = await result.current.handleAnswerQuestion('tool-1', { 'Which language?': { other: 'Rust' } })
+    })
+
+    expect(refused.mutateAsync).toHaveBeenCalledWith({ toolUseId: 'tool-1', answers: { 'Which language?': { other: 'Rust' } } })
+    expect(landed).toBe(false)
+    expect(result.current.activeQuestion).not.toBeNull()
+    expect(result.current.answerPhase).toBe('active')
+  })
+
+  // The host focuses the composer only on an answer that landed.
+  it('reports an answer that landed', async () => {
+    const ok = mutation({ mutateAsync: jest.fn().mockResolvedValue({ ok: true }) })
+    const { result } = await setup({ respondToQuestion: ok })
+    await act(() => __wsTest.emit('question', question))
+
+    let landed: boolean | undefined
+    await act(async () => {
+      landed = await result.current.handleAnswerQuestion('tool-1', { 'Which language?': 'Chat about this' })
+    })
+
+    expect(landed).toBe(true)
+  })
+
+  it('reports nothing landed with no question open', async () => {
+    const ok = mutation({ mutateAsync: jest.fn().mockResolvedValue({ ok: true }) })
+    const { result } = await setup({ respondToQuestion: ok })
+    let landed: boolean | undefined
+    await act(async () => {
+      landed = await result.current.handleAnswerQuestion('tool-1', { 'Which language?': 'Chat about this' })
+    })
+    expect(landed).toBe(false)
+    expect(ok.mutateAsync).not.toHaveBeenCalled()
+  })
+})
+
 describe('useQuestionAnswer – a multi-select question whose checkboxes the streamer could not read', () => {
   const multiQuestion: QuestionWsMessage = {
     ...question,

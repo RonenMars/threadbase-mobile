@@ -27,6 +27,15 @@ describe('mapAskQuestionToBlock', () => {
     expect(mapAskQuestionToBlock('toolu_3', qs).questions[0]).not.toHaveProperty('multiSelectUnverified')
   })
 
+  it('carries the terminal-row marker a screen card puts on Claude\'s own rows', () => {
+    const block = mapAskQuestionToBlock('screen:1', [{
+      ...qs[0],
+      options: [...qs[0].options, { label: 'Type something.', description: '', terminalRow: 'other' }, { label: 'Chat about this', description: '', terminalRow: 'chat' }],
+    }])
+    expect(block.questions[0].options.map(o => o.terminalRow)).toEqual([undefined, undefined, 'other', 'chat'])
+    expect(block.questions[0].options[0]).not.toHaveProperty('terminalRow')
+  })
+
   it('leaves a single-select question without unsupportedShape', () => {
     expect(mapAskQuestionToBlock('toolu_1', qs).unsupportedShape).toBeUndefined()
   })
