@@ -1,52 +1,58 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import { CaretLeft, CaretRight } from 'phosphor-react-native'
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
 import { spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
-import { BOARD_COLUMNS, boardScrollX, type BoardColumnId } from '@/lib/boardColumns'
+import { boardScrollX, type BoardColumnId } from '@/lib/boardColumns'
 import { useAppDirection } from '@/lib/rtl'
 import { BoardChips, columnLabel, columnToken } from './BoardChips'
 
 const PANE_WIDTH = 264
-const STRIP_WIDTH = 36
 
 interface Props {
+  columns: readonly BoardColumnId[]
   counts: Record<BoardColumnId, number>
   column: BoardColumnId
   onSelect: (id: BoardColumnId) => void
   renderColumn: (id: BoardColumnId) => React.ReactNode
+  animate: boolean
 }
 
 /**
- * All columns side by side, for 768 and up on web and iPad. Chips and arrows
- * bring a column into view; an empty column folds to a strip and unfolds by
- * itself when a session lands in it.
+ * The visible columns side by side, for 768 and up on web and iPad. Chips and
+ * arrows bring a column into view, and so does the board moving the selection.
  */
-export function DesktopBoard({ counts, column, onSelect, renderColumn }: Props) {
+export function DesktopBoard({ columns, counts, column, onSelect, renderColumn, animate }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
-  const reduceMotion = useReduceMotion()
   const { isRTL } = useAppDirection()
   const track = useRef<ScrollViewInstance>(null)
   const columnX = useRef<Partial<Record<BoardColumnId, number>>>({})
   const [content, setContent] = useState(0)
   const [viewport, setViewport] = useState(0)
 
-  const reveal = (id: BoardColumnId) => {
-    onSelect(id)
-    const x = columnX.current[id]
-    if (x === undefined) return
-    track.current?.scrollTo({ x: boardScrollX(x, { content, viewport, rtl: isRTL, web: Platform.OS === 'web' }) - spacing.md, animated: !reduceMotion })
+  const shown = useRef(column)
+  // A column that has just appeared has no x yet; its pane scrolls itself in once laid out.
+  const pending = useRef<BoardColumnId | null>(null)
+  const scrollTo = (x: number) => {
+    track.current?.scrollTo({ x: boardScrollX(x, { content, viewport, rtl: isRTL, web: Platform.OS === 'web' }) - spacing.md, animated: animate })
   }
+  useEffect(() => {
+    if (shown.current === column) return
+    shown.current = column
+    const x = columnX.current[column]
+    pending.current = x === undefined ? column : null
+    if (x !== undefined) scrollTo(x)
+  })
 
-  const index = BOARD_COLUMNS.indexOf(column)
+  const index = columns.indexOf(column)
   const allFit = content <= viewport
   const atStart = index === 0
-  const atEnd = index === BOARD_COLUMNS.length - 1
+  const atEnd = index === columns.length - 1
   // Row order follows the direction, so "previous" already sits on the right in RTL; only the glyphs swap.
   const PreviousIcon = isRTL ? CaretRight : CaretLeft
   const NextIcon = isRTL ? CaretLeft : CaretRight
@@ -54,13 +60,13 @@ export function DesktopBoard({ counts, column, onSelect, renderColumn }: Props) 
   return (
     <View style={styles.fill} testID="desktop-board">
       <View style={styles.topRow}>
-        <BoardChips counts={counts} selected={column} onSelect={reveal} />
+        <BoardChips columns={columns} counts={counts} selected={column} onSelect={onSelect} animate={animate} />
         {allFit ? null : (
           <View style={styles.arrows}>
             <Pressable
               style={[styles.arrow, atStart && styles.arrowOff]}
               disabled={atStart}
-              onPress={() => reveal(BOARD_COLUMNS[index - 1])}
+              onPress={() => onSelect(columns[index - 1])}
               accessibilityRole="button"
               accessibilityState={{ disabled: atStart }}
               accessibilityLabel={t('boardTab.previousColumn')}
@@ -71,7 +77,7 @@ export function DesktopBoard({ counts, column, onSelect, renderColumn }: Props) 
             <Pressable
               style={[styles.arrow, atEnd && styles.arrowOff]}
               disabled={atEnd}
-              onPress={() => reveal(BOARD_COLUMNS[index + 1])}
+              onPress={() => onSelect(columns[index + 1])}
               accessibilityRole="button"
               accessibilityState={{ disabled: atEnd }}
               accessibilityLabel={t('boardTab.nextColumn')}
@@ -91,29 +97,29 @@ export function DesktopBoard({ counts, column, onSelect, renderColumn }: Props) 
         onLayout={(e) => setViewport(e.nativeEvent.layout.width)}
         onContentSizeChange={(width) => setContent(width)}
       >
-        {BOARD_COLUMNS.map((id) => {
-          const label = columnLabel(id, t)
-          const dot = <View style={[styles.dot, { backgroundColor: colorForToken(theme, columnToken(id)) }]} />
-          const measure = { onLayout: (e: { nativeEvent: { layout: { x: number } } }) => { columnX.current[id] = e.nativeEvent.layout.x } }
-          if (counts[id] === 0) {
-            return (
-              <View key={id} {...measure} style={styles.strip} accessible accessibilityLabel={`${label} 0`} testID={`board-strip-${id}`}>
-                {dot}
-                <Text style={styles.stripText} numberOfLines={1}>{label}</Text>
-              </View>
-            )
-          }
-          return (
-            <View key={id} {...measure} style={styles.pane} testID={`board-pane-${id}`}>
-              <View style={styles.paneHead}>
-                {dot}
-                <Text style={styles.paneTitle} numberOfLines={1}>{label}</Text>
-                <Text style={styles.paneCount}>{counts[id]}</Text>
-              </View>
-              {renderColumn(id)}
+        {columns.map((id) => (
+          <Animated.View
+            key={id}
+            entering={animate ? FadeIn : undefined}
+            exiting={animate ? FadeOut : undefined}
+            layout={animate ? LinearTransition : undefined}
+            onLayout={(e) => {
+              columnX.current[id] = e.nativeEvent.layout.x
+              if (pending.current !== id) return
+              pending.current = null
+              scrollTo(e.nativeEvent.layout.x)
+            }}
+            style={styles.pane}
+            testID={`board-pane-${id}`}
+          >
+            <View style={styles.paneHead}>
+              <View style={[styles.dot, { backgroundColor: colorForToken(theme, columnToken(id)) }]} />
+              <Text style={styles.paneTitle} numberOfLines={1}>{columnLabel(id, t)}</Text>
+              <Text style={styles.paneCount}>{counts[id]}</Text>
             </View>
-          )
-        })}
+            {renderColumn(id)}
+          </Animated.View>
+        ))}
       </ScrollView>
     </View>
   )
@@ -132,20 +138,5 @@ function makeStyles(theme: Theme) {
     paneTitle: { flexShrink: 1, color: theme.text.primary, fontSize: 13, fontWeight: '600' },
     paneCount: { color: theme.text.secondary, fontSize: 13, opacity: 0.65, fontVariant: ['tabular-nums'] },
     dot: { width: 8, height: 8, borderRadius: 4 },
-    strip: {
-      width: STRIP_WIDTH,
-      height: 400,
-      alignSelf: 'flex-start',
-      alignItems: 'center',
-      gap: spacing.sm,
-      paddingTop: spacing.sm,
-      borderWidth: 1,
-      borderColor: theme.border,
-      borderRadius: 10,
-      opacity: 0.55,
-      overflow: 'hidden',
-    },
-    // Rotated rather than writing-mode, which native layout does not have.
-    stripText: { width: 200, marginTop: 96, textAlign: 'center', color: theme.text.secondary, fontSize: 13, fontWeight: '600', transform: [{ rotate: '90deg' }] },
   })
 }

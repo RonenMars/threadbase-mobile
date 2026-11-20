@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next'
 import { buildNowEntries, type NowEntry } from '@/components/sessions/now/nowEntries'
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
 import { TABLET_BREAKPOINT } from '@/constants/theme'
+import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { useAllSubagents } from '@/hooks/useAllSubagents'
-import { bucketBoard, firstNonEmptyColumn, startingColumn, subagentParentKeys, type BoardColumnId } from '@/lib/boardColumns'
+import { BOARD_COLUMNS, bucketBoard, followColumn, startingColumn, subagentParentKeys, visibleColumns, type BoardColumnId } from '@/lib/boardColumns'
 import { promptRefetchKey } from '@/lib/boardPrompts'
 import { groupSubagentsByParent, resolveSubagentLabel } from '@/lib/subagents'
 import { useServersStore } from '@/stores/servers'
@@ -26,6 +27,8 @@ interface Props {
   order: SortBy
   direction: SortOrder
   refreshing: boolean
+  /** First load or every server down: the board holds its columns rather than hide one that only looks empty. */
+  loading?: boolean
   onRefresh: () => void
   /** Refetch the list without the pull spinner: `pendingPrompts` only arrive on list rows. */
   onPromptsChanged: () => void
@@ -49,6 +52,7 @@ export function SessionBoard({
   order,
   direction,
   refreshing,
+  loading = false,
   onRefresh,
   onPromptsChanged,
   onEndReached,
@@ -123,15 +127,46 @@ export function SessionBoard({
     [board],
   )
 
-  // Unset until the user moves, so a Needs you card that arrives after the first paint still decides where the board starts.
+  // Empty columns hide only on a settled board, and nothing animates until one has painted.
+  const reduceMotion = useReduceMotion()
+  const settled = !loading && !refreshing && !subagents.isLoading && !subagents.isError
+  const [hasSettled, setHasSettled] = useState(false)
+  useEffect(() => {
+    if (!settled || hasSettled) return
+    const frame = requestAnimationFrame(() => setHasSettled(true))
+    return () => cancelAnimationFrame(frame)
+  }, [settled, hasSettled])
+  const animate = settled && hasSettled && !reduceMotion
+
+  const live = visibleColumns(board)
+  const [kept, setKept] = useState<readonly BoardColumnId[]>(BOARD_COLUMNS)
+  if (settled && kept.join() !== live.join()) setKept(live)
+  // The column the board just moved off stays while the pager slides away from it.
+  const [lingering, setLingering] = useState<BoardColumnId | null>(null)
+  useEffect(() => {
+    if (!lingering) return
+    const timer = setTimeout(() => setLingering(null), LINGER_MS)
+    return () => clearTimeout(timer)
+  }, [lingering])
+  const columns = BOARD_COLUMNS.filter((c) => live.includes(c) || (!settled && kept.includes(c)) || c === lingering)
+
+  // Unset until the board settles, so a Needs you card that arrives while it loads still decides where it starts; fixed after, so a later one never yanks the user.
   const [picked, setPicked] = useState<BoardColumnId | null>(null)
   const preferred = picked ?? startingColumn(board, rememberedColumn)
-  // Sub-agents only hides the session cards, so the remembered column can be empty while another holds every card.
-  const column = subagentsOnly && board[preferred].length === 0 ? firstNonEmptyColumn(board) : preferred
+  // Compared by card keys: the sub-agent query hands back a new board on every render.
+  const placement = BOARD_COLUMNS.map((c) => board[c].map((card) => card.key).join()).join('|')
+  const [last, setLast] = useState({ board, placement, column: preferred })
+  // Only a column that hides moves the board; one appearing elsewhere never pulls the user off what they're reading.
+  const column = columns.includes(preferred) ? preferred : followColumn(last.board, board, last.column, columns)
+  if (last.placement !== placement || last.column !== column) setLast({ board, placement, column })
+  if (hasSettled && (picked === null || column !== preferred)) {
+    setPicked(column)
+    if (animate && column !== preferred && last.column !== column) setLingering(last.column)
+  }
   const selectColumn = useCallback((id: BoardColumnId) => {
     setPicked(id)
     setBoardColumn(id)
-  }, [setBoardColumn])
+  }, [setBoardColumn, setPicked])
 
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set())
   const toggleOpen = useCallback((id: string) => {
@@ -185,7 +220,7 @@ export function SessionBoard({
   const Layout = width >= TABLET_BREAKPOINT ? DesktopBoard : PhoneBoard
   return (
     <View style={[styles.fill, { paddingTop: topInset }]}>
-      <Layout counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} />
+      <Layout columns={columns} counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} animate={animate} />
       {questionFor && questionSession ? (
         <SessionQuestionModal
           session={questionSession}
@@ -199,3 +234,6 @@ export function SessionBoard({
 }
 
 const styles = StyleSheet.create({ fill: { flex: 1 } })
+
+// Long enough for the pager's slide to finish before the page under it goes.
+const LINGER_MS = 400

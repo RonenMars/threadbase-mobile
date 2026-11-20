@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
-import { BOARD_COLUMNS, boardScrollX, type BoardColumnId } from '@/lib/boardColumns'
+import { boardScrollX, type BoardColumnId } from '@/lib/boardColumns'
 import { useAppDirection } from '@/lib/rtl'
 import type { SessionColorToken } from '@/lib/sessionPresentation'
 
@@ -37,13 +38,16 @@ export function columnToken(id: BoardColumnId): SessionColorToken {
 }
 
 interface Props {
+  columns: readonly BoardColumnId[]
   counts: Record<BoardColumnId, number>
   selected: BoardColumnId
   onSelect: (id: BoardColumnId) => void
+  /** Fades a chip in or out and slides its neighbours; off on the first paint and under reduce motion. */
+  animate: boolean
 }
 
-/** One scrolling line of the four columns. An empty one stays, dimmed with its 0, so positions never shift. */
-export function BoardChips({ counts, selected, onSelect }: Props) {
+/** One scrolling line of the visible columns. */
+export function BoardChips({ columns, counts, selected, onSelect, animate }: Props) {
   const { t } = useTranslation('sessions')
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
@@ -73,25 +77,31 @@ export function BoardChips({ counts, selected, onSelect }: Props) {
       onLayout={(e) => { size.current.viewport = e.nativeEvent.layout.width }}
       onContentSizeChange={(width) => { size.current.content = width }}
     >
-      {BOARD_COLUMNS.map((id) => {
+      {columns.map((id) => {
         const isSelected = id === selected
         return (
-          <Pressable
+          <Animated.View
             key={id}
-            onPress={() => onSelect(id)}
+            entering={animate ? FadeIn : undefined}
+            exiting={animate ? FadeOut : undefined}
+            layout={animate ? LinearTransition : undefined}
             onLayout={(e) => {
               const chip = e.nativeEvent.layout.x
               setChipX((prev) => (prev[id] === chip ? prev : { ...prev, [id]: chip }))
             }}
-            style={[styles.chip, isSelected && styles.chipSelected, counts[id] === 0 && styles.chipEmpty]}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: isSelected }}
-            testID={`board-column-${id}`}
           >
-            <View style={[styles.dot, { backgroundColor: colorForToken(theme, columnToken(id)) }]} />
-            <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{columnLabel(id, t)}</Text>
-            <Text style={styles.chipCount}>{counts[id]}</Text>
-          </Pressable>
+            <Pressable
+              onPress={() => onSelect(id)}
+              style={[styles.chip, isSelected && styles.chipSelected]}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+              testID={`board-column-${id}`}
+            >
+              <View style={[styles.dot, { backgroundColor: colorForToken(theme, columnToken(id)) }]} />
+              <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{columnLabel(id, t)}</Text>
+              <Text style={styles.chipCount}>{counts[id]}</Text>
+            </Pressable>
+          </Animated.View>
         )
       })}
     </ScrollView>
@@ -114,7 +124,6 @@ function makeStyles(theme: Theme) {
       backgroundColor: theme.bg.card,
     },
     chipSelected: { borderColor: theme.text.accent, backgroundColor: `${theme.text.accent}24` },
-    chipEmpty: { opacity: 0.55 },
     chipText: { color: theme.text.secondary, fontSize: font.xs, fontWeight: '600' },
     chipTextSelected: { color: theme.text.primary },
     chipCount: { color: theme.text.secondary, fontSize: font.xs, fontVariant: ['tabular-nums'] },
