@@ -159,7 +159,7 @@ export function SessionBoard({
   // Only a column that hides moves the board; one appearing elsewhere never pulls the user off what they're reading.
   const column = columns.includes(preferred) ? preferred : followColumn(last.board, board, last.column, columns)
   if (last.placement !== placement || last.column !== column) setLast({ board, placement, column })
-  if (hasSettled && (picked === null || column !== preferred)) {
+  if ((settled || hasSettled) && (picked === null || column !== preferred)) {
     setPicked(column)
     if (animate && column !== preferred && last.column !== column) setLingering(last.column)
   }
