@@ -29,6 +29,7 @@ import {
   ArrowsOut,
   ArrowsIn,
   Sparkle,
+  Quotes,
 } from 'phosphor-react-native'
 import { isPreviewableImage, type ComposerAttachment } from '@/services/uploads'
 import { lendComposerFocus, returnComposerFocus, useComposerFocus } from '@/hooks/useComposerFocus'
@@ -49,6 +50,9 @@ export interface ChatComposerProps {
   onCancelUpload?: () => void
   attachments: ComposerAttachment[]
   onRemoveAttachment: (id: string) => void
+  /** Quoted message shown as a removable tag; it rides along with the next send. */
+  quote?: string | null
+  onClearQuote?: () => void
   isUploading: boolean
   attachError: string | null
   sendError: string | null
@@ -130,6 +134,8 @@ export function ChatComposer({
   onCancelUpload,
   attachments,
   onRemoveAttachment,
+  quote = null,
+  onClearQuote,
   isUploading,
   attachError,
   sendError,
@@ -317,6 +323,24 @@ export function ChatComposer({
   // expanded editor is up the preview has to be mounted inside it.
   const preview = <AttachmentPreview images={previewImages} openIndex={previewIndex} onClose={closePreview} />
 
+  const quoteChip = quote ? (
+    <View style={[styles.chip, styles.quoteChip]}>
+      <Quotes size={14} color={theme.text.secondary} weight="fill" />
+      <Text testID="quote-chip" style={styles.chipText} numberOfLines={1}>
+        {quote}
+      </Text>
+      <TouchableOpacity
+        testID="quote-chip-remove"
+        onPress={onClearQuote}
+        accessibilityRole="button"
+        accessibilityLabel={t('input.removeQuoteLabel')}
+        hitSlop={8}
+      >
+        <X size={14} color={theme.text.secondary} />
+      </TouchableOpacity>
+    </View>
+  ) : null
+
   const chips =
     attachments.length > 0 ? (
       <ScrollView
@@ -459,6 +483,7 @@ export function ChatComposer({
   return (
     <Reanimated.View style={[styles.inputArea, inputAreaPadding]} testID="composer-input-area">
       {errors}
+      {quoteChip}
       {chips}
       {suggestionChip}
       {expanded ? null : mentionBoard}
@@ -570,6 +595,7 @@ export function ChatComposer({
               testID="composer-input-area-expanded"
             >
               {errors}
+              {quoteChip}
               {chips}
               {mentionBoard}
               <View style={styles.flex}>
@@ -772,6 +798,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       maxWidth: 200,
     },
+    quoteChip: { maxWidth: '100%', alignSelf: 'flex-start', marginTop: spacing.xs },
     chipBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
     chipText: { color: theme.text.primary, fontSize: font.xs, flexShrink: 1 },
     suggestionChip: {
