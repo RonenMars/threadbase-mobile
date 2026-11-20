@@ -94,3 +94,23 @@ export const AnswerInFlight: Story = {
 export const Ghost: Story = {
   args: { block: permission, ghost: true, onCancel: () => {} },
 }
+
+// Claude's two terminal-only rows, offered when the server reports `questionOther`.
+// Tap "Type something." to open the inline answer.
+export const TerminalRows: Story = {
+  args: {
+    block: {
+      ...structured,
+      questions: [{
+        ...structured.questions[0],
+        options: [
+          ...structured.questions[0].options,
+          { label: 'Type something.', terminalRow: 'other' },
+          { label: 'Chat about this', terminalRow: 'chat' },
+        ],
+      }],
+    },
+    onSubmitOther: () => {},
+    onChatAbout: () => {},
+  },
+}

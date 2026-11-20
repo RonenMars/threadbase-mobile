@@ -38,7 +38,7 @@ import {
 } from '@/hooks/useVirtualizedMessageList'
 import { stripAnsi } from '@/utils/stripAnsi'
 import { useSettingsStore } from '@/stores/settings'
-import type { Message } from '@/types/api'
+import { CHAT_ABOUT_ANSWER, type Message, type QuestionAnswers } from '@/types/api'
 
 // `[\s\S]` not `.`: the ground-truth text of a multi-line prompt holds newlines.
 const USER_PREFIX_RE = /^[❯›>]\s([\s\S]*)$/
@@ -127,8 +127,14 @@ interface Props {
   onSendKeys?: (keys: string) => void
   /** Structured question / permission gate from the WS stream (takes precedence over PTY scrape). */
   activeQuestion?: QuestionBlock | null
-  /** Answer a structured AskUserQuestion (POST). */
-  onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Answer a structured AskUserQuestion (POST); resolves whether it landed. */
+  onAnswer?: (toolUseId: string, answers: QuestionAnswers) => Promise<boolean> | void
+  /**
+   * "Chat about this" landed: the view takes the question to the composer.
+   * Passed only when the server answers Claude's two terminal rows
+   * (`questionOther`); without it the card shows neither row.
+   */
+  onChatAbout?: (question: string) => void
   /** Answer a permission gate by the option's position in the broadcast options array. */
   onAnswerPermission?: (optionIndex: number) => void
   /** Provider-neutral prompt card: answers by the option's position, ids are on the block. */
@@ -175,6 +181,7 @@ export function TerminalOutput({
   onSendKeys,
   activeQuestion,
   onAnswer,
+  onChatAbout,
   onAnswerPermission,
   onAnswerPrompt,
   answerPhase = null,
@@ -411,6 +418,19 @@ export function TerminalOutput({
     onAnswer(activeQuestion.toolUseId, { [q.question]: optionIndexes.map(i => q.options[i].label) })
   }, [activeQuestion, onAnswer])
 
+  // Claude's own rows. Both answer through the same POST; "Chat about this"
+  // hands the question on only once the server took it.
+  const handleSubmitOther = useCallback((questionIndex: number, text: string) => {
+    if (!activeQuestion?.toolUseId || !onAnswer) return
+    onAnswer(activeQuestion.toolUseId, { [activeQuestion.questions[questionIndex].question]: { other: text } })
+  }, [activeQuestion, onAnswer])
+
+  const handleChatAbout = useCallback(async (questionIndex: number) => {
+    if (!activeQuestion?.toolUseId || !onAnswer || !onChatAbout) return
+    const question = activeQuestion.questions[questionIndex].question
+    if (await onAnswer(activeQuestion.toolUseId, { [question]: CHAT_ABOUT_ANSWER })) onChatAbout(question)
+  }, [activeQuestion, onAnswer, onChatAbout])
+
   const listHeader = useMemo(() => {
     if (transcript.length > 0) {
       return <HistoryLoadBoundary hasOlder={hasOlder} isFetching={isFetchingOlder} />
@@ -525,6 +545,8 @@ export function TerminalOutput({
           busy={answerBusy}
           ghost={answerPhase === 'pending'}
           onCancel={onCancelQuestion}
+          onSubmitOther={onChatAbout ? handleSubmitOther : undefined}
+          onChatAbout={onChatAbout ? handleChatAbout : undefined}
         />
       ) : questionBlock && onSendKeys ? (
         <QuestionCard

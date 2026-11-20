@@ -107,7 +107,11 @@
     "unsupportedShape": "השאלה הזו דורשת תשובה שהאפליקציה עדיין לא יכולה לשלוח — ענו עליה בטרמינל.",
     "openFullScreen": "פתיחה במסך מלא",
     "minimize": "מזעור",
-    "waiting": "שאלה ממתינה לתשובתך"
+    "waiting": "שאלה ממתינה לתשובתך",
+    "typeSomething": "כתבו משהו.",
+    "chatAboutThis": "שוחחו על זה",
+    "otherPlaceholder": "כתבו את התשובה",
+    "send": "שליחה"
   },
   "errorBanner": {
     "titleSessions": "הסשנים לא נטענו.",

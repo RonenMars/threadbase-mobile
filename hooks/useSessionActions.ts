@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createApiForServer, isAnswerRefusedError, isPermissionAnswerRejectedError, isPromptClosedError, isPromptPendingError, isPromptStaleError, isQuestionClosedError, handoffSession, NetworkError, NotFoundError, stopSession, stopSessionWhenIdle } from '@/services/api-client'
 import { START_SESSION_TIMEOUT_MS } from '@/hooks/useBrowse'
-import type { Session } from '@/types/api'
+import type { QuestionAnswers, Session } from '@/types/api'
 import type { ResumeConversationResponse } from '@/types/projectChat'
 import { normalizeResumeResponse } from '@/utils/normalizeResumeResponse'
 
@@ -68,7 +68,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
     // open: it is not retried, and it is not classified as closed either.
     retry: (count: number, err: Error) =>
       err instanceof NetworkError && !isQuestionClosedError(err) && !isAnswerRefusedError(err) && count < 2,
-    mutationFn: (vars: { toolUseId: string; answers: Record<string, string | string[]> }) =>
+    mutationFn: (vars: { toolUseId: string; answers: QuestionAnswers }) =>
       api.post(`/api/sessions/${sessionId}/answer`, vars),
   })
 

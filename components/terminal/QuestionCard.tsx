@@ -1,24 +1,26 @@
 import React, { memo, useEffect, useRef, useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, type GestureResponderEvent } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, type GestureResponderEvent } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { CheckSquare, Square, X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
-import { spacing, type Theme } from '@/constants/theme'
+import { font, spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import type { RtlStyleKit } from '@/lib/rtl'
-import type { QuestionBlock } from '@/utils/parseQuestionBlock'
+import type { QuestionBlock, QuestionOption } from '@/utils/parseQuestionBlock'
 
 // A touch that travels further than this between press-in and lift is a scroll,
 // not an answer. Deliberately tighter than UIKit's ~10pt tap slop: a cancelled
 // tap costs one more tap, a committed drag costs an unintended permission grant.
 const DRAG_CANCEL_PX = 8
 
-// A screen-read multi-select card lists Claude's own "Type something" and
-// "Chat about this" rows beside the model's options. The streamer has not
-// verified Space on them, and the wire carries no marker to tell them apart, so
-// they are recognised by their fixed English text (the terminal UI is not
-// localised). They are dropped from the form only; the answer is sent by label.
+// A screen-read card lists Claude's own "Type something" and "Chat about this"
+// rows beside the model's options. A current streamer marks them `terminalRow`;
+// an older one sent no marker, so the fixed English text (the terminal UI is
+// not localised) still identifies them there. A structured card never shows
+// them as plain options: the app draws its own pair when the host offers it.
 const TERMINAL_ONLY_ROW_RE = /^(?:type something\.?|chat about this)$/i
+const isTerminalRow = (option: QuestionOption) =>
+  option.terminalRow !== undefined || TERMINAL_ONLY_ROW_RE.test(option.label.trim())
 
 interface Props {
   block: QuestionBlock
@@ -37,9 +39,17 @@ interface Props {
   ghost?: boolean
   /** Full-screen presentation: borderless, with larger question and option text. */
   large?: boolean
+  /**
+   * "Type something." answer. With onChatAbout, the host's sign that the server
+   * answers both terminal rows; the card then draws them on a single-select,
+   * single-question structured card.
+   */
+  onSubmitOther?: (questionIndex: number, text: string) => void
+  /** "Chat about this": sent at once, like any other option. */
+  onChatAbout?: (questionIndex: number) => void
 }
 
-export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubmitMulti, onCancel, busy = false, ghost = false, large = false }: Props) {
+export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubmitMulti, onCancel, busy = false, ghost = false, large = false, onSubmitOther, onChatAbout }: Props) {
   const { t } = useTranslation('common')
   const { styles, theme } = useThemedStyles(makeStyles)
   const q = block.questions[0]
@@ -48,6 +58,9 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubm
   const initialSelected = cursorRow
   const [selected, setSelected] = useState<number | null>(initialSelected)
   const [checked, setChecked] = useState<number[]>([])
+  // Which of the app's terminal rows is chosen: 'other' also means its input is open.
+  const [terminalChoice, setTerminalChoice] = useState<'other' | 'chat' | null>(null)
+  const [draft, setDraft] = useState('')
 
   // PTY blocks update in place as the terminal cursor moves, so they resync
   // instead of resetting. Every other source arrives unselected, and the next
@@ -62,6 +75,8 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubm
   useEffect(() => {
     setSelected(cursorRow)
     setChecked([])
+    setTerminalChoice(null)
+    setDraft('')
   // eslint-disable-next-line react-hooks/exhaustive-deps -- cursorRow reseeds on a new prompt only (see above)
   }, [promptKey, ptyCursor])
 
@@ -71,17 +86,15 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubm
   // (400 unsupported_prompt_shape), so a form would only fail.
   const readOnly = structuredMulti && Boolean(q.multiSelectUnverified)
   const multiForm = structuredMulti && !readOnly
-  const formOptions = q.options
+  const listedOptions = q.options
     .map((option, index) => ({ option, index }))
-    .filter(({ option }) => !TERMINAL_ONLY_ROW_RE.test(option.label.trim()))
+    .filter(({ option }) => block.source !== 'structured' || !isTerminalRow(option))
+  const offerTerminalRows = block.source === 'structured' && !q.multiSelect && block.questions.length === 1 &&
+    !block.unsupportedShape && onSubmitOther !== undefined && onChatAbout !== undefined
 
   const pressStartY = useRef<number | null>(null)
 
-  const handlePress = (index: number, e?: GestureResponderEvent) => {
-    // The rows disable themselves too; this is the guard that survives a row
-    // being rendered without that. See ChatComposer's second send button for
-    // why that is worth the line.
-    if (locked) return
+  const draggedAway = (e?: GestureResponderEvent) => {
     // TouchableOpacity's cancel-on-movement is conditional, not guaranteed:
     // `onResponderMove` early-returns while Pressability's `_responderRegion`
     // is still null (Pressability.js), and that region comes from an
@@ -96,11 +109,77 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubm
     const startY = pressStartY.current
     pressStartY.current = null
     const endY = e?.nativeEvent?.pageY
-    if (startY != null && typeof endY === 'number' && Math.abs(endY - startY) > DRAG_CANCEL_PX) return
+    return startY != null && typeof endY === 'number' && Math.abs(endY - startY) > DRAG_CANCEL_PX
+  }
+
+  const handlePress = (index: number, e?: GestureResponderEvent) => {
+    // The rows disable themselves too; this is the guard that survives a row
+    // being rendered without that. See ChatComposer's second send button for
+    // why that is worth the line.
+    if (locked || draggedAway(e)) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSelected(index)
+    setTerminalChoice(null)
+    setDraft('')
     onSelect(0, index)
   }
+
+  // Opening the input sends nothing: on the terminal, the cursor on this row
+  // is already the text field, and Enter on it empty declines the question.
+  const handleToggleOther = (e?: GestureResponderEvent) => {
+    if (locked || draggedAway(e)) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setSelected(null)
+    setTerminalChoice(prev => (prev === 'other' ? null : 'other'))
+  }
+
+  const handleChatAbout = (e?: GestureResponderEvent) => {
+    if (locked || draggedAway(e)) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setSelected(null)
+    setTerminalChoice('chat')
+    onChatAbout?.(0)
+  }
+
+  const canSendOther = !locked && draft.trim().length > 0
+
+  const handleSendOther = () => {
+    if (!canSendOther) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    onSubmitOther?.(0, draft)
+  }
+
+  const radioRow = (
+    key: string | number,
+    label: string,
+    isSelected: boolean,
+    onPress: (e: GestureResponderEvent) => void,
+    option?: QuestionOption,
+  ) => (
+    <TouchableOpacity
+      key={key}
+      style={[styles.option, isSelected && styles.optionSelected]}
+      onPressIn={(e) => { pressStartY.current = e.nativeEvent.pageY }}
+      onPress={onPress}
+      disabled={locked}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: locked, selected: isSelected }}
+      accessibilityLabel={label}
+    >
+      <View style={[styles.radioOuter, isSelected && styles.radioOuterSelected]}>
+        {isSelected && <View style={styles.radioInner} />}
+      </View>
+      <View style={styles.optionBody}>
+        <Text style={[styles.optionText, large && styles.optionTextLarge, isSelected && styles.optionTextSelected]}>
+          {label}
+        </Text>
+        {option?.description ? (
+          <Text style={styles.optionDescription}>{option.description}</Text>
+        ) : null}
+        {option?.preview ? <Text style={styles.preview}>{option.preview}</Text> : null}
+      </View>
+    </TouchableOpacity>
+  )
 
   const handleToggle = (index: number) => {
     if (locked) return
@@ -136,7 +215,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubm
           <Text style={[styles.question, large && styles.questionLarge]}>{item.question}</Text>
         </React.Fragment>
       ))}
-      {multiForm ? formOptions.map(({ option, index }) => {
+      {multiForm ? listedOptions.map(({ option, index }) => {
         const isChecked = checked.includes(index)
         const BoxIcon = isChecked ? CheckSquare : Square
         return (
@@ -161,7 +240,7 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubm
             </View>
           </TouchableOpacity>
         )
-      }) : q.options.map((option, index) => readOnly ? (
+      }) : listedOptions.map(({ option, index }) => readOnly ? (
         <View key={index} style={styles.option}>
           <View style={styles.optionBody}>
             <Text style={[styles.optionText, large && styles.optionTextLarge]}>{option.label}</Text>
@@ -171,31 +250,50 @@ export const QuestionCard = memo(function QuestionCard({ block, onSelect, onSubm
             {option.preview ? <Text style={styles.preview}>{option.preview}</Text> : null}
           </View>
         </View>
-      ) : (
-        <TouchableOpacity
-          key={index}
-          style={[styles.option, index === selected && styles.optionSelected]}
-          onPressIn={(e) => { pressStartY.current = e.nativeEvent.pageY }}
-          onPress={(e) => handlePress(index, e)}
-          disabled={locked}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: locked, selected: index === selected }}
-          accessibilityLabel={option.label}
-        >
-          <View style={[styles.radioOuter, index === selected && styles.radioOuterSelected]}>
-            {index === selected && <View style={styles.radioInner} />}
-          </View>
-          <View style={styles.optionBody}>
-            <Text style={[styles.optionText, large && styles.optionTextLarge, index === selected && styles.optionTextSelected]}>
-              {option.label}
-            </Text>
-            {option.description ? (
-              <Text style={styles.optionDescription}>{option.description}</Text>
-            ) : null}
-            {option.preview ? <Text style={styles.preview}>{option.preview}</Text> : null}
-          </View>
-        </TouchableOpacity>
-      ))}
+      ) : radioRow(index, option.label, index === selected, (e) => handlePress(index, e), option))}
+      {offerTerminalRows ? (
+        <>
+          {radioRow('other', t('question.typeSomething'), terminalChoice === 'other', handleToggleOther)}
+          {terminalChoice === 'other' ? (
+            <View style={styles.otherArea}>
+              <TextInput
+                testID="question-other-input"
+                style={[styles.otherInput, locked && styles.otherInputLocked]}
+                value={draft}
+                onChangeText={setDraft}
+                editable={!locked}
+                multiline
+                autoFocus
+                placeholder={t('question.otherPlaceholder')}
+                placeholderTextColor={theme.text.secondary}
+                accessibilityLabel={t('question.otherPlaceholder')}
+              />
+              <View style={styles.otherActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => { if (!locked) setTerminalChoice(null) }}
+                  disabled={locked}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('button.back')}
+                >
+                  <Text style={styles.cancelText}>{t('button.back')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.submitButton, styles.otherSend, !canSendOther && styles.submitButtonDisabled]}
+                  onPress={handleSendOther}
+                  disabled={!canSendOther}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: !canSendOther }}
+                  accessibilityLabel={t('question.send')}
+                >
+                  <Text style={styles.submitText}>{t('question.send')}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : null}
+          {radioRow('chat', t('question.chatAboutThis'), terminalChoice === 'chat', handleChatAbout)}
+        </>
+      ) : null}
       {multiForm ? (
         <TouchableOpacity
           style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
@@ -372,6 +470,34 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     fontSize: 13,
     fontWeight: '600',
     ...rtl.copy,
+  },
+  // Same field as the chat composer's input.
+  otherInput: {
+    backgroundColor: theme.bg.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: theme.border,
+    color: theme.text.primary,
+    fontSize: font.base,
+    padding: spacing.sm,
+    minHeight: 44,
+    maxHeight: 160,
+    ...rtl.copy,
+  },
+  otherInputLocked: {
+    opacity: 0.6,
+  },
+  otherArea: {
+    marginBottom: 4,
+  },
+  otherActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
+  },
+  otherSend: {
+    paddingHorizontal: spacing.md,
   },
   cancelButton: {
     alignItems: 'center',

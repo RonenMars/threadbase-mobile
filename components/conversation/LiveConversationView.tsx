@@ -19,6 +19,7 @@ import { useConversation } from '@/hooks/useConversations'
 import { useConversationStream } from '@/hooks/useConversationStream'
 import { useSessionActions } from '@/hooks/useSessionActions'
 import { useQuestionAnswer } from '@/hooks/useQuestionAnswer'
+import { useChatAboutQuestion } from '@/hooks/useChatAboutQuestion'
 import { useQuestionCancel } from '@/hooks/useQuestionCancel'
 import { isPromptPendingError } from '@/services/api-client'
 import { useSessionDetail } from '@/hooks/useSession'
@@ -490,6 +491,7 @@ export function LiveConversationView({
       : tTerminal('dialog.sendFailedGeneric')
     : null
   const sendErrorMessage = sendInputErrorMessage ?? answerErrorMessage ?? cancelErrorMessage
+  const chatAbout = useChatAboutQuestion(serverId)
   const sendNoticeMessage = answerNoticeMessage ?? cancelNoticeMessage
 
   // The prompt_pending refusal is server-side and applies to `{ input }` only;
@@ -651,6 +653,7 @@ export function LiveConversationView({
             activeQuestion={activeQuestion}
             subStatus={agentPhase}
             onAnswer={handleAnswerQuestion}
+            onChatAbout={chatAbout.onChatAbout}
             onAnswerPermission={handleAnswerPermission}
             onAnswerPrompt={handleAnswerPrompt}
             answerPhase={answerPhase}
@@ -686,7 +689,12 @@ export function LiveConversationView({
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
-        onSend={() => handleSend(fileMentions.skillPayload)}
+        onSend={() => {
+          chatAbout.clear()
+          handleSend(fileMentions.skillPayload)
+        }}
+        placeholder={chatAbout.placeholder}
+        focusRequest={chatAbout.focusRequest}
         // Send only, and only while the card is answerable. A pending ghost
         // blocks nothing, so an answer the server never confirms cannot strand
         // the composer — which is what makes the five exits from `active` a
@@ -710,6 +718,7 @@ export function LiveConversationView({
         promptSuggestion={chipSuggestion}
         onSendSuggestion={(text) => {
           dismissSuggestion()
+          chatAbout.clear()
           handleSend(text)
         }}
         onFillSuggestion={(text) => {

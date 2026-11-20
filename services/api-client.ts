@@ -219,6 +219,13 @@ export function isPromptPendingError(err: Error | null): boolean {
 const ANSWER_REFUSED_CODES: readonly string[] = [
   'unsupported_prompt_shape',
   'incomplete_answer',
+  // "Type something." text the server will not type: empty, too long, or
+  // holding a control character. Nothing was written.
+  'invalid_text',
+  // 409: the field never took the cursor or the text never painted, so Enter
+  // was not sent and the card is still open. Retrying is the user's call, with
+  // their text still in the card.
+  'text_field_timeout',
 ]
 
 export function isAnswerRefusedError(err: Error | null): boolean {

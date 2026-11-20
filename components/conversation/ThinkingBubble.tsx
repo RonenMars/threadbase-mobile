@@ -4,7 +4,7 @@ import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-nati
 import { ArrowsOut, CaretDown, Question } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { getAgentPhaseLabel } from '@/components/sessions/agentPhaseLabel'
-import type { AgentPhase } from '@/types/api'
+import { CHAT_ABOUT_ANSWER, type AgentPhase, type QuestionAnswers } from '@/types/api'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { isCodexTrustQuitOption, parseQuestionBlock, type QuestionBlock } from '@/utils/parseQuestionBlock'
@@ -29,7 +29,14 @@ interface Props {
   onFadeOutComplete?: () => void
   onSendKeys?: (keys: string) => void
   activeQuestion?: QuestionBlock | null
-  onAnswer?: (toolUseId: string, answers: Record<string, string | string[]>) => void
+  /** Resolves whether the answer landed; a void return reads as not landed. */
+  onAnswer?: (toolUseId: string, answers: QuestionAnswers) => Promise<boolean> | void
+  /**
+   * "Chat about this" landed: the view takes the question to the composer.
+   * Passed only when the server answers Claude's two terminal rows
+   * (`questionOther`); without it the card shows neither row.
+   */
+  onChatAbout?: (question: string) => void
   /** Answer a permission gate by the option's position in the broadcast options array. */
   onAnswerPermission?: (optionIndex: number) => void
   /** Provider-neutral prompt card: answers by the option's position, ids are on the block. */
@@ -53,7 +60,7 @@ interface Props {
   onWorkingLayout?: () => void
 }
 
-export function ThinkingBubble({ lines, mirroredLines = [], fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, onScrapedCardChange, subStatus, onSessionQuit, onWorkingLayout }: Props) {
+export function ThinkingBubble({ lines, mirroredLines = [], fadingOut = false, onFadeOutComplete, onSendKeys, activeQuestion, onAnswer, onChatAbout, onAnswerPermission, onAnswerPrompt, answerPhase = null, answerBusy = false, onCancelQuestion, onScrapedCardChange, subStatus, onSessionQuit, onWorkingLayout }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const { t: tc } = useTranslation('common')
@@ -125,6 +132,19 @@ export function ThinkingBubble({ lines, mirroredLines = [], fadingOut = false, o
     onAnswer(activeQuestion.toolUseId, { [q.question]: optionIndexes.map(i => q.options[i].label) })
   }, [activeQuestion, onAnswer])
 
+  // Claude's own rows. Both answer through the same POST; "Chat about this"
+  // hands the question on only once the server took it.
+  const handleSubmitOther = useCallback((questionIndex: number, text: string) => {
+    if (!activeQuestion?.toolUseId || !onAnswer) return
+    onAnswer(activeQuestion.toolUseId, { [activeQuestion.questions[questionIndex].question]: { other: text } })
+  }, [activeQuestion, onAnswer])
+
+  const handleChatAbout = useCallback(async (questionIndex: number) => {
+    if (!activeQuestion?.toolUseId || !onAnswer || !onChatAbout) return
+    const question = activeQuestion.questions[questionIndex].question
+    if (await onAnswer(activeQuestion.toolUseId, { [question]: CHAT_ABOUT_ANSWER })) onChatAbout(question)
+  }, [activeQuestion, onAnswer, onChatAbout])
+
   useEffect(() => {
     // setValue also stops a fade already running. The status flip and the card
     // are separate frames, so the fade can start a beat before the card lands,
@@ -188,6 +208,8 @@ export function ThinkingBubble({ lines, mirroredLines = [], fadingOut = false, o
         ghost={ghost}
         onCancel={onCancelQuestion}
         large={large}
+        onSubmitOther={onChatAbout ? handleSubmitOther : undefined}
+        onChatAbout={onChatAbout ? handleChatAbout : undefined}
       />
     )
     : questionBlock
