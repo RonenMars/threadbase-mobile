@@ -359,6 +359,7 @@ function makeStyles(theme: Theme) {
     },
     confirmBtn: {
       flex: 1,
+      justifyContent: 'center',
       paddingVertical: spacing.sm,
       alignItems: 'center',
       borderWidth: 1,
