@@ -1,13 +1,13 @@
 import React from 'react'
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native'
-import { At, CaretRight, File, Folder, Lightning, X } from 'phosphor-react-native'
+import { At, CaretRight, File, Folder, Lightning, UsersThree, X } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
-import { useMentionEntries, type MentionListState } from '@/hooks/useMentionEntries'
+import { useMentionEntries, usePeerEntries, type MentionListState } from '@/hooks/useMentionEntries'
 import { useSkillEntries } from '@/hooks/useSkillEntries'
 import type { ComposerMention, ComposerSlash } from '@/hooks/useFileMentions'
-import type { MentionEntry } from '@/lib/mentionToken'
+import type { MentionEntry, PeerEntry } from '@/lib/mentionToken'
 import type { SkillEntry } from '@/lib/slashToken'
 import type { RtlStyleKit } from '@/lib/rtl'
 
@@ -16,7 +16,10 @@ interface BoardProps {
   dir: string
   query: string
   list: MentionListState
+  /** Peer sessions, listed above the paths; none for an older streamer. */
+  peers?: PeerEntry[]
   onSelect: (entry: MentionEntry) => void
+  onSelectPeer?: (peer: PeerEntry) => void
   onDismiss: () => void
 }
 
@@ -25,32 +28,44 @@ interface BoardProps {
  * with the input, and it can show over the expanded editor, which a second
  * Modal cannot on iOS.
  */
-export function FileMentionBoard({ dir, query, list, onSelect, onDismiss }: BoardProps) {
+export function FileMentionBoard({ dir, query, list, peers = [], onSelect, onSelectPeer, onDismiss }: BoardProps) {
   const { t } = useTranslation('terminal')
   const { styles, theme } = useThemedStyles(makeStyles)
   const location = dir ? `${dir}/` : './'
 
-  let body: React.ReactNode
+  // Peers do not depend on the folder listing, so they show while it loads or fails.
+  let message: React.ReactNode = null
   if (list.status === 'loading') {
-    body = <BoardMessage />
+    message = <BoardMessage />
   } else if (list.status === 'unsupported') {
-    body = <BoardMessage text={t('mentions.unsupported')} />
+    message = <BoardMessage text={t('mentions.unsupported')} />
   } else if (list.status === 'error') {
-    body = <BoardMessage text={t('mentions.error')} />
-  } else if (list.entries.length === 0) {
-    body = <BoardMessage text={query ? t('mentions.empty', { query }) : t('mentions.emptyFolder')} />
-  } else {
-    body = (
+    message = <BoardMessage text={t('mentions.error')} />
+  } else if (list.entries.length === 0 && peers.length === 0) {
+    message = <BoardMessage text={query ? t('mentions.empty', { query }) : t('mentions.emptyFolder')} />
+  }
+  const entries = list.status === 'ready' ? list.entries : []
+
+  const body =
+    peers.length === 0 && entries.length === 0 ? (
+      message
+    ) : (
       <FlatList
-        data={list.entries}
-        keyExtractor={(item) => `${item.kind}:${item.name}`}
-        renderItem={({ item }) => <EntryRow entry={item} onPress={() => onSelect(item)} theme={theme} styles={styles} />}
+        data={[...peers.map((peer) => ({ peer })), ...entries.map((entry) => ({ entry }))]}
+        keyExtractor={(item) => ('peer' in item ? `peer:${item.peer.id}` : `${item.entry.kind}:${item.entry.name}`)}
+        renderItem={({ item }) =>
+          'peer' in item ? (
+            <PeerRow peer={item.peer} onPress={() => onSelectPeer?.(item.peer)} theme={theme} styles={styles} />
+          ) : (
+            <EntryRow entry={item.entry} onPress={() => onSelect(item.entry)} theme={theme} styles={styles} />
+          )
+        }
+        ListFooterComponent={message ?? undefined}
         style={styles.list}
         keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
       />
     )
-  }
 
   return (
     <MentionBoardShell
@@ -145,11 +160,49 @@ function EntryRow({ entry, onPress, theme, styles }: RowProps) {
   )
 }
 
+function PeerRow({ peer, onPress, theme, styles }: { peer: PeerEntry; onPress: () => void; theme: Theme; styles: ReturnType<typeof makeStyles> }) {
+  const { t } = useTranslation('terminal')
+  return (
+    <TouchableOpacity
+      testID={`peer-mention-row-${peer.id}`}
+      style={styles.row}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={t('mentions.peerLabel', { name: peer.name, project: peer.projectName })}
+    >
+      <UsersThree size={16} color={theme.text.accent} weight="fill" />
+      <View style={styles.skillText}>
+        <View style={styles.peerTitle}>
+          <Text style={[styles.name, styles.peerName]} numberOfLines={1}>
+            {peer.name}
+          </Text>
+          <Text style={styles.peerTag}>{t('mentions.peerTag')}</Text>
+        </View>
+        <Text style={styles.description} numberOfLines={1}>
+          {`${peer.projectName} · ${peer.shortId}`}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  )
+}
+
 /** Fetches the listing; mounted only while a mention is open, so a closed picker costs nothing. */
 export function FileMentionPanel({ mention }: { mention: ComposerMention }) {
-  const { serverId, sessionId, projectPath, additionalPaths, token, onSelect, onDismiss } = mention
+  const { serverId, sessionId, projectPath, additionalPaths, token, onSelect, onSelectPeer, onDismiss } = mention
   const list = useMentionEntries(serverId, projectPath, sessionId, token.dir, token.query, additionalPaths)
-  return <FileMentionBoard dir={token.dir} query={token.query} list={list} onSelect={onSelect} onDismiss={onDismiss} />
+  const peers = usePeerEntries(serverId, sessionId, token.dir, token.query)
+  return (
+    <FileMentionBoard
+      dir={token.dir}
+      query={token.query}
+      list={list}
+      peers={peers}
+      onSelect={onSelect}
+      onSelectPeer={onSelectPeer}
+      onDismiss={onDismiss}
+    />
+  )
 }
 
 /** The `/` picker: the session's Claude Code skills and commands. */
@@ -261,6 +314,18 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       fontSize: font.sm,
     },
     skillText: { flex: 1, paddingVertical: spacing.xs },
+    peerTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    peerName: { flex: 0, flexShrink: 1, fontWeight: '600' },
+    peerTag: {
+      ...rtl.copy,
+      color: theme.text.accent,
+      fontSize: font.xs,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.text.accent,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.xs,
+      overflow: 'hidden',
+    },
     description: {
       ...rtl.copy,
       color: theme.text.secondary,
