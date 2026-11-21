@@ -92,6 +92,13 @@ describe('ChatComposer', () => {
     await i18n.changeLanguage('en')
   })
 
+  it('caps the quote chip at 30% of the composer width', async () => {
+    await renderComposer({ quote: 'a very long quoted line '.repeat(10), onClearQuote: jest.fn() })
+    let node = screen.getByTestId('quote-chip').parent
+    while (node && StyleSheet.flatten(node.props.style)?.maxWidth === undefined) node = node.parent
+    expect(StyleSheet.flatten(node?.props.style).maxWidth).toBe('30%')
+  })
+
   it('refocuses the input on return to foreground if it was focused when backgrounded', async () => {
     await renderComposer()
     const input = screen.getByTestId('chat-message-input')

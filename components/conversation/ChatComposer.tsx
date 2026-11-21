@@ -706,7 +706,7 @@ function makeStyles(theme: Theme) {
       borderColor: theme.border,
       maxWidth: 200,
     },
-    quoteChip: { maxWidth: '100%', alignSelf: 'flex-start', marginTop: spacing.xs },
+    quoteChip: { maxWidth: '30%', alignSelf: 'flex-start', marginTop: spacing.xs },
     chipBody: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
     chipText: { color: theme.text.primary, fontSize: font.xs, flexShrink: 1 },
     suggestionChip: {

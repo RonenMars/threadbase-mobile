@@ -1,4 +1,4 @@
-import type { Message } from '@/types/api'
+import type { Message, MessageContent } from '@/types/api'
 import { parseMarkdown, type MarkdownBlock } from '@/lib/markdown'
 
 /** The message's text blocks as the agent wrote them — markdown source. */
@@ -44,4 +44,30 @@ export function quoteAsMarkdown(text: string): string {
     .split('\n')
     .map((line) => `> ${line}`)
     .join('\n')
+}
+
+/** The copyable text of a non-prose block, as a one-block text message the menu can act on. */
+export function blockAsMessage(message: Message, block: MessageContent): Message {
+  let text = ''
+  switch (block.type) {
+    case 'text':
+      text = block.text
+      break
+    case 'thinking':
+      text = block.thinking
+      break
+    case 'tool_use':
+      text = `${block.name}\n${JSON.stringify(block.input, null, 2)}`
+      break
+    case 'tool_result':
+      text = block.content
+      break
+    case 'diff':
+      text = block.filename
+      break
+    case 'question_answer':
+      text = block.items.map((i) => `${i.question}\n${i.answer}`).join('\n\n')
+      break
+  }
+  return { ...message, content: [{ type: 'text', text }] }
 }
