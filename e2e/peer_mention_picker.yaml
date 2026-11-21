@@ -39,17 +39,21 @@ appId: com.ronenmars.threadbase
     timeout: 8000
 - takeScreenshot: peer-mention-picker-open
 
-# Picking closes the board and colors what was inserted.
+# Picking closes the board and colors what was inserted. The color lives on a
+# nested Text that iOS folds into the input's own accessibility element, so
+# it is not assertable here: read it from the screenshots. Jest pins it
+# (ChatComposer.peers.test.tsx).
+# By point: the row's accessibility frame is not where it is drawn, so an id
+# tap lands on the keyboard. The first row sits at about a third of the screen.
 - tapOn:
-    id: "peer-mention-row-.*"
+    point: "50%,34%"
 - assertNotVisible:
     id: "file-mention-board"
 - assertVisible:
-    id: "peer-mark"
+    id: "chat-message-input"
+    text: "ask @.+"
 - takeScreenshot: peer-mention-picker-picked
 
 # Removing a character from the inserted name takes the color off.
 - eraseText: 2
-- assertNotVisible:
-    id: "peer-mark"
 - takeScreenshot: peer-mention-picker-edited
