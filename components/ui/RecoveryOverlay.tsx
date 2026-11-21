@@ -27,7 +27,7 @@ interface Props {
 const LINE_HEIGHT = 3
 const HANDLE_OFFSET = 18
 const HANDLE_HIT = 44
-const CARD_HEIGHT = 80
+const CARD_HEIGHT = 108
 const DRAG_THRESHOLD = 16
 const SWEEP_WIDTH = 96
 
@@ -165,7 +165,7 @@ function makeStyles(theme: Theme) {
       top: 0,
       left: spacing.md,
       right: spacing.md,
-      paddingTop: LINE_HEIGHT + spacing.sm,
+      paddingTop: LINE_HEIGHT + spacing.md,
       height: CARD_HEIGHT,
       paddingStart: spacing.md,
       backgroundColor: theme.bg.card,
@@ -176,8 +176,8 @@ function makeStyles(theme: Theme) {
     },
     cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     cardText: { flex: 1 },
-    title: { color: theme.text.primary, fontSize: font.sm, fontWeight: '600' },
-    detail: { color: theme.text.secondary, fontSize: font.sm },
+    title: { color: theme.text.primary, fontSize: font.lg, fontWeight: '600' },
+    detail: { color: theme.text.secondary, fontSize: font.base },
     close: {
       width: 44,
       height: 44,
