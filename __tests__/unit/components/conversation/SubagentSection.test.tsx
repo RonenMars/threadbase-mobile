@@ -1,5 +1,6 @@
 import React from 'react'
 import { act } from 'react'
+import { Keyboard } from 'react-native'
 import { render, fireEvent, waitFor } from '@testing-library/react-native'
 import { useRouter } from 'expo-router'
 import { SubagentSection } from '@/components/conversation/SubagentSection'
@@ -127,5 +128,18 @@ describe('SubagentSection', () => {
     fireEvent.press(r.getByTestId('subagent-toggle'))
     await waitFor(() => expect(r.getByText("This server doesn't support sub-agents yet.")).toBeTruthy())
     expect(r.queryByText('Unrelated')).toBeNull()
+  })
+
+  it('dismisses the keyboard on open and scrolls the list inside a capped height', async () => {
+    mockGet.mockResolvedValue({ conversations: [child('a')], hasMore: false, offset: 0, total: 1 })
+    const dismiss = jest.spyOn(Keyboard, 'dismiss')
+    const r = await render(<SubagentSection serverId="s1" parentId="p1" />, { wrapper: createWrapper() })
+    await waitFor(() => expect(r.getByText('Sub-agents (1)')).toBeTruthy())
+    fireEvent.press(r.getByTestId('subagent-toggle'))
+    expect(dismiss).toHaveBeenCalledTimes(1)
+    const list = await r.findByTestId('subagent-list')
+    expect(list.props.style.maxHeight).toBeGreaterThan(0)
+    expect(r.getByTestId('subagent-row-a')).toBeTruthy()
+    dismiss.mockRestore()
   })
 })

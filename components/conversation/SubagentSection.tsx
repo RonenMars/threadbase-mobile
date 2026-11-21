@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Keyboard, ScrollView, useWindowDimensions } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { CaretDown, CaretRight } from 'phosphor-react-native'
@@ -27,6 +27,7 @@ export function SubagentSection({ serverId, parentId }: Props) {
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   const router = useRouter()
+  const { height: windowHeight } = useWindowDimensions()
   const [expanded, setExpanded] = useState(false)
   const { items, isLoading, unsupported, isError, hasNextPage, fetchNextPage, isFetchingNextPage, refetch } =
     useSubagents(serverId, parentId, { enabled: expanded })
@@ -36,6 +37,7 @@ export function SubagentSection({ serverId, parentId }: Props) {
   const toggle = useCallback(() => {
     if (expanded) setExpanded(false)
     else {
+      Keyboard.dismiss()
       setExpanded(true)
       if (items.length > 0) void refetch()
     }
@@ -60,7 +62,11 @@ export function SubagentSection({ serverId, parentId }: Props) {
     else if (items.length === 0) body = <Text style={[styles.note, styles.pad]}>{t('subagents.empty')}</Text>
     else {
       body = (
-        <>
+        <ScrollView
+          testID="subagent-list"
+          style={{ maxHeight: windowHeight * 0.4 }}
+          keyboardShouldPersistTaps="handled"
+        >
           {items.map((c) => {
             const type = resolveSubagentType(c)
             return (
@@ -96,7 +102,7 @@ export function SubagentSection({ serverId, parentId }: Props) {
               <Text style={styles.more}>{t('subagents.loadMore')}</Text>
             </Pressable>
           ) : null}
-        </>
+        </ScrollView>
       )
     }
   }
