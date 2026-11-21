@@ -1,8 +1,9 @@
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
+import { X } from 'phosphor-react-native'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -12,13 +13,15 @@ interface Props {
   visible: boolean
   /** What is retrying, e.g. `Win · GET /sessions`. */
   detail?: string
+  /** Shows a close button that calls this. */
+  onDismiss?: () => void
 }
 
 /**
- * A pill pinned under the status bar while a query silently retries. It never
- * intercepts a touch: the screen underneath stays fully usable.
+ * A pill pinned under the status bar while a query silently retries. Only the
+ * close button takes touches: the rest of the screen stays fully usable.
  */
-export function RecoveryOverlay({ visible, detail }: Props) {
+export function RecoveryOverlay({ visible, detail, onDismiss }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const insets = useSafeAreaInsets()
@@ -29,7 +32,7 @@ export function RecoveryOverlay({ visible, detail }: Props) {
 
   return (
     <View
-      pointerEvents="none"
+      pointerEvents="box-none"
       style={[styles.lane, { top: insets.top + spacing.xs }]}
       testID="recovery-overlay"
     >
@@ -50,6 +53,18 @@ export function RecoveryOverlay({ visible, detail }: Props) {
             {detail}
           </Text>
         ) : null}
+        {onDismiss ? (
+          <Pressable
+            onPress={onDismiss}
+            hitSlop={4}
+            style={styles.close}
+            accessibilityRole="button"
+            accessibilityLabel={t('recovery.dismiss')}
+            testID="recovery-dismiss"
+          >
+            <X size={16} color={theme.text.secondary} />
+          </Pressable>
+        ) : null}
       </Animated.View>
     </View>
   )
@@ -67,8 +82,10 @@ function makeStyles(theme: Theme) {
     pill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs,
-      paddingEnd: spacing.md,
+      gap: spacing.sm,
+      minHeight: 48,
+      paddingStart: spacing.xs,
+      paddingEnd: spacing.xs,
       maxWidth: '92%',
       backgroundColor: theme.bg.card,
       borderRadius: radius.full,
@@ -77,13 +94,20 @@ function makeStyles(theme: Theme) {
     },
     title: {
       color: theme.text.secondary,
-      fontSize: font.xs,
+      fontSize: font.sm,
       fontWeight: '600',
+    },
+    close: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     detail: {
       color: theme.text.secondary,
       opacity: 0.75,
-      fontSize: font.xs,
+      fontSize: font.sm,
       flexShrink: 1,
     },
   })

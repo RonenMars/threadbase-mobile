@@ -18,3 +18,7 @@ export const Visible: Story = {
 export const WithRoute: Story = {
   args: { visible: true, detail: 'Win · GET /sessions' },
 }
+
+export const Dismissible: Story = {
+  args: { visible: true, detail: 'Win · GET /sessions', onDismiss: () => {} },
+}
