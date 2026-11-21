@@ -148,3 +148,90 @@ export function applyMention(
     cursor: before.length + inserted.length + 1,
   }
 }
+
+/** A peer Claude session offered in the `@` picker beside paths. */
+export interface PeerEntry {
+  id: string
+  name: string
+  projectName: string
+  shortId: string
+  /** What goes into the prompt: the picker token, followed by the address when the name is shared, or the bare address when there is no token. */
+  insert: string
+}
+
+interface PeerSource {
+  id: string
+  provider?: string
+  sessionName?: string
+  projectName: string
+  canMessage?: boolean
+  peerMention?: string
+  peerAddress?: string
+}
+
+function peerNameFromMention(mention: string): string {
+  return mention.replace(/^@"?/, '').replace(/"$/, '')
+}
+
+/**
+ * Peers come from the session list's `canMessage` rows. Absent or false means
+ * an older streamer, the flag off, or a session that cannot be messaged, and
+ * the row is left out. The session being typed in lists itself, so it is
+ * dropped. Names are not unique: a mention shared by two rows is followed by
+ * the per-session address, which tells the relaying model which one is meant.
+ * With no mention (a name the quoted form cannot carry) the bare address is
+ * all there is; the CLI never parses `@uds:…` as a mention, so no `@` there.
+ */
+export function buildPeerEntries(sessions: readonly PeerSource[], selfId: string): PeerEntry[] {
+  const peers = sessions.filter(
+    (s) => s.canMessage === true && s.id !== selfId && (typeof s.peerMention === 'string' || typeof s.peerAddress === 'string'),
+  )
+  const mentionCount = new Map<string, number>()
+  for (const s of peers) {
+    if (s.peerMention) mentionCount.set(s.peerMention, (mentionCount.get(s.peerMention) ?? 0) + 1)
+  }
+  const entries: PeerEntry[] = []
+  for (const s of peers) {
+    const shared = s.peerMention !== undefined && mentionCount.get(s.peerMention) !== 1
+    const insert = s.peerMention
+      ? shared && s.peerAddress
+        ? `${s.peerMention} ${s.peerAddress}`
+        : s.peerMention
+      : s.peerAddress
+    if (!insert) continue
+    entries.push({
+      id: s.id,
+      name: s.peerMention ? peerNameFromMention(s.peerMention) : (s.sessionName ?? s.projectName),
+      projectName: s.projectName,
+      shortId: s.id.slice(0, 8),
+      insert,
+    })
+  }
+  return entries
+}
+
+export function rankPeerEntries(peers: readonly PeerEntry[], query: string, limit: number = MENTION_RESULT_LIMIT): PeerEntry[] {
+  const q = query.toLowerCase()
+  const scored: { peer: PeerEntry; score: number; index: number }[] = []
+  peers.forEach((peer, index) => {
+    const name = peer.name.toLowerCase()
+    let score: number
+    if (!q || name.startsWith(q)) score = 0
+    else if (name.includes(q) || peer.projectName.toLowerCase().includes(q) || peer.shortId.startsWith(q)) score = 1
+    else return
+    scored.push({ peer, score, index })
+  })
+  scored.sort((a, b) => a.score - b.score || a.index - b.index)
+  return scored.slice(0, limit).map((s) => s.peer)
+}
+
+/** Replace the token with the peer's address and a trailing space; the picker then closes. */
+export function applyPeerMention(text: string, token: MentionToken, peer: PeerEntry): { text: string; cursor: number } {
+  const before = text.slice(0, token.start)
+  const after = text.slice(token.end)
+  const separator = /^\s/.test(after) ? '' : ' '
+  return {
+    text: before + peer.insert + separator + after,
+    cursor: before.length + peer.insert.length + 1,
+  }
+}

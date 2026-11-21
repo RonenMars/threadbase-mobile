@@ -67,7 +67,7 @@ function dedupeByServerAndId(items: MultiSession[]): MultiSession[] {
 
 // Drains a single server's pages sequentially, calling onProgress as each page
 // arrives so the UI can update its loaded/total counters live.
-async function fetchAllPagesForServer(
+export async function fetchAllPagesForServer(
   serverId: string,
   serverLabel: string | undefined,
   sortBy: SessionSortKeyWire,

@@ -63,7 +63,9 @@
     "empty": "لا توجد ملفات تطابق «{{query}}»",
     "emptyFolder": "هذا المجلد فارغ.",
     "folderLabel": "مجلد {{name}}",
-    "fileLabel": "ملف {{name}}"
+    "fileLabel": "ملف {{name}}",
+    "peerTag": "نظير",
+    "peerLabel": "جلسة نظيرة {{name}}، المشروع {{project}}"
   },
   "skills": {
     "title": "المهارات",

@@ -148,6 +148,15 @@ export interface Session {
    */
   processLiveness?: 'alive' | 'gone' | 'unknown'
   /**
+   * Claude sessions only, and only while the streamer's `peerMessaging` flag is
+   * on: whether another session can address this one. Absent on older streamers.
+   */
+  canMessage?: boolean
+  /** What the CLI `@` picker inserts for this peer; absent when the name cannot be quoted. */
+  peerMention?: string
+  /** `uds:<socket path>`, unique per session; used when `peerMention` is absent or shared. */
+  peerAddress?: string
+  /**
    * Inferred activity from JSONL tailing (not authoritative process status).
    * Additive; older servers omit it.
    */

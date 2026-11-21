@@ -63,7 +63,9 @@
     "empty": "No files match “{{query}}”",
     "emptyFolder": "This folder is empty.",
     "folderLabel": "Folder {{name}}",
-    "fileLabel": "File {{name}}"
+    "fileLabel": "File {{name}}",
+    "peerTag": "peer",
+    "peerLabel": "Peer session {{name}}, project {{project}}"
   },
   "skills": {
     "title": "Skills",

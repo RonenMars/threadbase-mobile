@@ -2,9 +2,17 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { browseQueryKey, fetchBrowse } from '@/hooks/useBrowse'
 import { createApiForServer, NetworkError, NotFoundError } from '@/services/api-client'
+import { fetchAllPagesForServer } from '@/hooks/useSession'
 import { useServersStore } from '@/stores/servers'
 import type { BrowseResponse } from '@/types/api'
-import { extraDirEntries, rankMentionEntries, type MentionEntry } from '@/lib/mentionToken'
+import {
+  buildPeerEntries,
+  extraDirEntries,
+  rankMentionEntries,
+  rankPeerEntries,
+  type MentionEntry,
+  type PeerEntry,
+} from '@/lib/mentionToken'
 
 export type MentionListState =
   | { status: 'loading' }
@@ -99,4 +107,24 @@ export function useMentionEntries(
   ]
   const extras = dir === '' ? extraDirEntries(projectPath, extraDirs, query) : []
   return { status: 'ready', entries: [...extras, ...rankMentionEntries(entries, query)] }
+}
+
+/**
+ * Peer sessions for the `@` picker: the server's `canMessage` rows, minus the
+ * session being typed in. Peers are never inside a folder, so a token with a
+ * directory part lists none. The query sits under `sessions`, so every list
+ * invalidation refreshes it too. A failed fetch lists no peers and leaves the
+ * path rows alone.
+ */
+export function usePeerEntries(serverId: string, sessionId: string | undefined, dir: string, query: string): PeerEntry[] {
+  const listing = useQuery({
+    queryKey: ['sessions', 'peers', serverId],
+    queryFn: ({ signal }) =>
+      fetchAllPagesForServer(serverId, undefined, 'startedAt', 'desc', undefined, () => undefined, signal),
+    enabled: !!serverId && !!sessionId && dir === '',
+    staleTime: LISTING_STALE_MS,
+    retry: false,
+  })
+  if (dir !== '' || !sessionId || !listing.data) return []
+  return rankPeerEntries(buildPeerEntries(listing.data, sessionId), query)
 }
