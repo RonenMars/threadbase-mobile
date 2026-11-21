@@ -31,6 +31,8 @@ interface Props {
   provider?: ProviderName | string | null
   /** Session cwd on the streamer's machine; `@` mentions list files relative to it. */
   projectPath?: string | null
+  /** The session's extra directories, offered by the `@` picker. */
+  additionalPaths?: readonly string[]
   disabled?: boolean
   /** The raw-keys row, when open; rides the keyboard with the composer. */
   composerAccessory?: React.ReactNode
@@ -45,6 +47,7 @@ export function TerminalView({
   sessionId,
   provider,
   projectPath = null,
+  additionalPaths,
   disabled = false,
   composerAccessory = null,
   resumedConversationId = null,
@@ -177,6 +180,7 @@ export function TerminalView({
   const fileMentions = useFileMentions({
     serverId,
     projectPath,
+    additionalPaths,
     provider,
     sessionId,
     text: inputText,

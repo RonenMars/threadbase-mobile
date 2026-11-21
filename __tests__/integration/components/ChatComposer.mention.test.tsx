@@ -33,6 +33,17 @@ const TREE: Record<string, BrowseResponse> = {
     directories: [{ name: '.git' }, { name: 'src' }],
     files: [{ name: 'README.md' }, { name: 'package.json' }],
   },
+  // Sent unresolved: the streamer resolves `..` and applies its browse-root check.
+  '/home/me/proj/..': {
+    path: '/home/me/proj/..',
+    directories: [{ name: 'lib' }, { name: 'proj' }],
+    files: [],
+  },
+  '/home/me/proj/../lib': {
+    path: '/home/me/proj/../lib',
+    directories: [],
+    files: [{ name: 'util.ts' }],
+  },
   '/home/me/proj/src': {
     path: '/home/me/proj/src',
     directories: [],
@@ -56,9 +67,17 @@ const baseProps: Omit<ChatComposerProps, 'value' | 'onChangeText'> = {
 
 let queryClient: QueryClient | null = null
 
-function Harness({ projectPath, provider }: { projectPath: string; provider?: string }) {
+function Harness({
+  projectPath,
+  provider,
+  additionalPaths,
+}: {
+  projectPath: string
+  provider?: string
+  additionalPaths?: string[]
+}) {
   const [text, setText] = useState('')
-  const mentions = useFileMentions({ serverId: 'srv', projectPath, provider, text, onChangeText: setText })
+  const mentions = useFileMentions({ serverId: 'srv', projectPath, additionalPaths, provider, text, onChangeText: setText })
   return (
     <ChatComposer
       {...baseProps}
@@ -71,12 +90,16 @@ function Harness({ projectPath, provider }: { projectPath: string; provider?: st
   )
 }
 
-async function renderHarness(props: { projectPath?: string; provider?: string } = {}) {
+async function renderHarness(props: { projectPath?: string; provider?: string; additionalPaths?: string[] } = {}) {
   queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } })
   await renderWithI18n(
     <QueryClientProvider client={queryClient}>
       <DirectionRoot>
-        <Harness projectPath={props.projectPath ?? '/home/me/proj'} provider={props.provider} />
+        <Harness
+          projectPath={props.projectPath ?? '/home/me/proj'}
+          provider={props.provider}
+          additionalPaths={props.additionalPaths}
+        />
       </DirectionRoot>
     </QueryClientProvider>,
   )
@@ -154,6 +177,25 @@ describe('ChatComposer @ file mentions', () => {
 
     await type('@s @')
     expect(await screen.findByTestId('file-mention-board')).toBeTruthy()
+  })
+
+  it('lists the parent folder for @.. and walks into a sibling', async () => {
+    await renderHarness()
+    await type('@..')
+    await fireEvent.press(await screen.findByTestId('file-mention-row-lib'))
+    expect(mockFetchBrowse).toHaveBeenCalledWith('srv', '/home/me/proj/..')
+    expect(inputValue()).toBe('@../lib/')
+
+    await type('@../lib/')
+    await fireEvent.press(await screen.findByTestId('file-mention-row-util.ts'))
+    expect(inputValue()).toBe('@../lib/util.ts ')
+  })
+
+  it('offers the session extra directories at the top level', async () => {
+    await renderHarness({ additionalPaths: ['/home/me/lib'] })
+    await type('@')
+    await fireEvent.press(await screen.findByTestId('file-mention-row-../lib'))
+    expect(inputValue()).toBe('@../lib/')
   })
 
   it('does not open for an email address', async () => {

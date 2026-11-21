@@ -61,6 +61,8 @@ interface Props {
   provider?: ProviderName | string | null
   /** Session cwd on the streamer's machine; `@` mentions list files relative to it. */
   projectPath?: string | null
+  /** The session's extra directories, offered by the `@` picker. */
+  additionalPaths?: readonly string[]
   /** Disable the composer while the session's PTY is still waking up. */
   disabled?: boolean
   /** The raw-keys row, when open; rides the keyboard with the composer. */
@@ -126,6 +128,7 @@ export function LiveConversationView({
   conversationId,
   provider,
   projectPath = null,
+  additionalPaths,
   disabled = false,
   composerAccessory = null,
   onPreferRawTerminal,
@@ -472,6 +475,7 @@ export function LiveConversationView({
   const fileMentions = useFileMentions({
     serverId,
     projectPath,
+    additionalPaths,
     provider,
     sessionId,
     text: inputText,

@@ -74,6 +74,7 @@ import { TerminalView } from '@/components/terminal/TerminalView'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { clientLog } from '@/lib/clientLog'
 import { buildSharedInfoFields, sessionInfoSubject } from '@/lib/infoFields'
+import { sessionAdditionalPaths } from '@/lib/additionalPaths'
 import { useSessionLeaveGuard } from '@/hooks/useSessionLeaveGuard'
 import {
   hardReloadSession,
@@ -1444,6 +1445,7 @@ export default function SessionDetailScreen() {
                 sessionId={id}
                 provider={session.provider}
                 projectPath={session.projectPath}
+                additionalPaths={sessionAdditionalPaths(session.additionalPaths)}
                 disabled={isWakingUp}
                 composerAccessory={rawKeysAccessory}
                 resumedConversationId={session.resumedFromConversationId}
@@ -1457,6 +1459,7 @@ export default function SessionDetailScreen() {
                 conversationId={historyConversationId!}
                 provider={session.provider}
                 projectPath={session.projectPath}
+                additionalPaths={sessionAdditionalPaths(session.additionalPaths)}
                 disabled={isWakingUp}
                 composerAccessory={rawKeysAccessory}
                 onPreferRawTerminal={() => setForceRawTerminal(true)}

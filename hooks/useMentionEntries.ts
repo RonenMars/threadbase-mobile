@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { browseQueryKey, fetchBrowse } from '@/hooks/useBrowse'
 import { NetworkError, NotFoundError } from '@/services/api-client'
-import { rankMentionEntries, type MentionEntry } from '@/lib/mentionToken'
+import { extraDirEntries, rankMentionEntries, type MentionEntry } from '@/lib/mentionToken'
 
 export type MentionListState =
   | { status: 'loading' }
@@ -41,6 +41,8 @@ export function useMentionEntries(
   projectPath: string,
   dir: string,
   query: string,
+  /** The session's extra directories; offered as folders at the top level. */
+  extraDirs: readonly string[] = [],
 ): MentionListState {
   // Filtering within a directory is synchronous; only changing directory
   // fetches, and fast typing through `src/comp…` should not list every prefix.
@@ -74,5 +76,6 @@ export function useMentionEntries(
     // Older servers list directories only.
     ...(listing.data.files ?? []).map((f) => ({ name: f.name, kind: 'file' as const })),
   ]
-  return { status: 'ready', entries: rankMentionEntries(entries, query) }
+  const extras = dir === '' ? extraDirEntries(projectPath, extraDirs, query) : []
+  return { status: 'ready', entries: [...extras, ...rankMentionEntries(entries, query)] }
 }
