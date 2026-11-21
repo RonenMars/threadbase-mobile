@@ -1,8 +1,11 @@
 import {
   applyMention,
+  applyPeerMention,
+  buildPeerEntries,
   escapeMentionPath,
   findMentionToken,
   rankMentionEntries,
+  rankPeerEntries,
   type MentionEntry,
 } from '@/lib/mentionToken'
 
@@ -124,5 +127,63 @@ describe('applyMention', () => {
 describe('escapeMentionPath', () => {
   it('backslash-escapes spaces only', () => {
     expect(escapeMentionPath('a b/c d.png')).toBe('a\\ b/c\\ d.png')
+  })
+})
+
+describe('peer entries', () => {
+  const base = { projectName: 'tb-mobile', canMessage: true }
+  const a = { ...base, id: 'aaaaaaaa-1', peerMention: '@alpha', peerAddress: 'uds:/tmp/cc-socks/1.sock' }
+  const b = { ...base, id: 'bbbbbbbb-2', peerMention: '@"name slug"', peerAddress: 'uds:/tmp/cc-socks/2.sock', projectName: 'tb-streamer' }
+
+  it('inserts the picker token and shows the name, project and short id', () => {
+    expect(buildPeerEntries([a, b], 'self')).toEqual([
+      { id: 'aaaaaaaa-1', name: 'alpha', projectName: 'tb-mobile', shortId: 'aaaaaaaa', insert: '@alpha' },
+      { id: 'bbbbbbbb-2', name: 'name slug', projectName: 'tb-streamer', shortId: 'bbbbbbbb', insert: '@"name slug"' },
+    ])
+  })
+
+  it('leaves out rows without canMessage and the current session', () => {
+    const rows = [
+      { ...a, canMessage: false },
+      { ...b, canMessage: undefined },
+      { ...a, id: 'self' },
+      { ...base, id: 'c', peerMention: '@c' },
+    ]
+    expect(buildPeerEntries(rows, 'self').map((p) => p.id)).toEqual(['c'])
+    expect(buildPeerEntries([{ ...base, id: 'd', canMessage: true }], 'self')).toEqual([])
+  })
+
+  it('appends the bare address when two peers share a name, and uses it alone when there is no token', () => {
+    const twin = { ...a, id: 'cccccccc-3', peerAddress: 'uds:/tmp/cc-socks/3.sock' }
+    const noMention = { ...base, id: 'dddddddd-4', sessionName: 'odd "name"', peerAddress: 'uds:/tmp/cc-socks/4.sock' }
+    const out = buildPeerEntries([a, twin, noMention], 'self')
+    expect(out.map((p) => p.insert)).toEqual([
+      '@alpha uds:/tmp/cc-socks/1.sock',
+      '@alpha uds:/tmp/cc-socks/3.sock',
+      'uds:/tmp/cc-socks/4.sock',
+    ])
+    expect(out[2].name).toBe('odd "name"')
+  })
+
+  it('ignores a malformed field instead of throwing', () => {
+    const bad = { ...a, peerMention: 42 as unknown as string, peerAddress: undefined }
+    expect(buildPeerEntries([bad], 'self')).toEqual([])
+  })
+
+  it('ranks by name, then project or short id', () => {
+    const peers = buildPeerEntries([a, b], 'self')
+    expect(rankPeerEntries(peers, 'al').map((p) => p.id)).toEqual(['aaaaaaaa-1'])
+    expect(rankPeerEntries(peers, 'streamer').map((p) => p.id)).toEqual(['bbbbbbbb-2'])
+    expect(rankPeerEntries(peers, 'bbbb').map((p) => p.id)).toEqual(['bbbbbbbb-2'])
+    expect(rankPeerEntries(peers, '')).toHaveLength(2)
+  })
+
+  it('replaces the token with the insert text and a space', () => {
+    const [peer] = buildPeerEntries([a], 'self')
+    expect(applyPeerMention('tell @al now', { start: 5, end: 8, dir: '', query: 'al' }, peer)).toEqual({
+      text: 'tell @alpha now',
+      cursor: 12,
+    })
+    expect(applyPeerMention('@al', { start: 0, end: 3, dir: '', query: 'al' }, peer)).toEqual({ text: '@alpha ', cursor: 7 })
   })
 })

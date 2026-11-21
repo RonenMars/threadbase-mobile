@@ -1,14 +1,17 @@
 import { useCallback, useState } from 'react'
 import type { TextInputSelectionChangeEvent } from 'react-native'
 import { CLAUDE_CODE_PROVIDER, canonicalizeProviderName } from '@/constants/providers'
-import { applyMention, findMentionToken, type MentionEntry, type MentionToken } from '@/lib/mentionToken'
+import { applyMention, applyPeerMention, findMentionToken, type MentionEntry, type MentionToken, type PeerEntry } from '@/lib/mentionToken'
 import { applySkill, findSlashToken, isSkillIntact, type SkillEntry, type SlashToken } from '@/lib/slashToken'
 
 export interface ComposerMention {
   serverId: string
   projectPath: string
+  /** The session being typed in; peers exclude it. Absent where no peer list applies. */
+  sessionId?: string
   token: MentionToken
   onSelect: (entry: MentionEntry) => void
+  onSelectPeer: (peer: PeerEntry) => void
   onDismiss: () => void
 }
 
@@ -139,13 +142,21 @@ export function useFileMentions({
     placeCaret(next.cursor)
   }
 
+  const onSelectPeer = (peer: PeerEntry) => {
+    const next = applyPeerMention(text, visibleToken, peer)
+    onChangeText(next.text)
+    placeCaret(next.cursor)
+  }
+
   return {
     ...shared,
     mention: {
       serverId,
       projectPath,
+      sessionId,
       token: visibleToken,
       onSelect,
+      onSelectPeer,
       onDismiss: () => setDismissedAt(visibleToken.start),
     },
   }

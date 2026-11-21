@@ -68,7 +68,9 @@
     "empty": "אין קבצים התואמים ל־„{{query}}”",
     "emptyFolder": "התיקייה הזו ריקה.",
     "folderLabel": "תיקייה {{name}}",
-    "fileLabel": "קובץ {{name}}"
+    "fileLabel": "קובץ {{name}}",
+    "peerTag": "עמית",
+    "peerLabel": "סשן עמית {{name}}, פרויקט {{project}}"
   },
   "skills": {
     "title": "סקילים",
