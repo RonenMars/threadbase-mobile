@@ -142,5 +142,14 @@
     "tokens": "{{pre}} → {{post}} tokens",
     "expand": "Show compaction summary",
     "collapse": "Hide compaction summary"
+  },
+  "messageMenu": {
+    "copy": "Copy Message",
+    "selectText": "Select Text",
+    "copyMarkdown": "Copy as Markdown",
+    "copyCode": "Copy Code",
+    "quote": "Quote Message",
+    "selectTitle": "Select Text",
+    "done": "Done"
   }
 }

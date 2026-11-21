@@ -8,12 +8,15 @@ import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
 import { QuestionAnswerCard } from '@/components/conversation/QuestionAnswerCard'
 import { CompactionCard } from '@/components/conversation/CompactionCard'
+import { MessageContextMenu } from '@/components/conversation/MessageContextMenu'
+import { blockAsMessage } from '@/lib/messageText'
 import type { Message, MessageContent } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 export function renderContent(
+  message: Message,
   block: MessageContent,
   index: number,
   recycleKey: string,
@@ -21,13 +24,28 @@ export function renderContent(
   matchAnchor?: MatchAnchor,
   activeMatch?: boolean,
 ) {
+  const card = renderCard(block, recycleKey, highlight, matchAnchor, activeMatch)
+  if (!card) return null
+  return (
+    <MessageContextMenu key={index} message={blockAsMessage(message, block)}>
+      {card}
+    </MessageContextMenu>
+  )
+}
+
+function renderCard(
+  block: MessageContent,
+  recycleKey: string,
+  highlight?: string,
+  matchAnchor?: MatchAnchor,
+  activeMatch?: boolean,
+) {
   if (block.type === 'thinking') {
-    return <ThinkingCard key={index} block={block} recycleKey={recycleKey} />
+    return <ThinkingCard block={block} recycleKey={recycleKey} />
   }
   if (block.type === 'tool_use' || block.type === 'tool_result') {
     return (
       <ToolCard
-        key={index}
         block={block}
         recycleKey={recycleKey}
         highlight={highlight}
@@ -37,10 +55,10 @@ export function renderContent(
     )
   }
   if (block.type === 'diff') {
-    return <DiffViewer key={index} filename={block.filename} hunks={block.hunks} recycleKey={recycleKey} />
+    return <DiffViewer filename={block.filename} hunks={block.hunks} recycleKey={recycleKey} />
   }
   if (block.type === 'question_answer') {
-    return <QuestionAnswerCard key={index} items={block.items} />
+    return <QuestionAnswerCard items={block.items} />
   }
   return null
 }
@@ -138,7 +156,7 @@ export const MessageItem = React.memo(function MessageItem({
               />
             )
           }
-          return renderContent(block, i, message.id, highlight, matchAnchor, isActiveMatch)
+          return renderContent(message, block, i, message.id, highlight, matchAnchor, isActiveMatch)
         })}
       </Row>
     )
