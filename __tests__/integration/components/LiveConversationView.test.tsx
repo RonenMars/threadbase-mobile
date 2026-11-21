@@ -14,12 +14,34 @@ import { LiveConversationView } from '@/components/conversation/LiveConversation
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createWrapper } from '@/test-utils'
 import { useServersStore } from '@/stores/servers'
+import { usePendingSendsStore } from '@/stores/pendingSends'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { Message, Prompt, Session } from '@/types/api'
 
-const mockMutate = jest.fn()
-const mockMutateAsync = jest.fn(async (payload: string) => {
-  mockMutate(payload, {})
+// The global mock is a no-op; pending sends persist, so a reload test needs real reads.
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const items = new Map<string, string>()
+  return {
+    __esModule: true,
+    default: {
+      getItem: async (k: string) => items.get(k) ?? null,
+      setItem: async (k: string, v: string) => { items.set(k, v) },
+      removeItem: async (k: string) => { items.delete(k) },
+      clear: async () => { items.clear() },
+      getAllKeys: async () => [...items.keys()],
+      multiGet: async (ks: string[]) => ks.map((k) => [k, items.get(k) ?? null]),
+      multiSet: async (kvs: [string, string][]) => { kvs.forEach(([k, v]) => items.set(k, v)) },
+      multiRemove: async (ks: string[]) => { ks.forEach((k) => items.delete(k)) },
+    },
+  }
 })
+
+const mockMutate = jest.fn()
+const mockMutateAsync = jest.fn(async (payload: string): Promise<{ ok: boolean; promptCount?: number } | undefined> => {
+  mockMutate(payload, {})
+  return undefined
+})
+const mockSendKeysAsync = jest.fn(async (_keys: string) => ({ ok: true }))
 // Settled state of the send mutation, read during render for the inline
 // composer error. Mutable so a test can stand in for "the last send failed".
 let mockSendInputState: { isError: boolean; error: Error | null } = { isError: false, error: null }
@@ -53,6 +75,7 @@ let mockHistoryLoading = false
 let mockHasNextPage = false
 const mockFetchNextPage = jest.fn(() => new Promise<void>(() => {}))
 let mockSessionStatus = 'waiting_input'
+let mockInputNotSubmitted: { promptCount: number; at: string } | null | undefined
 
 jest.mock('@/hooks/useConversations', () => ({
   useConversation: () => ({
@@ -78,7 +101,7 @@ jest.mock('@/hooks/useSessionActions', () => ({
       mutateAsync: mockMutateAsync,
       ...mockSendInputState,
     },
-    sendKeys: { mutate: jest.fn() },
+    sendKeys: { mutate: jest.fn(), mutateAsync: mockSendKeysAsync },
     sendRawKey: { mutate: mockRawKeyMutate, isPending: false, error: null },
     respondToQuestion: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
     answerPermission: { mutate: jest.fn(), mutateAsync: jest.fn(), isError: false, error: null },
@@ -114,7 +137,7 @@ jest.mock('@/services/ws-client', () => ({
 }))
 
 jest.mock('@/hooks/useSession', () => ({
-  useSessionDetail: () => ({ data: { status: mockSessionStatus } }),
+  useSessionDetail: () => ({ data: { status: mockSessionStatus, inputNotSubmitted: mockInputNotSubmitted } }),
 }))
 
 jest.mock('@/hooks/useTerminalStream', () => ({
@@ -183,6 +206,8 @@ afterEach(() => {
   mockSendInputState = { isError: false, error: null }
   mockHasNextPage = false
   mockFetchNextPage.mockClear()
+  mockInputNotSubmitted = undefined
+  usePendingSendsStore.setState({ byKey: {} })
 })
 
 async function renderView(onPreferRawTerminal?: () => void) {
@@ -1229,6 +1254,139 @@ describe('LiveConversationView — "Chat about this"', () => {
     await act(async () => { fireEvent.press(screen.getAllByLabelText('Chat about this')[0]) })
 
     await waitFor(() => expect(screen.getByTestId('chat-message-input').props.placeholder).toBe('Which approach?'))
+  })
+})
+
+describe('LiveConversationView — a send the agent never submitted', () => {
+  beforeEach(() => {
+    mockHistorical = []
+    mockLive = []
+    mockPtyLines = []
+    mockHistoryLoading = false
+    mockSessionStatus = 'waiting_input'
+    mockMutateAsync.mockClear()
+    mockSendKeysAsync.mockClear()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  async function sendWithCount(text: string, promptCount: number) {
+    mockMutateAsync.mockResolvedValueOnce({ ok: true, promptCount })
+    await sendText(text)
+  }
+
+  it('marks the bubble Not sent when the session reports its prompt count, and Retry sends Enter only', async () => {
+    const view = await renderView()
+    await sendWithCount('ship it', 7)
+    expect(screen.queryByTestId('pending-send-not-sent')).toBeNull()
+
+    mockInputNotSubmitted = { promptCount: 7, at: '2026-11-21T09:00:00Z' }
+    await rerenderView(view)
+    expect(screen.getByTestId('pending-send-not-sent')).toBeTruthy()
+
+    await fireEvent.press(screen.getByTestId('pending-send-retry'))
+    expect(mockSendKeysAsync).toHaveBeenCalledWith('\r')
+    expect(mockMutateAsync).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('pending-send-not-sent')).toBeNull()
+    expect(renderedTexts()).toEqual(['ship it'])
+  })
+
+  it('ignores a report for a different prompt count', async () => {
+    const view = await renderView()
+    await sendWithCount('ship it', 7)
+    mockInputNotSubmitted = { promptCount: 6, at: '2026-11-21T09:00:00Z' }
+    await rerenderView(view)
+    expect(screen.queryByTestId('pending-send-not-sent')).toBeNull()
+  })
+
+  it('flags only the latest bubble when two share a prompt count', async () => {
+    const view = await renderView()
+    await sendWithCount('one', 3)
+    await sendWithCount('two', 3)
+    mockInputNotSubmitted = { promptCount: 3, at: '2026-11-21T09:00:00Z' }
+    await rerenderView(view)
+    expect(screen.getAllByTestId('pending-send-not-sent')).toHaveLength(1)
+    // The older one would have a newer bubble after it, which blocks Retry.
+    expect(screen.getByTestId('pending-send-retry').props.accessibilityState?.disabled).toBe(false)
+  })
+
+  it('treats the echo as sent, even after the bubble was flagged', async () => {
+    const view = await renderView()
+    await sendWithCount('ship it', 7)
+    mockInputNotSubmitted = { promptCount: 7, at: '2026-11-21T09:00:00Z' }
+    await rerenderView(view)
+
+    mockLive = [userEcho('ship it')]
+    await rerenderView(view)
+    expect(renderedTexts()).toEqual(['ship it'])
+    expect(screen.queryByTestId('pending-send-not-sent')).toBeNull()
+    expect(usePendingSendsStore.getState().byKey).toEqual({})
+  })
+
+  it('shows Not confirmed after 10 s with no echo, and clears it when the echo lands late', async () => {
+    const view = await renderView()
+    // Faked only after the first commit: rendering under fake timers stalls once an
+    // earlier test in this file has left a sync act() behind.
+    jest.useFakeTimers()
+    await sendWithCount('ship it', 7)
+    await act(async () => {
+      jest.advanceTimersByTime(9_900)
+    })
+    expect(screen.queryByTestId('pending-send-unconfirmed')).toBeNull()
+    await act(async () => {
+      jest.advanceTimersByTime(200)
+    })
+    expect(screen.getByTestId('pending-send-unconfirmed')).toBeTruthy()
+
+    mockLive = [userEcho('ship it')]
+    await rerenderView(view)
+    expect(screen.queryByTestId('pending-send-unconfirmed')).toBeNull()
+    expect(renderedTexts()).toEqual(['ship it'])
+  })
+
+  it('keeps an unconfirmed bubble through a history refetch that lacks its echo', async () => {
+    const view = await renderView()
+    await sendWithCount('ship it', 7)
+    mockHistorical = [
+      { id: 'c1-0', uuid: 'h0', messageIndex: 0, role: 'assistant', content: [{ type: 'text', text: 'earlier' }], timestamp: '', is_sidechain: false, parent_uuid: null },
+    ]
+    await rerenderView(view)
+    expect(renderedTexts()).toEqual(['earlier', 'ship it'])
+  })
+
+  it('keeps the bubble across an app reload', async () => {
+    const view = await renderView()
+    await sendWithCount('ship it', 7)
+    view.unmount()
+
+    // A cold start: memory is empty and only storage survives. setState writes
+    // through the persist middleware, so put the stored copy back afterwards.
+    const stored = await AsyncStorage.getItem('threadbase_pending_sends')
+    expect(stored).toContain('ship it')
+    usePendingSendsStore.setState({ byKey: {} })
+    await AsyncStorage.setItem('threadbase_pending_sends', stored ?? '')
+    await act(async () => {
+      await usePendingSendsStore.persist.rehydrate()
+    })
+
+    mockInputNotSubmitted = { promptCount: 7, at: '2026-11-21T09:00:00Z' }
+    await renderView()
+    expect(renderedTexts()).toEqual(['ship it'])
+    expect(screen.getByTestId('pending-send-not-sent')).toBeTruthy()
+  })
+
+  it('disables Retry while a newer message is still pending', async () => {
+    const view = await renderView()
+    await sendWithCount('one', 3)
+    await sendWithCount('two', 4)
+    mockInputNotSubmitted = { promptCount: 3, at: '2026-11-21T09:00:00Z' }
+    await rerenderView(view)
+
+    const retry = screen.getByTestId('pending-send-retry')
+    expect(retry.props.accessibilityState?.disabled).toBe(true)
+    await fireEvent.press(retry)
+    expect(mockSendKeysAsync).not.toHaveBeenCalled()
   })
 })
 

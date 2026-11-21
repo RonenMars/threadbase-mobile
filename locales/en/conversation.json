@@ -78,7 +78,10 @@
     "tokens_other": "{{count}} tokens",
     "errorBadge": "Error",
     "toolFallback": "Tool",
-    "queued": "Queued"
+    "queued": "Queued",
+    "notSent": "Not sent",
+    "retry": "Retry",
+    "notConfirmed": "Not confirmed, check the terminal"
   },
   "thinking": {
     "label": "Reasoning",

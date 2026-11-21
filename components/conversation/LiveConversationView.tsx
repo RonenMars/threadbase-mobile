@@ -43,15 +43,16 @@ import { wsManager } from '@/services/ws-client'
 import { markSessionUsed } from '@/lib/sessionUsage'
 import type { Message, Session } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
-import { spacing, type Theme } from '@/constants/theme'
-import type { ProviderName } from '@/constants/providers'
+import { font, spacing, type Theme } from '@/constants/theme'
+import { COPILOT_PROVIDER, type ProviderName } from '@/constants/providers'
+import { pendingSendsKey, usePendingSendsStore, type PendingSend } from '@/stores/pendingSends'
 import { preferRawTerminal } from '@/lib/renderConfidence'
 import { deriveSessionPresentation, isWorkingTurn } from '@/lib/sessionPresentation'
 import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
 import { CHAT_ANCHOR, MESSAGE_LIST_PROPS, useVirtualizedMessageList } from '@/hooks/useVirtualizedMessageList'
-import { CaretDown, Question } from 'phosphor-react-native'
+import { ArrowClockwise, CaretDown, Question, WarningCircle } from 'phosphor-react-native'
 
 interface Props {
   serverId: string
@@ -105,11 +106,21 @@ function assistantTextLines(m: Message): string[] {
 // conversation rather than reading back through it.
 const FOLLOW_TAIL_THRESHOLD_PX = 100
 
+// A sent prompt with no transcript echo by now gets "Not confirmed". The
+// streamer's own Enter resend fires at 1.5 s, so this sits well past it.
+const UNCONFIRMED_AFTER_MS = 10_000
+const NO_PENDING: PendingSend[] = []
+
+// Ids outlive the process (pending sends persist), so a bare counter would
+// collide with a bubble restored from the last run.
 let optimisticSeq = 0
-function makeOptimisticMessage(text: string): Message {
+function newOptimisticId(): string {
   optimisticSeq += 1
+  return `optimistic-${Date.now()}-${optimisticSeq}`
+}
+function optimisticMessage({ id, text }: PendingSend): Message {
   return {
-    id: `optimistic-${optimisticSeq}`,
+    id,
     uuid: null,
     role: 'user',
     content: [{ type: 'text', text }],
@@ -149,7 +160,14 @@ export function LiveConversationView({
   // Optimistic user turns: shown immediately on send so the bubble doesn't
   // wait for the JSONL to round-trip back over the WS. Cleared per id once the
   // matching echo arrives in the historical/live stream (matched on text).
-  const [pendingSends, setPendingSends] = useState<Message[]>([])
+  // Persisted: a reload must not hide a message the agent may never have got.
+  const pendingKey = pendingSendsKey(serverId, sessionId)
+  const pending = usePendingSendsStore((s) => s.byKey[pendingKey]) ?? NO_PENDING
+  const addPending = usePendingSendsStore((s) => s.add)
+  const updatePending = usePendingSendsStore((s) => s.update)
+  const removePending = usePendingSendsStore((s) => s.remove)
+  const markSent = usePendingSendsStore((s) => s.markSent)
+  const pendingSends = useMemo(() => pending.map(optimisticMessage), [pending])
   // Sends made while a turn was already in flight. Decided at send time: a first
   // message also sees the status flip to running right after it, and must not
   // jump below the reply it started.
@@ -186,7 +204,7 @@ export function LiveConversationView({
   // FlashList runs its autoscroll-to-bottom check on every `data` identity
   // change, so a fresh array from e.g. the jump-to-latest FAB toggling
   // snapped a reader who had scrolled up a few lines back to the tail.
-  const { allMessages, queuedIds, thinkingMessageLines } = useMemo(() => {
+  const { allMessages, queuedIds, thinkingMessageLines, echoedIds } = useMemo(() => {
     const historicalMessages: Message[] = data?.messages ?? []
     // Historical carries a server message_index; live WS messages do not (yet —
     // real indexes arrive with the WS-resume follow-up). Order historical by
@@ -232,8 +250,46 @@ export function LiveConversationView({
       ],
       queuedIds: new Set(queued.map((m) => m.id)),
       thinkingMessageLines: liveAssistantLines,
+      echoedIds: pendingSends.filter((m) => !stillPending.includes(m)).map((m) => m.id),
     }
   }, [data?.messages, liveMessages, pendingSends, queuedSendIds, turnInFlight])
+
+  useEffect(() => {
+    if (echoedIds.length) removePending(pendingKey, echoedIds)
+  }, [echoedIds, pendingKey, removePending])
+
+  // Copilot never echoes, so its sends would all read "Not confirmed".
+  const confirmsByEcho = provider !== COPILOT_PROVIDER
+  useEffect(() => {
+    if (!confirmsByEcho) return
+    const timers = pending
+      .filter((p) => p.sentAt !== undefined && !p.unconfirmed)
+      .map((p) =>
+        setTimeout(
+          () => updatePending(pendingKey, p.id, { unconfirmed: true }),
+          Math.max(0, (p.sentAt ?? 0) + UNCONFIRMED_AFTER_MS - Date.now()),
+        ),
+      )
+    return () => timers.forEach(clearTimeout)
+  }, [confirmsByEcho, pending, pendingKey, updatePending])
+
+  // The streamer's verdict on the latest send carrying that prompt count. The
+  // session record holds it, so it also survives a reload or a missed frame.
+  const notSubmitted = session?.inputNotSubmitted
+  const notSubmittedAt = typeof notSubmitted?.promptCount === 'number' ? notSubmitted.at : undefined
+  const notSentIndex = (() => {
+    if (notSubmittedAt === undefined) return -1
+    let i = pending.length - 1
+    while (i >= 0 && pending[i].promptCount !== notSubmitted?.promptCount) i--
+    return i >= 0 && pending[i].retriedFor !== notSubmittedAt ? i : -1
+  })()
+  const notSentId = notSentIndex >= 0 ? pending[notSentIndex].id : undefined
+  // Enter would submit whatever sits in the box now, which is the newer send.
+  const retryBlocked = notSentIndex >= 0 && notSentIndex < pending.length - 1
+  const unconfirmedIds = useMemo(
+    () => new Set(pending.filter((p) => p.unconfirmed).map((p) => p.id)),
+    [pending],
+  )
 
   // Keep session status fresh: subscribe to WS session_update so the cache
   // updates immediately when the agent finishes (status: running → idle).
@@ -418,22 +474,21 @@ export function LiveConversationView({
     // chased through the optimistic row's and the thinking bubble's layout.
     repin()
     jumpToLatest()
-    let optimisticId: string | undefined
-    if (optimisticText) {
-      const msg = makeOptimisticMessage(optimisticText)
-      optimisticId = msg.id
-      setPendingSends((prev) => [...prev, msg])
-      if (turnInFlight) setQueuedSendIds((prev) => [...prev, msg.id])
+    const optimisticId = optimisticText ? newOptimisticId() : undefined
+    if (optimisticId) {
+      addPending(pendingKey, { id: optimisticId, text: optimisticText })
+      if (turnInFlight) setQueuedSendIds((prev) => [...prev, optimisticId])
       sawRunning.current = false
       setAwaitingTurn(true)
     }
     try {
-      await sendInput.mutateAsync(payload)
+      const reply = await sendInput.mutateAsync(payload)
+      if (optimisticId) {
+        markSent(pendingKey, optimisticId, typeof reply?.promptCount === 'number' ? reply.promptCount : undefined)
+      }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     } catch (err) {
-      if (optimisticId) {
-        setPendingSends((prev) => prev.filter((m) => m.id !== optimisticId))
-      }
+      if (optimisticId) removePending(pendingKey, [optimisticId])
       // A prompt is open and the server refused the text. The card is the
       // list footer, so jump back to it; the server's message shows inline via
       // sendError. No alert: a modal would take the focus this is trying to
@@ -446,6 +501,20 @@ export function LiveConversationView({
       throw err
     }
   }
+
+  // Enter only: the text is already in the agent's box, so resending it would
+  // type it twice. The bubble stays pending until its echo lands.
+  const sendKeysAsync = sendKeys.mutateAsync
+  const retryNotSent = useCallback(async () => {
+    if (!notSentId || retryBlocked || notSubmittedAt === undefined) return
+    updatePending(pendingKey, notSentId, { retriedFor: notSubmittedAt, sentAt: Date.now(), unconfirmed: false })
+    try {
+      await sendKeysAsync('\r')
+    } catch (err) {
+      updatePending(pendingKey, notSentId, { retriedFor: undefined })
+      Alert.alert(tTerminal('dialog.sendFailedTitle'), err instanceof Error ? err.message : String(err))
+    }
+  }, [notSentId, retryBlocked, notSubmittedAt, pendingKey, updatePending, sendKeysAsync, tTerminal])
 
   const {
     inputText,
@@ -602,9 +671,14 @@ export function LiveConversationView({
         >
           <MessageItem message={item} isLast={item.id === lastMessageId} queued={queuedIds.has(item.id)} />
         </RenderErrorBoundary>
+        {item.id === notSentId ? (
+          <PendingSendStatus kind="notSent" onRetry={retryNotSent} retryDisabled={retryBlocked} />
+        ) : unconfirmedIds.has(item.id) ? (
+          <PendingSendStatus kind="unconfirmed" />
+        ) : null}
       </>
     ),
-    [forkSeam, lastMessageId, queuedIds],
+    [forkSeam, lastMessageId, queuedIds, notSentId, retryNotSent, retryBlocked, unconfirmedIds],
   )
 
   return (
@@ -777,6 +851,44 @@ function LivePtyPlaceholder({ lines, theme }: { lines: string[]; theme: Theme })
   )
 }
 
+function PendingSendStatus({
+  kind,
+  onRetry,
+  retryDisabled,
+}: {
+  kind: 'notSent' | 'unconfirmed'
+  onRetry?: () => void
+  retryDisabled?: boolean
+}) {
+  const theme = useTheme()
+  const { t } = useTranslation('conversation')
+  const styles = makeStyles(theme)
+  if (kind === 'unconfirmed') {
+    return (
+      <Text style={[styles.sendStatus, styles.sendStatusMuted]} testID="pending-send-unconfirmed">
+        {t('message.notConfirmed')}
+      </Text>
+    )
+  }
+  return (
+    <View style={[styles.sendStatus, styles.sendStatusRow]} testID="pending-send-not-sent">
+      <WarningCircle size={14} color={theme.text.danger} weight="bold" />
+      <Text style={styles.sendStatusDanger}>{t('message.notSent')}</Text>
+      <TouchableOpacity
+        testID="pending-send-retry"
+        style={[styles.sendStatusRow, retryDisabled && styles.retryDisabled]}
+        onPress={onRetry}
+        disabled={retryDisabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: Boolean(retryDisabled) }}
+      >
+        <ArrowClockwise size={14} color={theme.text.accent} weight="bold" />
+        <Text style={styles.retryText}>{t('message.retry')}</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.bg.primary },
@@ -789,6 +901,12 @@ function makeStyles(theme: Theme) {
       lineHeight: 16,
     },
     transcript: { flex: 1 },
+    sendStatus: { alignSelf: 'flex-end', marginHorizontal: spacing.md, marginBottom: spacing.xs },
+    sendStatusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    sendStatusMuted: { color: theme.text.secondary, fontSize: font.xs },
+    sendStatusDanger: { color: theme.text.danger, fontSize: font.xs },
+    retryText: { color: theme.text.accent, fontSize: font.xs, fontWeight: '600' },
+    retryDisabled: { opacity: 0.4 },
     jumpToLatest: {
       position: 'absolute',
       end: spacing.md,
