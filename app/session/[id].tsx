@@ -26,6 +26,7 @@ import { useActiveQuestion } from '@/hooks/useActiveQuestion'
 import { useTerminalStream } from '@/hooks/useTerminalStream'
 import { setViewedSession } from '@/services/push'
 import { wsManager } from '@/services/ws-client'
+import { useQueryRecoveryStore } from '@/stores/query-recovery'
 import { useServersStore } from '@/stores/servers'
 import { isTerminalSession } from '@/utils/terminalSession'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
@@ -43,10 +44,8 @@ import { useOpenStatusSurface } from '@/hooks/useOpenStatusSurface'
 import { globalSurface } from '@/lib/alertArbitration'
 import type { AlertInput } from '@/stores/alerts'
 import { SessionDetailSlowBanner } from '@/components/sessions/SessionDetailSlowBanner'
-import { ConnectionBanner } from '@/components/sessions/ConnectionBanner'
 import { ExternalSessionBanner } from '@/components/sessions/ExternalSessionBanner'
 import { ExternalSessionNotifyToggle } from '@/components/sessions/ExternalSessionNotifyToggle'
-import { RecoveryOverlay } from '@/components/ui/RecoveryOverlay'
 import { useWsStatus } from '@/hooks/useWsStatus'
 import { useWsReconnectAttempt } from '@/hooks/useWsReconnectAttempt'
 import { queryCause } from '@/types/alerts'
@@ -597,9 +596,11 @@ export default function SessionDetailScreen() {
   const wsDisconnected = wsStatus !== 'connected'
   const showReconnectLoader =
     wsDisconnected && wsReconnectAttempt >= WS_RECONNECT_LOADER_ATTEMPT
-  const serverCount = useServersStore((s) => Object.keys(s.servers).length)
-  const showReconnectBanner = showReconnectLoader && serverCount !== 1
-  const showReconnectOverlay = showReconnectLoader && serverCount === 1
+  useEffect(() => {
+    if (!showReconnectLoader) return
+    useQueryRecoveryStore.getState().setWsReconnectServerId(serverId)
+    return () => useQueryRecoveryStore.getState().setWsReconnectServerId(null)
+  }, [showReconnectLoader, serverId])
   const [wsEscalated, setWsEscalated] = useState(false)
   useEffect(() => {
     if (!showReconnectLoader) {
@@ -1421,10 +1422,6 @@ export default function SessionDetailScreen() {
       <View style={styles.body}>
         {isLive ? (
           <View style={styles.flex}>
-            {showReconnectBanner ? (
-              <ConnectionBanner variant="reconnecting" />
-            ) : null}
-            <RecoveryOverlay visible={showReconnectOverlay} />
             {/*
               An external session falls through the DiscoveredSessionScreen gate
               into this live view, where it streams transcript and can never

@@ -10,13 +10,15 @@ import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 interface Props {
   visible: boolean
+  /** What is retrying, e.g. `Win · GET /sessions`. */
+  detail?: string
 }
 
 /**
  * A pill pinned under the status bar while a query silently retries. It never
  * intercepts a touch: the screen underneath stays fully usable.
  */
-export function RecoveryOverlay({ visible }: Props) {
+export function RecoveryOverlay({ visible, detail }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
   const insets = useSafeAreaInsets()
@@ -43,6 +45,11 @@ export function RecoveryOverlay({ visible }: Props) {
         <Text style={styles.title} numberOfLines={1}>
           {t('recovery.title')}
         </Text>
+        {detail ? (
+          <Text style={styles.detail} numberOfLines={1} testID="recovery-detail">
+            {detail}
+          </Text>
+        ) : null}
       </Animated.View>
     </View>
   )
@@ -62,6 +69,7 @@ function makeStyles(theme: Theme) {
       alignItems: 'center',
       gap: spacing.xs,
       paddingEnd: spacing.md,
+      maxWidth: '92%',
       backgroundColor: theme.bg.card,
       borderRadius: radius.full,
       borderWidth: StyleSheet.hairlineWidth,
@@ -71,6 +79,12 @@ function makeStyles(theme: Theme) {
       color: theme.text.secondary,
       fontSize: font.xs,
       fontWeight: '600',
+    },
+    detail: {
+      color: theme.text.secondary,
+      opacity: 0.75,
+      fontSize: font.xs,
+      flexShrink: 1,
     },
   })
 }
