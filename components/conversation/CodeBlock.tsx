@@ -26,7 +26,7 @@ function useCodeStyles() {
   return useThemedStyles(makeStyles)
 }
 
-function DiffLines({ code }: { code: string }) {
+function DiffLines({ code, selectable }: { code: string; selectable: boolean }) {
   const { styles } = useCodeStyles()
   const lines = code.split('\n')
   return (
@@ -37,7 +37,7 @@ function DiffLines({ code }: { code: string }) {
         const lineStyle = isAdd ? styles.diffAdd : isDel ? styles.diffDel : undefined
         return (
           <View key={i} style={[styles.codeLine, lineStyle]}>
-            <Text style={styles.codeToken} selectable>{line.length === 0 ? ' ' : line}</Text>
+            <Text style={styles.codeToken} selectable={selectable}>{line.length === 0 ? ' ' : line}</Text>
           </View>
         )
       })}
@@ -48,12 +48,12 @@ function DiffLines({ code }: { code: string }) {
 // Prism tokenization runs synchronously on the JS thread and a large block
 // costs tens of ms — memoized so CodeBlock-local state changes (the copied
 // flag) and parent re-renders don't re-tokenize the same code.
-const HighlightedCode = React.memo(function HighlightedCode({ code, language }: { code: string; language: Language }) {
+const HighlightedCode = React.memo(function HighlightedCode({ code, language, selectable }: { code: string; language: Language; selectable: boolean }) {
   const { styles } = useCodeStyles()
   return (
     <View style={[styles.codeBody, { backgroundColor: CODE_THEME.plain.backgroundColor }]}>
       {language === 'diff' ? (
-        <DiffLines code={code} />
+        <DiffLines code={code} selectable={selectable} />
       ) : (
         <Highlight code={code} language={language} theme={CODE_THEME}>
           {({ tokens, getLineProps, getTokenProps }) => (
@@ -68,7 +68,7 @@ const HighlightedCode = React.memo(function HighlightedCode({ code, language }: 
                         <Text
                           key={tokenIdx}
                           style={[styles.codeToken, tokenStyle as object]}
-                          selectable
+                          selectable={selectable}
                         >
                           {children}
                         </Text>
@@ -85,7 +85,7 @@ const HighlightedCode = React.memo(function HighlightedCode({ code, language }: 
   )
 })
 
-export function CodeBlock({ code, language }: { code: string; language: Language }) {
+export function CodeBlock({ code, language, selectable = true }: { code: string; language: Language; selectable?: boolean }) {
   const { t } = useTranslation('conversation')
   const { styles } = useCodeStyles()
   const { copied, copy: copyToClipboard } = useCopyToClipboard(1500)
@@ -103,7 +103,7 @@ export function CodeBlock({ code, language }: { code: string; language: Language
           </Text>
         </TouchableOpacity>
       </View>
-      <HighlightedCode code={code} language={language} />
+      <HighlightedCode code={code} language={language} selectable={selectable} />
     </View>
   )
 }

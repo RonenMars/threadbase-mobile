@@ -35,3 +35,7 @@ export const Empty: Story = {}
 export const LongMessage: Story = {
   args: { value: 'A long draft message that grows the composer.\n'.repeat(20) },
 }
+
+export const WithQuote: Story = {
+  args: { quote: 'Run npm test and check jest.config.js before merging the branch.' },
+}

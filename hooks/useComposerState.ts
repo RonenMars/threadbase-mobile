@@ -21,6 +21,7 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { AuthError, NetworkError, NotFoundError } from '@/services/api-client'
 import type { SlashCommand } from '@/constants/slashCommands'
 import { escapeMentionPath } from '@/lib/mentionToken'
+import { quoteAsMarkdown } from '@/lib/messageText'
 
 export interface UseComposerStateOptions {
   serverId: string
@@ -48,6 +49,9 @@ export interface ComposerState {
   voice: { listening: boolean; start: () => Promise<void>; stop: () => void }
   micGranted: boolean
   handleToggleMic: () => Promise<void>
+  /** A message quoted from the transcript, sent as a `>` block ahead of the next prompt. */
+  quote: string | null
+  setQuote: (quote: string | null) => void
 }
 
 const NO_ATTACHMENTS: ComposerAttachment[] = []
@@ -56,6 +60,8 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
   const { t } = useTranslation('common')
   const { t: tConversation } = useTranslation('conversation')
   const [inputText, setInputText] = useState('')
+  // ponytail: screen-local, so a quote is dropped on leaving the session; store-back it like attachments if that bites.
+  const [quote, setQuote] = useState<string | null>(null)
   // Store-backed so attachments survive leaving the session, like the draft text. An upload that
   // finishes after the screen unmounted still lands on the session it was picked for.
   const attachmentKey = attachmentDraftKey(serverId, sessionId)
@@ -113,13 +119,16 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     if (!trimmed && attachments.length === 0) return null
     // The streamer now sanitizes upload filenames; escaping covers legacy uploads.
     const refs = attachments.map((a) => `@${escapeMentionPath(a.path)}`).join(' ')
-    return refs && trimmed ? `${refs} ${trimmed}` : refs || trimmed
+    return withQuote(refs && trimmed ? `${refs} ${trimmed}` : refs || trimmed)
   }
+
+  const withQuote = (body: string) => (quote ? `${quoteAsMarkdown(quote)}\n\n${body}` : body)
 
   const resetComposer = () => {
     setInputText('')
     setAttachments(() => [])
     setAttachError(null)
+    setQuote(null)
     clearDraft(serverId, sessionId)
   }
 
@@ -171,7 +180,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
       const autoName = cleanFirstMessage(text)
       if (!isRejectedTitle(autoName)) renameSession.mutate({ sessionId, name: autoName, origin: 'auto' })
     }
-    return sendAndReset(payload, text || payload)
+    return sendAndReset(payload, text ? withQuote(text) : payload)
   }
 
   const handleSlashCommandSelect = (command: SlashCommand) => {
@@ -316,5 +325,7 @@ export function useComposerState({ serverId, sessionId, onSend }: UseComposerSta
     voice,
     micGranted,
     handleToggleMic,
+    quote,
+    setQuote,
   }
 }

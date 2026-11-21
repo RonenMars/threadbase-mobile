@@ -134,5 +134,14 @@
   },
   "question": {
     "label": "Question"
+  },
+  "messageMenu": {
+    "copy": "Copy Message",
+    "selectText": "Select Text",
+    "copyMarkdown": "Copy as Markdown",
+    "copyCode": "Copy Code",
+    "quote": "Quote Message",
+    "selectTitle": "Select Text",
+    "done": "Done"
   }
 }
