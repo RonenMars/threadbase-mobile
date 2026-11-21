@@ -1,4 +1,4 @@
-import { act } from '@testing-library/react-native'
+import { act, fireEvent } from '@testing-library/react-native'
 import { RecoveryHost, RECOVERY_OVERLAY_MAX_MS } from '@/components/alerts/RecoveryHost'
 import { useQueryRecoveryStore } from '@/stores/query-recovery'
 import { useServersStore } from '@/stores/servers'
@@ -34,10 +34,10 @@ describe('RecoveryHost overlay timeout', () => {
     expect(queryByTestId('recovery-overlay')).not.toBeNull()
   })
 
-  it('never intercepts a touch and shows the scanner', async () => {
+  it('leaves every touch outside the close button to the screen and shows the scanner', async () => {
     const { getByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
-    expect(getByTestId('recovery-overlay').props.pointerEvents).toBe('none')
+    expect(getByTestId('recovery-overlay').props.pointerEvents).toBe('box-none')
     expect(getByTestId('recovery-scanner')).toBeTruthy()
   })
 
@@ -54,6 +54,16 @@ describe('RecoveryHost overlay timeout', () => {
     const { queryByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
     await act(async () => jest.advanceTimersByTime(RECOVERY_OVERLAY_MAX_MS))
+    await act(async () => useQueryRecoveryStore.setState({ recovering: false }))
+    await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    expect(queryByTestId('recovery-overlay')).not.toBeNull()
+  })
+
+  it('hides on close and returns with the next recovery', async () => {
+    const { getByTestId, queryByTestId } = await renderWithI18n(<RecoveryHost />)
+    await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    await act(async () => fireEvent.press(getByTestId('recovery-dismiss')))
+    expect(queryByTestId('recovery-overlay')).toBeNull()
     await act(async () => useQueryRecoveryStore.setState({ recovering: false }))
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
     expect(queryByTestId('recovery-overlay')).not.toBeNull()

@@ -20,6 +20,10 @@ export function RecoveryHost() {
   const servers = useServersStore((s) => s.servers)
   const showOverlay = recovering
   const [expired, setExpired] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const active = showOverlay || wsServerId !== null
+
+  if (!active && dismissed) setDismissed(false)
 
   useEffect(() => {
     if (!showOverlay) return
@@ -42,5 +46,11 @@ export function RecoveryHost() {
       ? `${serverName} · ${describeRoute(lastRequest.method, lastRequest.path)}`
       : serverName
 
-  return <RecoveryOverlay visible={queryVisible || wsServerId !== null} detail={detail} />
+  return (
+    <RecoveryOverlay
+      visible={(queryVisible || wsServerId !== null) && !dismissed}
+      detail={detail}
+      onDismiss={() => setDismissed(true)}
+    />
+  )
 }
