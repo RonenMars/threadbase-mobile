@@ -67,7 +67,7 @@ function writeStub(binDir, name, body) {
 const tmpDirs = [];
 
 /** Runs the copied script as a real subprocess with xcrun/npx stubbed and git real. */
-function runScript(repo, { allowStale = false, platform, rebuildStale = false } = {}) {
+function runScript(repo, { allowStale = false, bigText = false, platform, rebuildStale = false } = {}) {
   const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'ensure-release-bin-'));
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ensure-release-home-'));
   tmpDirs.push(bin, home);
@@ -111,6 +111,7 @@ function runScript(repo, { allowStale = false, platform, rebuildStale = false } 
   };
   if (allowStale) env.E2E_ALLOW_STALE_BUILD = '1';
   if (rebuildStale) env.E2E_REBUILD_STALE = '1';
+  if (bigText) env.TB_DEV_BIG_TEXT = '1';
   if (platform) env.E2E_PLATFORM = platform;
 
   const result = spawnSync(process.execPath, [path.join(repo, 'e2e/ensure-release-build.js')], {
@@ -194,6 +195,19 @@ test('a build stamped for an old commit is treated as stale and fails loudly, wi
   expect(result.npxLog).toBe('');
   expect(result.stderr).toMatch(/stale/i);
   expect(result.stderr).toContain('0000000');
+});
+
+test('a build stamped for HEAD without big text is stale when TB_DEV_BIG_TEXT=1', () => {
+  const made = makeRepo();
+  repo = made.repo;
+  fs.mkdirSync(appDirFor(repo), { recursive: true });
+  fs.writeFileSync(stampPathFor(repo), JSON.stringify({ sha: made.sha }));
+
+  const result = runScript(repo, { bigText: true });
+
+  expect(result.status).not.toBe(0);
+  expect(result.npxLog).toBe('');
+  expect(result.stderr).toMatch(/TB_DEV_BIG_TEXT off/);
 });
 
 test('a dirty working tree is always stale, even if the stamp matches HEAD, and fails loudly', () => {

@@ -19,8 +19,9 @@ App Store Connect scales the 6.9" and 13" sets down for the smaller devices, so 
 - Dark appearance, `en-US`.
 - Session screens in the chat view (bubbles), which is the default since #1447.
 - Search shots show hits from more than one session and machine.
-- Text is large and bold.
-  The app-wide type ramp is +3pt with every weight one step heavier (tokens `xs` 14, `sm` 16, `base` 17, `lg` 20, `xl` 23, `xxl` 27; 400→600, 500→700, 600→700).
+- Text is large and bold: every `Text` and `TextInput` is +3pt with its weight one step heavier (400→600, 500→700, 600→700).
+  `TB_DEV_BIG_TEXT=1` does this at bundle time: `metro.config.js` swaps React Native's `Text` and `TextInput` for the wrappers in `services/dev-big-text/`.
+  Store and QA builds never set it, and `e2e/ensure-release-build.js` rebuilds a Release binary whose stamp was made with the flag set the other way.
   On the simulator, also turn Bold Text on, and on iPad set Dynamic Type to XXXL (below).
   iPhone stays at the default text size: at XXXL the phone truncates card titles and pushes the third machine below the fold.
 
@@ -31,9 +32,8 @@ Until they merge, capture from a branch that has all of them, or the shots will 
 - #1459, the chip view.
 - #1478, which stops list markers wrapping on web.
 - #1479, the server-chip tap fix.
-- `feat/bigger-bolder-text`, the type ramp above.
 
-Three spots also need hand fixes on top of the bigger type ramp: the ShelfBubble badge at 24, the help-feedback `lineHeight` at 24, and `questionLarge` skipped in QuestionCard.
+The wrappers only change text, not the boxes around it, so a fixed-size container can clip its enlarged label: check the ShelfBubble count badge (20x20) in the shots.
 
 ## iPhone: simulator + Maestro
 
@@ -47,7 +47,7 @@ xcrun simctl boot "$U"
 xcrun simctl spawn "$U" defaults write com.apple.Accessibility EnhancedTextLegibilityEnabled -bool YES  # Bold Text
 xcrun simctl shutdown "$U" && xcrun simctl boot "$U"
 
-MAESTRO_UDID="$U" MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/iphone npm run test:e2e:marketing
+TB_DEV_BIG_TEXT=1 MAESTRO_UDID="$U" MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/iphone npm run test:e2e:marketing
 
 xcrun simctl shutdown "$U"
 ```
@@ -90,7 +90,7 @@ xcrun simctl spawn "$U" defaults write com.apple.Accessibility EnhancedTextLegib
 xcrun simctl ui "$U" content_size extra-extra-extra-large
 xcrun simctl shutdown "$U" && xcrun simctl boot "$U"   # Bold Text applies after a reboot
 
-MAESTRO_UDID="$U" MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/ipad npm run test:e2e:marketing
+TB_DEV_BIG_TEXT=1 MAESTRO_UDID="$U" MARKETING_SCREENSHOT_DIR=artifacts/marketing/threadbase-maestro/ipad npm run test:e2e:marketing
 
 xcrun simctl shutdown "$U"
 ```

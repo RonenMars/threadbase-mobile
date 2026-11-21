@@ -32,6 +32,9 @@ if (RUNNER_INSTALLED[process.env.E2E_PLATFORM]) {
 // Set to reuse a build we know is stale (or can't prove is fresh) rather than
 // rebuilding — mirrors e2e/check-sim.js's E2E_ALLOW_UNSUPPORTED_IOS escape hatch.
 const ALLOW_STALE = process.env.E2E_ALLOW_STALE_BUILD === '1'
+// metro.config.js bundles different Text components under this flag, so a build made
+// with it is not interchangeable with one made without it at the same commit.
+const BIG_TEXT = process.env.TB_DEV_BIG_TEXT === '1'
 // Promo capture (and any other local path that must not stop for a human)
 // rebuilds a stale .app with xcodebuild instead of failing or hanging in
 // `expo run:ios`, which holds Metro open after the compile.
@@ -130,6 +133,7 @@ function writeStamp(appPath, git) {
     JSON.stringify(
       {
         sha: git.sha,
+        bigText: BIG_TEXT,
         dirty: git.dirty ? git.porcelain : '',
         builtAt: new Date().toISOString(),
       },
@@ -147,6 +151,9 @@ function writeStamp(appPath, git) {
 // exists to close — so a dirty tree is always treated as stale, never warned.
 function checkBuildFreshness({ git, stamp }) {
   if (!git) return { fresh: false, reason: 'could not determine git state (not a git repo, or git unavailable)' }
+  if (stamp && Boolean(stamp.bigText) !== BIG_TEXT) {
+    return { fresh: false, reason: `existing build was made with TB_DEV_BIG_TEXT ${stamp.bigText ? 'on' : 'off'}` }
+  }
   if (git.dirty) {
     // Default e2e still treats any dirty tree as stale (issue #598). Promo
     // capture stamps the porcelain too, so a re-run against the same dirty
