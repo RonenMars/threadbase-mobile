@@ -134,5 +134,13 @@
   },
   "question": {
     "label": "Question"
+  },
+  "compaction": {
+    "label": "Context compacted",
+    "auto": "Automatic",
+    "manual": "Manual",
+    "tokens": "{{pre}} → {{post}} tokens",
+    "expand": "Show compaction summary",
+    "collapse": "Hide compaction summary"
   }
 }

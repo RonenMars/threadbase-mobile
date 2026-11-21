@@ -7,6 +7,7 @@ import { ThinkingCard } from '@/components/conversation/ThinkingCard'
 import { ToolCard } from '@/components/conversation/ToolCard'
 import { DiffViewer } from '@/components/conversation/DiffViewer'
 import { QuestionAnswerCard } from '@/components/conversation/QuestionAnswerCard'
+import { CompactionCard } from '@/components/conversation/CompactionCard'
 import type { Message, MessageContent } from '@/types/api'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -107,6 +108,14 @@ export const MessageItem = React.memo(function MessageItem({
   // recycle. Plain View elsewhere — history and scrolled-back rows never animate.
   const Row = animateIn && !reduceMotion ? Animated.View : View
   const entering = animateIn && !reduceMotion ? FadeInDown.duration(260).springify().damping(18) : undefined
+
+  if (message.is_compact_summary) {
+    return (
+      <Row style={styles.toolContainer} testID={rowTestId} ref={rowRef} entering={entering}>
+        <CompactionCard message={message} recycleKey={message.id} />
+      </Row>
+    )
+  }
 
   if (hasToolOrDiff) {
     return (

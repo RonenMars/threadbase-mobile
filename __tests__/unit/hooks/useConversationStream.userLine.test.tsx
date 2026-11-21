@@ -159,3 +159,22 @@ describe('useConversationStream – Codex tool call pairing', () => {
     ])
   })
 })
+
+// Claude Code writes its compaction summary as a type:user line flagged
+// isCompactSummary. A live line must keep the flag, or the card the REST path
+// renders shows up as a user bubble until the next reload.
+describe('useConversationStream – compaction summary', () => {
+  it('keeps isCompactSummary on a live line, for string and block content', async () => {
+    const { result } = await setup()
+    const lines = [
+      { type: 'user', uuid: 'cs-1', isCompactSummary: true, isVisibleInTranscriptOnly: true, message: { role: 'user', content: 'This session is being continued…' } },
+      { type: 'user', uuid: 'cs-2', isCompactSummary: true, message: { role: 'user', content: [{ type: 'text', text: 'Summary:' }] } },
+      { type: 'user', uuid: 'u-plain', message: { role: 'user', content: 'hi' } },
+    ]
+    for (const entry of lines) {
+      await act(() => __wsTest.emit('conversation_event', { type: 'conversation_event', sessionId: 'sess-1', line: JSON.stringify(entry) }))
+    }
+
+    expect(result.current.liveMessages.map((m) => m.is_compact_summary)).toEqual([true, true, undefined])
+  })
+})

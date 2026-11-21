@@ -334,6 +334,12 @@ export interface Message {
   is_sidechain?: boolean
   is_tool_result?: boolean
   attachment?: Record<string, unknown> | null
+  /**
+   * Claude Code's generated compaction summary: a `type: user` row the human
+   * never typed. Rendered as a collapsed system card, not a user bubble.
+   */
+  is_compact_summary?: boolean
+  compaction?: { trigger: string | null; preTokens: number | null; postTokens: number | null } | null
 }
 
 export type MessageContent =

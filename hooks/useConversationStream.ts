@@ -65,6 +65,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
       timestamp?: string
       isMeta?: boolean
       isSidechain?: boolean
+      isCompactSummary?: boolean
       parentUuid?: string | null
       payload?: unknown
     }
@@ -78,6 +79,9 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
     if (entry.type !== 'user' && entry.type !== 'assistant') return null
     if (!entry.message?.role) return null
     const isUser = entry.message.role === 'user'
+    // Token stats live on the preceding compact_boundary line; the card renders
+    // without them until the REST load fills them in.
+    const compact = entry.isCompactSummary ? { is_compact_summary: true, compaction: null } : {}
 
     // Claude Code writes a typed user prompt with `content` as a bare string,
     // not an array of blocks. Normalize it to a single text block (mirrors the
@@ -94,6 +98,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
         timestamp: entry.timestamp ?? new Date().toISOString(),
         is_sidechain: entry.isSidechain ?? false,
         parent_uuid: entry.parentUuid ?? null,
+        ...compact,
       }
     }
     const rawContent: unknown[] = rawContentValue
@@ -135,6 +140,7 @@ function parseLineToMessage(line: string, seq?: number | null): Message | null {
       is_sidechain: entry.isSidechain ?? false,
       parent_uuid: entry.parentUuid ?? null,
       messageIndex: typeof seq === 'number' ? seq : undefined,
+      ...compact,
     }
   } catch {
     return null

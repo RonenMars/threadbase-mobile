@@ -413,6 +413,37 @@ describe('useConversation — unrenderable rows from a degraded page', () => {
   })
 })
 
+describe('useConversation — compaction summary rows', () => {
+  // Shape the streamer serves since #1190 for Claude Code's generated summary row.
+  it('carries is_compact_summary and the token stats onto the adapted message', async () => {
+    setActiveServers(['srv_cs'])
+    const page = {
+      meta: { id: 'c_cs', project_name: 'proj-cs', message_count: 1 },
+      messages: [
+        {
+          message_index: 0,
+          role: 'user',
+          text: 'This session is being continued from a previous conversation.',
+          content: [],
+          timestamp: '2026-11-20T13:00:07.952Z',
+          is_compact_summary: true,
+          compaction: { trigger: 'auto', pre_tokens: 266778, post_tokens: 28645 },
+        },
+      ],
+      message_pagination: { total: 1, before_index: 1, from_index: 0, has_more_older: false, next_before_index: null },
+    }
+    metaHandlers.srv_cs = () => Promise.resolve({ status: 200, etag: '"v1"', body: page })
+
+    const { result } = await renderHook(() => useConversation('srv_cs', 'c_cs'), { wrapper: createWrapper() })
+    await waitFor(() => expect(result.current.data).toBeDefined())
+
+    expect(result.current.data!.messages[0]).toMatchObject({
+      is_compact_summary: true,
+      compaction: { trigger: 'auto', preTokens: 266778, postTokens: 28645 },
+    })
+  })
+})
+
 describe('useConversation — messageIndex on adapted rows', () => {
   it('sets messageIndex from the server message_index on a tail page', async () => {
     setActiveServers(['srv_idx_tail'])
