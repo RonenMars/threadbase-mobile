@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { browseQueryKey, fetchBrowse } from '@/hooks/useBrowse'
 import { createApiForServer, NetworkError, NotFoundError } from '@/services/api-client'
-import { fetchAllPagesForServer } from '@/hooks/useSession'
 import { useServersStore } from '@/stores/servers'
-import type { BrowseResponse } from '@/types/api'
+import type { BrowseResponse, PeersResponse } from '@/types/api'
 import {
   buildPeerEntries,
   extraDirEntries,
@@ -110,21 +109,20 @@ export function useMentionEntries(
 }
 
 /**
- * Peer sessions for the `@` picker: the server's `canMessage` rows, minus the
+ * Peer sessions for the `@` picker: the streamer's `GET /api/peers` rows, minus the
  * session being typed in. Peers are never inside a folder, so a token with a
  * directory part lists none. The query sits under `sessions`, so every list
- * invalidation refreshes it too. A failed fetch lists no peers and leaves the
+ * invalidation refreshes it too. An older streamer answers 404 and a failed fetch errors; both list no peers and leaves the
  * path rows alone.
  */
 export function usePeerEntries(serverId: string, sessionId: string | undefined, dir: string, query: string): PeerEntry[] {
   const listing = useQuery({
     queryKey: ['sessions', 'peers', serverId],
-    queryFn: ({ signal }) =>
-      fetchAllPagesForServer(serverId, undefined, 'startedAt', 'desc', undefined, () => undefined, signal),
+    queryFn: ({ signal }) => createApiForServer(serverId).get<PeersResponse>('/api/peers', { signal, retry: false }),
     enabled: !!serverId && !!sessionId && dir === '',
     staleTime: LISTING_STALE_MS,
     retry: false,
   })
-  if (dir !== '' || !sessionId || !listing.data) return []
-  return rankPeerEntries(buildPeerEntries(listing.data, sessionId), query)
+  if (dir !== '' || !sessionId || !Array.isArray(listing.data?.peers)) return []
+  return rankPeerEntries(buildPeerEntries(listing.data.peers, sessionId), query)
 }

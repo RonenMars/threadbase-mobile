@@ -181,7 +181,7 @@ describe('extraDirEntries', () => {
   })
 
 describe('peer entries', () => {
-  const base = { projectName: 'tb-mobile', canMessage: true }
+  const base = { projectName: 'tb-mobile', name: 'alpha' }
   const a = { ...base, id: 'aaaaaaaa-1', peerMention: '@alpha', peerAddress: 'uds:/tmp/cc-socks/1.sock' }
   const b = { ...base, id: 'bbbbbbbb-2', peerMention: '@"name slug"', peerAddress: 'uds:/tmp/cc-socks/2.sock', projectName: 'tb-streamer' }
 
@@ -192,20 +192,14 @@ describe('peer entries', () => {
     ])
   })
 
-  it('leaves out rows without canMessage and the current session', () => {
-    const rows = [
-      { ...a, canMessage: false },
-      { ...b, canMessage: undefined },
-      { ...a, id: 'self' },
-      { ...base, id: 'c', peerMention: '@c' },
-    ]
+  it('leaves out the current session and rows with neither a mention nor an address', () => {
+    const rows = [{ ...a, id: 'self' }, { ...base, id: 'c', peerMention: '@c' }, { ...base, id: 'd' }]
     expect(buildPeerEntries(rows, 'self').map((p) => p.id)).toEqual(['c'])
-    expect(buildPeerEntries([{ ...base, id: 'd', canMessage: true }], 'self')).toEqual([])
   })
 
   it('appends the bare address when two peers share a name, and uses it alone when there is no token', () => {
     const twin = { ...a, id: 'cccccccc-3', peerAddress: 'uds:/tmp/cc-socks/3.sock' }
-    const noMention = { ...base, id: 'dddddddd-4', sessionName: 'odd "name"', peerAddress: 'uds:/tmp/cc-socks/4.sock' }
+    const noMention = { ...base, id: 'dddddddd-4', name: 'odd "name"', peerAddress: 'uds:/tmp/cc-socks/4.sock' }
     const out = buildPeerEntries([a, twin, noMention], 'self')
     expect(out.map((p) => p.insert)).toEqual([
       '@alpha uds:/tmp/cc-socks/1.sock',
