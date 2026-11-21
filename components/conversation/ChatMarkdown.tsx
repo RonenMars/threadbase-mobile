@@ -189,8 +189,10 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
           case 'quote':
             return (
               <View key={i} style={styles.quoteRow}>
-                <View style={styles.quoteRule} />
-                <View style={styles.quoteBody}>{renderLine(block, i, styles.quoteText)}</View>
+                <View style={[styles.quoteRule, isUser && styles.quoteRuleUser]} />
+                <View testID="quote-body" style={styles.quoteBody}>
+                  {renderLine(block, i, isUser ? styles.quoteTextUser : styles.quoteText)}
+                </View>
               </View>
             )
 
@@ -308,11 +310,23 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       backgroundColor: theme.border,
       borderRadius: 1,
     },
+    // Not flex: 1, for the same reason as itemBody: a zero basis collapses the
+    // quote (and the text under it) to a sliver inside a shrink-wrapped bubble.
     quoteBody: {
-      flex: 1,
+      flexGrow: 0,
+      flexShrink: 1,
+      flexBasis: 'auto',
+    },
+    quoteRuleUser: {
+      backgroundColor: theme.text.onAccent,
+      opacity: 0.6,
     },
     quoteText: {
       color: theme.text.secondary,
+    },
+    quoteTextUser: {
+      color: theme.text.onAccent,
+      opacity: 0.8,
     },
     rule: {
       height: StyleSheet.hairlineWidth,

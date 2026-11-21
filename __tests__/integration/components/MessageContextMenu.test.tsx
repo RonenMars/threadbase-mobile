@@ -1,5 +1,6 @@
 import { fireEvent, render } from '@testing-library/react-native'
 import * as Clipboard from 'expo-clipboard'
+import { MessageItem } from '@/components/conversation/MessageItem'
 import { MessageBubble } from '@/components/conversation/MessageBubble'
 import { MessageQuoteContext } from '@/components/conversation/MessageContextMenu'
 import type { Message } from '@/types/api'
@@ -64,5 +65,31 @@ describe('MessageContextMenu', () => {
     const { screen, pick } = await renderMenu(WITH_CODE)
     await pick('Select Text')
     expect(screen.getByTestId('message-select-text').props.value).toBe('Try this:\nnpm test')
+  })
+
+  it('puts Copy and Quote on tool results and tool calls too', async () => {
+    const onQuote = jest.fn()
+    const toolMessage: Message = {
+      ...message(''),
+      content: [
+        { type: 'tool_use', name: 'Bash', input: { command: 'ls' } },
+        { type: 'tool_result', toolName: 'Bash', content: 'a.txt\nb.txt' },
+      ],
+    }
+    const screen = await render(
+      <MessageQuoteContext.Provider value={onQuote}>
+        <MessageItem message={toolMessage} />
+      </MessageQuoteContext.Provider>,
+    )
+    const menus = screen.getAllByTestId('message-context-menu')
+    expect(menus).toHaveLength(2)
+    const result = menus[1]
+    const titles: string[] = result.props.actions.map((a: { title: string }) => a.title)
+    fireEvent(result, 'press', { nativeEvent: { index: titles.indexOf('Copy Message'), indexPath: [], name: '' } })
+    await Promise.resolve()
+    expect(Clipboard.setStringAsync).toHaveBeenLastCalledWith('a.txt\nb.txt')
+    fireEvent(result, 'press', { nativeEvent: { index: titles.indexOf('Quote Message'), indexPath: [], name: '' } })
+    await Promise.resolve()
+    expect(onQuote).toHaveBeenCalledWith('a.txt\nb.txt')
   })
 })

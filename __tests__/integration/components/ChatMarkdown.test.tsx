@@ -136,3 +136,16 @@ describe('ChatMarkdown – inline spans inside a user bubble', () => {
     expect(colorOf(getByText('npm ci'))).not.toBe(colorOf(getByText(/run/)))
   })
 })
+
+describe('ChatMarkdown – quote in a user bubble', () => {
+  it('keeps the quote shrink-wrapped and readable on the accent fill', async () => {
+    const { getByText, getByTestId } = await renderMd('> quoted\n\nmy reply', { isUser: true })
+    const body = StyleSheet.flatten(getByTestId('quote-body').props.style)
+    expect(body.flex).toBeUndefined()
+    expect(body.flexShrink).toBe(1)
+    expect(body.flexBasis).toBe('auto')
+    const text = StyleSheet.flatten(getByText('quoted').props.style)
+    expect(text.opacity).toBe(0.8)
+    expect(getByText('my reply')).toBeTruthy()
+  })
+})
