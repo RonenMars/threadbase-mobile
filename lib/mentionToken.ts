@@ -3,6 +3,7 @@
  * ranking a directory listing against it, and writing the chosen entry back.
  * Pure — the composer hook and the picker share it, and it is tested alone.
  */
+import type { PeerRow } from '@/types/api'
 
 export interface MentionToken {
   /** Index of the `@`. */
@@ -159,32 +160,20 @@ export interface PeerEntry {
   insert: string
 }
 
-interface PeerSource {
-  id: string
-  provider?: string
-  sessionName?: string
-  projectName: string
-  canMessage?: boolean
-  peerMention?: string
-  peerAddress?: string
-}
-
 function peerNameFromMention(mention: string): string {
   return mention.replace(/^@"?/, '').replace(/"$/, '')
 }
 
 /**
- * Peers come from the session list's `canMessage` rows. Absent or false means
- * an older streamer, the flag off, or a session that cannot be messaged, and
- * the row is left out. The session being typed in lists itself, so it is
- * dropped. Names are not unique: a mention shared by two rows is followed by
+ * Peers come from `GET /api/peers`, which lists only sessions that can be
+ * messaged. The session being typed in lists itself, so it is dropped. Names are not unique: a mention shared by two rows is followed by
  * the per-session address, which tells the relaying model which one is meant.
  * With no mention (a name the quoted form cannot carry) the bare address is
  * all there is; the CLI never parses `@uds:…` as a mention, so no `@` there.
  */
-export function buildPeerEntries(sessions: readonly PeerSource[], selfId: string): PeerEntry[] {
+export function buildPeerEntries(sessions: readonly PeerRow[], selfId: string): PeerEntry[] {
   const peers = sessions.filter(
-    (s) => s.canMessage === true && s.id !== selfId && (typeof s.peerMention === 'string' || typeof s.peerAddress === 'string'),
+    (s) => s.id !== selfId && (typeof s.peerMention === 'string' || typeof s.peerAddress === 'string'),
   )
   const mentionCount = new Map<string, number>()
   for (const s of peers) {
@@ -201,7 +190,7 @@ export function buildPeerEntries(sessions: readonly PeerSource[], selfId: string
     if (!insert) continue
     entries.push({
       id: s.id,
-      name: s.peerMention ? peerNameFromMention(s.peerMention) : (s.sessionName ?? s.projectName),
+      name: s.peerMention ? peerNameFromMention(s.peerMention) : s.name,
       projectName: s.projectName,
       shortId: s.id.slice(0, 8),
       insert,

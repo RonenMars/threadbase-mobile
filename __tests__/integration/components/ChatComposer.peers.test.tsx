@@ -1,6 +1,6 @@
 /**
  * Peer sessions in the `@` picker: the composer, useFileMentions and the
- * picker together, with the browse and session-list requests mocked.
+ * picker together, with the browse and peers requests mocked.
  */
 import React, { useState } from 'react'
 import { fireEvent, screen } from '@testing-library/react-native'
@@ -10,8 +10,8 @@ import { useFileMentions } from '@/hooks/useFileMentions'
 import { fetchBrowse } from '@/hooks/useBrowse'
 import { DirectionRoot } from '@/lib/direction-root'
 import { renderWithI18n } from '@/test-utils/render'
-import { fetchAllPagesForServer } from '@/hooks/useSession'
-import type { BrowseResponse, Session } from '@/types/api'
+import { NotFoundError } from '@/services/api-client'
+import type { BrowseResponse, PeerRow } from '@/types/api'
 
 jest.mock('react-native-keyboard-controller', () => ({
   useReanimatedKeyboardAnimation: () => ({ height: { value: 0 }, progress: { value: 0 } }),
@@ -25,12 +25,12 @@ jest.mock('@/hooks/useBrowse', () => ({
   fetchBrowse: jest.fn(),
 }))
 
-jest.mock('@/hooks/useSession', () => ({
-  ...jest.requireActual('@/hooks/useSession'),
-  fetchAllPagesForServer: jest.fn(),
+const mockGet = jest.fn()
+jest.mock('@/services/api-client', () => ({
+  ...jest.requireActual('@/services/api-client'),
+  createApiForServer: () => ({ get: mockGet }),
 }))
 
-const mockFetchSessions = fetchAllPagesForServer as jest.MockedFunction<typeof fetchAllPagesForServer>
 const mockFetchBrowse = fetchBrowse as jest.MockedFunction<typeof fetchBrowse>
 
 const TREE: Record<string, BrowseResponse> = {
@@ -99,31 +99,22 @@ async function type(text: string, cursor = text.length) {
   await fireEvent(input, 'selectionChange', { nativeEvent: { selection: { start: cursor, end: cursor } } })
 }
 
-function row(over: Partial<Session> & { id: string }): Session & { serverId: string } {
-  return {
-    status: 'idle',
-    ptyAttached: false,
-    projectPath: '/home/me/proj',
-    projectName: 'proj',
-    startedAt: '2026-11-21T00:00:00Z',
-    serverId: 'srv',
-    canMessage: true,
-    ...over,
-  } as Session & { serverId: string }
+function peer(over: Partial<PeerRow> & { id: string }): PeerRow {
+  return { name: 'alpha', projectName: 'proj', ...over }
 }
 
 describe('ChatComposer @ peer sessions', () => {
   beforeEach(() => {
     mockFetchBrowse.mockReset()
     mockFetchBrowse.mockImplementation(async (_server, path) => TREE[path])
-    mockFetchSessions.mockReset()
-    mockFetchSessions.mockResolvedValue([
-      row({ id: 'self-session', peerMention: '@me', peerAddress: 'uds:/tmp/cc-socks/9.sock' }),
-      row({ id: 'aaaaaaaa-1111', peerMention: '@alpha', peerAddress: 'uds:/tmp/cc-socks/1.sock', projectName: 'tb-streamer' }),
-      row({ id: 'bbbbbbbb-2222', peerMention: '@alpha', peerAddress: 'uds:/tmp/cc-socks/2.sock' }),
-      row({ id: 'cccccccc-3333', canMessage: false, peerMention: '@gone', peerAddress: 'uds:/tmp/cc-socks/3.sock' }),
-      row({ id: 'dddddddd-4444', canMessage: undefined, peerMention: '@old' }),
-    ])
+    mockGet.mockReset()
+    mockGet.mockResolvedValue({
+      peers: [
+        peer({ id: 'self-session', peerMention: '@me', peerAddress: 'uds:/tmp/cc-socks/9.sock' }),
+        peer({ id: 'aaaaaaaa-1111', peerMention: '@alpha', peerAddress: 'uds:/tmp/cc-socks/1.sock', projectName: 'tb-streamer' }),
+        peer({ id: 'bbbbbbbb-2222', peerMention: '@alpha', peerAddress: 'uds:/tmp/cc-socks/2.sock' }),
+      ],
+    })
   })
 
   afterEach(() => {
@@ -131,14 +122,12 @@ describe('ChatComposer @ peer sessions', () => {
     queryClient = null
   })
 
-  it('lists peers above the paths, without the current session or rows that cannot be messaged', async () => {
+  it('lists peers above the paths, without the current session', async () => {
     await renderHarness()
     await type('@')
     expect(await screen.findByTestId('peer-mention-row-aaaaaaaa-1111')).toBeTruthy()
     expect(screen.getByTestId('peer-mention-row-bbbbbbbb-2222')).toBeTruthy()
     expect(screen.queryByTestId('peer-mention-row-self-session')).toBeNull()
-    expect(screen.queryByTestId('peer-mention-row-cccccccc-3333')).toBeNull()
-    expect(screen.queryByTestId('peer-mention-row-dddddddd-4444')).toBeNull()
     expect(await screen.findByTestId('file-mention-row-src')).toBeTruthy()
     expect(screen.getAllByText('peer')).toHaveLength(2)
     expect(screen.getByText('tb-streamer · aaaaaaaa')).toBeTruthy()
@@ -163,19 +152,27 @@ describe('ChatComposer @ peer sessions', () => {
     await renderHarness({ provider: 'codex' })
     await type('@')
     expect(screen.queryByTestId('file-mention-board')).toBeNull()
-    expect(mockFetchSessions).not.toHaveBeenCalled()
+    expect(mockGet).not.toHaveBeenCalled()
   })
 
-  it('keeps the path rows when the session list fails', async () => {
-    mockFetchSessions.mockRejectedValue(new Error('offline'))
+  it('keeps the path rows when the peers request fails', async () => {
+    mockGet.mockRejectedValue(new Error('offline'))
     await renderHarness()
     await type('@')
     expect(await screen.findByTestId('file-mention-row-src')).toBeTruthy()
     expect(screen.queryByTestId('peer-mention-row-aaaaaaaa-1111')).toBeNull()
   })
 
-  it('shows plain paths when no row carries canMessage (older streamer)', async () => {
-    mockFetchSessions.mockResolvedValue([row({ id: 'x', canMessage: undefined })])
+  it('shows plain paths when the streamer has no peers endpoint (older streamer)', async () => {
+    mockGet.mockRejectedValue(new NotFoundError('/api/peers'))
+    await renderHarness()
+    await type('@')
+    expect(await screen.findByTestId('file-mention-row-src')).toBeTruthy()
+    expect(screen.queryByText('peer')).toBeNull()
+  })
+
+  it('shows plain paths when the response has no peers list', async () => {
+    mockGet.mockResolvedValue({ skills: [] })
     await renderHarness()
     await type('@')
     expect(await screen.findByTestId('file-mention-row-src')).toBeTruthy()
