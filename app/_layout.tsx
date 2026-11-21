@@ -29,6 +29,7 @@ import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { wsManager } from '@/services/ws-client'
+import { applySubagentsChanged } from '@/hooks/useSubagents'
 import {
   applySessionPhaseToCache,
   applySessionUpdateToEagerCache,
@@ -246,6 +247,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       if (msg.type !== 'session_phase') return
       applySessionPhaseToCache(queryClient, msg.serverId, msg.sessionId, msg.phase)
     })
+    // A parent's sub-agent count moved: update the header count without a
+    // refetch, whether or not the Sub-agents section is expanded.
+    const unsubSubagents = wsManager.onAll('subagents_changed', (msg) => {
+      if (msg.type !== 'subagents_changed') return
+      applySubagentsChanged(queryClient, msg.serverId, msg.parentId, msg.total)
+    })
     // External-session liveness ping: a conversation's JSONL grew without a PTY
     // the streamer owns. Refresh the eager conversations list so its row updates.
     const unsubConvUpdated = wsManager.onAll('conversation_updated', (msg) => {
@@ -338,6 +345,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       i18n.off('languageChanged', reregisterOnLanguage)
       unsubUpdate()
       unsubPhase()
+      unsubSubagents()
       unsubConvUpdated()
       unsubReady()
       unsubStatus()

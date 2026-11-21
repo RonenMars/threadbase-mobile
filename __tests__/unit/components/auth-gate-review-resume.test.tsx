@@ -187,3 +187,32 @@ describe('AuthGate cache_ready', () => {
     invalidate.mockRestore()
   })
 })
+
+// The Sub-agents header count follows this frame whether or not the section is expanded.
+describe('AuthGate subagents_changed', () => {
+  type OnAllHandler = Parameters<typeof wsManager.onAll>[1]
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
+  })
+
+  it('writes the full total into the matching parent count only', async () => {
+    queryClient.setQueryData(['subagent-count', 'server-1', 'p1'], 2)
+    queryClient.setQueryData(['subagent-count', 'server-1', 'p2'], 5)
+    await render(<AuthGate><></></AuthGate>)
+    const call = (wsManager.onAll as jest.Mock).mock.calls.find(([type]) => type === 'subagents_changed')
+    if (!call) throw new Error('AuthGate did not subscribe to subagents_changed')
+    await act(async () => {
+      ;(call[1] as OnAllHandler)({
+        type: 'subagents_changed',
+        serverId: 'server-1',
+        parentId: 'p1',
+        total: 3,
+        updatedAt: '',
+      })
+    })
+    expect(queryClient.getQueryData(['subagent-count', 'server-1', 'p1'])).toBe(3)
+    expect(queryClient.getQueryData(['subagent-count', 'server-1', 'p2'])).toBe(5)
+  })
+})
