@@ -46,6 +46,8 @@ interface Props {
   highlight?: string
   matchAnchor?: MatchAnchor
   activeMatch?: boolean
+  /** Off inside a long-press menu, where native selection would steal the gesture. */
+  selectable?: boolean
 }
 
 function contains(haystack: string, needle: string): boolean {
@@ -113,7 +115,7 @@ function Spans({ spans, styles }: { spans: InlineSpan[]; styles: ReturnType<type
   )
 }
 
-export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMatch }: Props) {
+export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMatch, selectable = true }: Props) {
   const { styles, theme } = useThemedStyles(makeStyles)
   const textRef = useRef<HighlightLayoutHandle>(null)
   const needle = highlight && highlight.length > 0 ? highlight : undefined
@@ -153,13 +155,13 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
           searchWords={[needle as string]}
           highlightStyle={activeMatch ? styles.match : styles.matchInactive}
           style={style}
-          textProps={{ selectable: true }}
+          textProps={{ selectable }}
           onMatchesLayout={isAnchor ? reportMatchLayout : undefined}
         />
       )
     }
     return (
-      <Text style={style} selectable>
+      <Text style={style} selectable={selectable}>
         <Spans spans={block.kind === 'code' || block.kind === 'rule' ? [] : block.spans} styles={styles} />
       </Text>
     )
@@ -170,7 +172,7 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
       {blocks.map((block, i) => {
         switch (block.kind) {
           case 'code':
-            return <CodeBlock key={i} code={block.code} language={block.language} />
+            return <CodeBlock key={i} code={block.code} language={block.language} selectable={selectable} />
 
           case 'rule':
             return <View key={i} style={styles.rule} />
@@ -185,8 +187,10 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
           case 'quote':
             return (
               <View key={i} style={styles.quoteRow}>
-                <View style={styles.quoteRule} />
-                <View style={styles.quoteBody}>{renderLine(block, i, styles.quoteText)}</View>
+                <View style={[styles.quoteRule, isUser && styles.quoteRuleUser]} />
+                <View testID="quote-body" style={styles.quoteBody}>
+                  {renderLine(block, i, isUser ? styles.quoteTextUser : styles.quoteText)}
+                </View>
               </View>
             )
 
@@ -300,11 +304,23 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       backgroundColor: theme.border,
       borderRadius: 1,
     },
+    // Not flex: 1, for the same reason as itemBody: a zero basis collapses the
+    // quote (and the text under it) to a sliver inside a shrink-wrapped bubble.
     quoteBody: {
-      flex: 1,
+      flexGrow: 0,
+      flexShrink: 1,
+      flexBasis: 'auto',
+    },
+    quoteRuleUser: {
+      backgroundColor: theme.text.onAccent,
+      opacity: 0.6,
     },
     quoteText: {
       color: theme.text.secondary,
+    },
+    quoteTextUser: {
+      color: theme.text.onAccent,
+      opacity: 0.8,
     },
     rule: {
       height: StyleSheet.hairlineWidth,

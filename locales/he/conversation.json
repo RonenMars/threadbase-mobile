@@ -137,5 +137,14 @@
   },
   "question": {
     "label": "שאלה"
+  },
+  "messageMenu": {
+    "copy": "העתקת ההודעה",
+    "selectText": "בחירת טקסט",
+    "copyMarkdown": "העתקה כ-Markdown",
+    "copyCode": "העתקת הקוד",
+    "quote": "ציטוט ההודעה",
+    "selectTitle": "בחירת טקסט",
+    "done": "סיום"
   }
 }
