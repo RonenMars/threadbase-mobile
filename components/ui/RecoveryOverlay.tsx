@@ -1,62 +1,76 @@
 import React from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTranslation } from 'react-i18next'
-import { font, spacing, type Theme } from '@/constants/theme'
+import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
+import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
 
 interface Props {
   visible: boolean
 }
 
-/** Full-screen spinner while a single-server install silently retries a query. */
+/**
+ * A pill pinned under the status bar while a query silently retries. It never
+ * intercepts a touch: the screen underneath stays fully usable.
+ */
 export function RecoveryOverlay({ visible }: Props) {
   const theme = useTheme()
   const styles = makeStyles(theme)
+  const insets = useSafeAreaInsets()
+  const reduceMotion = useReducedMotion()
   const { t } = useTranslation('common')
 
   if (!visible) return null
 
   return (
     <View
-      pointerEvents="auto"
-      style={styles.scrim}
-      accessibilityRole="progressbar"
-      accessibilityLabel={t('recovery.title')}
+      pointerEvents="none"
+      style={[styles.lane, { top: insets.top + spacing.xs }]}
       testID="recovery-overlay"
     >
-      <View style={styles.card}>
-        <ActivityIndicator size="large" color={theme.text.accent} />
-        <Text style={styles.title}>{t('recovery.title')}</Text>
-      </View>
+      <Animated.View
+        entering={reduceMotion ? undefined : FadeIn.duration(180)}
+        exiting={reduceMotion ? undefined : FadeOut.duration(120)}
+        style={styles.pill}
+        accessibilityRole="progressbar"
+        accessibilityLabel={t('recovery.title')}
+        accessibilityLiveRegion="polite"
+      >
+        <KnightRiderScanner testID="recovery-scanner" accessibilityLabel={t('recovery.title')} />
+        <Text style={styles.title} numberOfLines={1}>
+          {t('recovery.title')}
+        </Text>
+      </Animated.View>
     </View>
   )
 }
 
 function makeStyles(theme: Theme) {
   return StyleSheet.create({
-    scrim: {
+    lane: {
       position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
       left: 0,
+      right: 0,
       alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: 'rgba(13, 17, 23, 0.55)',
       zIndex: 50,
     },
-    card: {
-      backgroundColor: theme.bg.card,
-      borderRadius: 16,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.lg,
+    pill: {
+      flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      minWidth: 200,
+      gap: spacing.xs,
+      paddingEnd: spacing.md,
+      backgroundColor: theme.bg.card,
+      borderRadius: radius.full,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: theme.border,
     },
     title: {
       color: theme.text.secondary,
-      fontSize: font.sm,
+      fontSize: font.xs,
+      fontWeight: '600',
     },
   })
 }
