@@ -215,13 +215,13 @@ describe('error banner opt-out (meta.silentError)', () => {
 describe('recovery overlay (silent retry window)', () => {
   beforeEach(() => {
     jest.useFakeTimers()
-    useQueryRecoveryStore.setState({ recovering: false })
+    useQueryRecoveryStore.setState({ recovering: false, blockingRecovering: false })
   })
   afterEach(() => {
     jest.clearAllTimers()
     jest.useRealTimers()
     queryClient.clear()
-    useQueryRecoveryStore.setState({ recovering: false })
+    useQueryRecoveryStore.setState({ recovering: false, blockingRecovering: false })
   })
 
   // Lands the first failure and parks the query in its retry delay.
@@ -244,6 +244,17 @@ describe('recovery overlay (silent retry window)', () => {
       Object.assign(new Error('boom'), { status: 503 }),
     )
     expect(useQueryRecoveryStore.getState().recovering).toBe(true)
+    expect(useQueryRecoveryStore.getState().blockingRecovering).toBe(true)
+  })
+
+  // A foreground refetch of a list already on screen used to raise the
+  // full-screen overlay over it for the whole retry window.
+  it('marks a refetch of data already shown as recovering but not blocking', async () => {
+    const queryKey = ['conversation', 'srv1', 'loaded']
+    queryClient.setQueryData(queryKey, ['cached'])
+    await failOnceThenWait(queryKey, Object.assign(new Error('boom'), { status: 503 }))
+    expect(useQueryRecoveryStore.getState().recovering).toBe(true)
+    expect(useQueryRecoveryStore.getState().blockingRecovering).toBe(false)
   })
 
   // A transcript that does not exist yet is pending, not a failure to recover
