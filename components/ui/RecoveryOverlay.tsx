@@ -25,7 +25,7 @@ interface Props {
 }
 
 const LINE_HEIGHT = 3
-const HANDLE_OFFSET = 45
+const HANDLE_OFFSET = 18
 const HANDLE_HIT = 44
 const CARD_HEIGHT = 80
 const DRAG_THRESHOLD = 16
@@ -157,6 +157,7 @@ function makeStyles(theme: Theme) {
       position: 'absolute',
       left: 0,
       right: 0,
+      height: CARD_HEIGHT + HANDLE_HIT,
       zIndex: 50,
     },
     card: {
@@ -195,8 +196,11 @@ function makeStyles(theme: Theme) {
       width: 36,
       height: 5,
       borderRadius: radius.full,
-      backgroundColor: theme.text.secondary,
-      opacity: 0.6,
+      backgroundColor: theme.text.accent,
+      shadowColor: theme.text.accent,
+      shadowOpacity: 0.9,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 0 },
     },
   })
 }
