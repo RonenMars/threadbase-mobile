@@ -39,8 +39,23 @@ function isEscapedSpace(text: string, index: number): boolean {
   return text[index] === ' ' && index > 0 && text[index - 1] === '\\'
 }
 
+// A peer whose name has spaces is mentioned as `@"two words"`; while that quote
+// is open the token may span spaces and tabs, so the picker keeps matching.
+function findOpenQuotedMention(text: string, caret: number): MentionToken | null {
+  const open = text.lastIndexOf('@"', caret - 2)
+  if (open < 0 || (open > 0 && !/\s/.test(text[open - 1]))) return null
+  const typed = text.slice(open + 2, caret)
+  if (/["\n]/.test(typed)) return null
+  const close = text.indexOf('"', caret)
+  const newline = text.indexOf('\n', caret)
+  const end = close >= 0 && (newline < 0 || close < newline) ? close + 1 : caret
+  return { start: open, end, dir: '', query: typed }
+}
+
 export function findMentionToken(text: string, cursor: number): MentionToken | null {
   const caret = Math.min(Math.max(cursor, 0), text.length)
+  const quoted = findOpenQuotedMention(text, caret)
+  if (quoted) return quoted
   let start = -1
   for (let i = caret - 1; i >= 0; i--) {
     const ch = text[i]
@@ -223,4 +238,24 @@ export function applyPeerMention(text: string, token: MentionToken, peer: PeerEn
     text: before + peer.insert + separator + after,
     cursor: before.length + peer.insert.length + 1,
   }
+}
+
+/**
+ * Where picked peers still stand in the text, for coloring. A mark holds only
+ * while the inserted string is a whole word: any character added to or removed
+ * from it breaks the match.
+ */
+export function findPeerMarks(text: string, inserts: readonly string[]): { start: number; end: number }[] {
+  const marks: { start: number; end: number }[] = []
+  for (const insert of new Set(inserts)) {
+    let from = 0
+    for (let at = text.indexOf(insert, from); at >= 0; at = text.indexOf(insert, from)) {
+      const end = at + insert.length
+      from = end
+      const wordStart = at === 0 || /\s/.test(text[at - 1])
+      const wordEnd = end === text.length || /\s/.test(text[end])
+      if (wordStart && wordEnd) marks.push({ start: at, end })
+    }
+  }
+  return marks.sort((a, b) => a.start - b.start)
 }
