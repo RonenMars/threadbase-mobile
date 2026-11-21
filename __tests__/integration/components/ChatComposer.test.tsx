@@ -61,6 +61,16 @@ async function renderComposer(overrides?: Partial<ChatComposerProps>) {
 }
 
 describe('ChatComposer', () => {
+  it('grows the inline input to its content size, capped at 160', async () => {
+    jest.replaceProperty(Platform, 'OS', 'ios')
+    await renderWithI18n(<ChatComposer {...makeProps()} value={'pasted\n'.repeat(30)} />)
+    const input = screen.getByTestId('chat-message-input')
+    await fireEvent(input, 'contentSizeChange', { nativeEvent: { contentSize: { width: 300, height: 96 } } })
+    expect(StyleSheet.flatten(screen.getByTestId('chat-message-input').props.style).height).toBe(96)
+    await fireEvent(input, 'contentSizeChange', { nativeEvent: { contentSize: { width: 300, height: 900 } } })
+    expect(StyleSheet.flatten(screen.getByTestId('chat-message-input').props.style).height).toBe(160)
+  })
+
   it.each(['ios', 'android'] as const)('shrinks the cleared inline input on %s without remounting it', async (os) => {
     jest.replaceProperty(Platform, 'OS', os)
     function Composer() {
