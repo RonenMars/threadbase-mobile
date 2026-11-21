@@ -37,6 +37,13 @@ describe('RecoveryHost overlay timeout', () => {
     expect(queryByTestId('recovery-overlay')).not.toBeNull()
   })
 
+  it('never intercepts a touch and shows the scanner', async () => {
+    const { getByTestId } = await renderWithI18n(<RecoveryHost />)
+    await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    expect(getByTestId('recovery-overlay').props.pointerEvents).toBe('none')
+    expect(getByTestId('recovery-scanner')).toBeTruthy()
+  })
+
   it('hands the screen back once the recovery has outlasted the cap', async () => {
     const { queryByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true, blockingRecovering: true }))
