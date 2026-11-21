@@ -3,6 +3,7 @@
  * picker together, with the browse and peers requests mocked.
  */
 import React, { useState } from 'react'
+import { Text } from 'react-native'
 import { fireEvent, screen } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ChatComposer, type ChatComposerProps } from '@/components/conversation/ChatComposer'
@@ -66,14 +67,18 @@ function Harness({ projectPath, provider }: { projectPath: string; provider?: st
   const [text, setText] = useState('')
   const mentions = useFileMentions({ serverId: 'srv', projectPath, provider, sessionId: 'self-session', text, onChangeText: setText })
   return (
-    <ChatComposer
-      {...baseProps}
-      value={text}
-      onChangeText={setText}
-      mention={mentions.mention}
-      selection={mentions.selection}
-      onSelectionChange={mentions.onSelectionChange}
-    />
+    <>
+      <Text testID="harness-text">{text}</Text>
+      <ChatComposer
+        {...baseProps}
+        value={text}
+        onChangeText={setText}
+        mention={mentions.mention}
+        selection={mentions.selection}
+        onSelectionChange={mentions.onSelectionChange}
+        peerMarks={mentions.peerMarks}
+      />
+    </>
   )
 }
 
@@ -90,7 +95,7 @@ async function renderHarness(props: { projectPath?: string; provider?: string } 
 
 // What the platform does on a keystroke: the text changes, then the caret moves.
 function inputValue(): string {
-  return screen.getByTestId('chat-message-input').props.value
+  return screen.getByTestId('harness-text').props.children
 }
 
 async function type(text: string, cursor = text.length) {
@@ -139,6 +144,31 @@ describe('ChatComposer @ peer sessions', () => {
     await fireEvent.press(await screen.findByTestId('peer-mention-row-bbbbbbbb-2222'))
     expect(inputValue()).toBe('ask @alpha uds:/tmp/cc-socks/2.sock ')
     expect(screen.queryByTestId('file-mention-board')).toBeNull()
+  })
+
+  it('colors the picked peer and drops the color once the name is edited', async () => {
+    await renderHarness()
+    await type('ask @al')
+    await fireEvent.press(await screen.findByTestId('peer-mention-row-bbbbbbbb-2222'))
+    expect(screen.getByTestId('peer-mark').props.children).toBe('@alpha uds:/tmp/cc-socks/2.sock')
+
+    await type('ask @alpha uds:/tmp/cc-socks/2.sock x')
+    expect(screen.getByTestId('peer-mark')).toBeTruthy()
+    await type('ask @alpha uds:/tmp/cc-socks/2.sockx')
+    expect(screen.queryByTestId('peer-mark')).toBeNull()
+    await type('ask @alpha uds:/tmp/cc-socks/2.soc')
+    expect(screen.queryByTestId('peer-mark')).toBeNull()
+  })
+
+  it('finds a peer whose name has spaces and inserts the quoted mention', async () => {
+    mockGet.mockResolvedValue({
+      peers: [peer({ id: 'cccccccc-3333', name: 'picker test to mobile', peerMention: '@"picker test to mobile"', peerAddress: 'uds:/tmp/cc-socks/3.sock' })],
+    })
+    await renderHarness()
+    await type('ask @"picker te')
+    await fireEvent.press(await screen.findByTestId('peer-mention-row-cccccccc-3333'))
+    expect(inputValue()).toBe('ask @"picker test to mobile" ')
+    expect(screen.getByTestId('peer-mark').props.children).toBe('@"picker test to mobile"')
   })
 
   it('offers no peers inside a folder', async () => {

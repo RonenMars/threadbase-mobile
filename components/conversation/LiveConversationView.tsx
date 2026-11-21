@@ -748,6 +748,7 @@ export function LiveConversationView({
         onSelectionChange={fileMentions.onSelectionChange}
         slash={fileMentions.slash}
         skill={fileMentions.skill}
+        peerMarks={fileMentions.peerMarks}
         onClearSkill={fileMentions.clearSkill}
       />
 

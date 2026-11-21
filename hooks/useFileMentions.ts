@@ -54,6 +54,8 @@ export interface FileMentions {
   clearSkill: () => void
   /** What to send instead of the text while a skill is marked: the text behind a `/`. */
   skillPayload: string | undefined
+  /** What the picked peers inserted; the composer colors those words while they stay whole. */
+  peerMarks: string[]
 }
 
 // Codex and Cursor open their own file popup on `@`, so text typed into their
@@ -78,6 +80,7 @@ export function useFileMentions({
   const [dismissedAt, setDismissedAt] = useState<number | null>(null)
   const [slashDismissed, setSlashDismissed] = useState(false)
   const [skill, setSkill] = useState<SkillEntry | null>(null)
+  const [peerMarks, setPeerMarks] = useState<string[]>([])
 
   const enabled = !!projectPath && supportsFileMentions(provider)
   const token = enabled ? findMentionToken(text, cursor) : null
@@ -136,6 +139,7 @@ export function useFileMentions({
     skill: markedSkill,
     clearSkill,
     skillPayload: markedSkill ? `/${text}` : undefined,
+    peerMarks,
   }
 
   if (!visibleToken || !projectPath) return { ...shared, mention: null }
@@ -148,6 +152,7 @@ export function useFileMentions({
 
   const onSelectPeer = (peer: PeerEntry) => {
     const next = applyPeerMention(text, visibleToken, peer)
+    setPeerMarks((marks) => (marks.includes(peer.insert) ? marks : [...marks, peer.insert]))
     onChangeText(next.text)
     placeCaret(next.cursor)
   }

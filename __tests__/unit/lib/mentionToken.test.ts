@@ -5,6 +5,7 @@ import {
   escapeMentionPath,
   extraDirEntries,
   findMentionToken,
+  findPeerMarks,
   rankMentionEntries,
   rankPeerEntries,
   type MentionEntry,
@@ -229,5 +230,58 @@ describe('peer entries', () => {
       cursor: 12,
     })
     expect(applyPeerMention('@al', { start: 0, end: 3, dir: '', query: 'al' }, peer)).toEqual({ text: '@alpha ', cursor: 7 })
+  })
+})
+
+describe('quoted peer names with spaces or tabs', () => {
+  it('keeps one token open across spaces and tabs until the quote closes', () => {
+    const text = 'ask @"picker test\tto mo'
+    expect(findMentionToken(text, text.length)).toEqual({ start: 4, end: text.length, dir: '', query: 'picker test\tto mo' })
+  })
+
+  it('spans to the closing quote when the caret is inside it', () => {
+    const text = 'ask @"picker test" now'
+    expect(findMentionToken(text, 14)).toEqual({ start: 4, end: 18, dir: '', query: 'picker t' })
+  })
+
+  it('is closed once the quote is, and never crosses a newline or an in-word @', () => {
+    expect(findMentionToken('@"picker test" ', 15)).toBeNull()
+    expect(findMentionToken('@"picker\ntest', 14)).toBeNull()
+    expect(findMentionToken('a@"picker te', 12)).toBeNull()
+  })
+
+  it('finds and inserts a spaced name end to end', () => {
+    const [peer] = buildPeerEntries(
+      [{ id: 'eeeeeeee-5', name: 'picker test to mobile', projectName: 'dev', peerMention: '@"picker test to mobile"', peerAddress: 'uds:/s/5.sock' }],
+      'self',
+    )
+    const typed = 'ask @"picker te'
+    const token = findMentionToken(typed, typed.length)!
+    expect(rankPeerEntries([peer], token.query).map((p) => p.id)).toEqual(['eeeeeeee-5'])
+    expect(applyPeerMention(typed, token, peer).text).toBe('ask @"picker test to mobile" ')
+  })
+})
+
+describe('findPeerMarks', () => {
+  const insert = '@"picker test to mobile"'
+
+  it('marks the inserted words while they stand whole', () => {
+    expect(findPeerMarks(`ask ${insert} now`, [insert])).toEqual([{ start: 4, end: 4 + insert.length }])
+    expect(findPeerMarks(insert, [insert])).toEqual([{ start: 0, end: insert.length }])
+  })
+
+  it('drops the mark when characters are added to or removed from the name', () => {
+    expect(findPeerMarks(`ask ${insert}s now`, [insert])).toEqual([])
+    expect(findPeerMarks(`ask x${insert} now`, [insert])).toEqual([])
+    expect(findPeerMarks('ask @"picker test to mobil" now', [insert])).toEqual([])
+    expect(findPeerMarks('ask @"picker test to mobile now', [insert])).toEqual([])
+  })
+
+  it('marks every picked peer and each repeat', () => {
+    expect(findPeerMarks('@a @b @a', ['@a', '@b'])).toEqual([
+      { start: 0, end: 2 },
+      { start: 3, end: 5 },
+      { start: 6, end: 8 },
+    ])
   })
 })
