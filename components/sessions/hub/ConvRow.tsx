@@ -33,7 +33,7 @@ export function ConvRow({ conv, onLongPress, forceServerChip = false, trailing, 
   }, [conv, onLongPress])
 
   return (
-    <SwipeableRow leading={swipe.leading} compact>
+    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing} compact>
     <ConversationListItem
       testID={`conversation-row-${conv.id}`}
       title={title}
