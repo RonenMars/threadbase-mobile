@@ -1,4 +1,4 @@
-import { act } from '@testing-library/react-native'
+import { act, fireEvent } from '@testing-library/react-native'
 import { RecoveryHost, RECOVERY_OVERLAY_MAX_MS } from '@/components/alerts/RecoveryHost'
 import { useQueryRecoveryStore } from '@/stores/query-recovery'
 import { useServersStore } from '@/stores/servers'
@@ -14,12 +14,15 @@ function server(id: string): ServerConfig {
   return { id, url: `https://${id}.test`, apiKey: 'k', isConnected: true, serverInfo: null, connectionError: null }
 }
 
+const expand = async (getByTestId: (id: string) => unknown) =>
+  act(async () => fireEvent.press(getByTestId('recovery-handle') as never))
+
 const oneServer = { a: server('a') }
 
 beforeEach(() => {
   jest.clearAllMocks()
   jest.useFakeTimers()
-  useQueryRecoveryStore.setState({ recovering: false, nestedRetryCount: 0 })
+  useQueryRecoveryStore.setState({ recovering: false, nestedRetryCount: 0, lastRequest: null, wsReconnectServerId: null })
   useServersStore.setState({ servers: oneServer })
 })
 
@@ -34,10 +37,10 @@ describe('RecoveryHost overlay timeout', () => {
     expect(queryByTestId('recovery-overlay')).not.toBeNull()
   })
 
-  it('never intercepts a touch and shows the scanner', async () => {
+  it('leaves every touch outside the handle and card to the screen and shows the scanner', async () => {
     const { getByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
-    expect(getByTestId('recovery-overlay').props.pointerEvents).toBe('none')
+    expect(getByTestId('recovery-overlay').props.pointerEvents).toBe('box-none')
     expect(getByTestId('recovery-scanner')).toBeTruthy()
   })
 
@@ -59,11 +62,41 @@ describe('RecoveryHost overlay timeout', () => {
     expect(queryByTestId('recovery-overlay')).not.toBeNull()
   })
 
-  it('never shows with more than one server', async () => {
+  it('hides on close and returns with the next recovery', async () => {
+    const { getByTestId, queryByTestId } = await renderWithI18n(<RecoveryHost />)
+    await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    await expand(getByTestId)
+    await act(async () => fireEvent.press(getByTestId('recovery-dismiss')))
+    expect(queryByTestId('recovery-overlay')).toBeNull()
+    await act(async () => useQueryRecoveryStore.setState({ recovering: false }))
+    await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    expect(queryByTestId('recovery-overlay')).not.toBeNull()
+  })
+
+  it('shows with more than one server too', async () => {
     useServersStore.setState({ servers: { ...oneServer, b: server('b') } })
     const { queryByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
-    expect(queryByTestId('recovery-overlay')).toBeNull()
+    expect(queryByTestId('recovery-overlay')).not.toBeNull()
+  })
+
+  it('names the server and the route that is retrying', async () => {
+    const { getByTestId } = await renderWithI18n(<RecoveryHost />)
+    await act(async () =>
+      useQueryRecoveryStore.setState({
+        recovering: true,
+        lastRequest: { serverId: 'a', method: 'GET', path: '/api/sessions/ab12cd?x=1' },
+      }),
+    )
+    await expand(getByTestId)
+    expect(getByTestId('recovery-detail').props.children).toBe('a.test:443 · GET /sessions/:id')
+  })
+
+  it('shows the server name while the session socket reconnects', async () => {
+    const { getByTestId } = await renderWithI18n(<RecoveryHost />)
+    await act(async () => useQueryRecoveryStore.setState({ wsReconnectServerId: 'a' }))
+    await expand(getByTestId)
+    expect(getByTestId('recovery-detail').props.children).toBe('a.test:443')
   })
 
   it('reports what held the flag once, only when the cap is reached', async () => {
