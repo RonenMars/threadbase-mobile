@@ -19,6 +19,7 @@ export type AlertCause =
   | `session:${string}`
   | `saved-items:${string}`
   | 'servers:summary'
+  | 'shelf:hidden'
 
 export const CAUSE_SERVERS_SUMMARY: AlertCause = 'servers:summary'
 

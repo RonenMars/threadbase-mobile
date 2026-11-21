@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import i18n from '@/lib/i18n'
 import { getSupportedLocaleLabel, SUPPORTED_LOCALES, type SupportedLocale } from '@/lib/locale'
+import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore, type AddServerAction, type SessionLeaveAction } from '@/stores/settings'
 import { DisplayedServersList } from '@/components/servers/DisplayedServersList'
@@ -297,6 +298,8 @@ export default function SettingsScreen() {
     anonymousDiagnosticsEnabled,
     setAnonymousDiagnosticsEnabled,
   } = useSettingsStore()
+  const shelfHidden = useQuickAccessStore((st) => st.shelfHidden)
+  const setShelfHidden = useQuickAccessStore((st) => st.setShelfHidden)
   const [isAddBehaviorOpen, setIsAddBehaviorOpen] = React.useState(false)
   const [isLeaveActionOpen, setIsLeaveActionOpen] = React.useState(false)
   const [throwOnRender, setThrowOnRender] = useState(false)
@@ -589,6 +592,13 @@ await refreshServerInfo(serverId)
             </View>
             <ThemePicker current={colorScheme} tab={themeTab} onChange={setColorScheme} />
           </View>
+          <SettingsRow
+            testID="settings-saved-chats-bubble"
+            label={t('appearance.savedChatsBubble')}
+            value={!shelfHidden}
+            onValueChange={(show) => setShelfHidden(!show)}
+          />
+          <Text style={s.rowNote}>{t('appearance.savedChatsBubbleNote')}</Text>
         </View>
 
         <SectionHeader title={t('notifications.whenAddingServer')} />
