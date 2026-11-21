@@ -68,7 +68,7 @@ const ConversationRow = React.memo(function ConversationRow({
   const swipe = useConversationSwipe(c, c.title)
 
   return (
-    <SwipeableRow leading={swipe.leading} compact>
+    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing} compact>
     <ConversationListItem
       testID={`conversation-row-${c.id}`}
       title={c.title}
