@@ -1298,6 +1298,8 @@
   "terminal.json:mentions.emptyFolder": "60db81ce6b8c",
   "terminal.json:mentions.folderLabel": "2f3174b282f3",
   "terminal.json:mentions.fileLabel": "f0475432150a",
+  "terminal.json:mentions.peerTag": "2b974ba4b46a",
+  "terminal.json:mentions.peerLabel": "db3cbb9d294a",
   "terminal.json:skills.title": "e09212c7d3ea",
   "terminal.json:skills.close": "414962fcb925",
   "terminal.json:skills.unsupported": "d00d5cd2e724",

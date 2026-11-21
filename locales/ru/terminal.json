@@ -68,7 +68,9 @@
     "empty": "Нет файлов, совпадающих с «{{query}}»",
     "emptyFolder": "Эта папка пуста.",
     "folderLabel": "Папка {{name}}",
-    "fileLabel": "Файл {{name}}"
+    "fileLabel": "Файл {{name}}",
+    "peerTag": "пир",
+    "peerLabel": "Соседняя сессия {{name}}, проект {{project}}"
   },
   "skills": {
     "title": "Навыки",
