@@ -3,7 +3,8 @@ import { renderWithI18n } from '@/test-utils/render'
 
 describe('ConnectionBanner', () => {
   it('renders the reconnecting variant', async () => {
-    const { getByText } = await renderWithI18n(<ConnectionBanner variant="reconnecting" />)
+    const { getByText, getByTestId } = await renderWithI18n(<ConnectionBanner variant="reconnecting" />)
+    expect(getByTestId('connection-banner-scanner')).toBeTruthy()
     expect(getByText('Reconnecting…')).toBeTruthy()
     expect(getByText('Connection lost — the content below may be stale.')).toBeTruthy()
   })
