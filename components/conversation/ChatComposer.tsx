@@ -681,8 +681,12 @@ function makeStyles(theme: Theme) {
     sendErrorAction: { color: theme.text.accent, fontSize: font.sm, textDecorationLine: 'underline' },
     sendNotice: { color: theme.text.secondary, fontSize: font.sm },
     inputRow: { flexDirection: 'row', alignItems: 'stretch', gap: spacing.sm, ...iosComposerChrome },
+    // Not flex: 1 — inside the column inputWrapper that sets a zero flex-basis, which makes
+    // React Native ignore the explicit height the auto-grow sets.
     input: {
-      flex: 1,
+      flexGrow: 1,
+      flexShrink: 1,
+      flexBasis: 'auto',
       backgroundColor: theme.bg.card,
       borderRadius: 10,
       borderWidth: 1,
