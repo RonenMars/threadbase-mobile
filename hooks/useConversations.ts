@@ -129,7 +129,8 @@ export function useConversations(
 
   return useInfiniteQuery({
     queryKey: ['conversations', filter, refreshEpoch, ...displayedServerIds],
-    queryFn: async ({ pageParam = 0, signal }): Promise<MultiConversationPage> => {
+    queryFn: async ({ pageParam = 0, signal, client, queryKey }): Promise<MultiConversationPage> => {
+      const background = client.getQueryData(queryKey) !== undefined
       const isFreshEpoch = refreshEpoch > 0 && refreshEpoch !== consumedEpochRef.current
       if (pageParam === 0 && isFreshEpoch) consumedEpochRef.current = refreshEpoch
       // Bug 32: use allSettled so one unreachable server doesn't blank the Hub.
@@ -162,9 +163,9 @@ export function useConversations(
           const raw = await withSilentRetries(
             () => api.get<RawSessionMeta[] | ConversationPage>(
               `/api/conversations?${params.toString()}`,
-              { signal },
+              { signal, retry: false },
             ),
-            { signal },
+            { signal, background },
           )
           const page = adaptPage(raw, pageParam as number, limit)
           return { serverId, page }
@@ -886,14 +887,19 @@ export function useConversationSearch(query: string) {
 
   return useQuery({
     queryKey: ['conversations', 'search', query, ...displayedServerIds],
-    queryFn: async () => {
+    queryFn: async ({ client, queryKey }) => {
+      const background = client.getQueryData(queryKey) !== undefined
       // Bug 32: allSettled — one failing server shouldn't suppress matches
       // from healthy servers.
       const settled = await Promise.allSettled(
         displayedServerIds.map(async (serverId) => {
           const api = createApiForServer(serverId)
           const raw = await withSilentRetries(
-            () => api.get<RawSessionMeta[] | ConversationPage>(`/api/search?q=${encodeURIComponent(query)}&limit=50`),
+            () => api.get<RawSessionMeta[] | ConversationPage>(
+              `/api/search?q=${encodeURIComponent(query)}&limit=50`,
+              { retry: false },
+            ),
+            { background },
           )
           return { serverId, page: adaptPage(raw, 0, 50) }
         })

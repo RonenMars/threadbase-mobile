@@ -46,8 +46,11 @@ function syncQueryRecovery() {
   // only flips to error after shouldRetryQuery returns false). A 404 being
   // retried is the startup grace waiting for a transcript that does not exist
   // yet: pending, not recovering. Past its cap it lands in `error` as usual.
-  const recovering = queryClient.getQueryCache().getAll().some(isRecoveringQuery)
-  useQueryRecoveryStore.getState().setRecovering(recovering)
+  const recovering = queryClient.getQueryCache().getAll().filter(isRecoveringQuery)
+  useQueryRecoveryStore.getState().setRecovering(
+    recovering.length > 0,
+    recovering.some((query) => query.state.data === undefined),
+  )
 }
 
 /**

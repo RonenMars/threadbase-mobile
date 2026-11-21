@@ -230,7 +230,7 @@ export function useEagerSessions(args: UseEagerSessionsArgs = {}): UseEagerSessi
                 },
                 signal,
               ),
-              { signal },
+              { signal, background: isSilentRefetchRef.current },
             )
             recordSuccess(serverId)
             lastGoodByServerRef.current.set(serverId, sessions)

@@ -3,7 +3,7 @@ import { RecoveryOverlay } from '@/components/ui/RecoveryOverlay'
 import { useQueryRecoveryAlerts } from '@/hooks/useQueryRecoveryAlerts'
 import { describeRecovery } from '@/services/query-client'
 import { addSafeBreadcrumb, captureSafeMessage } from '@/services/sentry'
-import { selectIsRecovering, useQueryRecoveryStore } from '@/stores/query-recovery'
+import { selectIsBlockingRecovery, useQueryRecoveryStore } from '@/stores/query-recovery'
 import { useServersStore } from '@/stores/servers'
 
 /**
@@ -13,10 +13,10 @@ import { useServersStore } from '@/stores/servers'
  */
 export const RECOVERY_OVERLAY_MAX_MS = 15_000
 
-/** Single-server full-screen spinner + multi-server Status pill while RQ retries. */
+/** Single-server full-screen spinner while a first load retries; the Status pill otherwise. */
 export function RecoveryHost() {
   useQueryRecoveryAlerts()
-  const recovering = useQueryRecoveryStore(selectIsRecovering)
+  const recovering = useQueryRecoveryStore(selectIsBlockingRecovery)
   const serverCount = useServersStore((s) => Object.keys(s.servers).length)
   const showOverlay = recovering && serverCount === 1
   const [expired, setExpired] = useState(false)

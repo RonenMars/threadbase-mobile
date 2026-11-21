@@ -138,6 +138,8 @@ export async function withSilentRetries<T>(
   fn: () => Promise<T>,
   options?: {
     signal?: AbortSignal
+    /** The query already shows data, so its retry window must not block the screen. */
+    background?: boolean
   },
 ): Promise<T> {
   let failureCount = 0
@@ -150,7 +152,7 @@ export async function withSilentRetries<T>(
         if (options?.signal?.aborted) throw error
         if (!shouldRetryQuery(failureCount, error)) throw error
         if (!recoveryHeld) {
-          useQueryRecoveryStore.getState().beginNestedRetry()
+          useQueryRecoveryStore.getState().beginNestedRetry(!options?.background)
           recoveryHeld = true
         }
         await sleep(queryRetryDelay(failureCount, error), options?.signal)
@@ -158,7 +160,7 @@ export async function withSilentRetries<T>(
       }
     }
   } finally {
-    if (recoveryHeld) useQueryRecoveryStore.getState().endNestedRetry()
+    if (recoveryHeld) useQueryRecoveryStore.getState().endNestedRetry(!options?.background)
   }
 }
 
