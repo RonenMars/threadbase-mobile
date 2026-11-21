@@ -1,0 +1,89 @@
+appId: com.ronenmars.threadbase
+---
+# Manual flow: pair a fresh install with a real streamer over the paste card.
+# Not in any test:e2e:* script, because it needs a real streamer and a key.
+#
+#   node e2e/run-maestro.js test -e URL=http://localhost:8767 -e KEY="$(cat <key-file>)" e2e/real_server_pair.yaml
+#
+# Starts on the Language step of a clean install with no saved servers (the
+# keychain survives an uninstall, so remove old servers in Settings first).
+# Ends on the hub. Used with stalled_server_recovery.yaml.
+
+# The dev client can open over the app with its tools menu up.
+- runFlow:
+    when:
+      visible: "Open DevTools"
+    commands:
+      - tapOn: "Close"
+      - waitForAnimationToEnd
+- tapOn:
+    id: "onboarding-language-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-welcome-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-welcome-cta"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-connect-paste-card"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-connect-paste-card"
+- retry:
+    maxRetries: 3
+    commands:
+      - tapOn:
+          id: "onboarding-connect-url-input"
+      - eraseText: 80
+      - inputText: "${URL}"
+      - pressKey: Enter
+      - tapOn:
+          id: "onboarding-connect-token-input"
+      - eraseText: 80
+      - inputText: "${KEY}"
+      - pressKey: Enter
+      - tapOn:
+          id: "onboarding-connect-handshake-cta"
+          optional: true
+      - extendedWaitUntil:
+          visible:
+            id: "pair-confirm-add-btn"
+          timeout: 10000
+# iOS "Save Password?" lands over the confirm gate after the masked key field
+# and swallows the tap meant for it.
+- extendedWaitUntil:
+    visible: "Not Now"
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+      - waitForAnimationToEnd
+- tapOn:
+    id: "pair-confirm-add-btn"
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-notifications-cta"
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible: "Not Now"
+    commands:
+      - tapOn: "Not Now"
+- tapOn:
+    id: "onboarding-notifications-cta"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "onboarding-done-cta"
+    timeout: 8000
+- tapOn:
+    id: "onboarding-done-cta"
+- extendedWaitUntil:
+    visible:
+      id: "hub-screen"
+    timeout: 30000
