@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native'
-import { enlarge } from '../../../services/dev-big-text/enlarge'
+import { enlarge, enlargeIconSize } from '../../../services/dev-big-text/enlarge'
 
 const flat = (style: Parameters<typeof enlarge>[0], isRoot = true) => StyleSheet.flatten(enlarge(style, isRoot))
 
@@ -27,5 +27,12 @@ describe('enlarge', () => {
 
   it('reads arrays and falsy entries', () => {
     expect(flat([{ fontSize: 11 }, false, { fontWeight: '500' }])).toMatchObject({ fontSize: 14, fontWeight: '700' })
+  })
+})
+
+describe('enlargeIconSize', () => {
+  it('scales a numeric size and leaves a string alone', () => {
+    expect(enlargeIconSize(20)).toBe(24)
+    expect(enlargeIconSize('100%')).toBe('100%')
   })
 })

@@ -19,8 +19,8 @@ App Store Connect scales the 6.9" and 13" sets down for the smaller devices, so 
 - Dark appearance, `en-US`.
 - Session screens in the chat view (bubbles), which is the default since #1447.
 - Search shots show hits from more than one session and machine.
-- Text is large and bold: every `Text` and `TextInput` is +3pt with its weight one step heavier (400→600, 500→700, 600→700).
-  `TB_DEV_BIG_TEXT=1` does this at bundle time: `metro.config.js` swaps React Native's `Text` and `TextInput` for the wrappers in `services/dev-big-text/`.
+- Text is large and bold: every `Text` and `TextInput` is +3pt with its weight one step heavier (400→600, 500→700, 600→700), and every Phosphor icon is 1.2x.
+  `TB_DEV_BIG_TEXT=1` does this at bundle time: `metro.config.js` swaps React Native's `Text` and `TextInput`, and Phosphor's shared icon base, for the wrappers in `services/dev-big-text/`.
   Store and QA builds never set it, and `e2e/ensure-release-build.js` rebuilds a Release binary whose stamp was made with the flag set the other way.
   On the simulator, also turn Bold Text on, and on iPad set Dynamic Type to XXXL (below).
   iPhone stays at the default text size: at XXXL the phone truncates card titles and pushes the third machine below the fold.
@@ -33,7 +33,8 @@ Until they merge, capture from a branch that has all of them, or the shots will 
 - #1478, which stops list markers wrapping on web.
 - #1479, the server-chip tap fix.
 
-The wrappers only change text, not the boxes around it, so a fixed-size container can clip its enlarged label: check the ShelfBubble count badge (20x20) in the shots.
+The wrappers change text and icons, not padding, margins or the boxes around them, so a container with a fixed height can clip its enlarged label.
+The ShelfBubble count badge uses `minHeight` for this reason; check any other badge or pill in the shots.
 
 ## iPhone: simulator + Maestro
 

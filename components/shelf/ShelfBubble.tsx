@@ -256,7 +256,7 @@ const makeStyles = (theme: Theme) =>
       top: -4,
       right: -4,
       minWidth: 20,
-      height: 20,
+      minHeight: 20,
       paddingHorizontal: 5,
       borderRadius: 10,
       alignItems: 'center',
