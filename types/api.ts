@@ -205,6 +205,8 @@ export interface SearchMatch {
   highlights?: SearchHighlight[]
 }
 
+export type SubagentStatus = 'running' | 'finished' | 'quiet'
+
 export interface Conversation {
   id: string
   title: string
@@ -220,6 +222,12 @@ export interface Conversation {
   parentTitle?: string
   /** True when the transcript was written in the last 60 s: a guess, not a process state. */
   subagentActive?: boolean
+  /**
+   * Subagent rows only. Additive: absent on older streamers, and a newer one may send a value this build
+   * does not know. Read it through `resolveSubagentStatus`, never directly.
+   * `quiet` means no recent activity and no open tool call; it is not proof the agent is done.
+   */
+  subagentStatus?: SubagentStatus
   subagentType?: string
   subagentDescription?: string
   subagentName?: string

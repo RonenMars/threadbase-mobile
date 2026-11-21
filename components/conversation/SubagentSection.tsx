@@ -7,7 +7,8 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
 import { useSubagents } from '@/hooks/useSubagents'
 import { conversationHref } from '@/lib/conversationHref'
-import { resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
+import { resolveSubagentLabel, resolveSubagentStatus, resolveSubagentType } from '@/lib/subagents'
+import { SubagentStatusBadge } from '@/components/sessions/SubagentStatusBadge'
 import { getProviderLabel } from '@/components/sessions/providerLabel'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import type { Conversation } from '@/types/api'
@@ -19,7 +20,7 @@ interface Props {
 
 /**
  * Collapsed by default; children are requested only after the first expand.
- * Rows are read-only transcripts: no status badge, no resume, no input.
+ * Rows are read-only transcripts: a status badge, but no resume and no input.
  */
 export function SubagentSection({ serverId, parentId }: Props) {
   const { t } = useTranslation('sessions')
@@ -59,6 +60,7 @@ export function SubagentSection({ serverId, parentId }: Props) {
         <>
           {items.map((c) => {
             const type = resolveSubagentType(c)
+            const status = resolveSubagentStatus(c)
             return (
               <Pressable
                 key={c.id}
@@ -67,9 +69,7 @@ export function SubagentSection({ serverId, parentId }: Props) {
                 testID={`subagent-row-${c.id}`}
               >
                 <View style={styles.rowTop}>
-                  {c.subagentActive === true ? (
-                    <View style={styles.activeDot} testID={`subagent-active-${c.id}`} accessibilityLabel={t('subagents.active')} />
-                  ) : null}
+                  {status ? <SubagentStatusBadge status={status} testID={`subagent-status-${c.id}`} /> : null}
                   <Text style={styles.label} numberOfLines={1}>
                     {resolveSubagentLabel(c)}
                   </Text>
@@ -134,6 +134,5 @@ function makeStyles(theme: Theme) {
     },
     meta: { color: theme.text.secondary, fontSize: font.xs },
     more: { color: theme.text.accent, fontSize: font.xs, fontWeight: '600' },
-    activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.text.accent },
   })
 }

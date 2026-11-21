@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics'
 import { CaretRight } from 'phosphor-react-native'
 import { useTheme } from '@/contexts/ThemeContext'
 import { SubagentRow } from '@/components/sessions/hub/SubagentRow'
+import { SubagentStatusBadge } from '@/components/sessions/SubagentStatusBadge'
 import { useOpenIds } from '@/components/sessions/base/useOpenIds'
 import { CollapsibleCard } from '@/components/sessions/base/CollapsibleCard'
 import { CardSpine, CardTitleBlock } from '@/components/sessions/base/CollapsibleCardParts'
@@ -25,7 +26,7 @@ import { useAllSubagents } from '@/hooks/useAllSubagents'
 import { conversationHref } from '@/lib/conversationHref'
 import { isLiveAttachedPty } from '@/lib/sessionLeavePolicy'
 import type { MultiSession } from '@/types/api'
-import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel, resolveSubagentType } from '@/lib/subagents'
+import { groupSubagentsByParent, type SubagentGroup, resolveSubagentLabel, resolveSubagentStatus, resolveSubagentType } from '@/lib/subagents'
 
 interface Props {
   serverIds: readonly string[]
@@ -196,6 +197,7 @@ export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenPar
   if (solo) {
     const c = g.items[0]
     const label = resolveSubagentLabel(c)
+    const soloStatus = resolveSubagentStatus(c)
     return (
       <View style={styles.cardWrap} testID={`subagent-group-${g.parentId}`}>
         <Card style={{ overflow: 'hidden', gap: 0, padding: 0 }}>
@@ -214,9 +216,7 @@ export function SubagentGroupCard({ group: g, title, isOpen, onToggle, onOpenPar
               accessibilityLabel={label}
               testID={`subagent-group-toggle-${cardId}`}
             >
-              {c.subagentActive === true ? (
-                <View style={styles.activeDot} accessibilityLabel={t('subagents.active')} testID={`subagent-board-active-${c.id}`} />
-              ) : null}
+              {soloStatus ? <SubagentStatusBadge status={soloStatus} testID={`subagent-status-${c.id}`} /> : null}
               <CardTitleBlock
                 title={label}
                 titleLines={2}
@@ -297,7 +297,6 @@ function makeStyles(theme: Theme) {
     eyebrow: { marginHorizontal: spacing.md },
     cardWrap: { marginHorizontal: spacing.md, marginBottom: spacing.sm },
     footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
-    activeDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.status.running },
     footerLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44 },
   })
 }

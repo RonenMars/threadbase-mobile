@@ -4,6 +4,7 @@ import {
   groupSubagentsByParent,
   isSubagentRow,
   resolveSubagentLabel,
+  resolveSubagentStatus,
   resolveSubagentType,
 } from '@/lib/subagents'
 import type { Conversation } from '@/types/api'
@@ -97,5 +98,31 @@ describe('groupSubagentsByParent', () => {
     expect(groups[1].items.map((i) => i.id)).toEqual(['c', 'a'])
     expect(groups[1].activeCount).toBe(2)
     expect(groups[0].activeCount).toBe(0)
+  })
+})
+
+describe('resolveSubagentStatus', () => {
+  it.each(['running', 'finished', 'quiet'] as const)('returns a known %s status as sent', (status) => {
+    expect(resolveSubagentStatus(row({ subagentStatus: status }))).toBe(status)
+  })
+
+  it('lets the new field win over subagentActive', () => {
+    expect(resolveSubagentStatus(row({ subagentStatus: 'finished', subagentActive: true }))).toBe('finished')
+    expect(resolveSubagentStatus(row({ subagentStatus: 'quiet', subagentActive: true }))).toBe('quiet')
+  })
+
+  it('falls back to running for an older streamer that only sends subagentActive', () => {
+    expect(resolveSubagentStatus(row({ subagentActive: true }))).toBe('running')
+  })
+
+  it('shows no badge for an older streamer idle row, never a false finished', () => {
+    expect(resolveSubagentStatus(row({ subagentActive: false }))).toBeUndefined()
+    expect(resolveSubagentStatus(row())).toBeUndefined()
+  })
+
+  it('treats a status from a newer streamer as absent instead of throwing', () => {
+    const newer = row({ subagentStatus: 'failed' as never })
+    expect(resolveSubagentStatus(newer)).toBeUndefined()
+    expect(resolveSubagentStatus({ ...newer, subagentActive: true })).toBe('running')
   })
 })

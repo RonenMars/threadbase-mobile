@@ -281,7 +281,11 @@
   "subagents": {
     "title": "Sub-agents",
     "titleCount": "Sub-agents ({{n}})",
-    "active": "Active",
+    "status": {
+      "running": "Running",
+      "finished": "Finished",
+      "quiet": "Quiet, no recent activity"
+    },
     "empty": "No sub-agents.",
     "unsupported": "This server doesn't support sub-agents yet.",
     "loadFailed": "Couldn't load sub-agents.",

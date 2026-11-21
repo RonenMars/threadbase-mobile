@@ -45,3 +45,19 @@ export const RunningGroup: Story = {
 export const IdleGroup: Story = {
   render: () => <SubagentGroupCard {...groupArgs([child('a'), child('b')])} />,
 }
+
+export const EveryStatus: Story = {
+  render: () => (
+    <SubagentGroupCard
+      {...groupArgs([
+        child('a', { subagentActive: true, subagentStatus: 'running' }),
+        child('b', { subagentStatus: 'finished' }),
+        child('c', { subagentStatus: 'quiet' }),
+      ])}
+    />
+  ),
+}
+
+export const SoloFinished: Story = {
+  render: () => <SubagentGroupCard {...groupArgs([child('a', { subagentStatus: 'finished' })])} parentTitle="Refactor the session list" />,
+}

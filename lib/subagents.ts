@@ -1,4 +1,4 @@
-import type { Conversation } from '@/types/api'
+import type { Conversation, SubagentStatus } from '@/types/api'
 
 /** A conversation row is read-only when it is a sub-agent transcript. */
 export function isSubagentRow(c: Pick<Conversation, 'isSubagent' | 'parentConversationId'>): boolean {
@@ -25,6 +25,19 @@ export function resolveSubagentLabel(c: Conversation): string {
 
 export function resolveSubagentType(c: Conversation): string | undefined {
   return nonEmpty(c.subagentType)
+}
+
+const KNOWN_STATUSES: readonly SubagentStatus[] = ['running', 'finished', 'quiet']
+
+/**
+ * The badge state for a sub-agent row. A streamer without `subagentStatus` only says whether the
+ * agent is active, so an idle row from it resolves to `undefined` (no badge), never to "finished".
+ * A value this build does not know is treated as absent.
+ */
+export function resolveSubagentStatus(c: Pick<Conversation, 'subagentStatus' | 'subagentActive'>): SubagentStatus | undefined {
+  const s = c.subagentStatus
+  if (s !== undefined && KNOWN_STATUSES.includes(s)) return s
+  return c.subagentActive === true ? 'running' : undefined
 }
 
 /**
