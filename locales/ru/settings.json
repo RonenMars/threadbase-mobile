@@ -49,7 +49,9 @@
   "appearance": {
     "theme": "Тема",
     "dark": "Тёмная",
-    "light": "Светлая"
+    "light": "Светлая",
+    "savedChatsBubble": "Пузырь сохранённых чатов",
+    "savedChatsBubbleNote": "Плавающий пузырь с вашими сохранёнными чатами. Если скрыть его, сами чаты останутся."
   },
   "notifications": {
     "whenAddingServer": "При добавлении нового сервера",

@@ -3,6 +3,7 @@ import {
   countNeedsYou,
   formatBadgeCount,
   indexShelfCache,
+  isWithinRadius,
   openSavedItem,
   shelfTarget,
   snapSide,
@@ -116,5 +117,20 @@ describe('snapSide', () => {
 
   it('ignores a drift too slow to cross the middle', () => {
     expect(snapSide(150, 100, 400)).toBe('left')
+  })
+})
+
+describe('isWithinRadius', () => {
+  it('counts a point exactly on the radius as inside', () => {
+    expect(isWithinRadius(0, 0, 3, 4, 5)).toBe(true)
+  })
+
+  it('rejects a point just past the radius', () => {
+    expect(isWithinRadius(0, 0, 3, 4, 4.99)).toBe(false)
+  })
+
+  it('measures in both axes, not along one', () => {
+    expect(isWithinRadius(10, 10, 10, 14, 5)).toBe(true)
+    expect(isWithinRadius(10, 10, 14, 14, 5)).toBe(false)
   })
 })

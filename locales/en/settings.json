@@ -49,7 +49,9 @@
   "appearance": {
     "theme": "Theme",
     "dark": "Dark",
-    "light": "Light"
+    "light": "Light",
+    "savedChatsBubble": "Saved-chats bubble",
+    "savedChatsBubbleNote": "The floating bubble for your saved chats. Hiding it keeps your saved chats."
   },
   "notifications": {
     "whenAddingServer": "When Adding A New Server",

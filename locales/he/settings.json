@@ -49,7 +49,9 @@
   "appearance": {
     "theme": "ערכת נושא",
     "dark": "כהה",
-    "light": "בהיר"
+    "light": "בהיר",
+    "savedChatsBubble": "בועת שיחות שמורות",
+    "savedChatsBubbleNote": "הבועה הצפה של השיחות השמורות שלך. הסתרתה משאירה את השיחות השמורות."
   },
   "notifications": {
     "whenAddingServer": "בעת הוספת שרת חדש",
