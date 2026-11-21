@@ -67,6 +67,10 @@ Rules that never bend: a sibling worktree (../tb-mobile-worktrees/<slug>), the r
   - Snap with a spring, or instantly when reduce motion is on.
   - The default side is the trailing edge, which is the left in RTL.
   - Remember the last side and height in the existing quickAccess persisted state (add a field; no new key).
+- While dragging, an X target appears at the bottom centre; dropping the bubble on it hides the bubble (`shelfHidden` in quickAccess state) and never clears favorites.
+  - The flag is separate from `favoritesEnabled`, which also drives the Now-tab strip and has no UI.
+  - Ways back: the Undo toast on the drop, the "Saved-chats bubble" switch under Settings → Appearance, and saving a new chat (`pinItem`). A streamer sync (`setFavorites`) does not unhide.
+  - The `hide` accessibility action does the same as the drop, since a drag is not reachable by a screen reader.
 - Tap opens a panel listing saved sessions and conversations: label, provider icon, and the server name when more than one server is paired.
   - Items that need the user sort first.
   - Tapping a row closes the panel and navigates.

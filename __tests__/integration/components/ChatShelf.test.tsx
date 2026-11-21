@@ -1,9 +1,10 @@
 import React from 'react'
-import { fireEvent, render } from '@testing-library/react-native'
+import { act, fireEvent, render } from '@testing-library/react-native'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useGlobalSearchParams, useRouter, useSegments } from 'expo-router'
 import { ChatShelf } from '@/components/shelf/ChatShelf'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { useAlertStore } from '@/stores/alerts'
 import { useNavLockStore } from '@/stores/navLock'
 import { useQuickAccessStore, type FavoriteItem } from '@/stores/quickAccess'
 import type { MultiSession } from '@/types/api'
@@ -29,7 +30,7 @@ describe('ChatShelf', () => {
     ;(useRouter as jest.Mock).mockReturnValue({ push })
     ;(useSegments as jest.Mock).mockReturnValue([])
     ;(useGlobalSearchParams as jest.Mock).mockReturnValue({})
-    useQuickAccessStore.setState({ favoritesEnabled: true, favorites: [convFav, sessionFav], shelfPosition: null })
+    useQuickAccessStore.setState({ favoritesEnabled: true, favorites: [convFav, sessionFav], shelfPosition: null, shelfHidden: false })
     useNavLockStore.getState().clear()
   })
 
@@ -116,5 +117,26 @@ describe('ChatShelf', () => {
     const screen = await renderShelf()
     await fireEvent(screen.getByTestId('chat-shelf-bubble'), 'accessibilityAction', { nativeEvent: { actionName: 'longpress' } })
     expect(useQuickAccessStore.getState().favorites).toEqual([convFav, sessionFav])
+  })
+
+  it('renders nothing while the bubble is hidden', async () => {
+    useQuickAccessStore.setState({ shelfHidden: true })
+    const screen = await renderShelf()
+    expect(screen.queryByTestId('chat-shelf-bubble')).toBeNull()
+  })
+
+  it('the hide action hides the bubble, keeps every favorite, and offers an undo that restores it', async () => {
+    const screen = await renderShelf()
+    await fireEvent(screen.getByTestId('chat-shelf-bubble'), 'accessibilityAction', { nativeEvent: { actionName: 'hide' } })
+
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(true)
+    expect(useQuickAccessStore.getState().favorites).toEqual([convFav, sessionFav])
+    expect(screen.queryByTestId('chat-shelf-bubble')).toBeNull()
+
+    const toast = useAlertStore.getState().alerts.at(-1)
+    expect(toast).toMatchObject({ level: 'info', buttonText: 'Undo' })
+    await act(async () => toast?.buttonAction?.())
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(false)
+    expect(screen.getByTestId('chat-shelf-bubble')).toBeTruthy()
   })
 })
