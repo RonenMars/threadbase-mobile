@@ -558,8 +558,14 @@ export function LiveConversationView({
   // who never touched the list. The pin is only released by a drag, so it is
   // the reliable "reader has not left the tail" signal.
   const followWorkingBubble = useCallback(() => {
-    if (followingTailRef.current) listRef.current?.scrollToEnd({ animated: false })
-    else stickToEnd()
+    const follow = () => {
+      if (followingTailRef.current) listRef.current?.scrollToEnd({ animated: false })
+      else stickToEnd()
+    }
+    follow()
+    // The footer's height reaches the native scroll view a frame after onLayout,
+    // so a single scrollToEnd lands short and leaves the card under the composer.
+    requestAnimationFrame(follow)
   }, [stickToEnd])
   useEffect(() => {
     const hasQuestion = activeQuestion !== null
