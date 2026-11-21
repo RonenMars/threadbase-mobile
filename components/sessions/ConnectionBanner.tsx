@@ -1,9 +1,10 @@
 import React from 'react'
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { CellSignalSlash } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { type Theme, font, spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 
 interface Props {
   /**
@@ -33,7 +34,7 @@ export function ConnectionBanner({ variant }: Props) {
   return (
     <View style={styles.banner} accessibilityRole="alert" testID={`connection-banner-${variant}`}>
       {isReconnecting ? (
-        <ActivityIndicator size="small" color={accent} />
+        <KnightRiderScanner testID="connection-banner-scanner" />
       ) : (
         <CellSignalSlash size={16} color={accent} />
       )}
