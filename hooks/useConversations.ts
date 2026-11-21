@@ -261,6 +261,9 @@ interface RawMessage {
   is_sidechain?: boolean
   is_tool_result?: boolean
   attachment?: Record<string, unknown> | null
+  // Only on a compaction summary row (streamer #1190).
+  is_compact_summary?: boolean
+  compaction?: { trigger: string | null; pre_tokens: number | null; post_tokens: number | null } | null
 }
 
 export interface ConversationMessagePagination {
@@ -371,6 +374,14 @@ function adaptRawMessage(m: RawMessage, convId: string, fallbackIndex: number): 
     is_sidechain: m.is_sidechain,
     is_tool_result: m.is_tool_result,
     attachment: m.attachment,
+    ...(m.is_compact_summary
+      ? {
+          is_compact_summary: true,
+          compaction: m.compaction
+            ? { trigger: m.compaction.trigger, preTokens: m.compaction.pre_tokens, postTokens: m.compaction.post_tokens }
+            : null,
+        }
+      : {}),
   }
 }
 

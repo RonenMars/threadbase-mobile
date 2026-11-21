@@ -114,3 +114,25 @@ describe('ChatMarkdown – coexisting with search', () => {
     expect(onLayout).not.toHaveBeenCalled()
   })
 })
+
+// The user bubble's fill is theme.text.accent, the same colour inline code and
+// links are drawn in on an assistant bubble, so in a user bubble they vanished.
+describe('ChatMarkdown – inline spans inside a user bubble', () => {
+  const colorOf = (node: { props: { style?: unknown } }) =>
+    (StyleSheet.flatten(node.props.style as TextStyle) ?? {}).color
+
+  it('draws inline code in the body text colour', async () => {
+    const { getByText } = await renderMd('run `npm ci` first', { isUser: true })
+    expect(colorOf(getByText('npm ci'))).toBe(colorOf(getByText(/run/)))
+  })
+
+  it('draws a link in the body text colour', async () => {
+    const { getByText } = await renderMd('see [docs](https://example.com) here', { isUser: true })
+    expect(colorOf(getByText('docs'))).toBe(colorOf(getByText(/see/)))
+  })
+
+  it('keeps the accent colour for inline code in an assistant bubble', async () => {
+    const { getByText } = await renderMd('run `npm ci` first')
+    expect(colorOf(getByText('npm ci'))).not.toBe(colorOf(getByText(/run/)))
+  })
+})

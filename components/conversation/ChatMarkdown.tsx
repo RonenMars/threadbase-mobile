@@ -74,7 +74,9 @@ function matchTextFor(block: MarkdownBlock, needle: string): string | null {
   return contains(source, needle) ? source : null
 }
 
-function Spans({ spans, styles }: { spans: InlineSpan[]; styles: ReturnType<typeof makeStyles> }) {
+// In a user bubble the fill is theme.text.accent, so the accent colour that
+// marks code and links elsewhere would draw them invisible.
+function Spans({ spans, styles, isUser }: { spans: InlineSpan[]; styles: ReturnType<typeof makeStyles>; isUser?: boolean }) {
   return (
     <>
       {spans.map((span, i) => {
@@ -90,7 +92,7 @@ function Spans({ spans, styles }: { spans: InlineSpan[]; styles: ReturnType<type
           case 'em':
             return <Text key={i} style={styles.em}>{span.text}</Text>
           case 'code':
-            return <Text key={i} style={styles.inlineCode}>{span.text}</Text>
+            return <Text key={i} style={[styles.inlineCode, isUser && styles.onAccentSpan]}>{span.text}</Text>
           case 'strike':
             return <Text key={i} style={styles.strike}>{span.text}</Text>
           // Pressable only through the http(s) gate: any other scheme in
@@ -99,7 +101,7 @@ function Spans({ spans, styles }: { spans: InlineSpan[]; styles: ReturnType<type
             return (
               <Text
                 key={i}
-                style={styles.link}
+                style={[styles.link, isUser && styles.onAccentSpan]}
                 onPress={() => {
                   if (isOpenableLinkUrl(span.href)) void Linking.openURL(span.href)
                 }}
@@ -160,7 +162,7 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
     }
     return (
       <Text style={style} selectable>
-        <Spans spans={block.kind === 'code' || block.kind === 'rule' ? [] : block.spans} styles={styles} />
+        <Spans spans={block.kind === 'code' || block.kind === 'rule' ? [] : block.spans} styles={styles} isUser={isUser} />
       </Text>
     )
   }
@@ -250,6 +252,10 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     link: {
       color: theme.text.accent,
       textDecorationLine: 'underline',
+    },
+    onAccentSpan: {
+      color: theme.text.onAccent,
+      backgroundColor: `${theme.text.onAccent}26`,
     },
     // Chat is proportional and keeps no fixed row rhythm, so headings may grow
     // here where the terminal's may not. Kept modest all the same: taller rows

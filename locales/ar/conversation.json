@@ -146,5 +146,13 @@
   },
   "question": {
     "label": "سؤال"
+  },
+  "compaction": {
+    "label": "تم ضغط السياق",
+    "auto": "تلقائي",
+    "manual": "يدوي",
+    "tokens": "{{pre}} → {{post}} رمز",
+    "expand": "إظهار ملخص الضغط",
+    "collapse": "إخفاء ملخص الضغط"
   }
 }
