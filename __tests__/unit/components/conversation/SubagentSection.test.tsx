@@ -51,13 +51,27 @@ describe('SubagentSection', () => {
     expect(r.getByText('Fix tests')).toBeTruthy()
     expect(r.getByText('Explore')).toBeTruthy()
     expect(r.getByText('title-b')).toBeTruthy()
-    expect(r.getByTestId('subagent-active-a')).toBeTruthy()
-    expect(r.queryByTestId('subagent-active-b')).toBeNull()
+    expect(r.getByTestId('subagent-status-a').props.accessibilityLabel).toBe('Running')
+    expect(r.queryByTestId('subagent-status-b')).toBeNull()
     expect(r.getByText('Sub-agents (2)')).toBeTruthy()
     expect(r.getAllByText(/ · 4 messages · /)).toHaveLength(2)
 
     fireEvent.press(r.getByTestId('subagent-row-a'))
     expect(push).toHaveBeenCalledWith('/conversation/a?server=s1')
+  })
+
+  it('shows the finished and quiet badges the streamer reports, in the same place as the running one', async () => {
+    mockGet.mockResolvedValue({
+      conversations: [child('a', { subagentStatus: 'finished' }), child('b', { subagentStatus: 'quiet' })],
+      hasMore: false,
+      offset: 0,
+      total: 2,
+    })
+    const r = await render(<SubagentSection serverId="s1" parentId="p1" />, { wrapper: createWrapper() })
+    fireEvent.press(r.getByTestId('subagent-toggle'))
+    await waitFor(() => expect(r.getByTestId('subagent-row-a')).toBeTruthy())
+    expect(r.getByTestId('subagent-status-a').props.accessibilityLabel).toBe('Finished')
+    expect(r.getByTestId('subagent-status-b').props.accessibilityLabel).toBe('Quiet, no recent activity')
   })
 
   it('offers no resume, send or status affordance on a sub-agent row', async () => {

@@ -54,6 +54,15 @@ describe('SubagentBoard', () => {
     expect(r.queryByTestId('subagent-filter-active')).toBeNull()
   })
 
+  it('shows the finished badge on a finished child and none on an older streamer idle one', async () => {
+    mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentStatus: 'finished' }), sub('b', 'p1')]))
+    const r = await renderBoard()
+    await expand(r, 'p1')
+    await waitFor(() => expect(r.getByTestId('conversation-row-a')).toBeTruthy())
+    expect(r.getByTestId('subagent-status-a').props.accessibilityLabel).toBe('Finished')
+    expect(r.queryByTestId('subagent-status-b')).toBeNull()
+  })
+
   it('puts groups with a running child under RUNNING and the rest under their day bucket', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true }), sub('b', 'p2')]))
     const r = await renderBoard()
@@ -168,13 +177,13 @@ describe('SubagentBoard', () => {
     expect(r.queryByText('3')).toBeNull()
   })
 
-  it('shows the live dot only for an active sub-agent, with the type leading its meta line', async () => {
+  it('shows the running badge only for an active sub-agent, with the type leading its meta line', async () => {
     mockGet.mockResolvedValue(page([sub('a', 'p1', { subagentActive: true, subagentType: 'Explore' }), sub('b', 'p1')]))
     const r = await renderBoard()
     await expand(r, 'p1')
     await waitFor(() => expect(r.getByTestId('conversation-row-a')).toBeTruthy())
-    expect(r.getByTestId('subagent-board-active-a')).toBeTruthy()
-    expect(r.queryByTestId('subagent-board-active-b')).toBeNull()
+    expect(r.getByTestId('subagent-status-a').props.accessibilityLabel).toBe('Running')
+    expect(r.queryByTestId('subagent-status-b')).toBeNull()
     expect(r.getByText(/Explore/)).toBeTruthy()
   })
 

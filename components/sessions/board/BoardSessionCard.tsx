@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Eye } from 'phosphor-react-native'
 import { makeStyles as makeCardStyles } from '@/components/sessions/base/CollapsibleCard.styles'
 import { CardBody, CardSpine, ChevronToggle, CountBadge } from '@/components/sessions/base/CollapsibleCardParts'
-import { ConvRow } from '@/components/sessions/hub/ConvRow'
+import { SubagentRow } from '@/components/sessions/hub/SubagentRow'
 import type { NowEntry } from '@/components/sessions/now/nowEntries'
 import { MessagePreview } from '@/components/sessions/shared/MessagePreview'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
@@ -125,7 +125,7 @@ function BoardCardFrame({
           {isOpen && group ? (
             <CardBody>
               {group.items.map((c) => (
-                <ConvRow key={c.id} conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }} />
+                <SubagentRow key={c.id} conv={{ ...c, title: resolveSubagentLabel(c), serverId: serverIdFor(c.id) }} />
               ))}
             </CardBody>
           ) : null}

@@ -83,7 +83,7 @@ const conversation = (overrides: Partial<MultiConversation>): MultiConversation 
   ...overrides,
 })
 
-const sub = (id: string, parent: string, active: boolean): Conversation => ({
+const sub = (id: string, parent: string, active: boolean, extra: Partial<Conversation> = {}): Conversation => ({
   id,
   title: `title-${id}`,
   projectPath: '/p',
@@ -93,6 +93,7 @@ const sub = (id: string, parent: string, active: boolean): Conversation => ({
   parentConversationId: parent,
   subagentDescription: `Sub ${id}`,
   subagentActive: active,
+  ...extra,
 })
 
 const question = (id: string, text: string) => ({
@@ -209,6 +210,32 @@ describe('SessionBoard cards', () => {
     expect(mockPush).not.toHaveBeenCalled()
   })
 
+  it('badges each expanded child of a card with its status', async () => {
+    mockGet.mockResolvedValue({
+      conversations: [sub('a1', 'w', true), sub('a2', 'w', false, { subagentStatus: 'finished' }), sub('a3', 'w', false)],
+      hasMore: false,
+      offset: 0,
+      total: 3,
+    })
+    const r = await renderBoard([row(waiting())])
+    await waitFor(() => expect(r.getByTestId('board-toggle-w')).toHaveTextContent('3'))
+    await fireEvent.press(r.getByTestId('board-toggle-w'))
+    expect(r.getByTestId('subagent-status-a1').props.accessibilityLabel).toBe('Running')
+    expect(r.getByTestId('subagent-status-a2').props.accessibilityLabel).toBe('Finished')
+    expect(r.queryByTestId('subagent-status-a3')).toBeNull()
+    expect(r.getByTestId('conversation-row-a3')).toBeTruthy()
+  })
+
+  it('shows the finished badge on a sub-agent card when only sub-agents show', async () => {
+    mockGet.mockResolvedValue({ conversations: [sub('a1', 'p', false, { subagentStatus: 'finished' })], hasMore: false, offset: 0, total: 1 })
+    const r = await render(
+      <SessionBoard items={[row(running)]} searchQuery="" conversationsFromServer={false} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={jest.fn()} subagentsOnly />,
+      { wrapper: createWrapper() },
+    )
+    await waitFor(() => expect(r.getByTestId('subagent-status-a1')).toBeTruthy())
+    expect(r.getByTestId('subagent-status-a1').props.accessibilityLabel).toBe('Finished')
+  })
+
   it('files orphan sub-agents under their heading in the column of their state', async () => {
     mockGet.mockResolvedValue({ conversations: [sub('x', 'elsewhere', true), sub('y', 'gone', false)], hasMore: false, offset: 0, total: 2 })
     const r = await renderBoard([row(running)])
@@ -261,8 +288,8 @@ describe('SessionBoard cards', () => {
     expect(r.queryByText('Scan the worktrees')).toBeNull()
     // One sub-agent per card: no count badge or expandable body, the card carries the row's extras.
     expect(r.queryByTestId('conversation-row-a1')).toBeNull()
-    expect(r.getByTestId('subagent-board-active-a1')).toBeTruthy()
-    expect(r.queryByTestId('subagent-board-active-a3')).toBeNull()
+    expect(r.getByTestId('subagent-status-a1').props.accessibilityLabel).toBe('Running')
+    expect(r.queryByTestId('subagent-status-a3')).toBeNull()
     expect(r.getAllByText(/2 messages/)).toHaveLength(3)
     expect(r.getByText('Audit lockfile drift')).toBeTruthy()
     expect(r.getAllByText('Session p')).toHaveLength(3)

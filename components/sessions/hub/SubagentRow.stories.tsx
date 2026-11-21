@@ -19,5 +19,7 @@ const meta: Meta<typeof SubagentRow> = { title: 'Sessions/SubagentRow', componen
 export default meta
 type Story = StoryObj<typeof SubagentRow>
 
-export const Active: Story = { args: { conv } }
-export const Idle: Story = { args: { conv: { ...conv, subagentActive: false } } }
+export const Running: Story = { args: { conv: { ...conv, subagentStatus: 'running' } } }
+export const Finished: Story = { args: { conv: { ...conv, subagentActive: false, subagentStatus: 'finished' } } }
+export const Quiet: Story = { args: { conv: { ...conv, subagentActive: false, subagentStatus: 'quiet' } } }
+export const OlderStreamerIdle: Story = { args: { conv: { ...conv, subagentActive: false } } }
