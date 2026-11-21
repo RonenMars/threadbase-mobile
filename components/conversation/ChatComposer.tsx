@@ -269,6 +269,9 @@ export function ChatComposer({
   // Native multiline sizing stops growing once the empty draft pinned the height, so
   // the height follows the reported content size, clamped to the style's min/max.
   const [contentHeight, setContentHeight] = useState(0)
+  // Clearing the draft fires one last content size for the empty text. Left in state it
+  // keeps the next paste pinned at 44pt, because no new size is reported at a fixed height.
+  if (value.length === 0 && contentHeight !== 0) setContentHeight(0)
   const grownHeight =
     value.length === 0 || contentHeight === 0
       ? undefined
