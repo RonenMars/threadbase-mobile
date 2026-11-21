@@ -116,7 +116,7 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
 
   return (
     <View style={[styles.container, noOuterMargin && styles.containerNoMargin, isUser ? styles.containerUser : styles.containerAssistant]}>
-      <MessageContextMenu message={message} style={styles.menu}>
+      <MessageContextMenu message={message}>
         <View
           testID="message-bubble"
           style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass, queued && styles.bubbleQueued]}
@@ -151,11 +151,10 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     containerNoMargin: { marginVertical: 0 },
     containerUser: { alignItems: 'flex-end' },
     containerAssistant: { alignItems: 'flex-start' },
-    // The menu wrapper is the row's flex child, so it carries the width cap.
-    menu: {
-      maxWidth: '85%',
-    },
+    // The width cap stays on the bubble: moved onto this wrapper, the text is
+    // measured at a different width and every bubble grows a tall empty strip.
     bubble: {
+      maxWidth: '85%',
       alignSelf: 'flex-start',
       borderRadius: radius.lg,
       padding: spacing.md,
