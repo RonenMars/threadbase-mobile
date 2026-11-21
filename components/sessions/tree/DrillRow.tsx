@@ -42,7 +42,7 @@ function SessionSwipe({ session, title, children }: { session: MultiSession; tit
 
 function ConversationSwipe({ conv, title, children }: { conv: MultiConversation; title: string; children: ReactNode }) {
   const swipe = useConversationSwipe(conv, title)
-  return <SwipeableRow leading={swipe.leading}>{children}</SwipeableRow>
+  return <SwipeableRow leading={swipe.leading} trailing={swipe.trailing}>{children}</SwipeableRow>
 }
 
 export function DrillRow({ item }: Props) {

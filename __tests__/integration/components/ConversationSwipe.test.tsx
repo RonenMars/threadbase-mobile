@@ -77,6 +77,39 @@ describe('swipe on project hub rows', () => {
   })
 })
 
+describe('terminate on a conversation row', () => {
+  const live = { ...conv, ownership: 'external', processLiveness: 'alive' } as unknown as MultiConversation
+
+  it('offers terminate only while the conversation runs outside Threadbase', async () => {
+    await renderRow(<ConvRow conv={live} />)
+    expect(screen.getByTestId('conversation-swipe-terminate')).toBeTruthy()
+    expect(screen.getByTestId('conversation-swipe-favorite')).toBeTruthy()
+  })
+
+  it.each([
+    ['a plain history conversation', conv],
+    ['an external conversation whose process is gone', { ...live, processLiveness: 'gone' } as unknown as MultiConversation],
+  ])('offers no terminate on %s', async (_name, c) => {
+    await renderRow(<ConvRow conv={c} />)
+    expect(screen.queryByTestId('conversation-swipe-terminate')).toBeNull()
+  })
+
+  it('offers it on the all-conversations list too', async () => {
+    await renderRow(
+      <ConversationList
+        conversations={[live]}
+        onRefresh={jest.fn()}
+        refreshing={false}
+        onEndReached={jest.fn()}
+        searchQuery=""
+        onSearchChange={jest.fn()}
+        searchOpen={false}
+      />,
+    )
+    expect(screen.getByTestId('conversation-swipe-terminate')).toBeTruthy()
+  })
+})
+
 describe('swipe on the all-conversations list', () => {
   it('favorites a conversation row and offers nothing else', async () => {
     await renderRow(
