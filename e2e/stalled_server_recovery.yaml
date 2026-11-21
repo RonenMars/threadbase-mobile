@@ -1,0 +1,33 @@
+appId: com.ronenmars.threadbase
+---
+# Manual flow: with one server whose streamer is frozen, a foreground refetch
+# must not put the full-screen recovery overlay over a loaded list (#1603).
+# Not in any test:e2e:* script, because it needs a real streamer to freeze.
+#
+# After real_server_pair.yaml, with the list loaded:
+#   xcrun simctl launch <udid> com.apple.Preferences    # background the app
+#   kill -STOP <streamer-pid>                            # requests now hang
+#   xcrun simctl launch <udid> com.ronenmars.threadbase  # foreground it
+#   node e2e/run-maestro.js test e2e/stalled_server_recovery.yaml
+#   kill -CONT <streamer-pid>
+#
+# A frozen streamer holds requests in the kernel backlog instead of failing
+# them, so this checks the list stays usable; it does not drive the retry
+# path that shows the "Reconnecting…" warning. Killing the streamer would.
+
+- assertVisible:
+    id: "now-list"
+- assertNotVisible:
+    id: "recovery-overlay"
+- tapOn:
+    id: "hub-settings-btn"
+- extendedWaitUntil:
+    visible:
+      id: "settings-add-server-btn"
+    timeout: 5000
+- tapOn:
+    id: "header-back"
+- assertVisible:
+    id: "now-list"
+- assertNotVisible:
+    id: "recovery-overlay"
