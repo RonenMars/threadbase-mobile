@@ -272,6 +272,13 @@ export function ChatComposer({
   // A controlled TextInput takes styled children in place of `value`; that is
   // how the skill name gets its color. The X sits at the name's top end, found
   // by measuring the name in the input's font (it is always the first word).
+  // Native multiline sizing stops growing once the empty draft pinned the height, so
+  // the height follows the reported content size, clamped to the style's min/max.
+  const [contentHeight, setContentHeight] = useState(0)
+  const grownHeight =
+    value.length === 0 || contentHeight === 0
+      ? undefined
+      : Math.min(160, Math.max(44, contentHeight + (Platform.OS === 'android' ? spacing.sm * 2 : 0)))
   const [skillWidth, setSkillWidth] = useState(0)
   const markedSkill = skill !== null && !disabled && value.startsWith(skill.name) ? skill : null
   const inputChildren = markedSkill ? (
@@ -494,7 +501,8 @@ export function ChatComposer({
             <TextInput
               ref={inputRef}
               testID="chat-message-input"
-              style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, inputDirection, disabled && styles.disabled]}
+              style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, grownHeight !== undefined && { height: grownHeight }, inputDirection, disabled && styles.disabled]}
+              onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
               value={inputValue}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
@@ -530,7 +538,8 @@ export function ChatComposer({
             <TextInput
               ref={inputRef}
               testID="chat-message-input"
-              style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, inputDirection, disabled && styles.disabled]}
+              style={[styles.input, (disabled || value.length === 0) && styles.inputEmpty, grownHeight !== undefined && { height: grownHeight }, inputDirection, disabled && styles.disabled]}
+              onContentSizeChange={(e) => setContentHeight(e.nativeEvent.contentSize.height)}
               value={inputValue}
               onChangeText={disabled ? undefined : onChangeText}
               onFocus={() => onInputFocus('inline')}
