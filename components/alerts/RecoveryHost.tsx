@@ -4,21 +4,21 @@ import { useQueryRecoveryAlerts } from '@/hooks/useQueryRecoveryAlerts'
 import { describeRecovery } from '@/services/query-client'
 import { addSafeBreadcrumb, captureSafeMessage } from '@/services/sentry'
 import { selectIsRecovering, useQueryRecoveryStore } from '@/stores/query-recovery'
+import { describeRoute } from '@/services/route-label'
 import { useServersStore } from '@/stores/servers'
+import { serverDisplayName } from '@/components/sessions/shared/serverDisplayName'
 
-/**
- * The overlay takes every tap, so a retry that never settles (an overloaded or
- * unreachable server) would lock Settings out too. Past this the screen is
- * handed back; the Status pill and error sheet still report the problem.
- */
+/** A query retry that never settles stops showing the pill; the error sheet still reports it. */
 export const RECOVERY_OVERLAY_MAX_MS = 15_000
 
-/** Single-server full-screen spinner + multi-server Status pill while RQ retries. */
+/** Non-blocking pill while a query retries or the open session's socket reconnects. */
 export function RecoveryHost() {
   useQueryRecoveryAlerts()
   const recovering = useQueryRecoveryStore(selectIsRecovering)
-  const serverCount = useServersStore((s) => Object.keys(s.servers).length)
-  const showOverlay = recovering && serverCount === 1
+  const lastRequest = useQueryRecoveryStore((s) => s.lastRequest)
+  const wsServerId = useQueryRecoveryStore((s) => s.wsReconnectServerId)
+  const servers = useServersStore((s) => s.servers)
+  const showOverlay = recovering
   const [expired, setExpired] = useState(false)
 
   useEffect(() => {
@@ -34,5 +34,13 @@ export function RecoveryHost() {
     }
   }, [showOverlay])
 
-  return <RecoveryOverlay visible={showOverlay && !expired} />
+  const queryVisible = showOverlay && !expired
+  const detailServerId = queryVisible && lastRequest ? lastRequest.serverId : wsServerId
+  const serverName = detailServerId ? serverDisplayName(servers[detailServerId]) : undefined
+  const detail =
+    queryVisible && lastRequest
+      ? `${serverName} · ${describeRoute(lastRequest.method, lastRequest.path)}`
+      : serverName
+
+  return <RecoveryOverlay visible={queryVisible || wsServerId !== null} detail={detail} />
 }

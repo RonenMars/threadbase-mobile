@@ -5,12 +5,18 @@ interface State {
   recovering: boolean
   /** In-flight per-server silent retries (Hub list fetches that catch inside the queryFn). */
   nestedRetryCount: number
+  /** The latest request that failed while a retry is pending; names the route in the pill. */
+  lastRequest: { serverId: string; method: string; path: string } | null
+  /** Set by the session screen while its live socket is reconnecting. */
+  wsReconnectServerId: string | null
 }
 
 interface Actions {
   setRecovering: (recovering: boolean) => void
   beginNestedRetry: () => void
   endNestedRetry: () => void
+  noteFailedRequest: (request: { serverId: string; method: string; path: string }) => void
+  setWsReconnectServerId: (serverId: string | null) => void
 }
 
 function publish(recovering: boolean, nestedRetryCount: number): boolean {
@@ -20,16 +26,23 @@ function publish(recovering: boolean, nestedRetryCount: number): boolean {
 export const useQueryRecoveryStore = create<State & Actions>((set, get) => ({
   recovering: false,
   nestedRetryCount: 0,
+  lastRequest: null,
+  wsReconnectServerId: null,
   setRecovering: (recovering) => {
     const cur = get()
     if (cur.recovering === recovering) return
-    set({ recovering })
+    set({ recovering, ...(recovering ? {} : { lastRequest: null }) })
   },
+  noteFailedRequest: (lastRequest) => set({ lastRequest }),
+  setWsReconnectServerId: (wsReconnectServerId) => set({ wsReconnectServerId }),
   beginNestedRetry: () => {
     set((s) => ({ nestedRetryCount: s.nestedRetryCount + 1 }))
   },
   endNestedRetry: () => {
-    set((s) => ({ nestedRetryCount: Math.max(0, s.nestedRetryCount - 1) }))
+    set((s) => {
+      const nestedRetryCount = Math.max(0, s.nestedRetryCount - 1)
+      return { nestedRetryCount, ...(nestedRetryCount === 0 ? { lastRequest: null } : {}) }
+    })
   },
 }))
 

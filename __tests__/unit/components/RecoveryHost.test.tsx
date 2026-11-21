@@ -19,7 +19,7 @@ const oneServer = { a: server('a') }
 beforeEach(() => {
   jest.clearAllMocks()
   jest.useFakeTimers()
-  useQueryRecoveryStore.setState({ recovering: false, nestedRetryCount: 0 })
+  useQueryRecoveryStore.setState({ recovering: false, nestedRetryCount: 0, lastRequest: null, wsReconnectServerId: null })
   useServersStore.setState({ servers: oneServer })
 })
 
@@ -59,11 +59,28 @@ describe('RecoveryHost overlay timeout', () => {
     expect(queryByTestId('recovery-overlay')).not.toBeNull()
   })
 
-  it('never shows with more than one server', async () => {
+  it('shows with more than one server too', async () => {
     useServersStore.setState({ servers: { ...oneServer, b: server('b') } })
     const { queryByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
-    expect(queryByTestId('recovery-overlay')).toBeNull()
+    expect(queryByTestId('recovery-overlay')).not.toBeNull()
+  })
+
+  it('names the server and the route that is retrying', async () => {
+    const { getByTestId } = await renderWithI18n(<RecoveryHost />)
+    await act(async () =>
+      useQueryRecoveryStore.setState({
+        recovering: true,
+        lastRequest: { serverId: 'a', method: 'GET', path: '/api/sessions/ab12cd?x=1' },
+      }),
+    )
+    expect(getByTestId('recovery-detail').props.children).toBe('a.test:443 · GET /sessions/:id')
+  })
+
+  it('shows the server name while the session socket reconnects', async () => {
+    const { getByTestId } = await renderWithI18n(<RecoveryHost />)
+    await act(async () => useQueryRecoveryStore.setState({ wsReconnectServerId: 'a' }))
+    expect(getByTestId('recovery-detail').props.children).toBe('a.test:443')
   })
 
   it('reports what held the flag once, only when the cap is reached', async () => {
