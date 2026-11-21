@@ -1,5 +1,5 @@
 import type { MergedItem } from '@/components/sessions/now/mergedItems'
-import { boardColumnFor, boardScrollX, bucketBoard, firstNonEmptyColumn, startingColumn, subagentParentKeys } from '@/lib/boardColumns'
+import { boardColumnFor, boardScrollX, bucketBoard, followColumn, startingColumn, subagentParentKeys, visibleColumns } from '@/lib/boardColumns'
 import type { SessionTier } from '@/lib/sessionPresentation'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -65,10 +65,25 @@ describe('bucketBoard', () => {
   })
 })
 
-describe('firstNonEmptyColumn', () => {
-  it('skips empty columns and falls back to Needs you', () => {
-    expect(firstNonEmptyColumn({ needsYou: [], working: [], external: [1], earlier: [2] })).toBe('external')
-    expect(firstNonEmptyColumn({ needsYou: [], working: [], external: [], earlier: [] })).toBe('needsYou')
+describe('visibleColumns', () => {
+  it('drops empty columns but always keeps Earlier', () => {
+    expect(visibleColumns({ needsYou: [], working: [1], external: [], earlier: [] })).toEqual(['working', 'earlier'])
+    expect(visibleColumns({ needsYou: [], working: [], external: [], earlier: [] })).toEqual(['earlier'])
+  })
+})
+
+describe('followColumn', () => {
+  const card = (key: string) => ({ key })
+  const before = { needsYou: [], working: [card('a')], external: [card('x')], earlier: [] }
+
+  it('goes where the cards of the hidden column went', () => {
+    const after = { needsYou: [], working: [], external: [card('x')], earlier: [card('a')] }
+    expect(followColumn(before, after, 'working', ['external', 'earlier'])).toBe('earlier')
+  })
+
+  it('falls back to the first column left when the cards are gone', () => {
+    const after = { needsYou: [], working: [], external: [card('x')], earlier: [] }
+    expect(followColumn(before, after, 'working', ['external', 'earlier'])).toBe('external')
   })
 })
 
@@ -126,6 +141,7 @@ describe('startingColumn', () => {
 
   it('falls back to the first column with something in it on first use', () => {
     expect(startingColumn({ ...empty, working: [1] }, null)).toBe('working')
+    expect(startingColumn(empty, null)).toBe('earlier')
   })
 })
 
