@@ -147,6 +147,7 @@
   "recovery": {
     "title": "מתחברים מחדש…",
     "dismiss": "הסתר",
+    "details": "הצג פרטים",
     "message": "מנסים שוב בקשה שנכשלה.",
     "wsEscalatedTitle": "עדיין מנותקים",
     "wsEscalatedMessage": "החיבור החי עדיין לא חזר. ממשיכים לנסות ברקע."

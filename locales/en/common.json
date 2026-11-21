@@ -142,6 +142,7 @@
   "recovery": {
     "title": "Reconnecting…",
     "dismiss": "Hide",
+    "details": "Show details",
     "message": "Retrying a failed request.",
     "wsEscalatedTitle": "Still disconnected",
     "wsEscalatedMessage": "The live connection has not come back yet. Retrying in the background."

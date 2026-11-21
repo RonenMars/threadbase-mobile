@@ -14,6 +14,9 @@ function server(id: string): ServerConfig {
   return { id, url: `https://${id}.test`, apiKey: 'k', isConnected: true, serverInfo: null, connectionError: null }
 }
 
+const expand = async (getByTestId: (id: string) => unknown) =>
+  act(async () => fireEvent.press(getByTestId('recovery-handle') as never))
+
 const oneServer = { a: server('a') }
 
 beforeEach(() => {
@@ -34,7 +37,7 @@ describe('RecoveryHost overlay timeout', () => {
     expect(queryByTestId('recovery-overlay')).not.toBeNull()
   })
 
-  it('leaves every touch outside the close button to the screen and shows the scanner', async () => {
+  it('leaves every touch outside the handle and card to the screen and shows the scanner', async () => {
     const { getByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
     expect(getByTestId('recovery-overlay').props.pointerEvents).toBe('box-none')
@@ -62,6 +65,7 @@ describe('RecoveryHost overlay timeout', () => {
   it('hides on close and returns with the next recovery', async () => {
     const { getByTestId, queryByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ recovering: true }))
+    await expand(getByTestId)
     await act(async () => fireEvent.press(getByTestId('recovery-dismiss')))
     expect(queryByTestId('recovery-overlay')).toBeNull()
     await act(async () => useQueryRecoveryStore.setState({ recovering: false }))
@@ -84,12 +88,14 @@ describe('RecoveryHost overlay timeout', () => {
         lastRequest: { serverId: 'a', method: 'GET', path: '/api/sessions/ab12cd?x=1' },
       }),
     )
+    await expand(getByTestId)
     expect(getByTestId('recovery-detail').props.children).toBe('a.test:443 · GET /sessions/:id')
   })
 
   it('shows the server name while the session socket reconnects', async () => {
     const { getByTestId } = await renderWithI18n(<RecoveryHost />)
     await act(async () => useQueryRecoveryStore.setState({ wsReconnectServerId: 'a' }))
+    await expand(getByTestId)
     expect(getByTestId('recovery-detail').props.children).toBe('a.test:443')
   })
 
