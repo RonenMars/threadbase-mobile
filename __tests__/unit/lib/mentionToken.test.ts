@@ -51,10 +51,17 @@ describe('findMentionToken', () => {
     expect(findMentionToken('@a.ts and @b', 12)).toEqual({ start: 10, end: 12, dir: '', query: 'b' })
   })
 
-  it('refuses absolute, home-relative and empty-segment paths', () => {
+  it('refuses absolute, other-user home and empty-segment paths', () => {
     expect(findMentionToken('@/etc/pa', 8)).toBeNull()
-    expect(findMentionToken('@~/x', 4)).toBeNull()
+    expect(findMentionToken('@~bob/x', 7)).toBeNull()
     expect(findMentionToken('@src//x', 7)).toBeNull()
+  })
+
+  // The streamer expands `~` and refuses what lands outside its browse root.
+  it('starts from the home directory with ~/', () => {
+    expect(findMentionToken('@~/dev/ap', 9)).toEqual({ start: 0, end: 9, dir: '~/dev', query: 'ap' })
+    expect(findMentionToken('@~/', 3)).toEqual({ start: 0, end: 3, dir: '~', query: '' })
+    expect(findMentionToken('@~', 2)).toEqual({ start: 0, end: 2, dir: '~', query: '' })
   })
 
   // The streamer resolves `..` and refuses what lands outside its browse root.
