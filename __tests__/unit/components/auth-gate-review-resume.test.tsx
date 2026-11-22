@@ -5,6 +5,7 @@ import * as Notifications from 'expo-notifications'
 import { AuthGate } from '@/app/_layout'
 import { wsManager } from '@/services/ws-client'
 import { queryClient } from '@/services/query-client'
+import { useDraftsStore } from '@/stores/drafts'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import type { Session } from '@/types/api'
 
@@ -214,5 +215,22 @@ describe('AuthGate subagents_changed', () => {
     })
     expect(queryClient.getQueryData(['subagent-count', 'server-1', 'p1'])).toBe(3)
     expect(queryClient.getQueryData(['subagent-count', 'server-1', 'p2'])).toBe(5)
+  })
+})
+
+// The draft mark on session rows reads the drafts store, which is only filled from
+// SecureStore by hydrate; without a startup call a cold start shows no marks until a
+// composer happens to mount.
+describe('AuthGate startup hydrate', () => {
+  it('hydrates the drafts store at startup', async () => {
+    const original = useDraftsStore.getState().hydrate
+    const hydrate = jest.fn().mockResolvedValue(undefined)
+    useDraftsStore.setState({ hydrate })
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
+
+    await render(<AuthGate><></></AuthGate>)
+
+    expect(hydrate).toHaveBeenCalled()
+    useDraftsStore.setState({ hydrate: original })
   })
 })
