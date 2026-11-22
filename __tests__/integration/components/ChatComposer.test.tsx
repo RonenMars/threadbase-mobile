@@ -61,6 +61,33 @@ async function renderComposer(overrides?: Partial<ChatComposerProps>) {
 }
 
 describe('ChatComposer', () => {
+  it('grows the inline input to its content size, capped at 160', async () => {
+    jest.replaceProperty(Platform, 'OS', 'ios')
+    await renderWithI18n(<ChatComposer {...makeProps()} value={'pasted\n'.repeat(30)} />)
+    const input = screen.getByTestId('chat-message-input')
+    await fireEvent(input, 'contentSizeChange', { nativeEvent: { contentSize: { width: 300, height: 96 } } })
+    expect(StyleSheet.flatten(screen.getByTestId('chat-message-input').props.style).height).toBe(96)
+    await fireEvent(input, 'contentSizeChange', { nativeEvent: { contentSize: { width: 300, height: 900 } } })
+    expect(StyleSheet.flatten(screen.getByTestId('chat-message-input').props.style).height).toBe(160)
+  })
+
+  it('does not carry a stale content height across a clear, so the next paste is measured afresh', async () => {
+    jest.replaceProperty(Platform, 'OS', 'ios')
+    function Composer() {
+      const [value, setValue] = React.useState('pasted\n'.repeat(30))
+      return <ChatComposer {...makeProps()} value={value} onChangeText={setValue} />
+    }
+    await renderWithI18n(<Composer />)
+    const input = screen.getByTestId('chat-message-input')
+    const sized = (height: number) => ({ nativeEvent: { contentSize: { width: 300, height } } })
+    await fireEvent(input, 'contentSizeChange', sized(900))
+    expect(StyleSheet.flatten(input.props.style).height).toBe(160)
+    await fireEvent.changeText(input, '')
+    await fireEvent(input, 'contentSizeChange', sized(20))
+    await fireEvent.changeText(input, 'pasted\n'.repeat(30))
+    expect(StyleSheet.flatten(input.props.style).height).toBeUndefined()
+  })
+
   it.each(['ios', 'android'] as const)('shrinks the cleared inline input on %s without remounting it', async (os) => {
     jest.replaceProperty(Platform, 'OS', os)
     function Composer() {
