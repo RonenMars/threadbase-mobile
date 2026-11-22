@@ -825,33 +825,6 @@ async function buildServerHeaderRow() {
   finishSet(set, sec, 1240, 'components/sessions/tree/ServerHeaderRow.tsx. <ServerHeaderRow serverLabel serverColor totalCount refreshing failed collapsible collapsed onToggle onRetry onDetails />.');
 }
 
-async function buildSessionBanners() {
-  if (findComp('SessionBanner')) return;
-  const sec = newSection('SessionBanner', 'components/sessions/ConnectionBanner.tsx + ExternalSessionBanner.tsx — full-width strip under the session header: row gap 8, padding 8×16, bg-secondary, hairline bottom border. Title 13/600 in the accent, message 11/15 secondary. Reconnecting: spinner + text.warning. Stalled: CellSignalSlash 16 + text.secondary. External: Terminal 16 text.warning + a "Take over" button (4×12, radius 6, hairline warning border, 11/600 warning).');
-  const comps = [];
-  const kinds = [
-    ['Reconnecting', 'CircleNotch', 'text/warning', 'Reconnecting…', 'Connection lost — the content below may be stale.'],
-    ['Stalled', 'CellSignalSlash', 'text/secondary', 'Stream stalled', 'Connected, but no output has arrived for a while.'],
-    ['External', 'Terminal', 'text/warning', 'Launched outside Threadbase', 'Streaming output only — prompts can\'t be answered from here.'],
-  ];
-  for (const [kind, ic, accent, title, msg] of kinds) {
-    const c = rowComp('Kind=' + kind, 402, { strokeBottomWeight: 0.5, strokeTopWeight: 0, strokeLeftWeight: 0, strokeRightWeight: 0 });
-    pad(c, 'sm', 'lg'); sp(c, 'itemSpacing', 'sm'); c.fills = P('bg/secondary'); c.strokes = P('border');
-    c.appendChild(icon(ic, 16, accent));
-    const body = AL('VERTICAL', 'text', { itemSpacing: 1 }); c.appendChild(body); body.layoutGrow = 1;
-    fill(body, await T(title, 'label/sm', accent, { name: 'title' }));
-    wrapText(body, await T(msg, 'body/xs', 'text/secondary', { name: 'message', lineHeight: { unit: 'PIXELS', value: 15 } }));
-    if (kind === 'External') {
-      const b = AL('HORIZONTAL', 'take over', { strokeWeight: 0.5, cornerRadius: 6 }); pad(b, 'xs', 'md'); b.strokes = P('text/warning');
-      b.appendChild(await T('Take over', 'label/xs', 'text/warning', { name: 'label' }));
-      c.appendChild(b);
-    }
-    comps.push(c);
-  }
-  const set = figma.combineAsVariants(comps, sec); set.name = 'SessionBanner';
-  finishSet(set, sec, 900, 'Reconnecting/Stalled = components/sessions/ConnectionBanner.tsx <ConnectionBanner variant />. External = components/sessions/ExternalSessionBanner.tsx <ExternalSessionBanner onTakeOver />.');
-}
-
 async function buildServerStatusCard() {
   if (findComp('ServerStatusCard')) return;
   const sec = newSection('ServerStatusCard', 'components/sessions/banners/ServerUnsupportedBanner.tsx + ServerWarmingBanner.tsx — a Card (bg-card, radius md, padding 12, 1px border) with an 8px dot and a gap-2 body: title 13/600 primary, subtitle 11 secondary. Warming uses a status.waiting border and a pulsing LiveDot.');
@@ -3635,7 +3608,6 @@ const CATALOG = [
   job('KnightRiderScanner', buildKnightRiderScanner, CATALOG_PAGES.sessions, 'Loading'),
   job('InlineError', buildInlineError, CATALOG_PAGES.core, 'Feedback'),
   job('ServerHeaderRow', buildServerHeaderRow, CATALOG_PAGES.sessions, 'Tree'),
-  job('SessionBanner', buildSessionBanners, CATALOG_PAGES.sessions, 'Banners'),
   job('ServerStatusCard', buildServerStatusCard, CATALOG_PAGES.sessions, 'Banners'),
   job('ConversationListItem', buildConversationListItem, CATALOG_PAGES.sessions, 'Shared'),
   job('MessageBubble', buildMessageBubble, CATALOG_PAGES.conversation, 'Messages'),
@@ -3746,7 +3718,6 @@ const CATALOG = [
   asset('KnightRiderScanner', 'components/sessions/KnightRiderScanner.tsx'),
   asset('InlineError', 'components/alerts/InlineError.tsx'),
   asset('ServerHeaderRow', 'components/sessions/tree/ServerHeaderRow.tsx'),
-  asset('SessionBanner', 'components/sessions/ConnectionBanner.tsx'),
   asset('ServerStatusCard', 'components/sessions/banners/ServerUnsupportedBanner.tsx'),
   asset('ConversationListItem', 'components/sessions/shared/ConversationListItem.tsx'),
   asset('MessageBubble', 'components/conversation/MessageBubble.tsx'),

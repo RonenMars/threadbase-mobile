@@ -90,7 +90,7 @@ describe('figma plugin: code.js', () => {
     ];
     const jobs = catalog.filter(({ builder }) => builder);
 
-    expect(steps).toHaveLength(105);
+    expect(steps).toHaveLength(104);
     expect(steps[0][0]).toBe('icons');
     expect(steps.at(-1)[0]).toBe('Onboarding');
     expect(jobs.map(({ buildName }) => buildName)).toEqual(steps.map(([name]) => name));
@@ -114,7 +114,7 @@ describe('figma plugin: code.js', () => {
     const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
     const missing = assets.filter(({ source }) => !fs.existsSync(path.join(ROOT, source)));
 
-    expect(assets).toHaveLength(119);
+    expect(assets).toHaveLength(118);
     expect(duplicates).toEqual([]);
     expect(missing).toEqual([]);
     expect(assets.filter(({ page, group, kind, status }) => (
