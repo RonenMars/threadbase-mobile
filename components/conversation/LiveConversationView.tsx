@@ -52,6 +52,7 @@ import { RenderErrorBoundary } from '@/components/RenderErrorBoundary'
 import { SESSION_HISTORY_MAX_BYTES } from '@/constants/sessionHistory'
 import { useInitialScrollToEnd } from '@/hooks/useInitialScrollToEnd'
 import { CHAT_ANCHOR, MESSAGE_LIST_PROPS, useVirtualizedMessageList } from '@/hooks/useVirtualizedMessageList'
+import { countAgentRepliesAfter, latestTimestamp } from '@/utils/countAgentReplies'
 import { CaretDown, Question } from 'phosphor-react-native'
 
 interface Props {
@@ -142,6 +143,10 @@ export function LiveConversationView({
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
   // A turn finished while the reader was scrolled away from the tail.
   const [newResponseBelow, setNewResponseBelow] = useState(false)
+  // Timestamp of the last message the reader had seen when they left the tail;
+  // the pill counts the agent's replies after it.
+  const [awayFromTs, setAwayFromTs] = useState<string | null>(null)
+  const latestTsRef = useRef<string | null>(null)
   const keyboardInset = useKeyboardInset()
   // The list opens pinned to the end (useInitialScrollToEnd).
   const followingTailRef = useRef(true)
@@ -340,6 +345,10 @@ export function LiveConversationView({
     }
   }, [isAgentThinking, thinkingState])
 
+  useEffect(() => {
+    latestTsRef.current = latestTimestamp(allMessages)
+  }, [allMessages])
+
   const wasThinkingRef = useRef(false)
   useEffect(() => {
     if (wasThinkingRef.current && !isAgentThinking && !followingTailRef.current) {
@@ -388,9 +397,14 @@ export function LiveConversationView({
   // waiting off-screen the jump control says so instead.
   const questionWaiting = activeQuestion !== null && showJumpToLatest
   const showNewResponseBadge = newResponseBelow && showJumpToLatest
+  // A turn that ended on tool calls alone has no reply to count, but the turn
+  // still ended, so the pill reads as one new response.
+  const newReplyCount = Math.max(1, awayFromTs ? countAgentRepliesAfter(allMessages, awayFromTs) : 0)
   const jumpLabel = questionWaiting
     ? t('action.questionWaiting')
-    : showNewResponseBadge ? t('action.newResponse') : t('action.scrollToBottom')
+    : showNewResponseBadge ? t('action.newResponse', { count: newReplyCount }) : t('action.scrollToBottom')
+  const showJumpPill = questionWaiting || showNewResponseBadge
+  const jumpTone = questionWaiting ? theme.status.waiting : theme.text.accent
 
 
   // Await, then transition. The card stays exactly where it is until the server
@@ -512,6 +526,7 @@ export function LiveConversationView({
     listRef.current?.scrollToEnd({ animated: true })
     setShowJumpToLatest(false)
     setNewResponseBelow(false)
+    setAwayFromTs(null)
   }, [])
 
   // One definition of "following the latest" for the screen: it drives the
@@ -522,7 +537,12 @@ export function LiveConversationView({
       contentSize.height - contentOffset.y - layoutMeasurement.height <= FOLLOW_TAIL_THRESHOLD_PX
     followingTailRef.current = atEnd
     setShowJumpToLatest(!atEnd)
-    if (atEnd) setNewResponseBelow(false)
+    if (atEnd) {
+      setNewResponseBelow(false)
+      setAwayFromTs(null)
+    } else {
+      setAwayFromTs((prev) => prev ?? latestTsRef.current)
+    }
   }, [])
 
   // Taken when the keyboard starts moving, not when it settles: the lift shrinks
@@ -677,21 +697,28 @@ export function LiveConversationView({
       />
       {showJumpToLatest ? (
         <TouchableOpacity
-          style={[styles.jumpToLatest, questionWaiting && styles.jumpToLatestQuestion]}
+          style={[
+            styles.jumpToLatest,
+            showJumpPill && styles.jumpToLatestPill,
+            showJumpPill && { borderColor: `${jumpTone}8c`, shadowColor: jumpTone },
+          ]}
           onPress={jumpToLatest}
           accessibilityLabel={jumpLabel}
           accessibilityRole="button"
           testID={questionWaiting ? 'chat-question-waiting' : 'chat-jump-to-latest'}
         >
           {questionWaiting ? (
-            <Question size={20} color="#fff" weight="bold" />
+            <Question size={18} color={jumpTone} weight="bold" />
           ) : (
-            <CaretDown size={20} color="#fff" weight="bold" />
+            <CaretDown size={18} color={showJumpPill ? jumpTone : theme.text.primary} weight="bold" />
           )}
-          {showNewResponseBadge ? (
-            <View style={styles.newResponseBadge} testID="chat-new-response-badge">
-              <Text style={styles.newResponseBadgeText}>{1}</Text>
-            </View>
+          {showJumpPill ? (
+            <Text
+              style={[styles.jumpToLatestLabel, { color: jumpTone }]}
+              testID={showNewResponseBadge ? 'chat-new-response-badge' : undefined}
+            >
+              {jumpLabel}
+            </Text>
           ) : null}
         </TouchableOpacity>
       ) : null}
@@ -806,36 +833,31 @@ function makeStyles(theme: Theme) {
       position: 'absolute',
       end: spacing.md,
       bottom: spacing.md,
-      width: 40,
+      minWidth: 40,
       height: 40,
-      borderRadius: 20,
-      backgroundColor: theme.text.accent,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.border,
+      backgroundColor: theme.bg.card,
       alignItems: 'center',
       justifyContent: 'center',
+      flexDirection: 'row',
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.25,
       shadowRadius: 4,
       elevation: 4,
     },
-    jumpToLatestQuestion: { backgroundColor: theme.status.waiting },
-    newResponseBadge: {
-      position: 'absolute',
-      top: -6,
-      end: -6,
-      minWidth: 20,
-      height: 20,
-      borderRadius: 10,
-      paddingHorizontal: 5,
-      backgroundColor: theme.status.failed,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: theme.status.failed,
+    jumpToLatestPill: {
+      height: 36,
+      paddingStart: 12,
+      paddingEnd: 14,
+      gap: 8,
+      backgroundColor: theme.bg.secondary,
       shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 8,
-      elevation: 6,
+      shadowOpacity: 0.35,
+      shadowRadius: 10,
     },
-    newResponseBadgeText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+    jumpToLatestLabel: { fontSize: 13, fontWeight: '600' },
   })
 }

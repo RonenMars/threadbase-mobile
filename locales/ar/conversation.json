@@ -74,7 +74,12 @@
     "copiedCode": "تم النسخ",
     "scrollToBottom": "التمرير للأسفل",
     "questionWaiting": "سؤال في انتظارك بالأسفل",
-    "newResponse": "رد جديد بالأسفل"
+    "newResponse_zero": "{{count}} ردود جديدة",
+    "newResponse_one": "رد جديد",
+    "newResponse_two": "ردان جديدان",
+    "newResponse_few": "{{count}} ردود جديدة",
+    "newResponse_many": "{{count}} رداً جديداً",
+    "newResponse_other": "{{count}} رد جديد"
   },
   "message": {
     "code": "كود",

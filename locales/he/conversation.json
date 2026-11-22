@@ -71,7 +71,9 @@
     "copiedCode": "הועתק",
     "scrollToBottom": "גלול למטה",
     "questionWaiting": "שאלה ממתינה למטה",
-    "newResponse": "תגובה חדשה למטה"
+    "newResponse_one": "תגובה חדשה",
+    "newResponse_two": "שתי תגובות חדשות",
+    "newResponse_other": "{{count}} תגובות חדשות"
   },
   "message": {
     "code": "קוד",

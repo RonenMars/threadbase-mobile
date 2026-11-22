@@ -70,7 +70,8 @@
     "copiedCode": "Copied",
     "scrollToBottom": "Scroll to bottom",
     "questionWaiting": "Question waiting below",
-    "newResponse": "New response below"
+    "newResponse_one": "New response",
+    "newResponse_other": "{{count}} new responses"
   },
   "message": {
     "code": "Code",

@@ -62,6 +62,7 @@ const COUNTS = [0, 1, 2, 3, 11, 21, 100] as const;
 type PluralKey =
   | 'conversation:message.tokens'
   | 'conversation:action.showAllLines'
+  | 'conversation:action.newResponse'
   | 'conversation:review.summary'
   | 'sessions:card.messages'
   | 'sessions:hub.activityLive'
@@ -573,6 +574,47 @@ const CASES: PluralCase[] = [
         11: "Экспортировано 11 проектов.",
         21: "Экспортирован 21 проект.",
         100: "Экспортировано 100 проектов.",
+      },
+    },
+  },
+  {
+    key: 'conversation:action.newResponse',
+    expected: {
+      en: {
+        0: "0 new responses",
+        1: "New response",
+        2: "2 new responses",
+        3: "3 new responses",
+        11: "11 new responses",
+        21: "21 new responses",
+        100: "100 new responses",
+      },
+      he: {
+        0: "0 תגובות חדשות",
+        1: "תגובה חדשה",
+        2: "שתי תגובות חדשות",
+        3: "3 תגובות חדשות",
+        11: "11 תגובות חדשות",
+        21: "21 תגובות חדשות",
+        100: "100 תגובות חדשות",
+      },
+      ar: {
+        0: "0 ردود جديدة",
+        1: "رد جديد",
+        2: "ردان جديدان",
+        3: "3 ردود جديدة",
+        11: "11 رداً جديداً",
+        21: "21 رداً جديداً",
+        100: "100 رد جديد",
+      },
+      ru: {
+        0: "0 новых ответов",
+        1: "1 новый ответ",
+        2: "2 новых ответа",
+        3: "3 новых ответа",
+        11: "11 новых ответов",
+        21: "21 новый ответ",
+        100: "100 новых ответов",
       },
     },
   },
