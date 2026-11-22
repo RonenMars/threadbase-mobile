@@ -132,15 +132,17 @@ function EntryRow({ entry, onPress, theme, styles }: RowProps) {
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      {isDir ? (
-        <Folder size={16} color={theme.text.accent} weight="fill" />
-      ) : (
-        <File size={16} color={theme.text.secondary} />
-      )}
-      <Text style={styles.name} numberOfLines={1}>
-        {entry.name}
-      </Text>
-      {isDir ? <CaretRight size={12} color={theme.text.secondary} /> : null}
+      <View style={styles.rowContent} pointerEvents="none">
+        {isDir ? (
+          <Folder size={16} color={theme.text.accent} weight="fill" />
+        ) : (
+          <File size={16} color={theme.text.secondary} />
+        )}
+        <Text style={styles.name} numberOfLines={1}>
+          {entry.name}
+        </Text>
+        {isDir ? <CaretRight size={12} color={theme.text.secondary} /> : null}
+      </View>
     </TouchableOpacity>
   )
 }
@@ -204,15 +206,17 @@ function SkillRow({ skill, onPress, styles }: { skill: SkillEntry; onPress: () =
       accessibilityRole="button"
       accessibilityLabel={skill.description ? `${skill.name}, ${skill.description}` : skill.name}
     >
-      <View style={styles.skillText}>
-        <Text style={styles.name} numberOfLines={1}>
-          {skill.name}
-        </Text>
-        {skill.description ? (
-          <Text style={styles.description} numberOfLines={1}>
-            {skill.description}
+      <View style={styles.rowContent} pointerEvents="none">
+        <View style={styles.skillText}>
+          <Text style={styles.name} numberOfLines={1}>
+            {skill.name}
           </Text>
-        ) : null}
+          {skill.description ? (
+            <Text style={styles.description} numberOfLines={1}>
+              {skill.description}
+            </Text>
+          ) : null}
+        </View>
       </View>
     </TouchableOpacity>
   )
@@ -246,13 +250,16 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     // About five rows; the composer must stay on screen above the keyboard.
     list: { maxHeight: 200, flexGrow: 0 },
     row: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    // pointerEvents none on this: the touchable itself, not its text or icon, takes every press in the row.
+    rowContent: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
       paddingHorizontal: spacing.sm,
       minHeight: 40,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: theme.border,
     },
     name: {
       ...rtl.ltr,
