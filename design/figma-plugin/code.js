@@ -2352,14 +2352,6 @@ async function buildSessionDetailSlowBanner() {
   await slowBanner('SessionDetailSlowBanner', 'Session details are taking their time…', 'Fetching the details — shouldn\'t be long.', 'components/sessions/SessionDetailSlowBanner.tsx — a Banner with a text.warning accent and spinner, a destructive Cancel action. Same layout as SlowLoadingBanner.');
 }
 
-async function buildSyncCachedNotice() {
-  if (findComp('SyncCachedNotice')) return;
-  const sec = newSection('SyncCachedNotice', 'components/sessions/SyncCachedNotice.tsx — an absolute, touch-through overlay at top 8 wrapping KnightRiderScanner. Banner: centered, banner size. Caption: top 4, 14 from the trailing edge, compact size. Renders nothing when not visible.');
-  const comps = [];
-  for (const [p, size] of [['Banner', 'Banner'], ['Caption', 'Compact']]) comps.push(wrapComp('Placement=' + p, inst('KnightRiderScanner', 'Size=' + size)));
-  simpleSet(comps, sec, 'SyncCachedNotice', 500, 'components/sessions/SyncCachedNotice.tsx. <SyncCachedNotice visible placement="banner|caption" />.');
-}
-
 async function radioRow(parent, on, title, hint) {
   const r = AL('HORIZONTAL', 'option', { itemSpacing: 8, paddingTop: 8, paddingBottom: 8, minHeight: 44 }); fill(parent, r);
   r.appendChild(icon(on ? 'RadioButton-fill' : 'Circle', 22, on ? 'text/accent' : 'text/secondary'));
@@ -3663,7 +3655,6 @@ const CATALOG = [
   job('ExternalSessionBanner', buildExternalSessionBanner, CATALOG_PAGES.sessions, 'Banners'),
   job('ServerWarmingBanner', buildServerWarmingBanner, CATALOG_PAGES.sessions, 'Banners'),
   job('SessionDetailSlowBanner', buildSessionDetailSlowBanner, CATALOG_PAGES.sessions, 'Banners'),
-  job('SyncCachedNotice', buildSyncCachedNotice, CATALOG_PAGES.sessions, 'Banners'),
   job('LeaveSessionModal', buildLeaveSessionModal, CATALOG_PAGES.sessions, 'Dialogs'),
   job('NameSessionModal', buildNameSessionModal, CATALOG_PAGES.sessions, 'Dialogs'),
   job('ModelEffortSheet', buildModelEffortSheet, CATALOG_PAGES.sessions, 'Sheets'),
@@ -3782,7 +3773,6 @@ const CATALOG = [
   asset('ExternalSessionBanner', 'components/sessions/ExternalSessionBanner.tsx'),
   asset('ServerWarmingBanner', 'components/sessions/banners/ServerWarmingBanner.tsx'),
   asset('SessionDetailSlowBanner', 'components/sessions/SessionDetailSlowBanner.tsx'),
-  asset('SyncCachedNotice', 'components/sessions/SyncCachedNotice.tsx'),
   asset('LeaveSessionModal', 'components/sessions/LeaveSessionModal.tsx'),
   asset('NameSessionModal', 'components/sessions/NameSessionModal.tsx'),
   asset('ModelEffortSheet', 'components/sessions/ModelEffortSheet.tsx'),
