@@ -14,3 +14,11 @@ type Story = StoryObj<typeof RecoveryOverlay>
 export const Visible: Story = {
   args: { visible: true },
 }
+
+export const WithRoute: Story = {
+  args: { visible: true, detail: 'Win · GET /sessions' },
+}
+
+export const Dismissible: Story = {
+  args: { visible: true, detail: 'Win · GET /sessions', onDismiss: () => {} },
+}

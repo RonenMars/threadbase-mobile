@@ -1,4 +1,5 @@
 import { readApiJson } from './api-payload-diagnostics'
+import { useQueryRecoveryStore } from '@/stores/query-recovery'
 import { useServersStore } from '@/stores/servers'
 import { useServerFetchStatusStore } from '@/stores/serverFetchStatus'
 import { getDeviceClientId } from './device-id'
@@ -323,6 +324,22 @@ async function request<T>(
   options: RequestOptions = {},
   retried = false,
 ): Promise<T> {
+  try {
+    return await sendRequest<T>(method, path, body, serverId, options, retried)
+  } catch (error) {
+    useQueryRecoveryStore.getState().noteFailedRequest({ serverId, method, path })
+    throw error
+  }
+}
+
+async function sendRequest<T>(
+  method: string,
+  path: string,
+  body: unknown | undefined,
+  serverId: string,
+  options: RequestOptions = {},
+  retried = false,
+): Promise<T> {
   const server = useServersStore.getState().getServer(serverId)
   if (!server) throw new NetworkError(`Unknown server: ${serverId}`)
 
@@ -400,7 +417,7 @@ async function request<T>(
     // Session start/resume are non-idempotent — retrying a timed-out request
     // spawns a second PTY. Callers of those endpoints pass retry: false.
     if (!retried && options.retry !== false) {
-      return request(method, path, body, serverId, options, true)
+      return sendRequest(method, path, body, serverId, options, true)
     }
     // timeoutController (not a caller abort) fired — this was OUR timeout, not
     // a generic fetch failure. Tag it so callers can show a specific message

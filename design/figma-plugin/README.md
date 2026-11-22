@@ -22,7 +22,7 @@ Errors are listed in the toast and in the plugin console (Plugins → Developmen
   - icons: `Icon/SlidersHorizontal`, `Icon/Gear`, `Mark/Claude`
   - component sets: Banner, EmptyState, FAB, StateBadge, ServerChip, LiveCard, EarlierRow, ServerListCard
   - batch 1 (ui): ProviderMark, SkeletonBox, TimeBucketPills, MessagePreview, LoadingOverlay
-  - batch 2 (sessions): LiveDot, SectionEyebrow, HistorySkeletonRow, CantResumeRow, DrillFolderRow, KnightRiderScanner, InlineError, ServerHeaderRow, SessionBanner, ServerStatusCard, ConversationListItem
+  - batch 2 (sessions): LiveDot, SectionEyebrow, HistorySkeletonRow, CantResumeRow, DrillFolderRow, KnightRiderScanner, InlineError, ServerHeaderRow, ServerStatusCard, ConversationListItem
   - batch 3 (conversation): MessageBubble, ThinkingCard, ThinkingBubble, ToolCard, DiffViewer, MessageSkeletonRow, InheritedHistoryDivider, LivePauseControl, SlowLoadingBanner, ChatComposer
   - batch 4 (servers): AddServerButton, EncryptionRefusalBanner, FilterPresets, NoServersWelcome, ServerBadge, ServerIndexingBanner, ServerFormFields, ServerErrorModal, ServersStatusModal + ServerMenuSheet, CacheAlertModal, FilterSortSheet, and StatusRow variants for the alert-only CacheAlert / HostPressure / ServerState components
   - batch 5 (alerts, shared, misc): StatusPill, AvatarMenu, StatusStrip, StatusRow, StatusSheet, CriticalDialog, NavigationLockOverlay, ScreenHeader, HeaderOverflowMenu, InfoModal, QuestionCard, QuickAccessChip / Strip / ActionSheet, ShelfBubble, ShelfPanel, FirstShowBanner, AnonymousDiagnosticsConsentBanner, SweepBar, IdentityFingerprintBlock, PairCameraIdentityCard

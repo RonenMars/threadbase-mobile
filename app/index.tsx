@@ -71,7 +71,6 @@ import { useTheme } from '@/contexts/ThemeContext'
 import type { MultiSession, MultiConversation, ServerConfig } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { ALL_TIERS, DEFAULT_FILTERS, applyListFilters, countByProvider, countByTier, displayedListItems, isDefaultFilters, isNeedsMePreset, type ListFilters } from '@/lib/sessionFilters'
-import { selectIsBlockingRecovery, useQueryRecoveryStore } from '@/stores/query-recovery'
 
 
 // Stable empty reference so a memo/child does not see a fresh [] each render
@@ -147,7 +146,6 @@ export default function ProjectsHub() {
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
   const hasEverHadServer = useServersStore((s) => s.hasEverHadServer)
-  const isRecovering = useQueryRecoveryStore(selectIsBlockingRecovery)
 
   useEffect(() => {
     clientLog.info('hub.mount', 'ProjectsHub mounted', {
@@ -315,8 +313,7 @@ export default function ProjectsHub() {
     hasCachedData &&
     (!sessionsDone ||
       (isGroupedLayout ? summariesFetching : needsClassicConversations && convPages.isFetching))
-  const isRecoveryOverlayVisible = isRecovering && Object.keys(servers).length === 1
-  const showNonBlockingSync = isBackgroundRefreshing && !isRecoveryOverlayVisible
+  const showNonBlockingSync = isBackgroundRefreshing
   // A boolean selector: the root wakes only when every server goes down or one
   // recovers, not on each individual server's status change.
   const allServersFailed = useServerFetchStatusStore(
