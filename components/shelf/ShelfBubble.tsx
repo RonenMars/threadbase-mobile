@@ -21,14 +21,16 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as Haptics from 'expo-haptics'
 import { ChatsCircle } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { GlassView } from '@/components/ui/GlassView'
 import { font, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
-import { formatBadgeCount, snapSide } from '@/lib/savedShelf'
+import { formatBadgeCount, isWithinRadius, snapSide } from '@/lib/savedShelf'
 import type { ShelfPosition } from '@/stores/quickAccess'
+import { DISMISS_TARGET_SIZE, ShelfDismissTarget } from './ShelfDismissTarget'
 
 export const BUBBLE_SIZE = 52
 const EDGE_GAP = 12
@@ -47,6 +49,11 @@ const SNAP_SPRING = { stiffness: 180, damping: 28, overshootClamping: true }
 const PRESSED_SCALE = 0.96
 const LIFTED_SCALE = 1.04
 const PULSE_HALF_MS = 800
+const TARGET_BOTTOM_GAP = 32
+// Close enough that the bubble is clearly over the X, far enough that a drop beside it does not count.
+const HIT_RADIUS = 72
+const MAGNET = { duration: 90, easing: EASE_OUT }
+const SHRINK = { duration: 160, easing: EASE_IN }
 
 interface Props {
   position: ShelfPosition | null
@@ -55,6 +62,7 @@ interface Props {
   needsYouCount: number
   onOpen: () => void
   onToggleSave: () => void
+  onHide: () => void
   onSnap: (position: ShelfPosition) => void
 }
 
@@ -63,7 +71,7 @@ interface Props {
  * header and out of the bottom band that holds the Hub's FAB, the composer and
  * the resting question card.
  */
-export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOpen, onToggleSave, onSnap }: Props) {
+export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOpen, onToggleSave, onHide, onSnap }: Props) {
   const { t } = useTranslation('shared')
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
@@ -76,6 +84,10 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
   const maxY = Math.max(minY, height - insets.bottom - FAB_CLEARANCE - COMPOSER_HEIGHT - BUBBLE_SIZE)
   // Trailing edge by default: right in LTR, left in RTL.
   const side = position?.side ?? (isRTL ? 'left' : 'right')
+  // While dragging the bubble may go down to the X's row, which is below the band it rests in.
+  const targetCenterX = width / 2
+  const targetCenterY = height - insets.bottom - TARGET_BOTTOM_GAP - DISMISS_TARGET_SIZE / 2
+  const dragMaxY = Math.max(maxY, targetCenterY - BUBBLE_SIZE / 2)
   const restX = side === 'left' ? minX : maxX
   const restY = Math.min(maxY, Math.max(minY, (position?.y ?? DEFAULT_Y) * height))
 
@@ -84,6 +96,9 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
   const startX = useSharedValue(restX)
   const startY = useSharedValue(restY)
   const scale = useSharedValue(1)
+  const dragging = useSharedValue(0)
+  const armed = useSharedValue(0)
+  const dismissing = useSharedValue(false)
   const [glow] = useState(() => new RNAnimated.Value(1))
 
   // React Native's native driver, not Reanimated: a Reanimated animation commits
@@ -138,19 +153,56 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
         'worklet'
         // eslint-disable-next-line react-hooks/immutability
         if (!reduceMotion) scale.value = withTiming(LIFTED_SCALE, LIFT)
+        // eslint-disable-next-line react-hooks/immutability
+        dragging.value = 1
       })
       .onUpdate((e) => {
         'worklet'
         // eslint-disable-next-line react-hooks/immutability
-        x.value = Math.min(maxX, Math.max(minX, startX.value + e.translationX))
+        const nextX = Math.min(maxX, Math.max(minX, startX.value + e.translationX))
+        const nextY = Math.min(dragMaxY, Math.max(minY, startY.value + e.translationY))
+        const over = isWithinRadius(nextX + BUBBLE_SIZE / 2, nextY + BUBBLE_SIZE / 2, targetCenterX, targetCenterY, HIT_RADIUS)
+        if (over && !armed.value) {
+          // eslint-disable-next-line react-hooks/immutability
+          armed.value = 1
+          runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Medium)
+          // Pulled onto the X once, not re-pulled every frame the finger stays near it.
+          // eslint-disable-next-line react-hooks/immutability
+          x.value = reduceMotion ? targetCenterX - BUBBLE_SIZE / 2 : withTiming(targetCenterX - BUBBLE_SIZE / 2, MAGNET)
+          // eslint-disable-next-line react-hooks/immutability
+          y.value = reduceMotion ? targetCenterY - BUBBLE_SIZE / 2 : withTiming(targetCenterY - BUBBLE_SIZE / 2, MAGNET)
+          return
+        }
+        if (over) return
         // eslint-disable-next-line react-hooks/immutability
-        y.value = Math.min(maxY, Math.max(minY, startY.value + e.translationY))
+        armed.value = 0
+        // eslint-disable-next-line react-hooks/immutability
+        x.value = nextX
+        // eslint-disable-next-line react-hooks/immutability
+        y.value = nextY
       })
       .onEnd((e) => {
         'worklet'
+        if (armed.value) {
+          // eslint-disable-next-line react-hooks/immutability
+          dismissing.value = true
+          if (reduceMotion) {
+            runOnJS(onHide)()
+            return
+          }
+          // eslint-disable-next-line react-hooks/immutability
+          scale.value = withTiming(0, SHRINK, (finished) => {
+            if (finished) runOnJS(onHide)()
+          })
+          return
+        }
         const side = snapSide(x.value + BUBBLE_SIZE / 2, e.velocityX, width)
         const targetX = side === 'left' ? minX : maxX
-        const settled = { side, y: height > 0 ? y.value / height : DEFAULT_Y }
+        // A drag may end below the resting band; it settles back inside it.
+        const settledY = Math.min(maxY, y.value)
+        const settled = { side, y: height > 0 ? settledY / height : DEFAULT_Y }
+        // eslint-disable-next-line react-hooks/immutability
+        y.value = reduceMotion ? settledY : withTiming(settledY, LIFT)
         // Saving moves the resting point, which re-seats x, so save only once the
         // glide has landed; saving on release would cut the glide short.
         if (reduceMotion) {
@@ -167,6 +219,12 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
       .onFinalize(() => {
         'worklet'
         // eslint-disable-next-line react-hooks/immutability
+        dragging.value = 0
+        // eslint-disable-next-line react-hooks/immutability
+        armed.value = 0
+        // A dismissed bubble keeps shrinking; restoring its scale here would bring it back for a frame.
+        if (dismissing.value) return
+        // eslint-disable-next-line react-hooks/immutability
         scale.value = reduceMotion ? 1 : withTiming(1, PRESS)
       })
     const longPress = Gesture.LongPress().runOnJS(true).onStart(onToggleSave)
@@ -174,7 +232,7 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
     return Gesture.Race(pan, longPress, tap)
     // x/y/startX/startY are stable Reanimated shared values
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minX, maxX, minY, maxY, width, height, reduceMotion, onOpen, onToggleSave, onSnap])
+  }, [minX, maxX, minY, maxY, dragMaxY, targetCenterX, targetCenterY, width, height, reduceMotion, onOpen, onToggleSave, onHide, onSnap])
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { translateY: y.value }, { scale: scale.value }],
@@ -187,14 +245,18 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
   const accessibilityActions = [
     { name: 'activate' as const },
     { name: 'longpress' as const, label: t('shelf.toggleSaveAction') },
+    { name: 'hide' as const, label: t('shelf.hideAction') },
   ]
 
   function handleAccessibilityAction(e: AccessibilityActionEvent) {
     if (e.nativeEvent.actionName === 'activate') onOpen()
     else if (e.nativeEvent.actionName === 'longpress') onToggleSave()
+    else if (e.nativeEvent.actionName === 'hide') onHide()
   }
 
   return (
+    <>
+    <ShelfDismissTarget dragging={dragging} armed={armed} centerX={targetCenterX} centerY={targetCenterY} reduceMotion={reduceMotion} />
     <GestureDetector gesture={gesture}>
       <Animated.View
         testID="chat-shelf-bubble"
@@ -220,6 +282,7 @@ export function ShelfBubble({ position, isRTL, reduceMotion, needsYouCount, onOp
         ) : null}
       </Animated.View>
     </GestureDetector>
+    </>
   )
 }
 

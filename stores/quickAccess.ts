@@ -88,6 +88,8 @@ interface PersistedState {
   recentsEnabled: boolean
   popularEnabled: boolean
   shelfPosition: ShelfPosition | null
+  /** The user dragged the shelf bubble onto the X. Favorites are kept; Settings, Undo or saving a chat brings it back. */
+  shelfHidden: boolean
   /** Servers whose saved-items list has been seeded from this device once. */
   savedItemsBootstrapped: string[]
 }
@@ -108,6 +110,7 @@ interface QuickAccessStore extends PersistedState {
   setRecentsEnabled: (v: boolean) => void
   setPopularEnabled: (v: boolean) => void
   setShelfPosition: (v: ShelfPosition) => void
+  setShelfHidden: (v: boolean) => void
   hydrate: () => Promise<void>
 }
 
@@ -123,6 +126,7 @@ const DEFAULTS: PersistedState = {
   recentsEnabled: true,
   popularEnabled: true,
   shelfPosition: null,
+  shelfHidden: false,
   savedItemsBootstrapped: [],
 }
 
@@ -133,7 +137,7 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
   pinItem: (item) =>
     set((s) => {
       if (s.favorites.some((f) => f.id === item.id)) return s
-      return { favorites: [...s.favorites, item] }
+      return { favorites: [...s.favorites, item], shelfHidden: false }
     }),
 
   unpinItem: (id) =>
@@ -171,6 +175,7 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
   setRecentsEnabled: (recentsEnabled) => set({ recentsEnabled }),
   setPopularEnabled: (popularEnabled) => set({ popularEnabled }),
   setShelfPosition: (shelfPosition) => set({ shelfPosition }),
+  setShelfHidden: (shelfHidden) => set({ shelfHidden }),
 
   hydrate: async () => {
     try {
@@ -186,6 +191,7 @@ export const useQuickAccessStore = create<QuickAccessStore>((set, get) => ({
         recentsEnabled: parsed.recentsEnabled ?? s.recentsEnabled,
         popularEnabled: parsed.popularEnabled ?? s.popularEnabled,
         shelfPosition: isShelfPosition(parsed.shelfPosition) ? parsed.shelfPosition : s.shelfPosition,
+        shelfHidden: parsed.shelfHidden ?? s.shelfHidden,
         savedItemsBootstrapped: Array.isArray(parsed.savedItemsBootstrapped)
           ? parsed.savedItemsBootstrapped.filter((id) => typeof id === 'string')
           : s.savedItemsBootstrapped,
@@ -208,6 +214,7 @@ useQuickAccessStore.subscribe((state) => {
     recentsEnabled: state.recentsEnabled,
     popularEnabled: state.popularEnabled,
     shelfPosition: state.shelfPosition,
+    shelfHidden: state.shelfHidden,
     savedItemsBootstrapped: state.savedItemsBootstrapped,
   }
   AsyncStorage.setItem(QUICK_ACCESS_STORAGE_KEY, JSON.stringify(payload)).catch(() => {})

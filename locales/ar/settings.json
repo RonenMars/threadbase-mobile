@@ -49,7 +49,9 @@
   "appearance": {
     "theme": "السمة",
     "dark": "داكن",
-    "light": "فاتح"
+    "light": "فاتح",
+    "savedChatsBubble": "فقاعة المحادثات المحفوظة",
+    "savedChatsBubbleNote": "الفقاعة العائمة لمحادثاتك المحفوظة. إخفاؤها يُبقي محادثاتك المحفوظة."
   },
   "notifications": {
     "whenAddingServer": "عند إضافة خادم جديد",

@@ -8,6 +8,7 @@ import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { useSavedShelf } from '@/hooks/useSavedShelf'
 import { labelFromCache, openSavedItem, type ShelfEntry, type ShelfTarget } from '@/lib/savedShelf'
 import { useAppDirection } from '@/lib/rtl'
+import { useAlertStore } from '@/stores/alerts'
 import { buildFavoriteId, useQuickAccessStore } from '@/stores/quickAccess'
 import { useServersStore } from '@/stores/servers'
 import { useSessionNamesStore } from '@/stores/sessionNames'
@@ -38,6 +39,7 @@ export function ChatShelf() {
   const favoritesEnabled = useQuickAccessStore((s) => s.favoritesEnabled)
   const favorites = useQuickAccessStore((s) => s.favorites)
   const shelfPosition = useQuickAccessStore((s) => s.shelfPosition)
+  const shelfHidden = useQuickAccessStore((s) => s.shelfHidden)
   const setShelfPosition = useQuickAccessStore((s) => s.setShelfPosition)
   const servers = useServersStore((s) => s.servers)
   const { entries, needsYouCount, cache } = useSavedShelf()
@@ -81,6 +83,21 @@ export function ChatShelf() {
     AccessibilityInfo.announceForAccessibility(t('shelf.saved'))
   }, [target, cache, t])
 
+  const hideShelf = useCallback(() => {
+    const { setShelfHidden } = useQuickAccessStore.getState()
+    setShelfHidden(true)
+    useAlertStore.getState().push({
+      id: 'shelf:hidden',
+      cause: 'shelf:hidden',
+      level: 'info',
+      title: t('shelf.hidden'),
+      message: t('shelf.hiddenHint'),
+      buttonText: t('shelf.undo'),
+      buttonAction: () => setShelfHidden(false),
+    })
+    AccessibilityInfo.announceForAccessibility(t('shelf.hidden'))
+  }, [t])
+
   const selectEntry = useCallback(
     (entry: ShelfEntry) => {
       setPanelOpen(false)
@@ -89,7 +106,7 @@ export function ChatShelf() {
     [router],
   )
 
-  if (!favoritesEnabled || favorites.length === 0 || HIDDEN_SEGMENTS.has(segments[0] ?? '')) return null
+  if (!favoritesEnabled || shelfHidden || favorites.length === 0 || HIDDEN_SEGMENTS.has(segments[0] ?? '')) return null
 
   return (
     <>
@@ -101,6 +118,7 @@ export function ChatShelf() {
           needsYouCount={needsYouCount}
           onOpen={openPanel}
           onToggleSave={toggleSave}
+          onHide={hideShelf}
           onSnap={setShelfPosition}
         />
       </Animated.View>
