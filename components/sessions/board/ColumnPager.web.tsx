@@ -1,31 +1,45 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useLayoutEffect, useRef, useState } from 'react'
 import { ScrollView, type ScrollViewInstance, StyleSheet, View } from 'react-native'
-import { useReduceMotion } from '@/hooks/useAccessibilitySettings'
 import { useAppDirection } from '@/lib/rtl'
 
 interface Props {
+  /** One per page, in order; a page keeps its key while pages appear or vanish around it. */
+  keys: readonly string[]
   index: number
   onIndexChange: (index: number) => void
+  animate: boolean
   children: React.ReactNode[]
 }
 
 /** A snapping horizontal scroller; on RTL web scrollLeft runs negative, hence the signed offset. */
-export function ColumnPager({ index, onIndexChange, children }: Props) {
+export function ColumnPager({ keys, index, onIndexChange, animate, children }: Props) {
   const scroller = useRef<ScrollViewInstance>(null)
-  const shown = useRef(index)
+  const shownIndex = useRef(index)
+  const shownKey = useRef(keys[index])
   // Set while a chip tap scrolls, so the pages passed on the way do not reselect themselves.
   const settling = useRef<number | null>(null)
   const [width, setWidth] = useState(0)
-  const reduceMotion = useReduceMotion()
   const { isRTL } = useAppDirection()
   const sign = isRTL ? -1 : 1
 
-  useEffect(() => {
-    if (width === 0 || shown.current === index) return
-    shown.current = index
-    settling.current = index
-    scroller.current?.scrollTo({ x: sign * index * width, animated: !reduceMotion })
-  }, [index, width, sign, reduceMotion])
+  useLayoutEffect(() => {
+    if (width === 0) return
+    const scrollTo = (page: number, animated: boolean) => {
+      settling.current = page
+      scroller.current?.scrollTo({ x: sign * page * width, animated })
+    }
+    // The scroll offset stays put when a page is inserted or removed before the one on screen.
+    const from = keys.indexOf(shownKey.current)
+    if (from !== -1 && from !== shownIndex.current) {
+      shownIndex.current = from
+      scrollTo(from, false)
+    }
+    const target = keys[index]
+    if (target === shownKey.current) return
+    shownKey.current = target
+    shownIndex.current = index
+    scrollTo(index, animate && from !== -1)
+  })
 
   return (
     <ScrollView
@@ -44,13 +58,14 @@ export function ColumnPager({ index, onIndexChange, children }: Props) {
           if (page === settling.current) settling.current = null
           return
         }
-        if (page === shown.current) return
-        shown.current = page
+        if (page === shownIndex.current) return
+        shownIndex.current = page
+        shownKey.current = keys[page]
         onIndexChange(page)
       }}
     >
       {children.map((child, i) => (
-        <View key={i} style={{ width }}>{child}</View>
+        <View key={keys[i]} style={{ width }}>{child}</View>
       ))}
     </ScrollView>
   )
