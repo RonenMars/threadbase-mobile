@@ -39,6 +39,16 @@ const TREE: Record<string, BrowseResponse> = {
     directories: [{ name: 'lib' }, { name: 'proj' }],
     files: [],
   },
+  '~': {
+    path: '/home/me',
+    directories: [{ name: 'dev' }],
+    files: [],
+  },
+  '~/dev': {
+    path: '/home/me/dev',
+    directories: [],
+    files: [{ name: 'notes.md' }],
+  },
   '/home/me/proj/../lib': {
     path: '/home/me/proj/../lib',
     directories: [],
@@ -189,6 +199,19 @@ describe('ChatComposer @ file mentions', () => {
     await type('@../lib/')
     await fireEvent.press(await screen.findByTestId('file-mention-row-util.ts'))
     expect(inputValue()).toBe('@../lib/util.ts ')
+  })
+
+  it('lists the home folder for @~ and sends ~ paths unresolved', async () => {
+    await renderHarness()
+    await type('@~')
+    await fireEvent.press(await screen.findByTestId('file-mention-row-dev'))
+    expect(mockFetchBrowse).toHaveBeenCalledWith('srv', '~')
+    expect(inputValue()).toBe('@~/dev/')
+
+    await type('@~/dev/')
+    await fireEvent.press(await screen.findByTestId('file-mention-row-notes.md'))
+    expect(mockFetchBrowse).toHaveBeenCalledWith('srv', '~/dev')
+    expect(inputValue()).toBe('@~/dev/notes.md ')
   })
 
   it('offers the session extra directories at the top level', async () => {
