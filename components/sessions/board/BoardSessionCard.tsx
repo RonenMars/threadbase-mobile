@@ -8,6 +8,7 @@ import { CardBody, CardSpine, ChevronToggle, CountBadge } from '@/components/ses
 import { ConvRow } from '@/components/sessions/hub/ConvRow'
 import type { NowEntry } from '@/components/sessions/now/nowEntries'
 import { MessagePreview } from '@/components/sessions/shared/MessagePreview'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
 import { formatListTime } from '@/components/sessions/shared/formatListTime'
 import { pathDisplay } from '@/components/sessions/shared/pathDisplay'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
@@ -21,6 +22,7 @@ import { conversationHref } from '@/lib/conversationHref'
 import { useAppDirection } from '@/lib/rtl'
 import { tierColorToken, type SessionTier } from '@/lib/sessionPresentation'
 import { resolveSubagentLabel, type SubagentGroup } from '@/lib/subagents'
+import { useHasDraft } from '@/stores/drafts'
 import { useNavLockStore } from '@/stores/navLock'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
@@ -45,6 +47,8 @@ interface FrameProps extends Shared {
   needsYouLine?: { text: string; question: boolean; onPress: () => void }
   /** The search hit on a conversation card; rendered under the title. */
   snippet?: React.ReactNode
+  /** The live session whose unsent draft the card marks; absent on a history conversation. */
+  draft?: { serverId: string; sessionId: string }
 }
 
 function BoardCardFrame({
@@ -62,11 +66,13 @@ function BoardCardFrame({
   onLongPress,
   needsYouLine,
   snippet,
+  draft,
 }: FrameProps) {
   const { t } = useTranslation('sessions')
   const { styles: card, theme } = useThemedStyles(makeCardStyles)
   const styles = useThemedStyles(makeStyles).styles
   const { isRTL } = useAppDirection()
+  const hasDraft = useHasDraft(draft?.serverId ?? '', draft?.sessionId ?? '')
   const subagentCount = group?.items.length ?? 0
   const parentLabel = pathDisplay(projectPath, { mode: 'smart' }).suffix || undefined
   const tierLabel = tier ? getSessionTierLabel(tier, t) : undefined
@@ -88,11 +94,14 @@ function BoardCardFrame({
               onPress={onOpen}
               onLongPress={onLongPress}
               accessibilityRole="button"
-              accessibilityLabel={t('row.openSession', { title })}
+              accessibilityLabel={hasDraft ? `${t('row.openSession', { title })}, ${t('row.hasDraft')}` : t('row.openSession', { title })}
               testID={`board-open-${rowId}`}
             >
               {parentLabel ? <Text style={card.headerParent} numberOfLines={1}>{parentLabel}</Text> : null}
-              <Text style={styles.title} numberOfLines={1}>{title}</Text>
+              <View style={styles.titleLine}>
+                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                {draft ? <SessionDraftMark serverId={draft.serverId} sessionId={draft.sessionId} decorative /> : null}
+              </View>
               {needsYouLine ? null : <Text style={card.headerActivity} numberOfLines={1}>{activity}</Text>}
             </Pressable>
             {subagentCount > 0 ? (
@@ -154,6 +163,7 @@ function SessionCard({ session, onShowQuestion, ...shared }: Shared & { session:
         onOpen={handlePress}
         onLongPress={handleLongPress}
         needsYouLine={needsYouLine}
+        draft={{ serverId: session.serverId, sessionId: session.id }}
       />
       {overlays}
     </>
@@ -199,7 +209,8 @@ function makeStyles(theme: Theme) {
     head: { flexDirection: 'row', alignItems: 'stretch' },
     open: { flex: 1, minWidth: 0, minHeight: 64, justifyContent: 'center', gap: 2, paddingHorizontal: 12, paddingVertical: 10 },
     openStacked: { minHeight: 50, paddingBottom: 3 },
-    title: { color: theme.text.primary, fontSize: font.base, lineHeight: 20, fontWeight: '600' },
+    titleLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    title: { flexShrink: 1, color: theme.text.primary, fontSize: font.base, lineHeight: 20, fontWeight: '600' },
     toggle: { minWidth: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingStart: 4, paddingEnd: 12 },
     counter: { minWidth: 24, alignItems: 'center', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 999, backgroundColor: theme.bg.secondary },
     mirrored: { transform: [{ scaleX: -1 }] },

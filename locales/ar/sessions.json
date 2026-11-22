@@ -233,7 +233,8 @@
     "waitingFor": "بانتظار {{elapsed}}",
     "open": "فتح",
     "openSession": "فتح الجلسة {{title}}",
-    "showQuestion": "عرض سؤال {{title}}"
+    "showQuestion": "عرض سؤال {{title}}",
+    "hasDraft": "مسودة غير مرسلة"
   },
   "question": {
     "close": "إغلاق دون إجابة",

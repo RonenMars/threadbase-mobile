@@ -30,6 +30,7 @@ import { useViewPrefsStore } from '@/stores/viewPrefs'
 import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import type { MultiConversation, MultiSession } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
 import { CantResumeRow } from './CantResumeRow'
 import { EarlierRow } from './EarlierRow'
 import { HistorySkeletonRow } from './HistorySkeletonRow'
@@ -111,6 +112,7 @@ function CantResumeSessionRow({
         timestamp={timestamp}
         onPress={handlePress}
         onLongPress={handleLongPress}
+        mark={<SessionDraftMark serverId={session.serverId} sessionId={session.id} />}
         testID={`session-row-${session.id}`}
       />
       {overlays}

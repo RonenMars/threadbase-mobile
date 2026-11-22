@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import { conversationTier } from '@/lib/externalSession'
 import { conversationHref } from '@/lib/conversationHref'
@@ -59,6 +60,7 @@ function SessionEarlierRow({ session, ms, title, isFirst, highlight, previewMode
         highlight={highlight}
         onPress={handlePress}
         onLongPress={handleLongPress}
+        trailing={<SessionDraftMark serverId={session.serverId} sessionId={session.id} />}
       />
       {overlays}
     </SwipeableRow>

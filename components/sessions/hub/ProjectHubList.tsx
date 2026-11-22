@@ -18,6 +18,7 @@ import { splitProjectTiers } from './projectTiers'
 import { SectionEyebrow, type SectionTone } from '@/components/sessions/now/SectionEyebrow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { isMultiSession } from './types'
@@ -193,6 +194,7 @@ export const ProjectHubList = React.memo(function ProjectHubList({
             leading="avatar"
             highlight={debouncedQuery}
             onPress={() => handleSessionPress(item)}
+            trailing={<SessionDraftMark serverId={item.serverId} sessionId={item.id} />}
           />
         )
       }

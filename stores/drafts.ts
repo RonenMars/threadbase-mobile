@@ -7,6 +7,17 @@ function sessionKey(serverId: string, sessionId: string): string {
   return `${serverId}::${sessionId}`
 }
 
+/** `setDraft('')` leaves an empty entry rather than deleting the key, so presence is not enough. */
+export function hasDraft(serverId: string, sessionId: string): boolean {
+  const text = useDraftsStore.getState().drafts[sessionKey(serverId, sessionId)]
+  return text !== undefined && text.trim() !== ''
+}
+
+/** Re-renders only when this session's flag flips, not on every keystroke elsewhere. */
+export function useHasDraft(serverId: string, sessionId: string): boolean {
+  return useDraftsStore(() => hasDraft(serverId, sessionId))
+}
+
 interface DraftsStore {
   drafts: Record<string, string>
   getDraft: (serverId: string, sessionId: string) => string | undefined

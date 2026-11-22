@@ -207,7 +207,8 @@
     "waitingFor": "ожидание {{elapsed}}",
     "open": "Открыть",
     "openSession": "Открыть сессию {{title}}",
-    "showQuestion": "Показать вопрос сессии {{title}}"
+    "showQuestion": "Показать вопрос сессии {{title}}",
+    "hasDraft": "Неотправленный черновик"
   },
   "question": {
     "close": "Закрыть без ответа",
