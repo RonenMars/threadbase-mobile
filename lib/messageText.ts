@@ -15,6 +15,8 @@ function blockPlainText(block: MarkdownBlock): string {
       return block.code
     case 'rule':
       return ''
+    case 'table':
+      return [block.header, ...block.rows].map((row) => row.map((cell) => cell.map((s) => s.text).join('')).join('\t')).join('\n')
     case 'listItem':
       return `${'  '.repeat(block.depth)}${block.marker} ${block.spans.map((s) => s.text).join('')}`
     case 'heading':
