@@ -18,6 +18,9 @@ export type InlineSpan =
 
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
 
+/** `default` is an unmarked column: it follows the text direction instead of being pinned left. */
+export type TableAlign = 'default' | 'left' | 'center' | 'right'
+
 export type MarkdownBlock =
   | { kind: 'paragraph'; spans: InlineSpan[] }
   | { kind: 'heading'; level: HeadingLevel; spans: InlineSpan[] }
@@ -30,3 +33,16 @@ export type MarkdownBlock =
   | { kind: 'listItem'; ordered: boolean; depth: number; marker: string; spans: InlineSpan[] }
   | { kind: 'rule' }
   | { kind: 'code'; code: string; language: string }
+  /**
+   * Every row has exactly `header.length` cells (short rows padded, long rows
+   * cut), so a renderer never has to guard against a ragged grid. A cell is
+   * flat inline spans, like any other block. `source` keeps the original lines
+   * for copy, search and a renderer that has no table layout.
+   */
+  | {
+      kind: 'table'
+      align: TableAlign[]
+      header: InlineSpan[][]
+      rows: InlineSpan[][][]
+      source: string
+    }

@@ -48,6 +48,11 @@ describe('parseMarkdown', () => {
     ])
   })
 
+  it('gives a table back as its original source for copy and search', () => {
+    const source = '| a | b |\n|:--|--:|\n| 1 | 2 |'
+    expect(parseMarkdown(source).map(blockSource)).toEqual([source])
+  })
+
   it('returns nothing for an empty string', () => {
     expect(parseMarkdown('')).toEqual([])
   })
