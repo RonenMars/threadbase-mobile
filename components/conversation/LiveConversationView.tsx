@@ -29,6 +29,7 @@ import { useComposerState } from '@/hooks/useComposerState'
 import { useFileMentions } from '@/hooks/useFileMentions'
 import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import { MessageItem } from '@/components/conversation/MessageItem'
+import { MessageQuoteContext } from '@/components/conversation/MessageContextMenu'
 import { HistoryLoadBoundary } from '@/components/conversation/HistoryLoadBoundary'
 import { InheritedHistoryDivider } from '@/components/conversation/InheritedHistoryDivider'
 import { ThinkingBubble, useHoldQuestionHost } from '@/components/conversation/ThinkingBubble'
@@ -465,6 +466,8 @@ export function LiveConversationView({
     voice,
     micGranted,
     handleToggleMic,
+    quote,
+    setQuote,
   } = useComposerState({ serverId, sessionId, onSend: send })
   const fileMentions = useFileMentions({
     serverId,
@@ -611,6 +614,7 @@ export function LiveConversationView({
     <Reanimated.View style={[styles.container, keyboardInset]}>
       {/* The FAB is absolute: this wrapper ends where the composer starts, so it
           rides the keyboard lift instead of sitting behind the keyboard. */}
+      <MessageQuoteContext.Provider value={setQuote}>
       <View style={styles.transcript}>
       <FlashList
         ref={listRef}
@@ -686,6 +690,7 @@ export function LiveConversationView({
         </TouchableOpacity>
       ) : null}
       </View>
+      </MessageQuoteContext.Provider>
       <ChatComposer
         value={inputText}
         onChangeText={handleInputChange}
@@ -706,6 +711,8 @@ export function LiveConversationView({
         onCancelUpload={cancelUpload}
         attachments={attachments}
         onRemoveAttachment={removeAttachment}
+        quote={quote}
+        onClearQuote={() => setQuote(null)}
         isUploading={isUploading}
         attachError={attachError}
         sendError={sendErrorMessage}

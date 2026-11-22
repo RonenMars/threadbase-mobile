@@ -9,6 +9,7 @@ import type { Message, MessageContent } from '@/types/api'
 import { useThemedStyles } from '@/hooks/useThemedStyles'
 import { parseMarkdownFor } from '@/lib/markdown'
 import { ChatMarkdown } from '@/components/conversation/ChatMarkdown'
+import { MessageContextMenu } from '@/components/conversation/MessageContextMenu'
 import type { RtlStyleKit } from '@/lib/rtl'
 import type { MatchAnchor } from '@/components/conversation/matchAnchor'
 
@@ -62,6 +63,7 @@ function TextBlockBody({
       highlight={highlight?.trim() || undefined}
       matchAnchor={matchAnchor}
       activeMatch={activeMatch}
+      selectable={false}
     />
   )
 }
@@ -114,25 +116,27 @@ export const MessageBubble = React.memo(function MessageBubble({ message, highli
 
   return (
     <View style={[styles.container, noOuterMargin && styles.containerNoMargin, isUser ? styles.containerUser : styles.containerAssistant]}>
-      <View
-        testID="message-bubble"
-        style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass, queued && styles.bubbleQueued]}
-      >
-        {!isUser && <GlassFill />}
-        {message.content.map((block, i) => (
-          <ContentBlock
-            key={i}
-            block={block}
-            isUser={isUser}
-            highlight={highlight}
-            matchAnchor={matchAnchor}
-            activeMatch={activeMatch}
-          />
-        ))}
-        {message.tokens ? (
-          <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
-        ) : null}
-      </View>
+      <MessageContextMenu message={message}>
+        <View
+          testID="message-bubble"
+          style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant, !isUser && isGlass && styles.bubbleAssistantGlass, queued && styles.bubbleQueued]}
+        >
+          {!isUser && <GlassFill />}
+          {message.content.map((block, i) => (
+            <ContentBlock
+              key={i}
+              block={block}
+              isUser={isUser}
+              highlight={highlight}
+              matchAnchor={matchAnchor}
+              activeMatch={activeMatch}
+            />
+          ))}
+          {message.tokens ? (
+            <Text style={styles.tokens}>{t('message.tokens', { count: message.tokens })}</Text>
+          ) : null}
+        </View>
+      </MessageContextMenu>
       {queued ? <Text style={styles.queuedLabel}>{t('message.queued')}</Text> : null}
     </View>
   )
@@ -147,6 +151,8 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
     containerNoMargin: { marginVertical: 0 },
     containerUser: { alignItems: 'flex-end' },
     containerAssistant: { alignItems: 'flex-start' },
+    // The width cap stays on the bubble: moved onto this wrapper, the text is
+    // measured at a different width and every bubble grows a tall empty strip.
     bubble: {
       maxWidth: '85%',
       alignSelf: 'flex-start',

@@ -154,5 +154,14 @@
     "tokens": "{{pre}} → {{post}} رمز",
     "expand": "إظهار ملخص الضغط",
     "collapse": "إخفاء ملخص الضغط"
+  },
+  "messageMenu": {
+    "copy": "نسخ الرسالة",
+    "selectText": "تحديد النص",
+    "copyMarkdown": "نسخ بتنسيق Markdown",
+    "copyCode": "نسخ الكود",
+    "quote": "اقتباس الرسالة",
+    "selectTitle": "تحديد النص",
+    "done": "تم"
   }
 }
