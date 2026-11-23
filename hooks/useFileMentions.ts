@@ -6,6 +6,7 @@ import { applySkill, findSlashToken, isSkillIntact, type SkillEntry, type SlashT
 
 export interface ComposerMention {
   serverId: string
+  sessionId?: string
   projectPath: string
   /** The session's extra directories (absolute), offered at the top of the picker. */
   additionalPaths?: readonly string[]
@@ -147,6 +148,7 @@ export function useFileMentions({
     ...shared,
     mention: {
       serverId,
+      sessionId,
       projectPath,
       additionalPaths,
       token: visibleToken,
