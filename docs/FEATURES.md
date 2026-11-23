@@ -42,7 +42,7 @@ Each line is tagged `[shipped]` (works out of the box), `[operator-enabled]` (ne
 - [shipped] Paired-device management — view and revoke devices paired to a server, by capability scope.
 - [shipped] Biometric app lock — require Face ID, Touch ID, or Android biometrics to unlock the app.
 - [shipped] In-app feedback — submit bug reports and feature requests with an optional screenshot and diagnostics.
-- [shipped] Localization — English, Hebrew, Arabic, and Russian, with reload-free RTL switching.
+- [shipped] Localization — English, Hebrew, Arabic, Russian, and Ukrainian, with reload-free RTL switching.
 - [shipped] Display customization — themes and layout/density preferences for sessions and conversations.
 
 ## Streamer

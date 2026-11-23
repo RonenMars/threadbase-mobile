@@ -52,6 +52,18 @@ import pair_ru from '../locales/ru/pair.json';
 import shared_ru from '../locales/ru/shared.json';
 import feedback_ru from '../locales/ru/feedback.json';
 
+import common_uk from '../locales/uk/common.json';
+import sessions_uk from '../locales/uk/sessions.json';
+import terminal_uk from '../locales/uk/terminal.json';
+import settings_uk from '../locales/uk/settings.json';
+import servers_uk from '../locales/uk/servers.json';
+import onboarding_uk from '../locales/uk/onboarding.json';
+import conversation_uk from '../locales/uk/conversation.json';
+import browse_uk from '../locales/uk/browse.json';
+import pair_uk from '../locales/uk/pair.json';
+import shared_uk from '../locales/uk/shared.json';
+import feedback_uk from '../locales/uk/feedback.json';
+
 import './i18n.types';
 
 const deviceLocale = resolveSupportedLocale(getLocales());
@@ -65,6 +77,7 @@ i18n.use(initReactI18next).init({
     he: { common: common_he, sessions: sessions_he, terminal: terminal_he, settings: settings_he, servers: servers_he, onboarding: onboarding_he, conversation: conversation_he, browse: browse_he, pair: pair_he, shared: shared_he, feedback: feedback_he },
     ar: { common: common_ar, sessions: sessions_ar, terminal: terminal_ar, settings: settings_ar, servers: servers_ar, onboarding: onboarding_ar, conversation: conversation_ar, browse: browse_ar, pair: pair_ar, shared: shared_ar, feedback: feedback_ar },
     ru: { common: common_ru, sessions: sessions_ru, terminal: terminal_ru, settings: settings_ru, servers: servers_ru, onboarding: onboarding_ru, conversation: conversation_ru, browse: browse_ru, pair: pair_ru, shared: shared_ru, feedback: feedback_ru },
+    uk: { common: common_uk, sessions: sessions_uk, terminal: terminal_uk, settings: settings_uk, servers: servers_uk, onboarding: onboarding_uk, conversation: conversation_uk, browse: browse_uk, pair: pair_uk, shared: shared_uk, feedback: feedback_uk },
   },
   interpolation: {
     escapeValue: false,

@@ -10,7 +10,7 @@ import path from 'path'
 
 const LOCALES_DIR = path.join(__dirname, '..', 'locales')
 const REFERENCE = 'en'
-const EXPECTED_LOCALES = ['ar', 'en', 'he', 'ru']
+const EXPECTED_LOCALES = ['ar', 'en', 'he', 'ru', 'uk']
 
 const PLURAL_SUFFIXES = ['zero', 'one', 'two', 'few', 'many', 'other'] as const
 type PluralSuffix = (typeof PLURAL_SUFFIXES)[number]

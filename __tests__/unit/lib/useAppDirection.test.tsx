@@ -46,6 +46,7 @@ describe('useAppDirection', () => {
   it.each([
     ['en', 'ltr', false],
     ['ru', 'ltr', false],
+    ['uk', 'ltr', false],
     ['he', 'rtl', true],
     ['ar', 'rtl', true],
   ] as const)('resolves %s to %s without consulting native state', (locale, direction, rtl) => {
@@ -55,7 +56,7 @@ describe('useAppDirection', () => {
   })
 
   it('derives every supported locale direction from i18next, with no hardcoded list', () => {
-    expect(SUPPORTED_LOCALES.map((option) => option.code)).toEqual(['en', 'he', 'ar', 'ru'])
+    expect(SUPPORTED_LOCALES.map((option) => option.code)).toEqual(['en', 'he', 'ar', 'ru', 'uk'])
     for (const option of SUPPORTED_LOCALES) {
       expect(localeDirection(option.code)).toBe(i18n.dir(option.code))
       // The metadata carries no direction of its own to drift from i18next.
@@ -125,6 +126,8 @@ describe('useAppDirection', () => {
     ['ar', 'ru', 'ltr'],
     ['he', 'ar', 'rtl'],
     ['en', 'ru', 'ltr'],
+    ['uk', 'he', 'rtl'],
+    ['ar', 'uk', 'ltr'],
   ] as const)('follows the %s → %s switch to %s', async (from, to, expected) => {
     await i18n.changeLanguage(from)
     const { getByTestId } = await render(<DirectionProbe />)
@@ -143,6 +146,7 @@ describe('useAppDirection', () => {
     ['he', false, 'rtl'],
     ['ar', false, 'rtl'],
     ['ru', true, 'ltr'],
+    ['uk', true, 'ltr'],
   ] as const)(
     'ignores stale native RTL state: %s with I18nManager.isRTL=%s stays %s',
     async (locale, nativeIsRTL, expected) => {

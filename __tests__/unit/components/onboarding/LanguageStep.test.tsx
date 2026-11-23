@@ -45,10 +45,13 @@ describe('LanguageStep', () => {
       expect(StyleSheet.flatten(getByTestId('onboarding-language-option-ru').props.style)).toEqual(
         expect.objectContaining({ direction: 'ltr', flexDirection: 'row' }),
       )
+      expect(StyleSheet.flatten(getByTestId('onboarding-language-option-uk').props.style)).toEqual(
+        expect.objectContaining({ direction: 'ltr', flexDirection: 'row' }),
+      )
     },
   )
 
-  it.each(['en', 'he', 'ar', 'ru'] as const)(
+  it.each(['en', 'he', 'ar', 'ru', 'uk'] as const)(
     'keeps each row in its own direction while the app itself runs in %s',
     async (appLocale) => {
       // Per-option direction is a property of the language being offered, so it
@@ -68,6 +71,7 @@ describe('LanguageStep', () => {
         ['he', 'rtl'],
         ['ar', 'rtl'],
         ['ru', 'ltr'],
+        ['uk', 'ltr'],
       ] as const) {
         expect(
           StyleSheet.flatten(getByTestId(`onboarding-language-option-${code}`).props.style),
@@ -81,6 +85,7 @@ describe('LanguageStep', () => {
     ['he', 'rtl'],
     ['ar', 'rtl'],
     ['ru', 'ltr'],
+    ['uk', 'ltr'],
   ] as const)(
     'aligns the language eyebrow, headline, and body for the %s locale',
     async (locale, writingDirection) => {
@@ -136,7 +141,7 @@ describe('LanguageStep', () => {
     )
   })
 
-  it('renders the four autonyms without country flags and selects a language immediately', async () => {
+  it('renders the five autonyms without country flags and selects a language immediately', async () => {
     const { getAllByRole, getByTestId, getByText, queryByTestId } = await render(
       <LanguageStep onContinue={jest.fn()} />,
     )
@@ -146,15 +151,18 @@ describe('LanguageStep', () => {
       'onboarding-language-option-he',
       'onboarding-language-option-ar',
       'onboarding-language-option-ru',
+      'onboarding-language-option-uk',
     ])
     expect(getByText('English')).toBeTruthy()
     expect(getByText('עברית')).toBeTruthy()
     expect(getByText('العربية')).toBeTruthy()
     expect(getByText('Русский')).toBeTruthy()
+    expect(getByText('Українська')).toBeTruthy()
     expect(queryByTestId('onboarding-language-flag-en', { includeHiddenElements: true })).toBeNull()
     expect(queryByTestId('onboarding-language-flag-he', { includeHiddenElements: true })).toBeNull()
     expect(queryByTestId('onboarding-language-flag-ar', { includeHiddenElements: true })).toBeNull()
     expect(queryByTestId('onboarding-language-flag-ru', { includeHiddenElements: true })).toBeNull()
+    expect(queryByTestId('onboarding-language-flag-uk', { includeHiddenElements: true })).toBeNull()
     expect(StyleSheet.flatten(getByText('עברית').props.style)).toEqual(
       expect.objectContaining({ paddingStart: 12 }),
     )

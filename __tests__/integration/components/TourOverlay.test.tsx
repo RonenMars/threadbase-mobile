@@ -105,6 +105,7 @@ describe('TourOverlay theming', () => {
       ['he', 'דלג על הסיור', 'הבנתי ←'],
       ['ar', 'تخطي الجولة', 'فهمت ←'],
       ['ru', 'Пропустить обзор', 'Понятно →'],
+      ['uk', 'Пропустити огляд', 'Зрозуміло →'],
     ])('renders the %s skip and got-it labels', async (lng, skip, gotIt) => {
       await i18n.changeLanguage(lng)
       const { getByText } = await render(

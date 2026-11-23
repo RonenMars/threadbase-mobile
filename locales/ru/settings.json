@@ -129,7 +129,8 @@
     "english": "English",
     "hebrew": "עברית",
     "arabic": "العربية",
-    "russian": "Русский"
+    "russian": "Русский",
+    "ukrainian": "Українська"
   },
   "conversationRows": {
     "title": "Строки бесед",

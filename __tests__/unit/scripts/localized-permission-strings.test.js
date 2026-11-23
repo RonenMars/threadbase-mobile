@@ -2,7 +2,7 @@
  * @jest-environment node
  *
  * Guards plugins/withLocalizedPermissionStrings.js — the plugin that makes
- * the four localized InfoPlist.strings files and their PBXVariantGroup
+ * the five localized InfoPlist.strings files and their PBXVariantGroup
  * wiring survive `expo prebuild --clean`. Runs its pure pbxproj helpers
  * against the real committed project.pbxproj, so a change to the pbxproj's
  * group structure (e.g. renaming the "Threadbase" group) fails here rather
@@ -136,15 +136,15 @@ describe('addKnownRegion (relied on directly, not wrapped)', () => {
   // already idempotent (checks hasKnownRegion() before pushing). This pins
   // that assumption so a future `xcode` upgrade that changed it would fail
   // here instead of surfacing as a duplicated knownRegions entry.
-  it('adds he/ar/ru exactly once even when called twice', () => {
+  it('adds he/ar/ru/uk exactly once even when called twice', () => {
     const project = parseProject();
-    for (const locale of ['he', 'ar', 'ru']) {
+    for (const locale of ['he', 'ar', 'ru', 'uk']) {
       project.addKnownRegion(locale);
       project.addKnownRegion(locale);
     }
 
     const regions = project.pbxProjectSection()[project.getFirstProject().uuid].knownRegions;
-    for (const locale of ['he', 'ar', 'ru']) {
+    for (const locale of ['he', 'ar', 'ru', 'uk']) {
       expect(regions.filter((region) => region === locale)).toHaveLength(1);
     }
   });

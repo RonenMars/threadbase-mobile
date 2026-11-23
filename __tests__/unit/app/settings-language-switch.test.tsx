@@ -72,4 +72,14 @@ describe('settings language switch', () => {
     expect(i18n.dir()).toBe('ltr')
     expect(Updates.reloadAsync).not.toHaveBeenCalled()
   })
+
+  it('switches to Ukrainian as an LTR language with no reload', async () => {
+    const screen = await render(<SettingsScreen />)
+
+    await fireEvent.press(screen.getByText('Українська'))
+
+    await waitFor(() => expect(i18n.language).toBe('uk'))
+    expect(i18n.dir()).toBe('ltr')
+    expect(Updates.reloadAsync).not.toHaveBeenCalled()
+  })
 })

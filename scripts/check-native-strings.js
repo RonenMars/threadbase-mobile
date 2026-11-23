@@ -3,7 +3,7 @@
 // check-native-strings.js — catch iOS permission-string drift across the
 // four places that have to agree: app.json (the source), the committed
 // ios/Threadbase/Info.plist (what ships when a plugin doesn't own the key),
-// the four ios/Threadbase/<lang>.lproj/InfoPlist.strings files (what iOS
+// the five ios/Threadbase/<lang>.lproj/InfoPlist.strings files (what iOS
 // actually shows per device locale), and the LOCALIZED_INFO_PLIST_STRINGS
 // literal in plugins/withLocalizedPermissionStrings.js (what a `--clean`
 // prebuild regenerates, since that wipes the .lproj files first — the
@@ -29,7 +29,7 @@ const TARGET_DIR = path.join(ROOT, 'ios/Threadbase')
 const INFO_PLIST = path.join(TARGET_DIR, 'Info.plist')
 const APP_JSON = path.join(ROOT, 'app.json')
 const PLUGIN_FILE = path.join(ROOT, 'plugins/withLocalizedPermissionStrings.js')
-const LOCALES = ['en', 'he', 'ar', 'ru']
+const LOCALES = ['en', 'he', 'ar', 'ru', 'uk']
 const REFERENCE = 'en'
 
 // The app.json-owned permission strings, and how to find each one — the
@@ -162,7 +162,7 @@ function check() {
   }
 
   if (findings.length === 0) {
-    console.log('Native permission strings OK — app.json, Info.plist, all four locales and the prebuild plugin agree.')
+    console.log('Native permission strings OK — app.json, Info.plist, all five locales and the prebuild plugin agree.')
     return
   }
 

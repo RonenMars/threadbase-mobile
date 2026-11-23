@@ -1,0 +1,349 @@
+{
+  "search": {
+    "placeholder": "Пошук сесій і розмов…",
+    "accessibilityLabel": "Пошук",
+    "conversationsResults_one": "Розмови · {{count}} результат",
+    "conversationsResults_few": "Розмови · {{count}} результати",
+    "conversationsResults_many": "Розмови · {{count}} результатів",
+    "conversationsResults_other": "Розмови · {{count}} результату",
+    "sessionsResults_one": "Сесії · {{count}} результат",
+    "sessionsResults_few": "Сесії · {{count}} результати",
+    "sessionsResults_many": "Сесії · {{count}} результатів",
+    "sessionsResults_other": "Сесії · {{count}} результату"
+  },
+  "nameSession": {
+    "createTitle": "Назвати цю сесію?",
+    "exitTitle": "Назвати сесію перед виходом?",
+    "start": "Почати",
+    "placeholder": "напр., Виправити помилку автентифікації",
+    "renameTitle": "Перейменувати сесію"
+  },
+  "slowLoading": {
+    "sessionsTitle": "Сесії завантажуються довше, ніж зазвичай.",
+    "sessionsMessage": "Список з’явиться, щойно сервер відповість.",
+    "detailTitle": "Деталі сесії завантажуються довго…",
+    "detailMessage": "Отримуємо деталі — це не має тривати довго."
+  },
+  "provider": {
+    "codex": "Codex",
+    "claude": "Claude",
+    "cursor": "Cursor",
+    "copilot": "Copilot",
+    "unknown": "Невідомо"
+  },
+  "filter": {
+    "label": "Фільтр і сортування"
+  },
+  "list": {
+    "empty": "Немає сесій",
+    "emptySubtitle": "Почніть сесію Claude Code або Codex,\nщоб побачити її тут",
+    "allServersOffline": "Не вдається підключитися до жодного сервера",
+    "allServersOfflineSubtitle": "Сесії нижче можуть бути застарілими.",
+    "noResults": "Нічого не знайдено",
+    "noResultsSubtitle": "Нічого не відповідає «{{query}}»",
+    "serverEmpty": "На цьому сервері немає сесій",
+    "serverEmptySubtitle": "Почніть сесію тут або перемкніть сервер.",
+    "serverOffline": "Сервер недоступний",
+    "serverWarming": "Сервер прогрівається",
+    "serverWarmingSubtitle": "Історія з’явиться після завершення індексування.",
+    "serverNeedsUpgrade": "Сервер потребує оновлення",
+    "serverNeedsUpgradeSubtitle": "{{server}} працює на версії, яка не може показати проєкти. Оновіть сервер Threadbase, щоб переглядати тут його історію."
+  },
+  "card": {
+    "copyId": "Копіювати ID сесії",
+    "messages_one": "{{count}} повідомлення",
+    "messages_few": "{{count}} повідомлення",
+    "messages_many": "{{count}} повідомлень",
+    "messages_other": "{{count}} повідомлення"
+  },
+  "hub": {
+    "seeAll_one": "Усі розмови: {{count}}",
+    "seeAll_few": "Усі розмови: {{count}}",
+    "seeAll_many": "Усі розмови: {{count}}",
+    "seeAll_other": "Усі розмови: {{count}}",
+    "activityLive_one": "{{count}} активна",
+    "activityLive_few": "{{count}} активні",
+    "activityLive_many": "{{count}} активних",
+    "activityLive_other": "{{count}} активної",
+    "activityNeedsYou_one": "{{count}} чекає на вас",
+    "activityNeedsYou_few": "{{count}} чекають на вас",
+    "activityNeedsYou_many": "{{count}} чекає на вас",
+    "activityNeedsYou_other": "{{count}} чекає на вас",
+    "activityExternal_one": "{{count}} зовнішня",
+    "activityExternal_few": "{{count}} зовнішні",
+    "activityExternal_many": "{{count}} зовнішніх",
+    "activityExternal_other": "{{count}} зовнішньої",
+    "activityToday": "{{total}} сьогодні",
+    "activityLast": "востаннє {{time}}",
+    "timeNow": "зараз",
+    "timeYesterday": "Учора",
+    "tierActive": "АКТИВНІ",
+    "tierRecent": "НЕЩОДАВНІ",
+    "tierOlder": "СТАРІШІ",
+    "showOlder": "Показати",
+    "hideOlder": "Приховати"
+  },
+  "loading": {
+    "title": "Завантаження сесій",
+    "progress": "{{loaded}} з {{total}}",
+    "fetchingOne": "Отримання",
+    "fetchingN_one": "Отримання з {{count}} сервера",
+    "fetchingN_few": "Отримання з {{count}} серверів паралельно",
+    "fetchingN_many": "Отримання з {{count}} серверів паралельно",
+    "fetchingN_other": "Отримання з {{count}} сервера паралельно",
+    "sessionsLabel": "Сесії",
+    "conversationsLabel": "Розмови",
+    "done": "Готово"
+  },
+  "live": {
+    "headerLive_one": "АКТИВНІ · {{count}}",
+    "headerLive_few": "АКТИВНІ · {{count}}",
+    "headerLive_many": "АКТИВНІ · {{count}}",
+    "headerLive_other": "АКТИВНІ · {{count}}",
+    "headerIdle_one": "НЕАКТИВНІ · {{count}}",
+    "headerIdle_few": "НЕАКТИВНІ · {{count}}",
+    "headerIdle_many": "НЕАКТИВНІ · {{count}}",
+    "headerIdle_other": "НЕАКТИВНІ · {{count}}",
+    "headerNeedsYou_one": "ЧЕКАЮТЬ НА ВАС · {{count}}",
+    "headerNeedsYou_few": "ЧЕКАЮТЬ НА ВАС · {{count}}",
+    "headerNeedsYou_many": "ЧЕКАЮТЬ НА ВАС · {{count}}",
+    "headerNeedsYou_other": "ЧЕКАЮТЬ НА ВАС · {{count}}",
+    "headerWorking_one": "ПРАЦЮЮТЬ · {{count}}",
+    "headerWorking_few": "ПРАЦЮЮТЬ · {{count}}",
+    "headerWorking_many": "ПРАЦЮЮТЬ · {{count}}",
+    "headerWorking_other": "ПРАЦЮЮТЬ · {{count}}",
+    "headerLastHour": "ОСТАННЯ ГОДИНА",
+    "headerToday": "СЬОГОДНІ",
+    "headerYesterday": "УЧОРА",
+    "headerLastWeek": "МИНУЛИЙ ТИЖДЕНЬ",
+    "headerThisMonth": "ЦЕЙ МІСЯЦЬ",
+    "headerLastMonth": "МИНУЛИЙ МІСЯЦЬ",
+    "headerEarlier": "РАНІШЕ"
+  },
+  "preview": {
+    "liveUnavailable": "Попередній перегляд активної сесії недоступний — відкрийте сесію, щоб побачити активний термінал.",
+    "noMessages": "Повідомлень поки немає.",
+    "openSession": "Відкрити сесію",
+    "openConversation": "Відкрити розмову",
+    "pin": "Закріпити",
+    "unpin": "Відкріпити"
+  },
+  "manageFavorites": {
+    "screenTitle": "Керування обраним",
+    "empty": "Закріпленого обраного поки немає.",
+    "emptySub": "Торкніться чипа на стрічці та виберіть «Закріпити в обраному».",
+    "addToFavorites": "Додати в обране"
+  },
+  "fab": {
+    "noServerHint": "Додайте сервер у налаштуваннях, щоб почати",
+    "newSession": "Нова сесія"
+  },
+  "noServer": {
+    "title": "Підключіть перший сервер",
+    "desc": "Threadbase підключається до запущеного екземпляра tb-streamer. Додайте URL і ключ API свого сервера, щоб підключитися до нього.",
+    "repoLink": "github.com/RonenMars/threadbase-streamer",
+    "repoUrl": "https://github.com/RonenMars/threadbase-streamer",
+    "cta": "Додати сервер"
+  },
+  "sync": {
+    "cachedData": "Показано дані з кешу"
+  },
+  "status": {
+    "running": "Працює",
+    "waiting": "Очікує",
+    "idle": "Неактивна",
+    "starting": "Запускається",
+    "externalLive": "Зовнішня",
+    "historical": "Історія",
+    "interrupted": "Перервана",
+    "interruptedWaiting": "Очікувала",
+    "resumed": "Продовжена",
+    "onHold": "Призупинена",
+    "completed": "Завершена",
+    "failed": "Збій",
+    "unavailablePath": "Недоступно",
+    "unavailableWorktree": "Worktree зник",
+    "stale": "Застаріла",
+    "needsYou": "Чекає на вас",
+    "working": "Працює",
+    "resumable": "Можна продовжити",
+    "cantResume": "Не можна продовжити",
+    "external": "Зовнішня"
+  },
+  "phase": {
+    "thinking": "Міркує",
+    "streaming": "Відповідає",
+    "hooks": "Виконує хуки",
+    "acting": "Діє",
+    "working": "Працює"
+  },
+  "capability": {
+    "externalOnly": "Лише перегляд"
+  },
+  "timeBucket": {
+    "all": "Усі",
+    "today": "Сьогодні",
+    "7d": "7 д",
+    "30d": "30 д",
+    "custom": "Власний"
+  },
+  "liveActivity": {
+    "running": "Працює",
+    "finished": "Завершено",
+    "channelName": "Активні сесії"
+  },
+  "tree": {
+    "unknownPath": "(невідомо)",
+    "folders": "ТЕКИ",
+    "here_one": "ТУТ · {{count}} РОЗМОВА",
+    "here_few": "ТУТ · {{count}} РОЗМОВИ",
+    "here_many": "ТУТ · {{count}} РОЗМОВ",
+    "here_other": "ТУТ · {{count}} РОЗМОВИ"
+  },
+  "unavailable": {
+    "worktree": "Worktree зник — продовжити неможливо"
+  },
+  "row": {
+    "waitingFor": "очікує {{elapsed}}",
+    "open": "Відкрити",
+    "openSession": "Відкрити сесію {{title}}",
+    "showQuestion": "Показати запитання для {{title}}"
+  },
+  "question": {
+    "close": "Закрити без відповіді",
+    "count": "Запитання {{current}} з {{total}}",
+    "answerInSession": "Дайте відповідь на це в сесії."
+  },
+  "layout": {
+    "now": "Зараз",
+    "projects": "Проєкти",
+    "subagents": "Субагенти"
+  },
+  "info": {
+    "sessionId": "ID сесії Threadbase",
+    "conversationId": "ID розмови",
+    "providerId": "ID провайдера",
+    "provider": "Провайдер",
+    "resumedFrom": "Продовжено з",
+    "forkedFrom": "Відгалужено від",
+    "parentConversation": "Батьківська розмова",
+    "sessionName": "Назва сесії",
+    "projectName": "Назва проєкту",
+    "projectPath": "Шлях до проєкту",
+    "additionalPaths": "Додаткові теки",
+    "filePath": "Шлях до файлу",
+    "account": "Обліковий запис",
+    "messageCount": "Кількість повідомлень",
+    "lastActivity": "Остання активність"
+  },
+  "leaveNotice": {
+    "working": "{{agent}} досі працює",
+    "waiting": "{{agent}} чекає на вас",
+    "body": "Сесія працює на {{server}}, доки ви її не завершите.",
+    "terminateHint": "Щоб завершити сесію, відкрийте меню <menu></menu> і торкніться {{action}}.",
+    "leaveHint": "Торкніться двічі, щоб залишити сесію.",
+    "skip": "Більше не показувати це попередження"
+  },
+  "endSession": {
+    "menu": "Дії із сесією",
+    "section": "Завершити сесію",
+    "open": "Відкрити",
+    "whenDone": "Завершити, коли закінчить",
+    "whenDoneHint": "Дає завершитися поточному кроку, а потім завершує сесію",
+    "terminate": "Завершити",
+    "terminateHint": "Завершує негайно. Пізніше її можна продовжити.",
+    "force": "Примусово завершити",
+    "forceHint": "Лише якщо «Завершити» не спрацювало",
+    "delete": "Видалити…",
+    "deleteHint": "Прибирає її з Threadbase. {{agent}} зберігає свою історію.",
+    "armed": "Завершиться після цього кроку",
+    "terminating": "Завершення…",
+    "stillRunning": "Усе ще працює після «Завершити».",
+    "failed": "Не вдалося завершити сесію. Перевірте підключення й спробуйте ще раз."
+  },
+  "swipe": {
+    "favorite": "В обране",
+    "unfavorite": "З обраного",
+    "rename": "Перейменувати",
+    "terminate": "Завершити",
+    "delete": "Видалити"
+  },
+  "terminateExternal": {
+    "title": "Завершити цю сесію?",
+    "body": "Це закриє справжню сесію термінала на вашому Mac. Агент там також зупиниться.",
+    "confirm": "Завершити",
+    "failed": "Не вдалося завершити сесію"
+  },
+  "handoff": {
+    "action": "Передати в термінал",
+    "title": "Передати в термінал?",
+    "body": "Threadbase зупиняє цю сесію й продовжує її в tmux на {{server}}.",
+    "interruptWarning": "Поточний крок буде перервано.",
+    "confirm": "Передати",
+    "confirmOpen": "Передати й відкрити {{terminal}}",
+    "success": "Переміщено в tmux",
+    "attach": "Підключитися через {{command}}",
+    "terminalNotOpened": "Не вдалося відкрити {{terminal}}.",
+    "failed": "Не вдалося передати сесію. Спробуйте ще раз.",
+    "launchFailed": "Тут сесію зупинено, але tmux не запустився — продовжіть її в застосунку.",
+    "killTimeout": "Сесія не зупинилася, тому її не переміщено.",
+    "nothingToResume": "Спершу надішліть повідомлення — поки що нічого продовжувати."
+  },
+  "deleteDialog": {
+    "title": "Видалити цю сесію?",
+    "body": "Вона ще активна. Threadbase завершить її, а потім видалить зі списку сесій на всіх пристроях.",
+    "keepsTitle": "{{agent}} зберігає свою історію",
+    "keepsClaude": "Розмова залишається на {{server}}. claude --resume її все ще знаходить.",
+    "keepsCodex": "Розмова залишається на {{server}}. codex resume її все ще знаходить.",
+    "keepsCursor": "Вона залишається в історії чатів Cursor Agent на {{server}}.",
+    "keepsCopilot": "Вона залишається в історії чатів GitHub Copilot на {{server}}.",
+    "noUndo": "У застосунку цю дію не можна скасувати.",
+    "confirm": "Видалити"
+  },
+  "watchersDialog": {
+    "title": "Відкрито на іншому пристрої",
+    "body": "Ця сесія відкрита на іншому пристрої. Дія «Завершити, коли закінчить» завершить її й там, а відкриття сесії там цього не скасує."
+  },
+  "subagents": {
+    "title": "Субагенти",
+    "titleCount": "Субагенти ({{n}})",
+    "active": "Активні",
+    "empty": "Субагентів немає.",
+    "unsupported": "Цей сервер ще не підтримує субагентів.",
+    "loadFailed": "Не вдалося завантажити субагентів.",
+    "loadMore": "Завантажити ще",
+    "board": {
+      "parentFallback": "Сесія {{id}}",
+      "parentActive": "активних: {{n}}",
+      "unsupported": "Цей сервер ще не показує субагентів.",
+      "empty": "Субагентів поки немає.",
+      "openParent": "Відкрити батьківську сесію",
+      "headerRunning": "ПРАЦЮЮТЬ · {{n}}",
+      "showAll": "Показати всі {{n}}",
+      "showLess": "Показати менше"
+    }
+  },
+  "boardTab": {
+    "earlier": "Раніше",
+    "emptyColumn": "Тут порожньо",
+    "columns": "Стани сесій",
+    "showBoard": "Показати дошку",
+    "showList": "Показати список",
+    "showSubagents_one": "Показати субагентів: {{count}}",
+    "showSubagents_few": "Показати субагентів: {{count}}",
+    "showSubagents_many": "Показати субагентів: {{count}}",
+    "showSubagents_other": "Показати субагентів: {{count}}",
+    "previousColumn": "Попередня колонка",
+    "nextColumn": "Наступна колонка",
+    "orphanHeading": "Субагенти інших сесій",
+    "subagentsFailed": "Не вдалося завантажити субагентів.",
+    "emptyNeedsYou": "Сесії, що чекають на вашу відповідь, з’являються в цій колонці.",
+    "emptyWorking": "Сесії, що зараз працюють, з’являються в цій колонці.",
+    "emptyExternal": "Сесії, запущені поза Threadbase, з’являються в цій колонці.",
+    "emptyEarlier": "Завершені сесії з’являються в цій колонці."
+  },
+  "tour": {
+    "skip": "Пропустити огляд",
+    "gotIt": "Зрозуміло →"
+  }
+}

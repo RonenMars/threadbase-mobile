@@ -15,7 +15,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../../..');
 const SCRIPT = path.join(ROOT, 'scripts/check-native-strings.js');
-const LOCALES = ['en', 'he', 'ar', 'ru'];
+const LOCALES = ['en', 'he', 'ar', 'ru', 'uk'];
 
 let dir;
 
@@ -73,7 +73,7 @@ function writePluginFixture(stringsByLocale) {
   );
 }
 
-/** A fully-agreeing fixture: app.json, Info.plist, all four locale files and the plugin literal all match. */
+/** A fully-agreeing fixture: app.json, Info.plist, all five locale files and the plugin literal all match. */
 function writeConsistentFixture() {
   for (const sub of ['ios/Threadbase', 'plugins', ...LOCALES.map((l) => `ios/Threadbase/${l}.lproj`)]) {
     fs.mkdirSync(path.join(dir, sub), { recursive: true });
