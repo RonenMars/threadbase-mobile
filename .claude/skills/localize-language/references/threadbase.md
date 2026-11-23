@@ -1,0 +1,7 @@
+# Threadbase Mobile adapter
+
+Repository: https://github.com/RonenMars/threadbase-mobile
+
+Known resource structure: `locales/en/`, `locales/ar/`, `locales/he/`, `locales/ru/`, `locales/.identical-ok.json`, `locales/.source-hashes.json`. Treat this as a starting point; inspect the current checkout for changes. Use English as the translation source. Discover the actual validation commands and metadata generation workflow before editing. Do not blindly copy hash entries or suppress identical-string warnings. For new locales mirror existing namespaces, with locale-specific plural exceptions as needed.
+
+Threadbase is a mobile interface for managing and interacting with remote AI coding sessions. Audience: software developers. Distinguish AI agents from agent processes, sessions from conversations, model reasoning from connection status, tool calls from tool results, remote host from device, and interrupting from deleting or disconnecting. Preserve Threadbase, Claude Code, Codex, Cursor, Git, MCP, CLI, API, SDK, model identifiers and code. Check session cards, chat composer, action sheets, connection setup, permissions, settings, onboarding, notifications, accessibility, and compact badges. Verify both iOS and Android integration where supported; do not edit generated native files if the project manages them through Expo configuration. Do not translate actual prompts, agent output, repository names, terminal output or user content.
