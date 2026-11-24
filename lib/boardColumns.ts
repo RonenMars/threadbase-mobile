@@ -59,6 +59,18 @@ export function firstNonEmptyColumn(board: Record<BoardColumnId, { length: numbe
   return BOARD_COLUMNS.find((c) => board[c].length > 0) ?? 'needsYou'
 }
 
+/**
+ * Where a swipe from page `from` that settled on `to` may land: an enabled page, skipping the
+ * disabled ones in the direction of travel, or back on `from` when none is left that way.
+ * A settle on the page already shown (a chip tap) is never redirected.
+ */
+export function swipeLanding(from: number, to: number, enabled: readonly boolean[]): number {
+  if (from === to || enabled[to]) return to
+  const step = to > from ? 1 : -1
+  for (let i = to + step; i >= 0 && i < enabled.length; i += step) if (enabled[i]) return i
+  return from
+}
+
 /** Needs you when anything waits, else where the user left off. */
 export function startingColumn(
   board: Record<BoardColumnId, { length: number }>,

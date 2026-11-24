@@ -11,10 +11,12 @@ interface Props {
   column: BoardColumnId
   onSelect: (id: BoardColumnId) => void
   renderColumn: (id: BoardColumnId) => React.ReactNode
+  /** Keeps a swipe off the empty columns, as their dimmed chips say. */
+  lockEmpty?: boolean
 }
 
 /** One column at a time, full width: swipe between them, or pick one from the chips. */
-export function PhoneBoard({ counts, column, onSelect, renderColumn }: Props) {
+export function PhoneBoard({ counts, column, onSelect, renderColumn, lockEmpty = false }: Props) {
   const theme = useTheme()
   const styles = useMemo(() => makeStyles(theme), [theme])
   return (
@@ -25,7 +27,11 @@ export function PhoneBoard({ counts, column, onSelect, renderColumn }: Props) {
           <View key={id} style={[styles.dot, id === column && styles.dotOn]} />
         ))}
       </View>
-      <ColumnPager index={BOARD_COLUMNS.indexOf(column)} onIndexChange={(i) => onSelect(BOARD_COLUMNS[i])}>
+      <ColumnPager
+        index={BOARD_COLUMNS.indexOf(column)}
+        onIndexChange={(i) => onSelect(BOARD_COLUMNS[i])}
+        enabled={BOARD_COLUMNS.map((id) => !lockEmpty || counts[id] > 0)}
+      >
         {BOARD_COLUMNS.map((id) => renderColumn(id))}
       </ColumnPager>
     </View>

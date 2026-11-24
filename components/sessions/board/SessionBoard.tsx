@@ -182,10 +182,13 @@ export function SessionBoard({
     />
   )
 
-  const Layout = width >= TABLET_BREAKPOINT ? DesktopBoard : PhoneBoard
   return (
     <View style={[styles.fill, { paddingTop: topInset }]}>
-      <Layout counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} />
+      {width >= TABLET_BREAKPOINT ? (
+        <DesktopBoard counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} />
+      ) : (
+        <PhoneBoard counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} lockEmpty={subagentsOnly} />
+      )}
       {questionFor && questionSession ? (
         <SessionQuestionModal
           session={questionSession}
