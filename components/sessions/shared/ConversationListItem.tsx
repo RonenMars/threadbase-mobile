@@ -7,6 +7,7 @@ import type { ProviderName } from '@/constants/providers'
 import { showsProviderMark } from '@/lib/providerDominance'
 import { ProviderMark } from './ProviderMark'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useLargeText } from '@/hooks/useAccessibilitySettings'
 import { LiveDot } from '@/components/sessions/LiveDot'
 import { colorForToken } from '@/components/sessions/SessionStatusBadge'
 import { StateBadge, isLiveTier } from '@/components/sessions/StateBadge'
@@ -123,6 +124,7 @@ export function ConversationListItem(props: ConversationListItemProps) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
+  const largeText = useLargeText()
   const {
     title,
     path,
@@ -205,16 +207,17 @@ export function ConversationListItem(props: ConversationListItemProps) {
 
   // Title-line highlight (case-insensitive substring tint).
   const highlightNeedle = highlight?.trim()
+  const titleLineCap = largeText ? titleLines * 2 : titleLines
   const renderTitle = () => {
     if (!primaryText) return null
-    if (!highlightNeedle) return <Text style={styles.title} numberOfLines={titleLines}>{primaryText}</Text>
+    if (!highlightNeedle) return <Text style={styles.title} numberOfLines={titleLineCap}>{primaryText}</Text>
     return (
       <HighlightText
         text={primaryText}
         searchWords={[highlightNeedle]}
         highlightStyle={styles.match}
         style={styles.title}
-        textProps={{ numberOfLines: titleLines }}
+        textProps={{ numberOfLines: titleLineCap }}
       />
     )
   }
@@ -226,6 +229,36 @@ export function ConversationListItem(props: ConversationListItemProps) {
   if (showBranch && branch) metaPieces.push(branch)
   if (showCount && typeof messageCount === 'number') metaPieces.push(t('card.messages', { count: messageCount }))
   const metaText = showMeta && metaPieces.length > 0 ? metaPieces.join(' · ') : null
+
+  // Trailing meta: time + server chip + provider mark when non-dominant.
+  // Compact rows are one line tall, so the tail lays out sideways: a mark under the
+  // time would make only the non-dominant rows taller. At a large text size it moves
+  // under the title, so the title keeps the row's full width.
+  const tail = !isChip ? (
+    <View style={[styles.tail, isCompact && styles.tailCompact, largeText && styles.tailStacked]}>
+      {timeText ? (
+        <Text
+          style={styles.time}
+          accessibilityLabel={timeA11y}
+          numberOfLines={1}
+        >
+          {timeText}
+        </Text>
+      ) : null}
+
+      {serverVisible && serverLabel ? (
+        <ServerChip
+          label={serverLabel}
+          color={serverColor ?? SERVER_COLOR_DEFAULT}
+          variant={serverChipVariant}
+          onPress={onServerPress}
+          onLongPress={onServerLongPress}
+        />
+      ) : null}
+      {provider != null && showsProviderMark(provider, dominantProvider) ? <ProviderMark provider={provider} /> : null}
+      {trailing}
+    </View>
+  ) : null
 
   const Wrapper = onPress || onLongPress ? Pressable : View
   const wrapperProps =
@@ -313,36 +346,10 @@ export function ConversationListItem(props: ConversationListItemProps) {
             ) : null}
           </View>
         ) : null}
+        {largeText ? tail : null}
       </View>
 
-      {/* Trailing meta column: time + server chip + provider mark when non-dominant. */}
-      {/* Compact rows are one line tall, so the tail lays out sideways: a mark
-          under the time would make only the non-dominant rows taller. */}
-      {!isChip ? (
-        <View style={[styles.tail, isCompact && styles.tailCompact]}>
-          {timeText ? (
-            <Text
-              style={styles.time}
-              accessibilityLabel={timeA11y}
-              numberOfLines={1}
-            >
-              {timeText}
-            </Text>
-          ) : null}
-
-          {serverVisible && serverLabel ? (
-            <ServerChip
-              label={serverLabel}
-              color={serverColor ?? SERVER_COLOR_DEFAULT}
-              variant={serverChipVariant}
-              onPress={onServerPress}
-              onLongPress={onServerLongPress}
-            />
-          ) : null}
-          {provider != null && showsProviderMark(provider, dominantProvider) ? <ProviderMark provider={provider} /> : null}
-          {trailing}
-        </View>
-      ) : null}
+      {!largeText ? tail : null}
     </Wrapper>
   )
 }
@@ -436,6 +443,13 @@ function makeStyles(theme: Theme) {
     tailCompact: {
       flexDirection: 'row-reverse',
       alignItems: 'center',
+      gap: spacing.xs + 2,
+    },
+    tailStacked: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      flexWrap: 'wrap',
       gap: spacing.xs + 2,
     },
     time: {

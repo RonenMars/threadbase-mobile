@@ -1,0 +1,99 @@
+diff --git a/node_modules/phosphor-react-native/lib/commonjs/lib/icon-base.js b/node_modules/phosphor-react-native/lib/commonjs/lib/icon-base.js
+--- a/node_modules/phosphor-react-native/lib/commonjs/lib/icon-base.js
++++ b/node_modules/phosphor-react-native/lib/commonjs/lib/icon-base.js
+@@ -5,10 +5,18 @@ Object.defineProperty(exports, "__esModule", {
+ });
+ exports.default = void 0;
+ var _react = _interopRequireWildcard(require("react"));
++var _reactNative = require("react-native");
+ var _reactNativeSvg = _interopRequireWildcard(require("react-native-svg"));
+ var _lib = require("../lib");
+ var _jsxRuntime = require("react/jsx-runtime");
+ function _interopRequireWildcard(e, t) { if ("function" == typeof WeakMap) var r = new WeakMap(), n = new WeakMap(); return (_interopRequireWildcard = function (e, t) { if (!t && e && e.__esModule) return e; var o, i, f = { __proto__: null, default: e }; if (null === e || "object" != typeof e && "function" != typeof e) return f; if (o = t ? n : r) { if (o.has(e)) return o.get(e); o.set(e, f); } for (const t in e) "default" !== t && {}.hasOwnProperty.call(e, t) && ((i = (o = Object.defineProperty) && Object.getOwnPropertyDescriptor(e, t)) && (i.get || i.set) ? o(f, t, i) : f[t] = e[t]); return f; })(e, t); }
++// Icons follow the OS text size like Text does, capped so a fixed-size box can still hold them.
++const MAX_ICON_FONT_SCALE = 1.5;
++function scaleToFontSize(size) {
++  if (typeof size !== 'number') return size;
++  const fontScale = Math.min(Math.max(_reactNative.PixelRatio.getFontScale(), 1), MAX_ICON_FONT_SCALE);
++  return size * fontScale;
++}
+ function IconBase({
+   weight,
+   color,
+@@ -44,8 +52,8 @@ function IconBase({
+     testID: props.testID ?? `phosphor-react-native-${name}-${weight}`,
+     fill: "currentColor",
+     viewBox: "0 0 256 256",
+-    width: size ?? contextSize,
+-    height: size ?? contextSize,
++    width: scaleToFontSize(size ?? contextSize),
++    height: scaleToFontSize(size ?? contextSize),
+     color: color ?? contextColor,
+     "aria-labelledby": titleId,
+     ...props,
+diff --git a/node_modules/phosphor-react-native/lib/module/lib/icon-base.js b/node_modules/phosphor-react-native/lib/module/lib/icon-base.js
+--- a/node_modules/phosphor-react-native/lib/module/lib/icon-base.js
++++ b/node_modules/phosphor-react-native/lib/module/lib/icon-base.js
+@@ -1,9 +1,17 @@
+ "use strict";
+ 
+ import React, { useContext } from 'react';
++import { PixelRatio } from 'react-native';
+ import Svg, { G } from 'react-native-svg';
+ import { IconContext } from '../lib';
+ import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
++// Icons follow the OS text size like Text does, capped so a fixed-size box can still hold them.
++const MAX_ICON_FONT_SCALE = 1.5;
++function scaleToFontSize(size) {
++  if (typeof size !== 'number') return size;
++  const fontScale = Math.min(Math.max(PixelRatio.getFontScale(), 1), MAX_ICON_FONT_SCALE);
++  return size * fontScale;
++}
+ function IconBase({
+   weight,
+   color,
+@@ -39,8 +47,8 @@ function IconBase({
+     testID: props.testID ?? `phosphor-react-native-${name}-${weight}`,
+     fill: "currentColor",
+     viewBox: "0 0 256 256",
+-    width: size ?? contextSize,
+-    height: size ?? contextSize,
++    width: scaleToFontSize(size ?? contextSize),
++    height: scaleToFontSize(size ?? contextSize),
+     color: color ?? contextColor,
+     "aria-labelledby": titleId,
+     ...props,
+diff --git a/node_modules/phosphor-react-native/src/lib/icon-base.tsx b/node_modules/phosphor-react-native/src/lib/icon-base.tsx
+--- a/node_modules/phosphor-react-native/src/lib/icon-base.tsx
++++ b/node_modules/phosphor-react-native/src/lib/icon-base.tsx
+@@ -1,4 +1,5 @@
+ import React, { useContext, type ReactElement, type FC } from 'react';
++import { PixelRatio } from 'react-native';
+ import Svg, { G } from 'react-native-svg';
+ import { type IconProps, type IconWeight, IconContext } from '../lib';
+ 
+@@ -10,6 +11,13 @@ interface IconBaseProps extends IconProps {
+   name: string;
+ }
+ 
++// Icons follow the OS text size like Text does, capped so a fixed-size box can still hold them.
++const MAX_ICON_FONT_SCALE = 1.5;
++function scaleToFontSize(size: number | string): number | string {
++  if (typeof size !== 'number') return size;
++  const fontScale = Math.min(Math.max(PixelRatio.getFontScale(), 1), MAX_ICON_FONT_SCALE);
++  return size * fontScale;
++}
+ function IconBase({
+   weight,
+   color,
+@@ -49,8 +57,8 @@ function IconBase({
+       testID={props.testID ?? `phosphor-react-native-${name}-${weight}`}
+       fill="currentColor"
+       viewBox="0 0 256 256"
+-      width={size ?? contextSize}
+-      height={size ?? contextSize}
++      width={scaleToFontSize(size ?? contextSize)}
++      height={scaleToFontSize(size ?? contextSize)}
+       color={color ?? contextColor}
+       aria-labelledby={titleId}
+       {...props}

@@ -12,6 +12,16 @@ global.__DEV__ = true
 // jestSetup stubs the native module so that NOOP doesn't throw under Jest.
 require('react-native-gesture-handler/jestSetup')
 
+// React Native's Jest preset reports fontScale 2, which would put every suite in the
+// large-text layout and scale every Phosphor icon. Tests that need it set it themselves.
+{
+  const { Dimensions } = require('react-native')
+  Dimensions.set({
+    window: { ...Dimensions.get('window'), fontScale: 1 },
+    screen: { ...Dimensions.get('screen'), fontScale: 1 },
+  })
+}
+
 // query-client wires onlineManager to NetInfo at import; without a stub the
 // native module yields undefined state and the listener throws. Default to
 // "connected"; per-file mocks (e.g. query-client.test) override to drive
