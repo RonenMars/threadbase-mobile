@@ -631,6 +631,7 @@ export default function ProjectsHub() {
           order={sortBy}
           direction={sortOrder}
           refreshing={manualRefreshing}
+          loading={isStillFetching || allServersFailed}
           onRefresh={handleRefresh}
           onPromptsChanged={refetchSessions}
           onEndReached={loadMoreConversations}

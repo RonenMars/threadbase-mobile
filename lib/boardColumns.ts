@@ -54,18 +54,29 @@ export function bucketBoard<E extends { item: MergedItem; tier: SessionTier | nu
   return board
 }
 
-/** The first column with something in it, so the board never opens on an empty page. */
-export function firstNonEmptyColumn(board: Record<BoardColumnId, { length: number }>): BoardColumnId {
-  return BOARD_COLUMNS.find((c) => board[c].length > 0) ?? 'needsYou'
+/** Earlier always shows: it pages in, so an empty one can mean nothing has loaded yet, and the board keeps a column. */
+export function visibleColumns(board: Record<BoardColumnId, { length: number }>): BoardColumnId[] {
+  return BOARD_COLUMNS.filter((c) => c === 'earlier' || board[c].length > 0)
 }
 
-/** Needs you when anything waits, else where the user left off. */
+/** Needs you when anything waits, else where the user left off. A hidden one is resolved by `followColumn`. */
 export function startingColumn(
   board: Record<BoardColumnId, { length: number }>,
   remembered: BoardColumnId | null,
 ): BoardColumnId {
   if (board.needsYou.length > 0) return 'needsYou'
-  return remembered ?? firstNonEmptyColumn(board)
+  return remembered ?? visibleColumns(board)[0]
+}
+
+/** Where to go when the column on screen hides: wherever its cards went, else the first column left. */
+export function followColumn(
+  before: Record<BoardColumnId, readonly { key: string }[]>,
+  after: Record<BoardColumnId, readonly { key: string }[]>,
+  from: BoardColumnId,
+  visible: readonly BoardColumnId[],
+): BoardColumnId {
+  const moved = new Set(before[from].map((c) => c.key))
+  return visible.find((c) => after[c].some((card) => moved.has(card.key))) ?? visible[0]
 }
 
 /**
