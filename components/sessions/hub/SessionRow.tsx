@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useNavLockStore } from '@/stores/navLock'
 import { SwipeableRow } from '@/components/sessions/shared/SwipeableRow'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
 import { sessionRowTitle } from '@/components/sessions/shared/rowTitle'
 import { conversationHref } from '@/lib/conversationHref'
 import { isExternalSession } from '@/lib/externalSession'
@@ -71,6 +72,7 @@ export function SessionRow({ session, forceServerChip = false }: SessionRowProps
         previewMode={previewMode}
         onPress={handlePress}
         onLongPress={handleLongPress}
+        trailing={<SessionDraftMark serverId={session.serverId} sessionId={session.id} />}
         testID={`session-row-${session.id}`}
       />
       </SwipeableRow>

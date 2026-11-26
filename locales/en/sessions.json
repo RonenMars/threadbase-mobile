@@ -181,7 +181,8 @@
     "waitingFor": "waiting {{elapsed}}",
     "open": "Open",
     "openSession": "Open session {{title}}",
-    "showQuestion": "Show the question for {{title}}"
+    "showQuestion": "Show the question for {{title}}",
+    "hasDraft": "Unsent draft"
   },
   "question": {
     "close": "Close without answering",

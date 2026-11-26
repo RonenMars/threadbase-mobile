@@ -6,6 +6,8 @@ import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
 import { showsProviderMark } from '@/lib/providerDominance'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
+import { useHasDraft } from '@/stores/drafts'
 import type { ProviderName } from '@/constants/providers'
 import { ServerChip } from '@/components/sessions/shared/ServerChip'
 import { SERVER_COLOR_DEFAULT } from '@/components/sessions/shared/serverPalette'
@@ -25,6 +27,8 @@ interface Props {
   /** Shows the ⋮ button that opens the session's action sheet. */
   onMenuPress?: () => void
   accessibilityLabel: string
+  /** The session whose unsent draft the card marks; omit for a card with no composer behind it. */
+  draft?: { serverId: string; sessionId: string }
   testID?: string
   isFirst?: boolean
   children: ReactNode
@@ -45,6 +49,7 @@ export function LiveCard({
   onLongPress,
   onMenuPress,
   accessibilityLabel,
+  draft,
   testID,
   isFirst,
   children,
@@ -52,6 +57,7 @@ export function LiveCard({
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
+  const hasDraft = useHasDraft(draft?.serverId ?? '', draft?.sessionId ?? '')
   const borderColor = emphasis === 'solid' ? `${color}80` : `${theme.text.accent}2e`
 
   return (
@@ -62,13 +68,14 @@ export function LiveCard({
         onLongPress={onLongPress}
         activeOpacity={0.75}
         accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
+        accessibilityLabel={hasDraft ? `${accessibilityLabel}, ${t('row.hasDraft')}` : accessibilityLabel}
         style={styles.row}
       >
         <View style={[styles.rail, { backgroundColor: color }]} />
         <View style={styles.body}>
           <View style={[styles.titleRow, onMenuPress ? styles.titleRowWithMenu : null]}>
             <Text style={styles.title} numberOfLines={2}>{title}</Text>
+            {draft ? <SessionDraftMark serverId={draft.serverId} sessionId={draft.sessionId} decorative /> : null}
             {showsProviderMark(provider, dominantProvider) && provider ? (
               <ProviderMark provider={provider} />
             ) : null}

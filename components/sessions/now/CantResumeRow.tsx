@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { View, Text, Pressable, StyleSheet } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
@@ -13,6 +14,8 @@ interface Props {
   timestamp?: string | number | null
   onPress?: () => void
   onLongPress?: () => void
+  /** Sits beside the title; the row has no trailing column to carry it. */
+  mark?: ReactNode
   testID?: string
 }
 
@@ -31,7 +34,7 @@ export function cantResumeReason(
 }
 
 /** A history row that cannot be resumed: title plus a red reason, never a preview echo. */
-export function CantResumeRow({ title, statusLabel, timestamp, onPress, onLongPress, testID }: Props) {
+export function CantResumeRow({ title, statusLabel, timestamp, onPress, onLongPress, mark, testID }: Props) {
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
@@ -49,7 +52,10 @@ export function CantResumeRow({ title, statusLabel, timestamp, onPress, onLongPr
       style={styles.row}
     >
       <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>{title}</Text>
+        <View style={styles.titleLine}>
+          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          {mark}
+        </View>
         <Text style={styles.reason} numberOfLines={1}>{reason}</Text>
       </View>
       {time ? (
@@ -72,7 +78,9 @@ function makeStyles(theme: Theme) {
       borderBottomColor: `${theme.text.accent}17`,
     },
     body: { flex: 1, minWidth: 0, gap: 3 },
+    titleLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     title: {
+      flexShrink: 1,
       color: theme.text.secondary,
       fontSize: font.sm,
       fontWeight: '600',

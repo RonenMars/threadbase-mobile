@@ -854,6 +854,7 @@
   "sessions.json:row.open": "cf9b77061f7b",
   "sessions.json:row.openSession": "1c77437156d1",
   "sessions.json:row.showQuestion": "83675e476e32",
+  "sessions.json:row.hasDraft": "d59b6fd3bc44",
   "sessions.json:question.close": "a062cd8b3cd1",
   "sessions.json:question.count": "f6750f98bf9b",
   "sessions.json:question.answerInSession": "d061ba029f8c",

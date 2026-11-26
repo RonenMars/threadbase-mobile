@@ -194,7 +194,8 @@
     "waitingFor": "ממתין {{elapsed}}",
     "open": "פתח",
     "openSession": "פתיחת הסשן {{title}}",
-    "showQuestion": "הצגת השאלה של {{title}}"
+    "showQuestion": "הצגת השאלה של {{title}}",
+    "hasDraft": "טיוטה שלא נשלחה"
   },
   "question": {
     "close": "סגירה בלי לענות",

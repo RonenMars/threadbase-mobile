@@ -28,6 +28,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useSessionNamesStore } from '@/stores/sessionNames'
 import { useQuickAccessStore } from '@/stores/quickAccess'
 import { useViewPrefsStore } from '@/stores/viewPrefs'
+import { useDraftsStore } from '@/stores/drafts'
 import { wsManager } from '@/services/ws-client'
 import { applySubagentsChanged } from '@/hooks/useSubagents'
 import {
@@ -130,6 +131,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrateSessionNames = useSessionNamesStore((s) => s.hydrate)
   const hydrateQuickAccess = useQuickAccessStore((s) => s.hydrate)
   const hydrateViewPrefs = useViewPrefsStore((s) => s.hydrate)
+  const hydrateDrafts = useDraftsStore((s) => s.hydrate)
   const setConnected = useServersStore((s) => s.setConnected)
   const refreshServerInfo = useServersStore((s) => s.refreshServerInfo)
   const setScanProgress = useServersStore((s) => s.setScanProgress)
@@ -148,7 +150,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     void hydrateSessionNames()
     void hydrateQuickAccess()
     void hydrateViewPrefs()
-  }, [hydrateSettings, hydrateSessionNames, hydrateQuickAccess, hydrateViewPrefs])
+    void hydrateDrafts()
+  }, [hydrateSettings, hydrateSessionNames, hydrateQuickAccess, hydrateViewPrefs, hydrateDrafts])
 
   useEffect(() => {
     loadPersistedServers()

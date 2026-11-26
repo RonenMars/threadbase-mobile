@@ -5,6 +5,7 @@ import { useSessionRowActions } from '@/hooks/useSessionRowActions'
 import { useServersStore } from '@/stores/servers'
 import { useSettingsStore } from '@/stores/settings'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
 import type { MessagePreviewMode } from '@/components/sessions/shared/MessagePreview'
 import type { MultiConversation, MultiSession } from '@/types/api'
 import type { DrillItem } from './types'
@@ -77,6 +78,7 @@ function DrillRowBody({ item }: Props) {
       previewMode={previewMode}
       provider={item.provider}
       onPress={item.onPress}
+      trailing={item.session ? <SessionDraftMark serverId={item.session.serverId} sessionId={item.session.id} /> : undefined}
     />
   )
 }

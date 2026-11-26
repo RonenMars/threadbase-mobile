@@ -10,6 +10,7 @@ import { DrillView } from './DrillView'
 import { ServerRootRow } from './ServerRootRow'
 import { EmptyState } from '../../ui/EmptyState'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
+import { SessionDraftMark } from '@/components/sessions/shared/SessionDraftMark'
 import { LiveSessionsHeader } from './LiveSessionsHeader'
 import { deriveSessionPresentation, isPresentationLive, sessionMessageCount } from '@/lib/sessionPresentation'
 import { LIST_WINDOW } from '@/components/sessions/shared/listWindow'
@@ -121,6 +122,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
               useNavLockStore.getState().lock()
               router.push(`/session/${s.id}?server=${s.serverId}`)
             }}
+            trailing={<SessionDraftMark serverId={s.serverId} sessionId={s.id} />}
           />
         )
       }
@@ -320,6 +322,7 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
               density="comfortable"
               leading="avatar"
               onPress={() => handleSessionPress(s)}
+              trailing={<SessionDraftMark serverId={s.serverId} sessionId={s.id} />}
             />
           )
         })}

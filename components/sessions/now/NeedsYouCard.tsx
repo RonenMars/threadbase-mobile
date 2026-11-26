@@ -72,6 +72,7 @@ export function NeedsYouCard({ session, title, serverLabel, serverColor, dominan
         onLongPress={handleLongPress}
         onMenuPress={handleMenuPress}
         accessibilityLabel={accessibilityLabel}
+        draft={{ serverId: session.serverId, sessionId: session.id }}
         testID={`session-row-${session.id}`}
         isFirst={isFirst}
       >

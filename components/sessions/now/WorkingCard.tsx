@@ -94,6 +94,7 @@ export function WorkingCard({ session, title, serverLabel, serverColor, dominant
         onLongPress={handleLongPress}
         onMenuPress={handleMenuPress}
         accessibilityLabel={`${title}, ${tierLabel}`}
+        draft={{ serverId: session.serverId, sessionId: session.id }}
         testID={`session-row-${session.id}`}
         isFirst={isFirst}
       >
