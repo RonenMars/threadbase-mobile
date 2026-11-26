@@ -97,6 +97,7 @@ export default function ProjectDetailScreen() {
 
   const isSearching = debouncedQuery.length > 0
   const isError = !isSearching && searchResult.isError
+  const searchPending = searchQuery !== '' && (searchQuery !== debouncedQuery || searchResult.isFetching)
 
   const displayedConversations: MultiConversation[] = isSearching
     ? (searchResult.data?.conversations ?? [])
@@ -130,6 +131,7 @@ export default function ProjectDetailScreen() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchOpen={searchOpen}
+            searchPending={searchPending}
             isLoadingInitial={false}
             isFetchingNextPage={false}
             loadingProgress={null}

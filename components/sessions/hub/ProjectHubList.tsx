@@ -17,6 +17,7 @@ import { ProjectHubCard } from './ProjectHubCard'
 import { splitProjectTiers } from './projectTiers'
 import { SectionEyebrow, type SectionTone } from '@/components/sessions/now/SectionEyebrow'
 import { EmptyState } from '../../ui/EmptyState'
+import { SearchingAnimation } from '../../ui/SearchingAnimation'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { spacing } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -87,7 +88,8 @@ export const ProjectHubList = React.memo(function ProjectHubList({
 
   // Conversations live behind per-group queries now, so there is no local array
   // to filter — search goes to the server's /api/search, as classic does.
-  const { data: convSearchData } = useConversationSearch(debouncedQuery)
+  const { data: convSearchData, isFetching: convSearchFetching } = useConversationSearch(debouncedQuery)
+  const searchPending = searchQuery !== debouncedQuery || convSearchFetching
 
   const displayedServerIds = useServersStore((s) => s.displayedServerIds)
   const servers = useServersStore((s) => s.servers)
@@ -320,11 +322,15 @@ export const ProjectHubList = React.memo(function ProjectHubList({
     <View style={styles.container}>
       {showSearch ? (
         searchSections.length === 0 ? (
-          <View style={{ flex: 1 }}>
-            <EmptyState
-              title={t('list.noResults')}
-              subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })}
-            />
+          <View style={{ flex: 1, paddingTop: topInset }}>
+            {searchPending ? (
+              <SearchingAnimation />
+            ) : (
+              <EmptyState
+                title={t('list.noResults')}
+                subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })}
+              />
+            )}
           </View>
         ) : (
           <SectionList

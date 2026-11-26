@@ -1,4 +1,7 @@
 {
+  "keyboard": {
+    "dismiss": "Скрыть клавиатуру"
+  },
   "button": {
     "cancel": "Отмена",
     "confirm": "Подтвердить",

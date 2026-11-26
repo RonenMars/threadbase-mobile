@@ -18,6 +18,9 @@ import { SearchInput } from '@/components/shared/SearchInput'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { KeyboardDismissOverlay } from '@/components/ui/KeyboardDismissOverlay'
+import { SearchingAnimation } from '@/components/ui/SearchingAnimation'
 import { SkeletonBox } from '@/components/ui/Skeleton'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -107,6 +110,8 @@ interface Props {
   searchQuery: string
   onSearchChange: (q: string) => void
   searchOpen?: boolean
+  /** The server has not answered this query yet. */
+  searchPending?: boolean
   /** First page still loading — show skeleton rows. */
   isLoadingInitial?: boolean
   isFetchingNextPage?: boolean
@@ -128,12 +133,14 @@ export function ConversationList({
   searchQuery,
   onSearchChange,
   searchOpen = true,
+  searchPending = false,
   isLoadingInitial = false,
   isFetchingNextPage = false,
   headerRight,
   loadingProgress = null,
 }: Props) {
   const { t } = useTranslation(['conversation', 'common'])
+  const { t: tSessions } = useTranslation('sessions')
   const theme = useTheme()
   const styles = makeStyles(theme)
   const searchDirection = useTextDirectionStyle()
@@ -200,6 +207,10 @@ export function ConversationList({
     [refreshing, onRefresh, theme],
   )
 
+  const noResults = searchQuery ? (
+    <EmptyState title={tSessions('list.noResults')} subtitle={tSessions('list.noResultsSubtitle', { query: searchQuery })} />
+  ) : undefined
+
   return (
     <View style={styles.container}>
       {searchOpen ? (
@@ -226,26 +237,30 @@ export function ConversationList({
         progressLabel="conversations"
       />
 
-      <Animated.FlatList
-        ref={listRef}
-        data={listData}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        onEndReached={skeletonMode ? undefined : onEndReached}
-        onEndReachedThreshold={0.35}
-        refreshControl={refreshControl}
-        onScroll={handleScroll}
-        scrollEventThrottle={100}
-        ItemSeparatorComponent={Separator}
-        ListFooterComponent={
-          isFetchingNextPage && !skeletonMode ? (
-            <View style={styles.listFooter}>
-              <ActivityIndicator color={theme.text.secondary} />
-              <Text style={styles.listFooterText}>{t('list.loadingMore')}</Text>
-            </View>
-          ) : undefined
-        }
-      />
+      <View style={styles.container}>
+        <Animated.FlatList
+          ref={listRef}
+          ListEmptyComponent={searchPending ? <SearchingAnimation /> : noResults}
+          data={listData}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          onEndReached={skeletonMode ? undefined : onEndReached}
+          onEndReachedThreshold={0.35}
+          refreshControl={refreshControl}
+          onScroll={handleScroll}
+          scrollEventThrottle={100}
+          ItemSeparatorComponent={Separator}
+          ListFooterComponent={
+            isFetchingNextPage && !skeletonMode ? (
+              <View style={styles.listFooter}>
+                <ActivityIndicator color={theme.text.secondary} />
+                <Text style={styles.listFooterText}>{t('list.loadingMore')}</Text>
+              </View>
+            ) : undefined
+          }
+        />
+        {searchOpen ? <KeyboardDismissOverlay /> : null}
+      </View>
 
       <Animated.View style={[styles.scrollBtn, styles.scrollBtnTop, topBtnStyle]} pointerEvents="box-none">
         <TouchableOpacity

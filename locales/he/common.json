@@ -1,4 +1,7 @@
 {
+  "keyboard": {
+    "dismiss": "סגירת המקלדת"
+  },
   "button": {
     "cancel": "ביטול",
     "confirm": "אישור",

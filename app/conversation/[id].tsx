@@ -21,6 +21,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SearchInput } from '@/components/shared/SearchInput'
+import { KeyboardDismissOverlay } from '@/components/ui/KeyboardDismissOverlay'
 import { MessageSkeletonRow } from '@/components/conversation/MessageSkeletonRow'
 import { SlowLoadingBanner } from '@/components/conversation/SlowLoadingBanner'
 import { SubagentSection } from '@/components/conversation/SubagentSection'
@@ -167,6 +168,7 @@ export default function ConversationDetailScreen() {
     })
   }
   const { open: searchOpen, draft: searchDraft } = searchBarState
+  const [searchFocused, setSearchFocused] = useState(false)
 
   const submitInChatSearch = useCallback(() => {
     const trimmed = searchDraft.trim()
@@ -809,6 +811,8 @@ export default function ConversationDetailScreen() {
         value={searchDraft}
         onChangeText={(text) => setSearchBarState((prev) => ({ ...prev, draft: text }))}
         onSubmitEditing={submitInChatSearch}
+        onFocus={() => setSearchFocused(true)}
+        onBlur={() => setSearchFocused(false)}
         placeholder={t('search.placeholder')}
         placeholderTextColor={theme.text.secondary}
         autoFocus={!searchQuery}
@@ -1040,6 +1044,7 @@ export default function ConversationDetailScreen() {
           </View>
         </View>
         )}
+        {searchOpen && searchFocused ? <KeyboardDismissOverlay /> : null}
       </View>
 
       <InfoModal

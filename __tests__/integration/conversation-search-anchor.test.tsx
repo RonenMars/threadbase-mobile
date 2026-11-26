@@ -5,6 +5,7 @@
  * cleanly to the normal tail view when no target resolves.
  */
 import React from 'react'
+import { Keyboard } from 'react-native'
 import { act, fireEvent, render, waitFor, within } from '@testing-library/react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import ConversationDetailScreen from '@/app/conversation/[id]'
@@ -443,6 +444,28 @@ describe('conversation detail — search-anchored navigation', () => {
     expect(setParams).toHaveBeenCalledWith({ search: 'needle', anchor_index: '' })
     // Hub-wide /api/search must not be used for in-chat search.
     expect(mockRequestedPaths.some((p) => p.includes('/api/search'))).toBe(false)
+  })
+
+  it('puts the keyboard overlay up only while the in-chat search field has focus', async () => {
+    const visible = jest.spyOn(Keyboard, 'isVisible').mockReturnValue(true)
+    ;(useLocalSearchParams as jest.Mock).mockReturnValue({ id: 'conv-anchor', server: 'srv1' })
+    mockTailResponder = () => makeDetail(0, 10, 10)
+    const { getByTestId, queryByTestId } = await render(<ConversationDetailScreen />, { wrapper: createWrapper() })
+    await flushQueries()
+    await waitFor(() => expect(getByTestId('conversation-search-btn')).toBeTruthy())
+    await act(async () => {
+      fireEvent.press(getByTestId('conversation-search-btn'))
+    })
+    expect(queryByTestId('keyboard-dismiss-overlay')).toBeNull()
+    await act(async () => {
+      fireEvent(getByTestId('conversation-search-input'), 'focus')
+    })
+    expect(getByTestId('keyboard-dismiss-overlay')).toBeTruthy()
+    await act(async () => {
+      fireEvent(getByTestId('conversation-search-input'), 'blur')
+    })
+    expect(queryByTestId('keyboard-dismiss-overlay')).toBeNull()
+    visible.mockRestore()
   })
 
   it('auto-opens the in-chat search bar when navigation already carries ?search=', async () => {

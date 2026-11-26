@@ -1,5 +1,6 @@
 {
   "search": {
+    "searching": "Searching your conversations…",
     "placeholder": "Search sessions & conversations…",
     "accessibilityLabel": "Search",
     "conversationsResults_one": "Conversations · {{count}} result",

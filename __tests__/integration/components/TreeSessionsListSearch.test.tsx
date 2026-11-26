@@ -65,3 +65,12 @@ it('renders pluralised, translated search section headers', async () => {
   expect(getByText('Conversations · 1 result')).toBeTruthy()
   expect(getByText('Sessions · 2 results')).toBeTruthy()
 })
+
+it('shows the searching animation, not "No results", while the request is in flight', async () => {
+  mockSearch.mockReturnValue({ data: undefined, isFetching: true })
+  const r = await renderWithI18n(
+    <TreeSessionsList sessions={[]} summaries={[]} refreshing={false} onRefresh={() => {}} searchOpen searchQuery="wombat" />,
+  )
+  expect(r.getByTestId('searching-animation')).toBeTruthy()
+  expect(r.queryByText('No results')).toBeNull()
+})

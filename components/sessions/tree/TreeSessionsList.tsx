@@ -9,6 +9,7 @@ import { TreeRow } from './TreeRow'
 import { DrillView } from './DrillView'
 import { ServerRootRow } from './ServerRootRow'
 import { EmptyState } from '../../ui/EmptyState'
+import { SearchingAnimation } from '../../ui/SearchingAnimation'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveSessionsHeader } from './LiveSessionsHeader'
 import { deriveSessionPresentation, isPresentationLive, sessionMessageCount } from '@/lib/sessionPresentation'
@@ -62,7 +63,8 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
   // Conversations are no longer held in memory, so search goes to the server's
   // own /api/search instead of filtering a local array. Sessions stay eager and
   // are still filtered here.
-  const { data: convSearchData } = useConversationSearch(debouncedQuery)
+  const { data: convSearchData, isFetching: convSearchFetching } = useConversationSearch(debouncedQuery)
+  const searchPending = searchQuery !== debouncedQuery || convSearchFetching
 
   const searchSections = useMemo(() => {
     if (!debouncedQuery) return []
@@ -346,8 +348,12 @@ export const TreeSessionsList = React.memo(function TreeSessionsList({
     <View style={{ flex: 1 }}>
       {showSearch ? (
         searchSections.length === 0 ? (
-          <View style={{ flex: 1 }}>
-            <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
+          <View style={{ flex: 1, paddingTop: topInset }}>
+            {searchPending ? (
+              <SearchingAnimation />
+            ) : (
+              <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: debouncedQuery })} />
+            )}
           </View>
         ) : (
           <SectionList

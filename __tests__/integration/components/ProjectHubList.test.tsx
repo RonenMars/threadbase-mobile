@@ -9,8 +9,9 @@ import { seedServerFailure } from '@/test-utils/serverFailure'
 import i18n from '@/test-utils/i18n-setup'
 import type { MultiSession, ServerConfig } from '@/types/api'
 
+let mockSearchFetching = false
 jest.mock('@/hooks/useConversations', () => ({
-  useConversationSearch: () => ({ data: undefined }),
+  useConversationSearch: () => ({ data: undefined, isFetching: mockSearchFetching }),
 }))
 
 jest.mock('@/hooks/useProjectConversations', () => ({
@@ -195,5 +196,20 @@ describe('ProjectHubList server failure', () => {
     expect(getByTestId('server-header-srv-1')).toBeTruthy()
     expect(getByTestId('server-header-srv-3')).toBeTruthy()
     expect(queryByTestId('server-header-srv-2')).toBeNull()
+  })
+})
+
+describe('ProjectHubList search', () => {
+  it('shows the searching animation while in flight, then "No results"', async () => {
+    const hub = () => (
+      <ProjectHubList sessions={[]} summaries={[]} sortBy="lastActivity" sortOrder="desc" refreshing={false} onRefresh={() => {}} searchOpen searchQuery="wombat" />
+    )
+    mockSearchFetching = true
+    const r = await renderWithI18n(hub())
+    expect(r.getByTestId('searching-animation')).toBeTruthy()
+    expect(r.queryByText('No results')).toBeNull()
+    mockSearchFetching = false
+    await r.rerender(hub())
+    await waitFor(() => expect(r.getByText('No results')).toBeTruthy())
   })
 })

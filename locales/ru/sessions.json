@@ -1,5 +1,6 @@
 {
   "search": {
+    "searching": "Ищем в ваших разговорах…",
     "placeholder": "Поиск сессий и бесед…",
     "accessibilityLabel": "Поиск",
     "conversationsResults_one": "Беседы · {{count}} результат",
