@@ -1,5 +1,6 @@
 {
   "search": {
+    "searching": "جارٍ البحث في محادثاتك…",
     "placeholder": "ابحث في الجلسات والمحادثات…",
     "accessibilityLabel": "بحث",
     "conversationsResults_zero": "المحادثات · لا نتائج",

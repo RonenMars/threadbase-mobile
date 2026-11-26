@@ -1,5 +1,6 @@
 {
   "search": {
+    "searching": "מחפש בשיחות שלך…",
     "placeholder": "חפש סשנים ושיחות…",
     "accessibilityLabel": "חיפוש",
     "conversationsResults_one": "שיחות · תוצאה אחת",

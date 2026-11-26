@@ -37,23 +37,10 @@ appId: com.ronenmars.threadbase
 
 - inputText: "idempotency"
 
-# The fixture conversation is old, so the Now list files it under a month or
-# year day bucket (the key moves with the date), which starts collapsed.
-# Match only those: a bare `day-bucket-.*` regex would hit the expanded
-# today/yesterday header first and collapse it.
-- extendedWaitUntil:
-    visible:
-      id: "day-bucket-(month|year)-.*"
-    timeout: 8000
+# Close the keyboard: while it is up, an overlay takes the first tap on a result.
+- pressKey: Enter
 
-- runFlow:
-    when:
-      notVisible:
-        id: "conversation-row-conv-search-anchor"
-    commands:
-      - tapOn:
-          id: "day-bucket-(month|year)-.*"
-
+# The fixture conversation is old; a search opens every day group, so its row shows.
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-search-anchor"

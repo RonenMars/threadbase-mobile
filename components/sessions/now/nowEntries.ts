@@ -11,7 +11,7 @@ import {
   type SessionTier,
 } from '@/lib/sessionPresentation'
 import type { NameOrigin } from '@/stores/sessionNames'
-import { mergedItemMatchesQuery, omitConversationsCoveredByLiveSessions, type MergedItem } from './mergedItems'
+import { omitConversationsCoveredByLiveSessions, searchMergedItems, type MergedItem } from './mergedItems'
 
 export interface NowEntry {
   item: MergedItem
@@ -29,7 +29,7 @@ export function buildNowEntries(
   nameOrigins: Record<string, NameOrigin>,
 ): NowEntry[] {
   const q = searchQuery.trim().toLowerCase()
-  const visible = q ? items.filter((it) => mergedItemMatchesQuery(it, q, conversationsFromServer)) : items
+  const visible = q ? searchMergedItems(items, q, conversationsFromServer) : items
   return omitConversationsCoveredByLiveSessions(visible).map((item) => {
     const stored = storedNameFor(names, nameOrigins, item.item.serverId, item.item.id)
     if (item.kind === 'session') {

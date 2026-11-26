@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Clipboard from 'expo-clipboard'
 import * as Haptics from 'expo-haptics'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SearchingAnimation } from '@/components/ui/SearchingAnimation'
 import { FAB_CLEARANCE } from '@/components/ui/FAB'
 import { ArrowSquareOut, CopySimple, Star } from 'phosphor-react-native'
 import { SessionActionSheet, type SessionActionItem } from '@/components/sessions/SessionActionSheet'
@@ -46,6 +47,8 @@ interface Props {
   onRefresh: () => void
   onEndReached?: () => void
   searchQuery: string
+  /** The server has not answered this query yet. */
+  searchPending?: boolean
   conversationsFromServer: boolean
   isBackgroundRefreshing?: boolean
   /** Height of the floating chrome; the rows scroll under it. */
@@ -166,6 +169,7 @@ export const NowList = React.memo(function NowList({
   onRefresh,
   onEndReached,
   searchQuery,
+  searchPending = false,
   conversationsFromServer,
   isBackgroundRefreshing,
   topInset = 0,
@@ -210,6 +214,9 @@ export const NowList = React.memo(function NowList({
 
   const dominantProvider = useMemo(() => findDominantProvider(entries.map((e) => e.item.item.provider)), [entries])
 
+  // A match must never hide in a collapsed group, so a search opens them all.
+  const searching = searchQuery.trim() !== ''
+
   const flatData = useMemo((): FlatItem[] => {
     const sign = sortDirection === 'asc' ? -1 : 1
     const byTime = (a: Entry, b: Entry) => sign * (b.item.ms - a.item.ms)
@@ -248,7 +255,7 @@ export const NowList = React.memo(function NowList({
         || warming.has(id)
         || (!allFailed && visibleError(id)),
       )
-      const collapsible = withRows.length > 1
+      const collapsible = !searching && withRows.length > 1
       for (const id of withRows) {
         const bucket = earlier.filter((e) => e.item.item.serverId === id)
         out.push({
@@ -270,7 +277,7 @@ export const NowList = React.memo(function NowList({
       const anyBucketHasRows = buckets.length > 0
       for (const { key: bucketKey, items: bucket } of buckets) {
         out.push({ kind: 'eyebrow', key: `eyebrow-${bucketKey}`, tone: 'muted', label: dayBucketLabel(bucketKey, t, i18n.language), count: bucket.length, bucketKey })
-        if (!isDayBucketOpen(dayBucketOpen, bucketKey)) continue
+        if (!searching && !isDayBucketOpen(dayBucketOpen, bucketKey)) continue
         out.push(...bucket.map(toRow))
       }
       if (warmingHere) {
@@ -284,7 +291,7 @@ export const NowList = React.memo(function NowList({
     const first = out.find((f) => f.kind === 'row' && f.entry.item.kind === 'session')
     if (first && first.kind === 'row') first.isFirst = true
     return out
-  }, [entries, order, sortDirection, multiServer, displayedServerIds, servers, collapsedServers, dayBucketOpen, warming, fetchStatuses, dismissedFailureAt, t, i18n.language])
+  }, [entries, searching, order, sortDirection, multiServer, displayedServerIds, servers, collapsedServers, dayBucketOpen, warming, fetchStatuses, dismissedFailureAt, t, i18n.language])
 
   const highlight = searchQuery.trim() || undefined
 
@@ -305,7 +312,7 @@ export const NowList = React.memo(function NowList({
             label={item.label}
             tone={item.tone}
             count={item.count}
-            collapsible={item.bucketKey != null}
+            collapsible={!searching && item.bucketKey != null}
             isExpanded={item.bucketKey ? isDayBucketOpen(dayBucketOpen, item.bucketKey) : undefined}
             onToggle={item.bucketKey ? () => toggleDayBucket(item.bucketKey!) : undefined}
             testID={item.bucketKey ? `day-bucket-${item.bucketKey}` : undefined}
@@ -383,7 +390,7 @@ export const NowList = React.memo(function NowList({
         )
       }
     }
-  }, [collapsedServers, toggleServer, dayBucketOpen, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, onPromptsChanged, dismissFailure])
+  }, [searching, collapsedServers, toggleServer, dayBucketOpen, toggleDayBucket, isBackgroundRefreshing, multiServer, servers, highlight, dominantProvider, fetchStatuses, onRetryServer, onOpenStatus, onPromptsChanged, dismissFailure])
 
   return (
     <View style={{ flex: 1 }} testID="now-list">
@@ -422,7 +429,9 @@ export const NowList = React.memo(function NowList({
         }
         ListEmptyComponent={
           <View style={{ flex: 1 }}>
-            {searchQuery ? (
+            {searchPending ? (
+              <SearchingAnimation />
+            ) : searchQuery ? (
               <EmptyState title={t('list.noResults')} subtitle={t('list.noResultsSubtitle', { query: searchQuery })} />
             ) : (
               <EmptyState

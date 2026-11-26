@@ -46,6 +46,7 @@ import { MagnifyingGlass, SlidersHorizontal, Gear, Kanban, ListBullets } from 'p
 import { QuickAccessStrip } from '@/components/quick-access/QuickAccessStrip'
 import { clientLog } from '@/lib/clientLog'
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay'
+import { KeyboardDismissOverlay } from '@/components/ui/KeyboardDismissOverlay'
 import { ServerIndexingBanner } from '@/components/servers/ServerIndexingBanner'
 import { EncryptionRefusalBanner } from '@/components/servers/EncryptionRefusalBanner'
 import { CacheAlertBanner } from '@/components/servers/CacheAlertBanner'
@@ -201,7 +202,10 @@ export default function ProjectsHub() {
   const [classicConvSearch, setClassicConvSearch] = useState('')
   const searchInputRef = useRef<TextInputInstance>(null)
   const [debouncedConvSearch] = useDebounce(classicConvSearch, 300)
-  const { data: convSearchData } = useConversationSearch(debouncedConvSearch)
+  const { data: convSearchData, isFetching: convSearchFetching } = useConversationSearch(debouncedConvSearch)
+  const searching = classicConvSearch.trim() !== ''
+  // Covers the debounce too, so nothing reads as "no results" before the server has answered.
+  const searchPending = searching && (classicConvSearch !== debouncedConvSearch || convSearchFetching)
 
   useEffect(() => {
     if (!searchOpen) queueMicrotask(() => setClassicConvSearch(''))
@@ -363,9 +367,19 @@ export default function ProjectsHub() {
     return [...liveSessions, ...idleSessions, ...convs]
   }, [visibleSessions, paginatedConversations, debouncedConvSearch, convSearchData])
 
+  // State and recency filters narrow the list, not a search: it covers everything.
+  const listFilters = useMemo(
+    (): ListFilters => (searching ? { ...sheetFilters, tiers: ALL_TIERS, activeWithin: 'any' } : sheetFilters),
+    [searching, sheetFilters],
+  )
   const displayedItems = useMemo(
-    () => displayedListItems(mergedClassicItems, sheetFilters),
-    [mergedClassicItems, sheetFilters],
+    () => displayedListItems(mergedClassicItems, listFilters),
+    [mergedClassicItems, listFilters],
+  )
+  // The list searches before it drops covered transcripts, so a search needs them too.
+  const searchableItems = useMemo(
+    () => (searching ? applyListFilters(mergedClassicItems, listFilters) : displayedItems),
+    [searching, mergedClassicItems, listFilters, displayedItems],
   )
   const tierCounts = useMemo(() => countByTier(displayedItems), [displayedItems])
   const providerCounts = useMemo(() => countByProvider(displayedItems), [displayedItems])
@@ -601,7 +615,7 @@ export default function ProjectsHub() {
       />
 
       {/* Nothing needs you → the presets have nothing to offer; keep them while the preset is on so it can be undone. */}
-      {!showBoard && sessionsLayout === 'now' && (needsYouAvailable > 0 || isNeedsMePreset(filters)) ? (
+      {!showBoard && !searching && sessionsLayout === 'now' && (needsYouAvailable > 0 || isNeedsMePreset(filters)) ? (
         <View style={styles.presets}>
           <FilterPresets filters={filters} onChange={setFilters} />
         </View>
@@ -625,8 +639,9 @@ export default function ProjectsHub() {
         </View>
       ) : showBoard ? (
         <SessionBoard
-          items={displayedItems}
+          items={searchableItems}
           searchQuery={classicConvSearch}
+          searchPending={searchPending}
           conversationsFromServer={Boolean(debouncedConvSearch)}
           order={sortBy}
           direction={sortOrder}
@@ -678,7 +693,8 @@ export default function ProjectsHub() {
       ) : (
         <View style={styles.classicContainer}>
           <NowList
-            items={displayedItems}
+            items={searchableItems}
+            searchPending={searchPending}
             order={sortBy}
             direction={sortOrder}
             refreshing={manualRefreshing}
@@ -699,6 +715,8 @@ export default function ProjectsHub() {
       )}
       <ListBottomScrim />
       </Pressable>
+
+      {searchOpen ? <KeyboardDismissOverlay /> : null}
 
       {chrome}
       {/* Status overlays sit just below the chrome and never move the rows. */}

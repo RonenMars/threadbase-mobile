@@ -16,6 +16,7 @@ import { useSettingsStore } from '@/stores/settings'
 import type { MultiSession } from '@/types/api'
 import type { SortBy, SortOrder } from '@/types/ui'
 import { BoardColumnList, type BoardCardModel } from './BoardColumnList'
+import { SearchingAnimation } from '@/components/ui/SearchingAnimation'
 import { SessionQuestionModal } from '@/components/sessions/shared/SessionQuestionModal'
 import { DesktopBoard } from './DesktopBoard'
 import { PhoneBoard } from './PhoneBoard'
@@ -23,6 +24,8 @@ import { PhoneBoard } from './PhoneBoard'
 interface Props {
   items: MergedItem[]
   searchQuery: string
+  /** The server has not answered this query yet. */
+  searchPending?: boolean
   conversationsFromServer: boolean
   order: SortBy
   direction: SortOrder
@@ -48,6 +51,7 @@ interface Props {
 export function SessionBoard({
   items,
   searchQuery,
+  searchPending = false,
   conversationsFromServer,
   order,
   direction,
@@ -220,7 +224,11 @@ export function SessionBoard({
   const Layout = width >= TABLET_BREAKPOINT ? DesktopBoard : PhoneBoard
   return (
     <View style={[styles.fill, { paddingTop: topInset }]}>
-      <Layout columns={columns} counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} animate={animate} />
+      {searchPending && Object.values(counts).every((count) => count === 0) ? (
+        <SearchingAnimation />
+      ) : (
+        <Layout columns={columns} counts={counts} column={column} onSelect={selectColumn} renderColumn={renderColumn} animate={animate} />
+      )}
       {questionFor && questionSession ? (
         <SessionQuestionModal
           session={questionSession}

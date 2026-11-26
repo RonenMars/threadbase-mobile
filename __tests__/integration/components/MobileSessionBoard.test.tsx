@@ -501,3 +501,11 @@ describe('SessionBoard from 768 up', () => {
     expect(selected(r, 'working')).toBe(true)
   })
 })
+
+it('shows the searching animation while a search with no hits is still in flight', async () => {
+  const r = await render(
+    <SessionBoard items={[]} searchQuery="wombat" searchPending conversationsFromServer={false} order="state" direction="desc" refreshing={false} onRefresh={jest.fn()} onPromptsChanged={jest.fn()} />,
+    { wrapper: createWrapper() },
+  )
+  expect(r.getByTestId('searching-animation')).toBeTruthy()
+})

@@ -29,9 +29,14 @@ jest.mock('@/hooks/useConversations', () => ({
 }))
 
 jest.mock('@/components/conversation/ConversationList', () => ({
-  ConversationList: ({ searchOpen }: { searchOpen?: boolean }) => {
+  ConversationList: (props: { searchOpen?: boolean; searchPending?: boolean; onSearchChange: (q: string) => void }) => {
     const { Text: RNText } = require('react-native')
-    return <RNText testID="list-search-open">{String(searchOpen)}</RNText>
+    return (
+      <>
+        <RNText testID="list-search-open">{String(props.searchOpen)}</RNText>
+        <RNText testID="list-search-pending" onPress={() => props.onSearchChange('wombat')}>{String(props.searchPending)}</RNText>
+      </>
+    )
   },
 }))
 
@@ -46,6 +51,13 @@ async function renderScreen() {
 }
 
 describe('ProjectDetailScreen search', () => {
+  it('tells the list a typed query is still pending', async () => {
+    const { getByTestId } = await renderScreen()
+    expect(getByTestId('list-search-pending').props.children).toBe('false')
+    await fireEvent.press(getByTestId('list-search-pending'))
+    expect(getByTestId('list-search-pending').props.children).toBe('true')
+  })
+
   it('opens with the search closed and a search icon in the header', async () => {
     const { getByTestId, header } = await renderScreen()
     expect(getByTestId('list-search-open').props.children).toBe('false')

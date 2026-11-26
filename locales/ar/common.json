@@ -1,4 +1,7 @@
 {
+  "keyboard": {
+    "dismiss": "إغلاق لوحة المفاتيح"
+  },
   "button": {
     "cancel": "إلغاء",
     "confirm": "تأكيد",

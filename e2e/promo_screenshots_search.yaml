@@ -28,32 +28,13 @@ appId: com.ronenmars.threadbase
 
 - inputText: "idempotency"
 
-# The fixture is dated 2026-05-20, so its row sits in the `earlier` day bucket,
-# which viewPrefs collapses by default. Wait for the group header, then expand
-# it only if the row is still hidden.
-- extendedWaitUntil:
-    visible:
-      id: "day-bucket-.*"
-    timeout: 8000
-
-- runFlow:
-    when:
-      notVisible:
-        id: "conversation-row-conv-search-anchor"
-    commands:
-      - tapOn:
-          id: "day-bucket-.*"
+# Close the keyboard for the shot, and so the overlay over the results goes away.
+- pressKey: Enter
 
 - extendedWaitUntil:
     visible:
       id: "conversation-row-conv-search-anchor"
     timeout: 8000
-
-# Dismiss the keyboard for the shot — do not use Maestro's hideKeyboard (fails
-# on iOS 26.x, see tb-mobile CLAUDE.md). Tapping blank space below the result
-# blurs the input the same way a real user tapping outside it would.
-- tapOn:
-    point: "50%, 45%"
 
 - waitForAnimationToEnd:
     timeout: 2000
