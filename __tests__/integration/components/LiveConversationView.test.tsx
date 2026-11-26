@@ -7,7 +7,7 @@
  *    back over the WebSocket.
  */
 import React from 'react'
-import { Alert, Keyboard } from 'react-native'
+import { Alert, Keyboard, StyleSheet } from 'react-native'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { NetworkError } from '@/services/api-client'
 import { LiveConversationView } from '@/components/conversation/LiveConversationView'
@@ -463,6 +463,107 @@ describe('LiveConversationView — optimistic sent message', () => {
       await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
       expect(screen.getByTestId('chat-jump-to-latest')).toBeTruthy()
       expect(screen.queryByTestId('chat-new-response-badge')).toBeNull()
+    })
+
+    function reply(id: string, timestamp: string, content: Message['content']): Message {
+      return { id, uuid: id, role: 'assistant', content, timestamp, is_sidechain: false, parent_uuid: null }
+    }
+    const rerenderView = (view: Awaited<ReturnType<typeof renderView>>) =>
+      view.rerender(<LiveConversationView serverId="srv1" sessionId="sess1" conversationId="conv1" />)
+
+    it('counts only the agent replies that landed after the reader scrolled away', async () => {
+      mockSessionStatus = 'running'
+      mockLive = [reply('seen', '2026-11-23T01:00:00.000Z', [{ type: 'text', text: 'already read' }])]
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+
+      mockLive = [
+        ...mockLive,
+        reply('r1', '2026-11-23T01:01:00.000Z', [{ type: 'text', text: 'first' }]),
+        reply('tool', '2026-11-23T01:02:00.000Z', [{ type: 'tool_use', id: 't1', name: 'Read', input: {} }]),
+        reply('r2', '2026-11-23T01:03:00.000Z', [{ type: 'text', text: 'second' }]),
+      ]
+      await rerenderView(view)
+      await finishTurn(view)
+
+      expect(screen.getByTestId('chat-new-response-badge')).toHaveTextContent('2 new responses')
+    })
+
+    it('reads "New response" for one reply, and for a turn that ended on tool calls alone', async () => {
+      mockSessionStatus = 'running'
+      mockLive = [reply('seen', '2026-11-23T01:00:00.000Z', [{ type: 'text', text: 'already read' }])]
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+
+      mockLive = [...mockLive, reply('tool', '2026-11-23T01:01:00.000Z', [{ type: 'tool_use', id: 't1', name: 'Read', input: {} }])]
+      await rerenderView(view)
+      await finishTurn(view)
+      expect(screen.getByTestId('chat-new-response-badge')).toHaveTextContent('New response')
+    })
+
+    it('keeps counting from where the reader left when more scroll events fire while away', async () => {
+      mockSessionStatus = 'running'
+      mockLive = [reply('seen', '2026-11-23T01:00:00.000Z', [{ type: 'text', text: 'already read' }])]
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      mockLive = [...mockLive, reply('r1', '2026-11-23T01:01:00.000Z', [{ type: 'text', text: 'one' }])]
+      await rerenderView(view)
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      mockLive = [...mockLive, reply('r2', '2026-11-23T01:02:00.000Z', [{ type: 'text', text: 'two' }])]
+      await rerenderView(view)
+      await finishTurn(view)
+
+      expect(screen.getByTestId('chat-new-response-badge')).toHaveTextContent('2 new responses')
+    })
+
+    it('starts the count again after a tap on the pill, even with no scroll event after it', async () => {
+      mockSessionStatus = 'running'
+      mockLive = [reply('seen', '2026-11-23T01:00:00.000Z', [{ type: 'text', text: 'already read' }])]
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      mockLive = [...mockLive, reply('r1', '2026-11-23T01:01:00.000Z', [{ type: 'text', text: 'one' }])]
+      await rerenderView(view)
+      await fireEvent.press(screen.getByTestId('chat-jump-to-latest'))
+
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      mockLive = [...mockLive, reply('r2', '2026-11-23T01:02:00.000Z', [{ type: 'text', text: 'two' }])]
+      await rerenderView(view)
+      await finishTurn(view)
+
+      expect(screen.getByTestId('chat-new-response-badge')).toHaveTextContent('New response')
+    })
+
+    it('tints the pill border with the accent once a new response is waiting, and not before', async () => {
+      mockSessionStatus = 'running'
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      const idleBorder = StyleSheet.flatten(screen.getByTestId('chat-jump-to-latest').props.style).borderColor
+
+      await finishTurn(view)
+      const pillBorder = StyleSheet.flatten(screen.getByTestId('chat-jump-to-latest').props.style).borderColor
+      expect(pillBorder).toMatch(/8c$/)
+      expect(idleBorder).not.toMatch(/8c$/)
+    })
+
+    it('starts the count again after the reader returns to the end', async () => {
+      mockSessionStatus = 'running'
+      mockLive = [reply('seen', '2026-11-23T01:00:00.000Z', [{ type: 'text', text: 'already read' }])]
+      const view = await renderView()
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      mockLive = [...mockLive, reply('r1', '2026-11-23T01:01:00.000Z', [{ type: 'text', text: 'one' }])]
+      await rerenderView(view)
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(AT_BOTTOM))
+
+      await act(async () => screen.getByTestId('live-conversation-list').props.onScroll(SCROLLED_UP))
+      mockLive = [
+        ...mockLive,
+        reply('r2', '2026-11-23T01:02:00.000Z', [{ type: 'text', text: 'two' }]),
+        reply('r3', '2026-11-23T01:03:00.000Z', [{ type: 'text', text: 'three' }]),
+      ]
+      await rerenderView(view)
+      await finishTurn(view)
+
+      expect(screen.getByTestId('chat-new-response-badge')).toHaveTextContent('2 new responses')
     })
 
     it('stays off when the turn ends with the reader at the end', async () => {

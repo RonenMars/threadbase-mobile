@@ -72,7 +72,10 @@
     "copiedCode": "Скопировано",
     "scrollToBottom": "Прокрутить вниз",
     "questionWaiting": "Ниже ожидает вопрос",
-    "newResponse": "Ниже новый ответ"
+    "newResponse_one": "{{count}} новый ответ",
+    "newResponse_few": "{{count}} новых ответа",
+    "newResponse_many": "{{count}} новых ответов",
+    "newResponse_other": "{{count}} новых ответов"
   },
   "message": {
     "code": "Код",
