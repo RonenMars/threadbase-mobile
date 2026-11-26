@@ -1,6 +1,7 @@
 import { act } from 'react'
 import renderer from 'react-test-renderer'
-import { View } from 'react-native'
+import { Dimensions, View } from 'react-native'
+import { render as rtlRender, screen, within } from '@testing-library/react-native'
 import { dark } from '@/constants/theme'
 import { ConversationListItem } from '@/components/sessions/shared/ConversationListItem'
 import { LiveDot } from '@/components/sessions/LiveDot'
@@ -261,5 +262,49 @@ describe('ConversationListItem', () => {
     )
     const json = JSON.stringify(tree.toJSON())
     expect(json).toMatch(/2026/) // verbose accessibilityLabel contains the year (locale-invariant)
+  })
+
+  describe('at a large OS text size', () => {
+    function setFontScale(fontScale: number) {
+      Dimensions.set({
+        window: { ...Dimensions.get('window'), fontScale },
+        screen: { ...Dimensions.get('screen'), fontScale },
+      })
+    }
+    afterEach(() => setFontScale(1))
+
+    const TITLE = 'Refactor the reconnect banner'
+
+    async function renderRow() {
+      await rtlRender(
+        <ConversationListItem
+          title={TITLE}
+          timestamp={NOW.getTime() - 5 * 60 * 1000}
+          serverLabel="Work Mac"
+          activeServerCount={2}
+          density="compact"
+          leading="none"
+        />,
+      )
+      const title = screen.getByText(TITLE)
+      const body = title.parent
+      if (body === null) throw new Error('title has no parent')
+      // The time's accessibilityLabel is the verbose date, which carries the year.
+      return { title, timeInBody: within(body).queryByLabelText(/2026/) }
+    }
+
+    it('keeps the time beside the title at the default size', async () => {
+      const { title, timeInBody } = await renderRow()
+      expect(title.props.numberOfLines).toBe(1)
+      expect(screen.getByLabelText(/2026/)).toBeTruthy()
+      expect(timeInBody).toBeNull()
+    })
+
+    it('stacks the time under the title and lets the title wrap', async () => {
+      setFontScale(1.35)
+      const { title, timeInBody } = await renderRow()
+      expect(title.props.numberOfLines).toBe(2)
+      expect(timeInBody).not.toBeNull()
+    })
   })
 })

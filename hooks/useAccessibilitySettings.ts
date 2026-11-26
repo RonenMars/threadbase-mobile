@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AccessibilityInfo, Platform } from 'react-native'
+import { AccessibilityInfo, Platform, useWindowDimensions } from 'react-native'
 
 const FLAGS = {
   reduceMotion: {
@@ -48,4 +48,12 @@ export function useReduceTransparency(): boolean {
 /** VoiceOver or TalkBack. Timed content waits for the user instead of expiring under it. */
 export function useScreenReaderEnabled(): boolean {
   return useAccessibilityFlag('screenReader', true)
+}
+
+/** iOS XXXL is 1.35; past this, side-by-side rows run out of width and stack instead. */
+export const LARGE_TEXT_FONT_SCALE = 1.3
+
+/** The OS text size is large enough that rows should stack and titles wrap. */
+export function useLargeText(): boolean {
+  return useWindowDimensions().fontScale >= LARGE_TEXT_FONT_SCALE
 }

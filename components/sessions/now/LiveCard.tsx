@@ -4,6 +4,7 @@ import { DotsThreeVertical } from 'phosphor-react-native'
 import { useTranslation } from 'react-i18next'
 import { font, radius, spacing, type Theme } from '@/constants/theme'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useLargeText } from '@/hooks/useAccessibilitySettings'
 import { showsProviderMark } from '@/lib/providerDominance'
 import { ProviderMark } from '@/components/sessions/shared/ProviderMark'
 import type { ProviderName } from '@/constants/providers'
@@ -31,6 +32,8 @@ interface Props {
 }
 
 const MENU_ICON_SIZE = 18
+// Phosphor icons grow with the OS text size up to 1.5x (patches/phosphor-react-native+3.0.6.patch).
+const MENU_ICON_MAX_SIZE = MENU_ICON_SIZE * 1.5
 
 /** Opaque card with a 3 px state rail: the shell shared by Needs-you and Working. */
 export function LiveCard({
@@ -52,6 +55,7 @@ export function LiveCard({
   const theme = useTheme()
   const { t } = useTranslation('sessions')
   const styles = makeStyles(theme)
+  const largeText = useLargeText()
   const borderColor = emphasis === 'solid' ? `${color}80` : `${theme.text.accent}2e`
 
   return (
@@ -67,8 +71,14 @@ export function LiveCard({
       >
         <View style={[styles.rail, { backgroundColor: color }]} />
         <View style={styles.body}>
-          <View style={[styles.titleRow, onMenuPress ? styles.titleRowWithMenu : null]}>
-            <Text style={styles.title} numberOfLines={2}>{title}</Text>
+          <View
+            style={[
+              styles.titleRow,
+              largeText && styles.titleRowStacked,
+              onMenuPress ? (largeText ? styles.titleRowWithLargeMenu : styles.titleRowWithMenu) : null,
+            ]}
+          >
+            <Text style={[styles.title, largeText && styles.titleStacked]} numberOfLines={largeText ? 4 : 2}>{title}</Text>
             {showsProviderMark(provider, dominantProvider) && provider ? (
               <ProviderMark provider={provider} />
             ) : null}
@@ -118,6 +128,9 @@ function makeStyles(theme: Theme) {
       gap: spacing.sm,
     },
     titleRowWithMenu: { paddingEnd: MENU_ICON_SIZE + spacing.sm },
+    // At a large text size the chips drop under the title so it keeps the card's width.
+    titleRowStacked: { flexDirection: 'column', alignItems: 'flex-start', gap: spacing.xs },
+    titleRowWithLargeMenu: { paddingEnd: MENU_ICON_MAX_SIZE + spacing.sm },
     menu: { position: 'absolute', top: spacing.md, end: spacing.md },
     title: {
       flex: 1,
@@ -126,5 +139,6 @@ function makeStyles(theme: Theme) {
       fontWeight: '600',
       lineHeight: font.base + 4,
     },
+    titleStacked: { flex: 0, alignSelf: 'stretch' },
   })
 }
