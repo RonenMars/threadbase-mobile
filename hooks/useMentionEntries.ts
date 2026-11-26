@@ -21,6 +21,7 @@ const LISTING_STALE_MS = 30_000
  * no path we can send for it and the picker reports itself unsupported.
  */
 export function mentionListingPath(projectPath: string, dir: string): string | null {
+  if (dir === '~' || dir.startsWith('~/')) return dir
   if (!projectPath.startsWith('/')) return null
   const base = projectPath.replace(/\/+$/, '')
   if (!dir) return base || '/'
