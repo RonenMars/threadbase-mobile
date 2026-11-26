@@ -165,23 +165,25 @@ function PeerRow({ peer, onPress, theme, styles }: { peer: PeerEntry; onPress: (
   return (
     <TouchableOpacity
       testID={`peer-mention-row-${peer.id}`}
-      style={styles.row}
+      style={styles.peerRow}
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={t('mentions.peerLabel', { name: peer.name, project: peer.projectName })}
     >
-      <UsersThree size={16} color={theme.text.accent} weight="fill" />
-      <View style={styles.skillText}>
-        <View style={styles.peerTitle}>
-          <Text style={[styles.name, styles.peerName]} numberOfLines={1}>
-            {peer.name}
+      <View style={styles.peerContent} pointerEvents="none">
+        <UsersThree size={16} color={theme.text.accent} weight="fill" />
+        <View style={styles.skillText}>
+          <View style={styles.peerTitle}>
+            <Text style={[styles.name, styles.peerName]} numberOfLines={1}>
+              {peer.name}
+            </Text>
+            <Text style={styles.peerTag}>{t('mentions.peerTag')}</Text>
+          </View>
+          <Text style={styles.description} numberOfLines={1}>
+            {`${peer.projectName} · ${peer.shortId}`}
           </Text>
-          <Text style={styles.peerTag}>{t('mentions.peerTag')}</Text>
         </View>
-        <Text style={styles.description} numberOfLines={1}>
-          {`${peer.projectName} · ${peer.shortId}`}
-        </Text>
       </View>
     </TouchableOpacity>
   )
@@ -314,6 +316,18 @@ function makeStyles(theme: Theme, rtl: RtlStyleKit) {
       fontSize: font.sm,
     },
     skillText: { flex: 1, paddingVertical: spacing.xs },
+    // PeerRow's own pair, so its layout holds whatever the file and skill row styles carry.
+    peerRow: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: theme.border,
+    },
+    peerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      minHeight: 40,
+    },
     peerTitle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     peerName: { flex: 0, flexShrink: 1, fontWeight: '600' },
     peerTag: {
