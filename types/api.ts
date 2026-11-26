@@ -603,6 +603,12 @@ export interface ServerInfo {
    * are authoritative for showing the Hub banner.
    */
   hostPressure?: true
+  /**
+   * Additive: GET /api/sessions/:id/files lists the session's working tree
+   * relative to its cwd. Absent means an older server: the `@` picker then
+   * falls back to absolute-path /api/browse.
+   */
+  sessionFiles?: true
   /** Additive: POST /api/sessions/:id/raw-key accepts constrained picker controls. */
   rawKeys?: true
   /**
