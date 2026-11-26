@@ -14,6 +14,9 @@ jest.mock('expo-router', () => ({
   }),
 }))
 
+// The debounced query never catches up, so a typed query stays pending however slow the machine is.
+jest.mock('use-debounce', () => ({ useDebounce: () => [''] }))
+
 jest.mock('@/hooks/useProjectConversations', () => ({
   useProjectConversations: () => ({
     conversations: [],

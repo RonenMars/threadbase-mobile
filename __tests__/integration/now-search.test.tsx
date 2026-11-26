@@ -9,6 +9,13 @@ import { createWrapper } from '@/test-utils'
 import '@/test-utils/i18n-setup'
 import type { MultiConversation, MultiSession } from '@/types/api'
 
+// Lets one test hold the debounce open; a real 300ms window closes early on a loaded machine.
+let mockDebounceMs: number | null = null
+jest.mock('use-debounce', () => {
+  const actual = jest.requireActual<typeof import('use-debounce')>('use-debounce')
+  return { useDebounce: <T,>(value: T, ms: number) => actual.useDebounce(value, mockDebounceMs ?? ms) }
+})
+
 jest.mock('@/services/ws-client', () => ({
   wsManager: { status: () => 'connected', lastError: () => null, onAnyStatusChange: () => () => {} },
 }))
@@ -104,6 +111,10 @@ async function search(query: string) {
 }
 
 describe('Now search', () => {
+  afterEach(() => {
+    mockDebounceMs = null
+  })
+
   it('shows the searching animation instead of "No results" while the request is in flight', async () => {
     mockSearch.mockImplementation((q) => ({ data: undefined, isFetching: q !== '' }))
     const r = await search('wombat')
@@ -112,6 +123,7 @@ describe('Now search', () => {
   })
 
   it('shows the animation during the debounce, before the request is sent', async () => {
+    mockDebounceMs = 60_000
     mockSearch.mockImplementation(results())
     const r = await render(<ProjectsHub />, { wrapper: createWrapper() })
     await fireEvent.press(r.getByTestId('header-search-btn'))
