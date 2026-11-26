@@ -110,3 +110,11 @@ export function snapSide(centerX: number, velocityX: number, width: number): 'le
   'worklet'
   return centerX + velocityX * SNAP_PROJECTION_S < width / 2 ? 'left' : 'right'
 }
+
+/** Whether point A lies within `radius` of point B, edge included. Used for the drag-to-hide target. */
+export function isWithinRadius(ax: number, ay: number, bx: number, by: number, radius: number): boolean {
+  'worklet'
+  const dx = ax - bx
+  const dy = ay - by
+  return dx * dx + dy * dy <= radius * radius
+}

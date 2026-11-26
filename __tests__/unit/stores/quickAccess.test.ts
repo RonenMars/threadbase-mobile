@@ -10,6 +10,7 @@ beforeEach(() => {
     favoritesEnabled: true,
     recentsEnabled: true,
     popularEnabled: true,
+    shelfHidden: false,
   })
 })
 
@@ -138,6 +139,55 @@ describe('QuickAccessStore – shelf position', () => {
     getItem.mockResolvedValueOnce(JSON.stringify({ favorites: [], shelfPosition: stored }))
     await useQuickAccessStore.getState().hydrate()
     expect(useQuickAccessStore.getState().shelfPosition).toEqual(expected)
+  })
+})
+
+describe('QuickAccessStore – hidden shelf', () => {
+  const setItem = AsyncStorage.setItem as jest.Mock
+  const getItem = AsyncStorage.getItem as jest.Mock
+  const conv = {
+    type: 'conversation' as const, id: 'srv::conversation::c1', label: 'Chat', serverId: 'srv', conversationId: 'c1',
+  }
+
+  it('is visible by default', () => {
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(false)
+  })
+
+  it('persists the flag under the existing key', () => {
+    useQuickAccessStore.getState().setShelfHidden(true)
+    const [key, payload] = setItem.mock.calls.at(-1)
+    expect(key).toBe('threadbase_quick_access')
+    expect(JSON.parse(payload).shelfHidden).toBe(true)
+  })
+
+  it('hydrates a stored hidden flag', async () => {
+    getItem.mockResolvedValueOnce(JSON.stringify({ favorites: [], shelfHidden: true }))
+    await useQuickAccessStore.getState().hydrate()
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(true)
+  })
+
+  it('leaves older installs, whose payload has no field, visible', async () => {
+    getItem.mockResolvedValueOnce(JSON.stringify({ favorites: [] }))
+    await useQuickAccessStore.getState().hydrate()
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(false)
+  })
+
+  it('saving a new chat brings the bubble back', () => {
+    useQuickAccessStore.setState({ shelfHidden: true })
+    useQuickAccessStore.getState().pinItem(conv)
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(false)
+  })
+
+  it('pinning an item that is already saved leaves the bubble hidden', () => {
+    useQuickAccessStore.setState({ favorites: [conv], shelfHidden: true })
+    useQuickAccessStore.getState().pinItem(conv)
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(true)
+  })
+
+  it('applying the server list does not bring the bubble back', () => {
+    useQuickAccessStore.setState({ shelfHidden: true })
+    useQuickAccessStore.getState().setFavorites([conv])
+    expect(useQuickAccessStore.getState().shelfHidden).toBe(true)
   })
 })
 
