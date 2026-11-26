@@ -1,6 +1,7 @@
 import {
   applyMention,
   escapeMentionPath,
+  extraDirEntries,
   findMentionToken,
   rankMentionEntries,
   type MentionEntry,
@@ -50,12 +51,27 @@ describe('findMentionToken', () => {
     expect(findMentionToken('@a.ts and @b', 12)).toEqual({ start: 10, end: 12, dir: '', query: 'b' })
   })
 
-  it('refuses absolute, home-relative and parent paths', () => {
+  it('refuses absolute, home-relative and empty-segment paths', () => {
     expect(findMentionToken('@/etc/pa', 8)).toBeNull()
     expect(findMentionToken('@~/x', 4)).toBeNull()
-    expect(findMentionToken('@../sec', 7)).toBeNull()
-    expect(findMentionToken('@src/../x', 9)).toBeNull()
     expect(findMentionToken('@src//x', 7)).toBeNull()
+  })
+
+  // The streamer resolves `..` and refuses what lands outside its browse root.
+  it('walks up with parent segments', () => {
+    expect(findMentionToken('@../sec', 7)).toEqual({ start: 0, end: 7, dir: '..', query: 'sec' })
+    expect(findMentionToken('@../../', 7)).toEqual({ start: 0, end: 7, dir: '../..', query: '' })
+    expect(findMentionToken('@src/../x', 9)).toEqual({ start: 0, end: 9, dir: 'src/..', query: 'x' })
+    expect(findMentionToken('@./src/a', 8)).toEqual({ start: 0, end: 8, dir: './src', query: 'a' })
+  })
+
+  it('lists the parent for a bare .. with no slash yet', () => {
+    expect(findMentionToken('@..', 3)).toEqual({ start: 0, end: 3, dir: '..', query: '' })
+    expect(findMentionToken('@../..', 6)).toEqual({ start: 0, end: 6, dir: '../..', query: '' })
+  })
+
+  it('keeps a single dot as a dotfile query', () => {
+    expect(findMentionToken('@.', 2)).toEqual({ start: 0, end: 2, dir: '', query: '.' })
   })
 
   it('returns null with no @ before the cursor', () => {
@@ -124,5 +140,32 @@ describe('applyMention', () => {
 describe('escapeMentionPath', () => {
   it('backslash-escapes spaces only', () => {
     expect(escapeMentionPath('a b/c d.png')).toBe('a\\ b/c\\ d.png')
+  })
+})
+
+describe('extraDirEntries', () => {
+  const cwd = '/home/u/dev/app'
+
+  it('offers each extra directory as a folder relative to the cwd', () => {
+    expect(extraDirEntries(cwd, ['/home/u/dev/lib', '/home/u/other/docs'], '')).toEqual([
+      { name: '../lib', kind: 'dir' },
+      { name: '../../other/docs', kind: 'dir' },
+    ])
+  })
+
+  it('filters by the folder name, ignoring case', () => {
+    expect(extraDirEntries(cwd, ['/home/u/dev/lib', '/home/u/other/Docs'], 'do')).toEqual([
+      { name: '../../other/Docs', kind: 'dir' },
+    ])
+  })
+
+  it('handles a trailing slash and the filesystem root', () => {
+    expect(extraDirEntries('/a/b/', ['/a/c/'], '')).toEqual([{ name: '../c', kind: 'dir' }])
+    expect(extraDirEntries('/a', ['/'], '')).toEqual([{ name: '..', kind: 'dir' }])
+  })
+
+  it('skips paths it cannot express relative to the cwd', () => {
+    expect(extraDirEntries('C:\\proj', ['C:\\lib'], '')).toEqual([])
+    expect(extraDirEntries(cwd, ['relative/x', cwd], '')).toEqual([])
   })
 })

@@ -147,8 +147,8 @@ function EntryRow({ entry, onPress, theme, styles }: RowProps) {
 
 /** Fetches the listing; mounted only while a mention is open, so a closed picker costs nothing. */
 export function FileMentionPanel({ mention }: { mention: ComposerMention }) {
-  const { serverId, projectPath, token, onSelect, onDismiss } = mention
-  const list = useMentionEntries(serverId, projectPath, token.dir, token.query)
+  const { serverId, projectPath, additionalPaths, token, onSelect, onDismiss } = mention
+  const list = useMentionEntries(serverId, projectPath, token.dir, token.query, additionalPaths)
   return <FileMentionBoard dir={token.dir} query={token.query} list={list} onSelect={onSelect} onDismiss={onDismiss} />
 }
 

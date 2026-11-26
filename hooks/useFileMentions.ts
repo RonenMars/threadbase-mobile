@@ -7,6 +7,8 @@ import { applySkill, findSlashToken, isSkillIntact, type SkillEntry, type SlashT
 export interface ComposerMention {
   serverId: string
   projectPath: string
+  /** The session's extra directories (absolute), offered at the top of the picker. */
+  additionalPaths?: readonly string[]
   token: MentionToken
   onSelect: (entry: MentionEntry) => void
   onDismiss: () => void
@@ -28,6 +30,7 @@ interface Selection {
 export interface UseFileMentionsOptions {
   serverId: string
   projectPath?: string | null
+  additionalPaths?: readonly string[]
   provider?: string | null
   /** Enables the `/` skills picker; it lists this session's skills. */
   sessionId?: string
@@ -60,6 +63,7 @@ function supportsFileMentions(provider: string | null | undefined): boolean {
 export function useFileMentions({
   serverId,
   projectPath,
+  additionalPaths,
   provider,
   sessionId,
   text,
@@ -144,6 +148,7 @@ export function useFileMentions({
     mention: {
       serverId,
       projectPath,
+      additionalPaths,
       token: visibleToken,
       onSelect,
       onDismiss: () => setDismissedAt(visibleToken.start),

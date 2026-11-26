@@ -57,13 +57,16 @@ export function findMentionToken(text: string, cursor: number): MentionToken | n
   while (end < text.length && (!/\s/.test(text[end]) || isEscapedSpace(text, end))) end++
 
   const raw = unescapeMentionPath(text.slice(start + 1, caret))
-  // Mentions are relative to the session's cwd; the server's root check is the
-  // real guard, this only keeps the picker from offering what it cannot list.
+  // Mentions are relative to the session's cwd. `..` may walk up: the streamer
+  // resolves it and refuses anything outside its browse root (unless it runs
+  // with `unrestrictedBrowse`), so the server's check is the guard, not this.
   if (raw.startsWith('/') || raw.startsWith('~') || raw.startsWith('\\')) return null
-  const slash = raw.lastIndexOf('/')
-  const dir = slash < 0 ? '' : raw.slice(0, slash)
-  const query = slash < 0 ? raw : raw.slice(slash + 1)
-  if (dir && dir.split('/').some((seg) => seg === '' || seg === '.' || seg === '..')) return null
+  // A trailing `..` already names a folder: list it before the `/` is typed.
+  const path = raw === '..' || raw.endsWith('/..') ? `${raw}/` : raw
+  const slash = path.lastIndexOf('/')
+  const dir = slash < 0 ? '' : path.slice(0, slash)
+  const query = slash < 0 ? path : path.slice(slash + 1)
+  if (dir && dir.split('/').some((seg) => seg === '')) return null
 
   return { start, end, dir, query }
 }
@@ -87,6 +90,33 @@ export function rankMentionEntries(
   })
   scored.sort((a, b) => a.score - b.score || a.index - b.index)
   return scored.slice(0, limit).map((s) => s.entry)
+}
+
+/**
+ * A session's extra directories (`additionalPaths`, absolute) as folders the
+ * `@` picker offers beside the cwd's own entries, written relative to the cwd
+ * so the mention and the listing both go through `..`. POSIX paths only; a
+ * Windows cwd cannot be listed at all (`mentionListingPath`).
+ */
+export function extraDirEntries(cwd: string, extraDirs: readonly string[], query: string): MentionEntry[] {
+  if (!cwd.startsWith('/')) return []
+  const split = (p: string) => p.split('/').filter(Boolean)
+  const from = split(cwd)
+  const q = query.toLowerCase()
+  const entries: MentionEntry[] = []
+  for (const dir of extraDirs) {
+    if (!dir.startsWith('/')) continue
+    const to = split(dir)
+    let common = 0
+    while (common < from.length && common < to.length && from[common] === to[common]) common++
+    const up = from.length - common
+    if (up === 0) continue // the cwd itself, or inside it: already listed
+    const name = [...Array<string>(up).fill('..'), ...to.slice(common)].join('/')
+    const base = to[to.length - 1] ?? ''
+    if (q && !base.toLowerCase().includes(q)) continue
+    entries.push({ name, kind: 'dir' })
+  }
+  return entries
 }
 
 export function mentionPath(token: MentionToken, entry: MentionEntry): string {
