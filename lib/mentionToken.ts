@@ -3,6 +3,7 @@
  * ranking a directory listing against it, and writing the chosen entry back.
  * Pure — the composer hook and the picker share it, and it is tested alone.
  */
+import type { PeerRow } from '@/types/api'
 
 export interface MentionToken {
   /** Index of the `@`. */
@@ -38,8 +39,23 @@ function isEscapedSpace(text: string, index: number): boolean {
   return text[index] === ' ' && index > 0 && text[index - 1] === '\\'
 }
 
+// A peer whose name has spaces is mentioned as `@"two words"`; while that quote
+// is open the token may span spaces and tabs, so the picker keeps matching.
+function findOpenQuotedMention(text: string, caret: number): MentionToken | null {
+  const open = text.lastIndexOf('@"', caret - 2)
+  if (open < 0 || (open > 0 && !/\s/.test(text[open - 1]))) return null
+  const typed = text.slice(open + 2, caret)
+  if (/["\n]/.test(typed)) return null
+  const close = text.indexOf('"', caret)
+  const newline = text.indexOf('\n', caret)
+  const end = close >= 0 && (newline < 0 || close < newline) ? close + 1 : caret
+  return { start: open, end, dir: '', query: typed }
+}
+
 export function findMentionToken(text: string, cursor: number): MentionToken | null {
   const caret = Math.min(Math.max(cursor, 0), text.length)
+  const quoted = findOpenQuotedMention(text, caret)
+  if (quoted) return quoted
   let start = -1
   for (let i = caret - 1; i >= 0; i--) {
     const ch = text[i]
@@ -147,4 +163,99 @@ export function applyMention(
     text: before + inserted + separator + after,
     cursor: before.length + inserted.length + 1,
   }
+}
+
+/** A peer Claude session offered in the `@` picker beside paths. */
+export interface PeerEntry {
+  id: string
+  name: string
+  projectName: string
+  shortId: string
+  /** What goes into the prompt: the picker token, followed by the address when the name is shared, or the bare address when there is no token. */
+  insert: string
+}
+
+function peerNameFromMention(mention: string): string {
+  return mention.replace(/^@"?/, '').replace(/"$/, '')
+}
+
+/**
+ * Peers come from `GET /api/peers`, which lists only sessions that can be
+ * messaged. The session being typed in lists itself, so it is dropped. Names are not unique: a mention shared by two rows is followed by
+ * the per-session address, which tells the relaying model which one is meant.
+ * With no mention (a name the quoted form cannot carry) the bare address is
+ * all there is; the CLI never parses `@uds:…` as a mention, so no `@` there.
+ */
+export function buildPeerEntries(sessions: readonly PeerRow[], selfId: string): PeerEntry[] {
+  const peers = sessions.filter(
+    (s) => s.id !== selfId && (typeof s.peerMention === 'string' || typeof s.peerAddress === 'string'),
+  )
+  const mentionCount = new Map<string, number>()
+  for (const s of peers) {
+    if (s.peerMention) mentionCount.set(s.peerMention, (mentionCount.get(s.peerMention) ?? 0) + 1)
+  }
+  const entries: PeerEntry[] = []
+  for (const s of peers) {
+    const shared = s.peerMention !== undefined && mentionCount.get(s.peerMention) !== 1
+    const insert = s.peerMention
+      ? shared && s.peerAddress
+        ? `${s.peerMention} ${s.peerAddress}`
+        : s.peerMention
+      : s.peerAddress
+    if (!insert) continue
+    entries.push({
+      id: s.id,
+      name: s.peerMention ? peerNameFromMention(s.peerMention) : s.name,
+      projectName: s.projectName,
+      shortId: s.id.slice(0, 8),
+      insert,
+    })
+  }
+  return entries
+}
+
+export function rankPeerEntries(peers: readonly PeerEntry[], query: string, limit: number = MENTION_RESULT_LIMIT): PeerEntry[] {
+  const q = query.toLowerCase()
+  const scored: { peer: PeerEntry; score: number; index: number }[] = []
+  peers.forEach((peer, index) => {
+    const name = peer.name.toLowerCase()
+    let score: number
+    if (!q || name.startsWith(q)) score = 0
+    else if (name.includes(q) || peer.projectName.toLowerCase().includes(q) || peer.shortId.startsWith(q)) score = 1
+    else return
+    scored.push({ peer, score, index })
+  })
+  scored.sort((a, b) => a.score - b.score || a.index - b.index)
+  return scored.slice(0, limit).map((s) => s.peer)
+}
+
+/** Replace the token with the peer's address and a trailing space; the picker then closes. */
+export function applyPeerMention(text: string, token: MentionToken, peer: PeerEntry): { text: string; cursor: number } {
+  const before = text.slice(0, token.start)
+  const after = text.slice(token.end)
+  const separator = /^\s/.test(after) ? '' : ' '
+  return {
+    text: before + peer.insert + separator + after,
+    cursor: before.length + peer.insert.length + 1,
+  }
+}
+
+/**
+ * Where picked peers still stand in the text, for coloring. A mark holds only
+ * while the inserted string is a whole word: any character added to or removed
+ * from it breaks the match.
+ */
+export function findPeerMarks(text: string, inserts: readonly string[]): { start: number; end: number }[] {
+  const marks: { start: number; end: number }[] = []
+  for (const insert of new Set(inserts)) {
+    let from = 0
+    for (let at = text.indexOf(insert, from); at >= 0; at = text.indexOf(insert, from)) {
+      const end = at + insert.length
+      from = end
+      const wordStart = at === 0 || /\s/.test(text[at - 1])
+      const wordEnd = end === text.length || /\s/.test(text[end])
+      if (wordStart && wordEnd) marks.push({ start: at, end })
+    }
+  }
+  return marks.sort((a, b) => a.start - b.start)
 }

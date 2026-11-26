@@ -45,3 +45,20 @@ export const Loading: Story = {
 export const Unsupported: Story = {
   args: { list: { status: 'unsupported' } },
 }
+
+export const WithPeers: Story = {
+  args: {
+    list: {
+      status: 'ready',
+      entries: [
+        { name: 'app', kind: 'dir' },
+        { name: 'README.md', kind: 'file' },
+      ],
+    },
+    peers: [
+      { id: 'aaaaaaaa-1', name: 'streamer-peer-tagger', projectName: 'threadbase-streamer', shortId: 'aaaaaaaa', insert: '@streamer-peer-tagger' },
+      { id: 'bbbbbbbb-2', name: 'name slug', projectName: 'threadbase-mobile', shortId: 'bbbbbbbb', insert: '@"name slug"' },
+    ],
+    onSelectPeer: () => {},
+  },
+}

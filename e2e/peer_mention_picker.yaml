@@ -1,0 +1,59 @@
+appId: com.ronenmars.threadbase
+---
+# Manual flow: pick a peer session from the composer's `@` picker.
+# Not in any test:e2e:* script, because it needs a real streamer with other
+# Claude sessions running (GET /api/peers lists them) and nothing in the mock
+# suite serves that endpoint. It sends nothing.
+#
+#   node e2e/run-maestro.js test e2e/peer_mention_picker.yaml
+#
+# Starts on the hub of an app already paired with that streamer (see
+# real_server_pair.yaml). Ends in the new session with the first peer picked.
+
+- tapOn:
+    id: "fab-new-session"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "browse-first-directory"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Start Session Here"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: "leave-session-modal"
+    commands:
+      - tapOn:
+          id: "leave-session-cancel"
+- tapOn:
+    id: "chat-message-input"
+- inputText: "ask @"
+- extendedWaitUntil:
+    visible:
+      id: "peer-mention-row-.*"
+    timeout: 8000
+- takeScreenshot: peer-mention-picker-open
+
+# Picking closes the board and colors what was inserted. The color lives on a
+# nested Text that iOS folds into the input's own accessibility element, so
+# it is not assertable here: read it from the screenshots. Jest pins it
+# (ChatComposer.peers.test.tsx).
+# By point: the row's accessibility frame is not where it is drawn, so an id
+# tap lands on the keyboard. The first row sits at about a third of the screen.
+- tapOn:
+    point: "50%,34%"
+- assertNotVisible:
+    id: "file-mention-board"
+- assertVisible:
+    id: "chat-message-input"
+    text: "ask @.+"
+- takeScreenshot: peer-mention-picker-picked
+
+# Removing a character from the inserted name takes the color off.
+- eraseText: 2
+- takeScreenshot: peer-mention-picker-edited
