@@ -82,7 +82,10 @@
     "tokens_other": "{{count}} токенов",
     "errorBadge": "Ошибка",
     "toolFallback": "Инструмент",
-    "queued": "В очереди"
+    "queued": "В очереди",
+    "notSent": "Не отправлено",
+    "retry": "Повторить",
+    "notConfirmed": "Не подтверждено, проверьте терминал"
   },
   "thinking": {
     "label": "Рассуждение",

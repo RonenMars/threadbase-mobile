@@ -78,6 +78,9 @@ export interface Session {
    * old to have the feature. Additive.
    */
   promptSuggestion?: string | null
+  // The streamer saw a sent prompt sit unsubmitted in the agent's input box even after
+  // its own Enter resend. Cleared when the session next runs. Old streamers omit it.
+  inputNotSubmitted?: { promptCount: number; at: string } | null
   /**
    * How the streamer derived `status`. `'turn-signal'` is the one value that
    * means the agent itself said its turn ended; every other value (a prompt

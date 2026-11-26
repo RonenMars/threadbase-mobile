@@ -35,7 +35,7 @@ export function useSessionActions(serverId: string, sessionId: string) {
     retry: (count: number, err: Error) =>
       err instanceof NetworkError && !isPromptPendingError(err) && count < 2,
     mutationFn: (input: string) =>
-      api.post(`/api/sessions/${sessionId}/input`, { input }),
+      api.post<{ ok: boolean; promptCount?: number } | undefined>(`/api/sessions/${sessionId}/input`, { input }),
     onSuccess: () => {
       // Session status is updated via WS session_update in _layout.tsx — no invalidate needed.
       // Catch up on any terminal_output the WS missed while connecting/reconnecting.

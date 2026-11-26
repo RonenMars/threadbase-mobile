@@ -80,7 +80,10 @@
     "tokens_other": "{{count}} טוקנים",
     "errorBadge": "שגיאה",
     "toolFallback": "כלי",
-    "queued": "בתור"
+    "queued": "בתור",
+    "notSent": "לא נשלח",
+    "retry": "נסה שוב",
+    "notConfirmed": "לא אושר, בדוק את הטרמינל"
   },
   "thinking": {
     "label": "חשיבה",

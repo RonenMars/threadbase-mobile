@@ -86,7 +86,10 @@
     "tokens_other": "{{count}} توكن",
     "errorBadge": "خطأ",
     "toolFallback": "أداة",
-    "queued": "في قائمة الانتظار"
+    "queued": "في قائمة الانتظار",
+    "notSent": "لم يُرسل",
+    "retry": "إعادة المحاولة",
+    "notConfirmed": "لم يتم التأكيد، تحقق من الطرفية"
   },
   "thinking": {
     "label": "الاستدلال",
