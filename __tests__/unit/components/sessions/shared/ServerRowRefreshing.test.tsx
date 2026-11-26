@@ -1,6 +1,5 @@
 import { render } from '@testing-library/react-native'
 import { ServerHeaderRow } from '@/components/sessions/tree/ServerHeaderRow'
-import { SyncCachedNotice } from '@/components/sessions/SyncCachedNotice'
 import { KnightRiderScanner } from '@/components/sessions/KnightRiderScanner'
 
 describe('ServerHeaderRow refresh spinner', () => {
@@ -24,24 +23,6 @@ describe('ServerHeaderRow refresh spinner', () => {
     )
     expect(queryByTestId('server-header-refreshing-s1')).toBeNull()
     expect(queryByText('Showing cached data')).toBeNull()
-  })
-})
-
-describe('SyncCachedNotice', () => {
-  it('renders the banner scanner when visible', async () => {
-    const { getByTestId, queryByText } = await render(<SyncCachedNotice visible variant="banner" />)
-    expect(getByTestId('sync-cached-notice-banner')).toBeTruthy()
-    expect(queryByText('Showing cached data — syncing…')).toBeNull()
-  })
-
-  it('renders the caption variant with its own testID', async () => {
-    const { getByTestId } = await render(<SyncCachedNotice visible variant="caption" />)
-    expect(getByTestId('sync-cached-notice-caption')).toBeTruthy()
-  })
-
-  it('renders nothing when not visible', async () => {
-    const { queryByTestId } = await render(<SyncCachedNotice visible={false} variant="banner" />)
-    expect(queryByTestId('sync-cached-notice-banner')).toBeNull()
   })
 })
 

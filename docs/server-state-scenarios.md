@@ -51,7 +51,6 @@ warmingServerIds = activeServerIds where fetchStatuses[id].status === 'warming_u
 | **`ServerUnsupportedBanner`** | “Server needs an update” | One per `unsupportedServerIds` host (when fetch is not already `error` / `warming_up`). |
 | **`ServerIndexingBanner`** | Scan progress while a displayed host is `warming_up` | Same fetch status as `ServerWarmingBanner`; can appear together with it. |
 | **`LoadingOverlay`** (`testID` `sessions-loading-overlay`) | Full-screen scrim, spinner, sessions progress | Only when there is **no** cached list data **and** sessions (or grouped summaries) are still fetching. |
-| **`SyncCachedNotice`** | “Showing cached data” | Background refresh with a warm cache, single-server only. |
 | **Sessions list** | Now or Projects rows for visible sessions | Replaced by `NoServersWelcome` or the all-offline `EmptyState` in those two empty cases. |
 | **FAB** | `+` new session. Hides on scroll-down, reveals on tab switch / scroll-up. | Press with no servers shows a toast (`sessions:fab.noServerHint`). Press toward an unreachable host opens `ServerErrorModal` instead of Browse. |
 | **`ServersStatusModal`** | Per-server dot + label + error detail | On demand — toast tap, all-offline Details, not from the header. |
@@ -103,7 +102,7 @@ warmingServerIds = activeServerIds where fetchStatuses[id].status === 'warming_u
 | Header | No status control. Single-server background refresh may show a header spinner. |
 | Connectivity | None. |
 | Sessions list | Cached rows if any; otherwise empty under the overlay. |
-| Loading overlay | **Visible** only when `!hasCachedData`. Warm cache uses `SyncCachedNotice` / header spinner instead. |
+| Loading overlay | **Visible** only when `!hasCachedData`. Warm cache uses the header spinner instead. |
 | FAB | Rendered and pressable. |
 | ServersStatusModal | Green dot, **“Connected”** |
 
@@ -392,7 +391,7 @@ Hiding a server does not remove it from `activeServerIds`. Both are still pagina
 
 - Cached sessions render immediately
 - Overlay stays hidden
-- Single-server background refresh: header spinner and/or `SyncCachedNotice`
+- Single-server background refresh: header spinner
 
 ---
 
