@@ -96,6 +96,19 @@ function Block({ block, first }: { block: MarkdownBlock; first: boolean }) {
     case 'rule':
       return <View style={styles.rule} />
 
+    // The terminal view has no table layout: the source, pipes and all, is the
+    // most faithful thing a fixed-width row rhythm can show.
+    case 'table':
+      return (
+        <Text
+          style={styles.text}
+          selectable
+          maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER_MONO}
+        >
+          {block.source}
+        </Text>
+      )
+
     case 'code':
       // No Prism here. The terminal is already monospace, and tokenizing is
       // tens of ms on the JS thread per block (see MessageBubble's memo note) —

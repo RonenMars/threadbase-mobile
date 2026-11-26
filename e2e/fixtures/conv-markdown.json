@@ -20,7 +20,7 @@
       "role": "assistant",
       "message_index": 1,
       "timestamp": "2026-09-25T10:00:30.000Z",
-      "text": "## Retry policy\n\nThe checkout retry helper now uses **exponential backoff** with *full jitter* before every attempt.\n\n- First bullet caps the delay at thirty seconds\n- Second bullet stops after five attempts\n\n```ts\nconst delayMs = Math.min(30000, 100 + attempt)\n```\n\nRead the [retry design notes](https://example.com/retry-notes) for the reasoning."
+      "text": "## Retry policy\n\nThe checkout retry helper now uses **exponential backoff** with *full jitter* before every attempt.\n\n- First bullet caps the delay at thirty seconds\n- Second bullet stops after five attempts\n\n| Attempt | Base delay | Jitter window | Applies after |\n|:--|--:|--:|---|\n| first | 100 ms | 0 to 100 ms | the initial failure of the request |\n| second | 200 ms | 0 to 200 ms | a second consecutive failure |\n\n```ts\nconst delayMs = Math.min(30000, 100 + attempt)\n```\n\nRead the [retry design notes](https://example.com/retry-notes) for the reasoning."
     }
   ],
   "message_pagination": {

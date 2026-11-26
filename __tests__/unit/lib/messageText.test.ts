@@ -37,6 +37,11 @@ describe('messageText', () => {
     )
   })
 
+  it('copies a table as tab-separated rows without the pipes or delimiter row', () => {
+    const table = '| Name | Qty |\n|:--|--:|\n| **apples** | 3 |\n| pears | 12 |'
+    expect(messagePlainText(msg(table))).toBe('Name\tQty\napples\t3\npears\t12')
+  })
+
   it('collects every fenced code body', () => {
     const text = '```js\nfoo()\n```\nbetween\n```\nbar()\n```'
     expect(messageCodeBlocks(msg(text))).toBe('foo()\n\nbar()')

@@ -149,3 +149,67 @@ describe('ChatMarkdown – quote in a user bubble', () => {
     expect(getByText('my reply')).toBeTruthy()
   })
 })
+
+describe('ChatMarkdown – tables', () => {
+  const TABLE = ['| Name | Qty |', '|:-----|----:|', '| **apples** | 3 |', '| pears | 12 |'].join('\n')
+  const styleOf = (node: { props: { style?: unknown } }) => StyleSheet.flatten(node.props.style as TextStyle) ?? {}
+
+  it('draws a grid with the pipes gone', async () => {
+    const { getByTestId, getByText, queryByText } = await renderMd(TABLE)
+    expect(getByTestId('markdown-table')).toBeTruthy()
+    expect(getByText('Name')).toBeTruthy()
+    expect(getByText('pears')).toBeTruthy()
+    expect(queryByText(/\|/)).toBeNull()
+  })
+
+  it('makes the header row bold and the body regular', async () => {
+    const { getByText } = await renderMd(TABLE)
+    expect(styleOf(getByText('Name')).fontWeight).toBe('700')
+    expect(styleOf(getByText('pears')).fontWeight).toBeUndefined()
+  })
+
+  it('applies the delimiter alignment to a column and leaves an unmarked one to the text direction', async () => {
+    const { getByText } = await renderMd(TABLE)
+    expect(styleOf(getByText('12')).textAlign).toBe('right')
+    expect(styleOf(getByText('pears')).textAlign).toBe('left')
+    const unmarked = await renderMd('| a |\n|---|\n| b |')
+    expect(styleOf(unmarked.getByText('b')).textAlign).toBe('auto')
+  })
+
+  it('renders inline markdown inside a cell', async () => {
+    const { getByText } = await renderMd(TABLE)
+    expect(styleOf(getByText('apples')).fontWeight).toBe('700')
+  })
+
+  it('makes a link in a cell pressable through the same http(s) gate as prose', async () => {
+    const { getByText } = await renderMd('| doc |\n|---|\n| [x](https://example.com) |')
+    expect(getByText('x').props.onPress).toBeInstanceOf(Function)
+  })
+
+  it('keeps the prose around a table', async () => {
+    const { getByText, getByTestId } = await renderMd(`Before\n\n${TABLE}\n\nAfter`)
+    expect(getByText('Before')).toBeTruthy()
+    expect(getByText('After')).toBeTruthy()
+    expect(getByTestId('markdown-table')).toBeTruthy()
+  })
+
+  it('draws the borders in a visible colour inside a user bubble', async () => {
+    const user = await renderMd(TABLE, { isUser: true })
+    const assistant = await renderMd(TABLE)
+    expect(styleOf(user.getByTestId('markdown-table-grid')).borderColor).toMatch(/59$/)
+    expect(styleOf(assistant.getByTestId('markdown-table-grid')).borderColor).not.toMatch(/59$/)
+  })
+
+  // A needle inside a cell has no single run of text to tint, so the table
+  // drops to its source line and the match stays visible.
+  it('shows a matching table as its plain source while searching', async () => {
+    const { getByText, queryByTestId } = await renderMd(TABLE, { highlight: 'pears' })
+    expect(queryByTestId('markdown-table')).toBeNull()
+    expect(getByText('pears')).toBeTruthy()
+  })
+
+  it('leaves a table that does not match as a grid while searching', async () => {
+    const { getByTestId } = await renderMd(`${TABLE}\n\nneedle here`, { highlight: 'needle' })
+    expect(getByTestId('markdown-table')).toBeTruthy()
+  })
+})

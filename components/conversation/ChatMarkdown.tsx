@@ -7,6 +7,7 @@ import type { RtlStyleKit } from '@/lib/rtl'
 import { isOpenableLinkUrl } from '@/lib/isOpenableLinkUrl'
 import { spanSource, type InlineSpan, type MarkdownBlock } from '@/lib/markdown'
 import { CodeBlock } from '@/components/conversation/CodeBlock'
+import { MarkdownTable } from '@/components/conversation/MarkdownTable'
 import type { MatchAnchor } from '@/components/conversation/matchAnchor'
 
 /**
@@ -54,9 +55,15 @@ function contains(haystack: string, needle: string): boolean {
   return haystack.toLowerCase().includes(needle.toLowerCase())
 }
 
+type SpanBlock = Extract<MarkdownBlock, { spans: InlineSpan[] }>
+
+/** A block drawn as one run of inline spans — everything but a fence, a rule and a table. */
+function hasSpans(block: MarkdownBlock): block is SpanBlock {
+  return 'spans' in block
+}
+
 /** The text a block renders to, markers removed. Empty for a rule or a fence. */
-function renderedText(block: MarkdownBlock): string {
-  if (block.kind === 'code' || block.kind === 'rule') return ''
+function renderedText(block: SpanBlock): string {
   return block.spans.map((s) => s.text).join('')
 }
 
@@ -69,7 +76,12 @@ function renderedText(block: MarkdownBlock): string {
  * including them in the fallback text renders each one twice.
  */
 function matchTextFor(block: MarkdownBlock, needle: string): string | null {
-  if (block.kind === 'code' || block.kind === 'rule') return null
+  // A table has no single run of text to highlight, so while a search is running
+  // a matching one drops to its plain source, pipes included — the same trade a
+  // matched line makes by losing its bold. That keeps the match visible and lets
+  // the row report where it sits.
+  if (block.kind === 'table') return contains(block.source, needle) ? block.source : null
+  if (!hasSpans(block)) return null
   const rendered = renderedText(block)
   if (contains(rendered, needle)) return rendered
   const source = block.spans.map(spanSource).join('')
@@ -164,7 +176,7 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
     }
     return (
       <Text style={style} selectable={selectable}>
-        <Spans spans={block.kind === 'code' || block.kind === 'rule' ? [] : block.spans} styles={styles} isUser={isUser} />
+        <Spans spans={hasSpans(block) ? block.spans : []} styles={styles} isUser={isUser} />
       </Text>
     )
   }
@@ -178,6 +190,23 @@ export function ChatMarkdown({ blocks, isUser, highlight, matchAnchor, activeMat
 
           case 'rule':
             return <View key={i} style={styles.rule} />
+
+          case 'table':
+            // Matched, it renders as the plain source line; otherwise as a grid.
+            if (needle && matchTextFor(block, needle) !== null) {
+              return <View key={i}>{renderLine(block, i)}</View>
+            }
+            return (
+              <MarkdownTable
+                key={i}
+                align={block.align}
+                header={block.header}
+                rows={block.rows}
+                renderSpans={(spans) => <Spans spans={spans} styles={styles} isUser={isUser} />}
+                textStyle={baseStyle}
+                isUser={isUser}
+              />
+            )
 
           case 'heading':
             return (

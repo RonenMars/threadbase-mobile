@@ -115,9 +115,15 @@ block quotes, thematic breaks, paragraphs; and inline `**strong**`, `__strong__`
 
 Deliberately out of scope for now:
 
-- **Tables.** They fall through as paragraphs (literal pipes). A table block is its own change —
-  `messageItemType` already names markdown tables as the pathological height case, so it needs the
-  FlashList work from step 3, not a parser tweak.
+- **Table styling beyond a plain grid.** GFM tables are a block (`kind: 'table'`): the parser reads the
+  header, delimiter row, alignment and body, and a malformed table still falls through as a paragraph.
+  Chat draws a bordered grid in `MarkdownTable` — fixed per-column widths from a text-length heuristic
+  (React Native has no table layout) inside a horizontal `ScrollView`, so a wide table scrolls in the
+  bubble. While a search is running, a matching table drops to its plain source so the match stays
+  visible. The terminal shows the source as plain text. Cell content is flat spans like any other
+  block: no nested blocks, no pipes shielded inside code spans (GFM does not either).
+  `messageItemType` still names markdown tables as the tall case, so FlashList height variance with
+  real tables is something to watch, not something this change measured.
 - **Nested emphasis.** `**bold with *em* inside**` renders the outer span only; the inner markers
   stay literal. Flat spans keep the renderer a single `<Text>` tree. Bold-italic `***x***` and
   `___x___` get their own rule so they resolve to one strong span — without it the lazy `**` match
@@ -296,4 +302,4 @@ device. First thing to check on a simulator.
 - Links are styled rather than pressable in the terminal view. Chat opens them through `isOpenableLinkUrl` (http and https only), the gate `main` already applied to its earlier markdown renderer.
 - No Maestro coverage yet. A flow asserting the toggle flips a known transcript row between source
   and rendered belongs in the mock suite.
-- Tables, and whether a `code` block in the terminal should eventually get Prism after all.
+- Whether a `code` block in the terminal should eventually get Prism after all.

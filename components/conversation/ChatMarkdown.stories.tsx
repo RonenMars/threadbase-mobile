@@ -51,6 +51,23 @@ export const AgentAnswer: Story = {
   args: { blocks: parseMarkdown(ANSWER) },
 }
 
+export const Table: Story = {
+  args: {
+    blocks: parseMarkdown(
+      [
+        'Results per package:',
+        '',
+        '| Package | Status | Size |',
+        '|:--|:-:|--:|',
+        '| **markdown-it** | `removed` | 1.2 MB |',
+        '| [prism](https://example.test/prism) | kept | 180 KB |',
+        '',
+        'The grid scrolls sideways when it is wider than the bubble.',
+      ].join('\n'),
+    ),
+  },
+}
+
 export const InUserBubble: Story = {
   args: { blocks: parseMarkdown('Make it **bold** and add `--watch`.'), isUser: true },
   decorators: [(Story) => <View style={{ padding: 16, backgroundColor: '#2563eb', maxWidth: 360 }}><Story /></View>],

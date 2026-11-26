@@ -1,13 +1,14 @@
 import { parseInline } from '@/lib/markdown/inline'
-import type { HeadingLevel, MarkdownBlock } from '@/lib/markdown/types'
+import type { HeadingLevel, InlineSpan, MarkdownBlock, TableAlign } from '@/lib/markdown/types'
 
 /**
  * Prose → blocks. Fenced code never reaches here; `splitFences` has already
  * taken it out, so this only classifies the text between fences.
  *
  * Anything unrecognised becomes a paragraph. That fallthrough is the whole
- * safety property: a markdown construct we don't support (a table, an image)
- * renders as its own source text rather than disappearing.
+ * safety property: a markdown construct we don't support (an image, a table
+ * whose delimiter row is malformed) renders as its own source text rather than
+ * disappearing.
  */
 
 // `---`, `***`, `___`, and the spaced `- - -` form. Up to three leading spaces,
@@ -35,6 +36,54 @@ function headingLevel(hashes: string): HeadingLevel {
   return hashes.length as HeadingLevel
 }
 
+const DELIMITER_CELL_RE = /^(:)?-+(:)?$/
+
+/**
+ * One table row → trimmed cell strings. The outer pipes are optional, and `\|`
+ * is a literal pipe inside a cell. GFM does not shield pipes inside code spans,
+ * so neither do we.
+ */
+function splitRow(line: string): string[] {
+  let body = line.trim()
+  if (body.startsWith('|')) body = body.slice(1)
+  if (body.endsWith('|') && !body.endsWith('\\|')) body = body.slice(0, -1)
+  const cells: string[] = []
+  let cell = ''
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === '\\' && body[i + 1] === '|') {
+      cell += '|'
+      i++
+    } else if (body[i] === '|') {
+      cells.push(cell.trim())
+      cell = ''
+    } else {
+      cell += body[i]
+    }
+  }
+  cells.push(cell.trim())
+  return cells
+}
+
+/** The alignment per column, or null when `line` is not a delimiter row of `width` columns. */
+function parseDelimiter(line: string, width: number): TableAlign[] | null {
+  if (!line.includes('|')) return null
+  const cells = splitRow(line)
+  if (cells.length !== width) return null
+  const align: TableAlign[] = []
+  for (const cell of cells) {
+    const m = cell.match(DELIMITER_CELL_RE)
+    if (!m) return null
+    align.push(m[1] && m[2] ? 'center' : m[2] ? 'right' : m[1] ? 'left' : 'default')
+  }
+  return align
+}
+
+/** Cut or pad to the header width so every row of a table block has the same shape. */
+function toCells(line: string, width: number): InlineSpan[][] {
+  const raw = splitRow(line)
+  return Array.from({ length: width }, (_, i) => parseInline(raw[i] ?? ''))
+}
+
 export function parseBlocks(text: string): MarkdownBlock[] {
   const out: MarkdownBlock[] = []
   // Buffers for the two run-length blocks: consecutive plain lines become one
@@ -60,8 +109,10 @@ export function parseBlocks(text: string): MarkdownBlock[] {
     flushQuote()
   }
 
-  for (const raw of text.split('\n')) {
-    const line = raw.replace(/[ \t]+$/, '')
+  const lines = text.split('\n').map((raw) => raw.replace(/[ \t]+$/, ''))
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index]
 
     if (line.trim().length === 0) {
       flushAll()
@@ -80,6 +131,32 @@ export function parseBlocks(text: string): MarkdownBlock[] {
       // A trailing closing sequence (`## Title ##`) is decoration, not content.
       const body = heading[2].replace(/[ \t]+#+[ \t]*$/, '')
       out.push({ kind: 'heading', level: headingLevel(heading[1]), spans: parseInline(body) })
+      continue
+    }
+
+    // A table needs its delimiter row on the next line; without one the header
+    // is ordinary prose and falls through. It may follow a paragraph line with
+    // no blank between, which is how agents write them.
+    const delimiter = line.includes('|') ? parseDelimiter(lines[index + 1] ?? '', splitRow(line).length) : null
+    if (delimiter) {
+      flushAll()
+      const width = delimiter.length
+      let end = index + 1
+      const rows: InlineSpan[][][] = []
+      // A body row is any following line that still has a pipe; the first blank
+      // or pipe-less line ends the table so trailing prose is not swallowed.
+      while (end + 1 < lines.length && lines[end + 1].includes('|')) {
+        end++
+        rows.push(toCells(lines[end], width))
+      }
+      out.push({
+        kind: 'table',
+        align: delimiter,
+        header: toCells(line, width),
+        rows,
+        source: lines.slice(index, end + 1).join('\n'),
+      })
+      index = end
       continue
     }
 

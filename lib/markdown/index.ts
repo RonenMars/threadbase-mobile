@@ -3,7 +3,7 @@ import { splitFences } from '@/lib/markdown/fences'
 import { spanSource } from '@/lib/markdown/inline'
 import type { MarkdownBlock } from '@/lib/markdown/types'
 
-export type { HeadingLevel, InlineSpan, MarkdownBlock } from '@/lib/markdown/types'
+export type { HeadingLevel, InlineSpan, MarkdownBlock, TableAlign } from '@/lib/markdown/types'
 export type { FencePart } from '@/lib/markdown/fences'
 export { LANGUAGE_ALIASES, decodeEntities, guessLanguage, parseLanguage, splitFences } from '@/lib/markdown/fences'
 export { parseBlocks } from '@/lib/markdown/blocks'
@@ -41,6 +41,8 @@ export function blockSource(block: MarkdownBlock): string {
       return `\`\`\`${block.language}\n${block.code}\n\`\`\``
     case 'rule':
       return '---'
+    case 'table':
+      return block.source
     case 'heading':
       return `${'#'.repeat(block.level)} ${block.spans.map(spanSource).join('')}`
     case 'quote':

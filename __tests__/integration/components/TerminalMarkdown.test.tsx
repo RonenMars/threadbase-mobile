@@ -10,3 +10,9 @@ it('keeps the list marker from shrinking', async () => {
   const { getByText } = await render(<TerminalMarkdown blocks={parseMarkdown('1. first')} />)
   expect(StyleSheet.flatten(getByText('1.').props.style).flexShrink).toBe(0)
 })
+
+it('shows a table as its literal source, pipes included', async () => {
+  const source = '| a | b |\n|---|---|\n| 1 | 2 |'
+  const { getByText } = await render(<TerminalMarkdown blocks={parseMarkdown(source)} />)
+  expect(getByText(source)).toBeTruthy()
+})

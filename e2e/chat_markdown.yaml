@@ -1,8 +1,8 @@
 # Maestro E2E — markdown rendering in the chat view
 # The fixture conversation (conv-markdown) holds one assistant message with a
-# heading, bold and italic text, a bullet list, a fenced code block and an http
-# link. The flow asserts the rendered words are on screen and that none of the
-# raw markers are: `##`, `**`, `*`, the list dash, the ``` fence and the
+# heading, bold and italic text, a bullet list, a table, a fenced code block and
+# an http link. The flow asserts the rendered words are on screen and that none
+# of the raw markers are: `##`, `**`, `*`, the list dash, the ``` fence and the
 # `[text](url)` brackets. A message that fell back to one literal Text would
 # show every marker and fail the assertNotVisible steps.
 #
@@ -66,6 +66,23 @@ appId: com.ronenmars.threadbase
 - assertVisible:
     text: ".*Second bullet stops after.*"
 
+# The table is wider than the bubble, so it must draw as a grid (no pipes) and
+# scroll sideways inside it. `Applies after` is the last column's header: a swipe
+# on the grid, not on the list, has to bring it into view.
+- assertVisible:
+    id: "markdown-table"
+
+- assertVisible:
+    text: "Attempt"
+
+- swipe:
+    from:
+      id: "markdown-table"
+    direction: LEFT
+
+- assertVisible:
+    text: "Applies after"
+
 - assertVisible:
     id: "message-code-block"
 
@@ -81,6 +98,9 @@ appId: com.ronenmars.threadbase
 # --- raw markers are not -------------------------------------------------------
 - assertNotVisible:
     text: ".*##.*"
+
+- assertNotVisible:
+    text: ".*\\|.*"
 
 - assertNotVisible:
     text: ".*\\*.*"
