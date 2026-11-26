@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { browseQueryKey, fetchBrowse } from '@/hooks/useBrowse'
-import { NetworkError, NotFoundError } from '@/services/api-client'
+import { createApiForServer, NetworkError, NotFoundError } from '@/services/api-client'
+import { useServersStore } from '@/stores/servers'
+import type { BrowseResponse } from '@/types/api'
 import { extraDirEntries, rankMentionEntries, type MentionEntry } from '@/lib/mentionToken'
 
 export type MentionListState =
@@ -28,6 +30,12 @@ export function mentionListingPath(projectPath: string, dir: string): string | n
   return `${base}/${dir}`
 }
 
+function fetchSessionFiles(serverId: string, sessionId: string, dir: string): Promise<BrowseResponse> {
+  return createApiForServer(serverId).get<BrowseResponse>(
+    `/api/sessions/${encodeURIComponent(sessionId)}/files?dir=${encodeURIComponent(dir)}`,
+  )
+}
+
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value)
   useEffect(() => {
@@ -40,20 +48,32 @@ function useDebounced<T>(value: T, ms: number): T {
 export function useMentionEntries(
   serverId: string,
   projectPath: string,
+  sessionId: string | undefined,
   dir: string,
   query: string,
   /** The session's extra directories; offered as folders at the top level. */
   extraDirs: readonly string[] = [],
 ): MentionListState {
+  // Only /api/info's flag proves the server has the endpoint; absent reads as an older server.
+  const serverHasSessionFiles = useServersStore((s) => s.servers[serverId]?.serverInfo?.sessionFiles === true)
   // Filtering within a directory is synchronous; only changing directory
   // fetches, and fast typing through `src/comp…` should not list every prefix.
   const debouncedDir = useDebounced(dir, DIR_DEBOUNCE_MS)
-  const path = mentionListingPath(projectPath, debouncedDir)
+  // `~` is not relative to the cwd: the session endpoint would read it as a folder name, /api/browse expands it.
+  const isHomeDir = debouncedDir === '~' || debouncedDir.startsWith('~/')
+  const sessionRelative = serverHasSessionFiles && !!sessionId && !isHomeDir
+  // The session-relative listing needs no absolute path, so it also serves a Windows streamer.
+  const path = sessionRelative ? debouncedDir : mentionListingPath(projectPath, debouncedDir)
 
   const listing = useQuery({
-    // Same key as the Browse screen, so the two share a cache.
-    queryKey: browseQueryKey(serverId, path ?? ''),
-    queryFn: () => fetchBrowse(serverId, path ?? ''),
+    // The browse key is shared with the Browse screen, so the two share a cache.
+    queryKey: sessionRelative
+      ? ['session-files', serverId, sessionId, debouncedDir]
+      : browseQueryKey(serverId, path ?? ''),
+    queryFn: () =>
+      sessionRelative && sessionId
+        ? fetchSessionFiles(serverId, sessionId, debouncedDir)
+        : fetchBrowse(serverId, path ?? ''),
     enabled: !!serverId && path !== null,
     staleTime: LISTING_STALE_MS,
     retry: false,
