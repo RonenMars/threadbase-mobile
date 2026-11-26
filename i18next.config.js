@@ -1,5 +1,5 @@
 module.exports = {
-  locales: ['en', 'he', 'ar', 'ru'],
+  locales: ['en', 'he', 'ar', 'ru', 'uk'],
   extract: {
     input: [
       'app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}', 'hooks/**/*.{ts,tsx}',
@@ -9,7 +9,7 @@ module.exports = {
     ],
     output: 'locales/{{language}}/{{namespace}}.json',
     primaryLanguage: 'en',
-    secondaryLanguages: ['he', 'ar', 'ru'],
+    secondaryLanguages: ['he', 'ar', 'ru', 'uk'],
     defaultNS: 'common',
     functions: ['t', '*.t', 'tCommon', 'tPair', 'tSearch', 'tTerminal'],
   },

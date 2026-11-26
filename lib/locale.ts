@@ -1,13 +1,14 @@
 import type { TFunction } from 'i18next'
 import { localeDirection } from './rtl'
 
-export type SupportedLocale = 'en' | 'he' | 'ar' | 'ru'
+export type SupportedLocale = 'en' | 'he' | 'ar' | 'ru' | 'uk'
 
 export const SUPPORTED_LOCALES = [
   { code: 'en' },
   { code: 'he' },
   { code: 'ar' },
   { code: 'ru' },
+  { code: 'uk' },
 ] as const satisfies readonly { code: SupportedLocale }[]
 
 export function getSupportedLocaleLabel(locale: SupportedLocale, t: TFunction<'settings'>): string {
@@ -20,6 +21,8 @@ export function getSupportedLocaleLabel(locale: SupportedLocale, t: TFunction<'s
       return t('language.arabic')
     case 'ru':
       return t('language.russian')
+    case 'uk':
+      return t('language.ukrainian')
   }
 }
 
@@ -36,6 +39,8 @@ function canonicalLanguage(value: string | null | undefined): SupportedLocale | 
       return 'ar'
     case 'ru':
       return 'ru'
+    case 'uk':
+      return 'uk'
     default:
       return undefined
   }

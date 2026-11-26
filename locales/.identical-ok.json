@@ -17,5 +17,8 @@
   "terminal.json:rawKeyboard.escape": "physical keyboard keycap label",
   "terminal.json:rawKeyboard.tab": "physical keyboard keycap label",
   "terminal.json:rawKeyboard.shiftTab": "physical keyboard keycap label",
-  "terminal.json:rawKeyboard.enter": "physical keyboard keycap label"
+  "terminal.json:rawKeyboard.enter": "physical keyboard keycap label",
+  "servers.json:health.checks.streamer": "component name \"Streamer\" kept in Latin, matching Threadbase Streamer in terminal.unavailableBody",
+  "servers.json:health.checks.providerCopilot": "product name \"GitHub Copilot CLI\"",
+  "settings.json:backup.manifestVersion": "component name \"Streamer\" kept in Latin, followed by a version placeholder"
 }

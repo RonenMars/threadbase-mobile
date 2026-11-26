@@ -25,6 +25,10 @@ import onboardingRu from '../locales/ru/onboarding.json';
 import sessionsRu from '../locales/ru/sessions.json';
 import settingsRu from '../locales/ru/settings.json';
 import serversRu from '../locales/ru/servers.json';
+import onboardingUk from '../locales/uk/onboarding.json';
+import sessionsUk from '../locales/uk/sessions.json';
+import settingsUk from '../locales/uk/settings.json';
+import serversUk from '../locales/uk/servers.json';
 
 i18n.use(initReactI18next).init({
   lng: 'en',
@@ -35,6 +39,7 @@ i18n.use(initReactI18next).init({
     he: { onboarding: onboardingHe, sessions: sessionsHe, settings: settingsHe, servers: serversHe },
     ar: { onboarding: onboardingAr, sessions: sessionsAr, settings: settingsAr, servers: serversAr },
     ru: { onboarding: onboardingRu, sessions: sessionsRu, settings: settingsRu, servers: serversRu },
+    uk: { onboarding: onboardingUk, sessions: sessionsUk, settings: settingsUk, servers: serversUk },
   },
   interpolation: { escapeValue: false },
 });

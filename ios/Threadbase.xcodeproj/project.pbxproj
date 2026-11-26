@@ -64,6 +64,7 @@
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Threadbase/SplashScreen.storyboard; sourceTree = "<group>"; };
 		B689F4876398C60B07CA383E /* Pods-ExpoWidgetsTarget.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.debug.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.debug.xcconfig"; sourceTree = "<group>"; };
 		B9CFA2AB3D3C4C459E3BDFEF /* ru */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.strings; name = ru; path = Threadbase/ru.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		7E3A91C4D2B84F6A9C05D18E /* uk */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.strings; name = uk; path = Threadbase/uk.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C1EA67F3CDB0582F2E48E07D /* Pods-ExpoWidgetsTarget.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.release.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.release.xcconfig"; sourceTree = "<group>"; };
 		C84651B6475345A9A1FDAB87 /* he */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.strings; name = he; path = Threadbase/he.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -284,6 +285,7 @@
 				he,
 				ar,
 				ru,
+				uk,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
@@ -608,6 +610,7 @@
 				C84651B6475345A9A1FDAB87 /* he */,
 				4890FFA1CD5D46238C3DDADE /* ar */,
 				B9CFA2AB3D3C4C459E3BDFEF /* ru */,
+				7E3A91C4D2B84F6A9C05D18E /* uk */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";

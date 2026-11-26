@@ -1,0 +1,48 @@
+{
+  "commands": {
+    "title": "Команди",
+    "empty": "Жодна команда не відповідає «/{{query}}»",
+    "argsBadge": "арг.",
+    "run": "Виконати /{{command}}"
+  },
+  "banner": {
+    "moreInfo": "Докладніше"
+  },
+  "app": {
+    "title": "Threadbase",
+    "qaBadge": "QA"
+  },
+  "quickAccess": {
+    "tabs": {
+      "favorites": "Обране"
+    },
+    "newSessionHere": "Нова сесія тут",
+    "browseDirectory": "Переглянути теку",
+    "openSession": "Відкрити сесію",
+    "unpinFromFavorites": "Відкріпити від обраного",
+    "pinToFavorites": "Закріпити в обраному",
+    "cancel": "Скасувати",
+    "loadMore_one": "+ ще {{count}}",
+    "loadMore_few": "+ ще {{count}}",
+    "loadMore_many": "+ ще {{count}}",
+    "loadMore_other": "+ ще {{count}}",
+    "emptyFavorites": "Обраного поки немає — утримуйте елемент, щоб закріпити його."
+  },
+  "shelf": {
+    "open": "Збережені чати",
+    "openWithCount": "Збережені чати, чекають на вас: {{n}}",
+    "hint": "Відкриває ваші збережені чати. Утримуйте, щоб зберегти чат на цьому екрані або прибрати його.",
+    "toggleSaveAction": "Зберегти цей чат або прибрати",
+    "title": "Збережені чати",
+    "close": "Закрити збережені чати",
+    "emptyTitle": "Збережених чатів поки немає",
+    "emptySubtitle": "Утримуйте цю бульбашку на сесії або розмові, щоб зберегти її тут.",
+    "rowNeedsYou": "{{label}}, чекає на вас",
+    "saved": "Збережено у ваших чатах",
+    "removed": "Прибрано зі збережених чатів"
+  },
+  "savedItems": {
+    "syncFailedTitle": "Не вдалося зберегти на сервері",
+    "syncFailedMessage": "Ваші збережені чати повернуто до стану на сервері. Перевірте підключення й спробуйте ще раз."
+  }
+}

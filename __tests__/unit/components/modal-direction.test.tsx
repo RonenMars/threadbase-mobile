@@ -69,6 +69,7 @@ describe('modal direction follows i18next, not native RTL state', () => {
     ['he', 'rtl', false],
     ['ar', 'rtl', false],
     ['ru', 'ltr', true],
+    ['uk', 'ltr', true],
   ] as const)(
     'ServersStatusModal renders %s content %s while I18nManager.isRTL is %s',
     async (locale, expected, nativeIsRTL) => {

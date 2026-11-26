@@ -1,0 +1,160 @@
+{
+  "button": {
+    "cancel": "Скасувати",
+    "confirm": "Підтвердити",
+    "save": "Зберегти",
+    "back": "Назад",
+    "close": "Закрити",
+    "retry": "Спробувати ще раз",
+    "apply": "Застосувати",
+    "openSettings": "Відкрити налаштування",
+    "settings": "Налаштування",
+    "moreOptions": "Більше опцій",
+    "hardReload": "Примусово перезавантажити транскрипт"
+  },
+  "alert": {
+    "level": {
+      "critical": "Критична",
+      "error": "Помилка",
+      "warning": "Попередження",
+      "info": "Інфо"
+    },
+    "pill": {
+      "degraded": "Збої в роботі",
+      "issues_one": "{{count}} проблема",
+      "issues_few": "{{count}} проблеми",
+      "issues_many": "{{count}} проблем",
+      "issues_other": "{{count}} проблеми"
+    },
+    "status": {
+      "title": "Стан",
+      "summaryBoth": "{{errors}} · {{warnings}}",
+      "errorCount_one": "{{count}} помилка",
+      "errorCount_few": "{{count}} помилки",
+      "errorCount_many": "{{count}} помилок",
+      "errorCount_other": "{{count}} помилки",
+      "warningCount_one": "{{count}} попередження",
+      "warningCount_few": "{{count}} попередження",
+      "warningCount_many": "{{count}} попереджень",
+      "warningCount_other": "{{count}} попередження",
+      "retryEverything": "Повторити все",
+      "technicalDetails": "Технічні подробиці",
+      "dismiss": "Закрити"
+    },
+    "inline": {
+      "unreachableSince": "Недоступно з {{time}}",
+      "sessionsStale_one": "Сесію нижче ({{count}}) востаннє завантажено {{ago}}. Перевірте, чи комп’ютер не перебуває в режимі сну та чи він у тій самій мережі.",
+      "sessionsStale_few": "Сесії нижче ({{count}}) востаннє завантажено {{ago}}. Перевірте, чи комп’ютер не перебуває в режимі сну та чи він у тій самій мережі.",
+      "sessionsStale_many": "Сесії нижче ({{count}}) востаннє завантажено {{ago}}. Перевірте, чи комп’ютер не перебуває в режимі сну та чи він у тій самій мережі.",
+      "sessionsStale_other": "Сесії нижче ({{count}}) востаннє завантажено {{ago}}. Перевірте, чи комп’ютер не перебуває в режимі сну та чи він у тій самій мережі.",
+      "loadedAgo_one": "{{count}} хвилину тому",
+      "loadedAgo_few": "{{count}} хвилини тому",
+      "loadedAgo_many": "{{count}} хвилин тому",
+      "loadedAgo_other": "{{count}} хвилини тому",
+      "retryNow": "Повторити зараз",
+      "dismiss": "Закрити"
+    }
+  },
+  "error": {
+    "authDeviceRevoked": "Цей пристрій більше не авторизовано. Спаруйте його із сервером знову.",
+    "authKeyRejected": "Сервер відхилив API-ключ. Оновіть API-ключ і спробуйте ще раз.",
+    "authKeyRejectedOnConnect": "Сервер відхилив цей API-ключ. Перевірте THREADBASE_API_KEY на вашому сервері та вставте його ще раз.",
+    "cameraPermissionDenied": "Доступ до камери заборонено. Спробуйте ще раз, щоб зробити фото.",
+    "cameraAccessNeededTitle": "Потрібен доступ до камери",
+    "cameraAccessNeededMessage": "Увімкніть доступ до камери в налаштуваннях, щоб робити фото.",
+    "attachFailed": "Не вдалося прикріпити файл. Спробуйте ще раз.",
+    "cleartextBlocked": "Ця адреса використовує незахищений HTTP і не належить до вашої локальної мережі. Скористайтеся адресою https:// або запустіть tb serve --tunnel.",
+    "unexpected": "Сталася неочікувана помилка"
+  },
+  "favorite": {
+    "add": "Додати в обране",
+    "remove": "Прибрати з обраного"
+  },
+  "nav": {
+    "top": "↑ Угору",
+    "bottom": "↓ Донизу",
+    "scrollToTop": "Прокрутити вгору",
+    "scrollToBottom": "Прокрутити донизу",
+    "copyAll": "Копіювати все"
+  },
+  "biometricLock": {
+    "title": "Threadbase заблоковано",
+    "unlock": "Розблокувати"
+  },
+  "errorBoundary": {
+    "title": "Збій застосунку",
+    "message": "У застосунку сталася неочікувана помилка. Зазвичай допомагає перезавантаження.",
+    "reload": "Перезавантажити Threadbase",
+    "report": "Повідомити про цей збій",
+    "reportSending": "Надсилання звіту…",
+    "reportSent": "Звіт надіслано. Дякуємо.",
+    "reportFailed": "Не вдалося надіслати звіт. Спробуйте ще раз.",
+    "diagnosticsCheckbox": "Автоматично надсилати майбутні звіти про збої та діагностику"
+  },
+  "renderError": {
+    "title": "Не вдалося відобразити цей елемент",
+    "message": "Показано необроблений варіант замість збою екрана."
+  },
+  "navLock": {
+    "opening": "Відкриття…"
+  },
+  "composer": {
+    "attachTitle": "Прикріпити",
+    "takePhoto": "Зробити фото",
+    "chooseFromGallery": "Вибрати з галереї",
+    "chooseFiles": "Вибрати файли",
+    "micAccessNeededTitle": "Потрібен доступ до мікрофона",
+    "micAccessNeededMessage": "Увімкніть доступ до мікрофона в налаштуваннях, щоб диктувати."
+  },
+  "question": {
+    "answerSent": "Відповідь надіслано — очікуємо, поки агент продовжить роботу.",
+    "submit": "Надіслати",
+    "unsupportedShape": "Цей промпт потребує відповіді, яку застосунок поки не може надіслати — дайте відповідь у терміналі.",
+    "openFullScreen": "Відкрити на весь екран",
+    "minimize": "Згорнути",
+    "waiting": "Питання очікує на вашу відповідь",
+    "typeSomething": "Введіть щось.",
+    "chatAboutThis": "Обговорити в чаті",
+    "otherPlaceholder": "Введіть свою відповідь",
+    "send": "Надіслати"
+  },
+  "errorBanner": {
+    "titleSessions": "Сесії не завантажилися.",
+    "titleSessions_named": "Сесії не завантажилися з {{server}}.",
+    "titleConversations": "Історія не завантажилася.",
+    "titleConversations_named": "Історія не завантажилася з {{server}}.",
+    "titleMessages": "Повідомлення не завантажилися.",
+    "titleMessages_named": "Повідомлення не завантажилися з {{server}}.",
+    "titleSessionDetail": "Відомості про сесію не завантажилися.",
+    "titleSessionDetail_named": "Відомості про сесію не завантажилися з {{server}}.",
+    "titleOther": "Дещо не завантажилося.",
+    "titleOther_named": "Дещо не завантажилося з {{server}}.",
+    "messageSessions": "Список нижче може бути неповним.",
+    "messageConversations": "Історія нижче може бути неповною.",
+    "messageMessages": "У цій розмові можуть бракувати останніх відповідей.",
+    "messageSessionDetail": "Відомості про цю сесію можуть бути неповними.",
+    "messageOther": "На цьому екрані можуть бракувати даних, доки ви не повторите спробу.",
+    "messageConnection": "З {{label}} нічого не завантажилося. Сесії нижче можуть бути застарілими.",
+    "messageConnectionAgo": "З {{label}} нічого не завантажилося. Сесії нижче завантажено {{ago}}.",
+    "retrying": "Повторна спроба…",
+    "codeLabel": "Код помилки",
+    "rawLabel": "Необроблена помилка"
+  },
+  "errorPolicy": {
+    "sessionExpired": "Термін дії вашої сесії минув",
+    "forbidden": "У вас немає дозволу на доступ до цього",
+    "blockingHint": "Відкрийте налаштування, щоб спарити цей пристрій знову або оновити API-ключ.",
+    "notFound": "Це більше не вдається знайти",
+    "timeout": "Сервер не відповів вчасно",
+    "tooManyRequests": "Забагато запитів",
+    "serverError": "Сервер не зміг виконати запит"
+  },
+  "recovery": {
+    "title": "Перепідключення…",
+    "dismiss": "Сховати",
+    "details": "Показати подробиці",
+    "message": "Повторюємо невдалий запит.",
+    "wsEscalatedTitle": "Досі відключено",
+    "wsEscalatedMessage": "Активне підключення ще не відновилося. Повторюємо спроби у фоновому режимі."
+  }
+}

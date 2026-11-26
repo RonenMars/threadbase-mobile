@@ -28,6 +28,7 @@ describe('i18n', () => {
     { locale: 'he', expected: 'הגדרות' },
     { locale: 'ar', expected: 'الإعدادات' },
     { locale: 'ru', expected: 'Настройки' },
+    { locale: 'uk', expected: 'Налаштування' },
   ])('re-renders from English to $locale and back without remounting', async ({ locale, expected }) => {
     const { result, unmount } = await renderHook(() => {
       const { t } = useTranslation('settings');

@@ -13,6 +13,7 @@ describe('locale', () => {
     expect(getSupportedLocaleLabel('he', t)).toBe('עברית')
     expect(getSupportedLocaleLabel('ar', t)).toBe('العربية')
     expect(getSupportedLocaleLabel('ru', t)).toBe('Русский')
+    expect(getSupportedLocaleLabel('uk', t)).toBe('Українська')
   })
 
   it('selects the first supported device preference', () => {
@@ -31,6 +32,8 @@ describe('locale', () => {
     expect(resolveSupportedLocale([{ languageCode: 'iw', languageTag: 'iw-IL' }])).toBe('he')
     expect(resolveSupportedLocale([{ languageCode: null, languageTag: 'ar_SA' }])).toBe('ar')
     expect(resolveSupportedLocale([{ languageCode: 'ru', languageTag: 'ru-RU' }])).toBe('ru')
+    expect(resolveSupportedLocale([{ languageCode: 'uk', languageTag: 'uk-UA' }])).toBe('uk')
+    expect(resolveSupportedLocale([{ languageCode: null, languageTag: 'uk_UA' }])).toBe('uk')
     expect(
       resolveSupportedLocale([
         { languageCode: 'ja', languageTag: 'ja-JP' },
@@ -52,6 +55,7 @@ describe('locale', () => {
       { code: 'he' },
       { code: 'ar' },
       { code: 'ru' },
+      { code: 'uk' },
     ])
   })
 
@@ -60,6 +64,7 @@ describe('locale', () => {
     expect(isRTLLocale('ar')).toBe(true)
     expect(isRTLLocale('en')).toBe(false)
     expect(isRTLLocale('ru')).toBe(false)
+    expect(isRTLLocale('uk')).toBe(false)
     for (const { code } of SUPPORTED_LOCALES) {
       expect(isRTLLocale(code)).toBe(i18next.dir(code) === 'rtl')
     }

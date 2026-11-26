@@ -10,7 +10,7 @@
 // expo-dev-launcher's own default copy, which names a tool users have never
 // heard of (node_modules/expo-dev-launcher/plugin/src/withDevLauncher.ts,
 // `withLocalNetworkPermission`: `if (!config.modResults.NSLocalNetworkUsageDescription) { ...set default... }`).
-// And nothing regenerates the hand-added en/he/ar/ru.lproj/InfoPlist.strings
+// And nothing regenerates the hand-added en/he/ar/ru/uk.lproj/InfoPlist.strings
 // files or their PBXVariantGroup wiring at all — --clean just deletes them.
 //
 // Ordering between this plugin's InfoPlist mod and expo-dev-launcher's does
@@ -47,12 +47,12 @@ const PbxFile = require(path.join(path.dirname(xcodePkgPath), 'lib', 'pbxFile'))
 const TAG = 'localized-permission-strings';
 const APP_TARGET_DIR = 'Threadbase';
 const VARIANT_GROUP_NAME = 'InfoPlist.strings';
-const LOCALES = ['en', 'he', 'ar', 'ru'];
+const LOCALES = ['en', 'he', 'ar', 'ru', 'uk'];
 
 const LOCAL_NETWORK_USAGE_DESCRIPTION =
   'Threadbase uses the local network to find and connect to your paired computer.';
 
-// Source of truth: ios/Threadbase/{en,he,ar,ru}.lproj/InfoPlist.strings, as
+// Source of truth: ios/Threadbase/{en,he,ar,ru,uk}.lproj/InfoPlist.strings, as
 // committed. Embedded rather than read from disk because a --clean prebuild
 // wipes those files before this plugin's mods run, so by the time we could
 // read them they would already be gone. Keep this in sync by hand if the
@@ -89,6 +89,14 @@ const LOCALIZED_INFO_PLIST_STRINGS = {
     ["NSMicrophoneUsageDescription", "Threadbase требуется микрофон для надиктовки промптов."],
     ["NSSpeechRecognitionUsageDescription", "Threadbase преобразует вашу речь в текст прямо на устройстве."],
     ["NSLocalNetworkUsageDescription", "Threadbase использует локальную сеть, чтобы найти ваш привязанный компьютер и подключиться к нему."],
+  ],
+  uk: [
+    ["NSFaceIDUsageDescription", "Threadbase використовує Face ID, щоб захистити доступ до ваших розмов."],
+    ["NSCameraUsageDescription", "Використовується для сканування QR-коду під час налаштування сервера та для додавання фото до ваших сесій кодування."],
+    ["NSPhotoLibraryUsageDescription", "Використовується для додавання фото з вашої бібліотеки до сесій кодування."],
+    ["NSMicrophoneUsageDescription", "Threadbase потребує мікрофон, щоб ви могли диктувати промпти."],
+    ["NSSpeechRecognitionUsageDescription", "Threadbase перетворює ваше мовлення на текст безпосередньо на пристрої."],
+    ["NSLocalNetworkUsageDescription", "Threadbase використовує локальну мережу, щоб знайти ваш спарений комп’ютер і підключитися до нього."],
   ],
 };
 
