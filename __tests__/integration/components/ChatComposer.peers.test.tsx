@@ -127,6 +127,15 @@ describe('ChatComposer @ peer sessions', () => {
     queryClient = null
   })
 
+  // The row lays out its own content: it must not depend on the style the file and skill rows share.
+  it('keeps a peer row horizontal, with content that takes no touches', async () => {
+    await renderHarness()
+    await type('@')
+    const row = await screen.findByTestId('peer-mention-row-aaaaaaaa-1111')
+    expect(row.children[0]).toHaveProp('pointerEvents', 'none')
+    expect(row.children[0]).toHaveStyle({ flexDirection: 'row', alignItems: 'center' })
+  })
+
   it('lists peers above the paths, without the current session', async () => {
     await renderHarness()
     await type('@')
