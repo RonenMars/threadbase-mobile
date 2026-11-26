@@ -85,7 +85,7 @@ function ConversationEarlierRow({ conv, ms, title, highlight, previewMode, domin
   }, [conv, highlight, router])
 
   return (
-    <SwipeableRow leading={swipe.leading} compact>
+    <SwipeableRow leading={swipe.leading} trailing={swipe.trailing} compact>
     <ConversationListItem
       testID={`conversation-row-${conv.id}`}
       title={title}
