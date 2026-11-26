@@ -60,9 +60,11 @@ export function findMentionToken(text: string, cursor: number): MentionToken | n
   // Mentions are relative to the session's cwd. `..` may walk up: the streamer
   // resolves it and refuses anything outside its browse root (unless it runs
   // with `unrestrictedBrowse`), so the server's check is the guard, not this.
-  if (raw.startsWith('/') || raw.startsWith('~') || raw.startsWith('\\')) return null
-  // A trailing `..` already names a folder: list it before the `/` is typed.
-  const path = raw === '..' || raw.endsWith('/..') ? `${raw}/` : raw
+  // `~/` is the server's home directory; it expands it and applies the same root check.
+  if (raw.startsWith('/') || raw.startsWith('\\')) return null
+  if (raw.startsWith('~') && raw !== '~' && !raw.startsWith('~/')) return null
+  // A trailing `..` or a bare `~` already names a folder: list it before the `/` is typed.
+  const path = raw === '..' || raw === '~' || raw.endsWith('/..') ? `${raw}/` : raw
   const slash = path.lastIndexOf('/')
   const dir = slash < 0 ? '' : path.slice(0, slash)
   const query = slash < 0 ? path : path.slice(slash + 1)
