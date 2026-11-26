@@ -88,6 +88,38 @@ describe('ChatComposer', () => {
     expect(StyleSheet.flatten(input.props.style).height).toBeUndefined()
   })
 
+  it('releases the pinned height on each keystroke on iOS so the next layout re-measures', async () => {
+    // Fabric iOS reports a content size only when Yoga lays the view out, and a pinned height never
+    // changes the layout, so typing into a pinned input would never be measured again.
+    jest.replaceProperty(Platform, 'OS', 'ios')
+    function Composer() {
+      const [value, setValue] = React.useState('first')
+      return <ChatComposer {...makeProps()} value={value} onChangeText={setValue} />
+    }
+    await renderWithI18n(<Composer />)
+    const input = screen.getByTestId('chat-message-input')
+    const sized = (height: number) => ({ nativeEvent: { contentSize: { width: 300, height } } })
+    await fireEvent(input, 'contentSizeChange', sized(60))
+    expect(StyleSheet.flatten(input.props.style).height).toBe(60)
+    await fireEvent.changeText(input, 'first\nsecond\nthird')
+    expect(StyleSheet.flatten(input.props.style).height).toBeUndefined()
+    await fireEvent(input, 'contentSizeChange', sized(96))
+    expect(StyleSheet.flatten(input.props.style).height).toBe(96)
+  })
+
+  it('keeps the pinned height across a keystroke on Android, which reports sizes without a relayout', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android')
+    function Composer() {
+      const [value, setValue] = React.useState('first')
+      return <ChatComposer {...makeProps()} value={value} onChangeText={setValue} />
+    }
+    await renderWithI18n(<Composer />)
+    const input = screen.getByTestId('chat-message-input')
+    await fireEvent(input, 'contentSizeChange', { nativeEvent: { contentSize: { width: 300, height: 60 } } })
+    await fireEvent.changeText(input, 'first\nsecond')
+    expect(StyleSheet.flatten(input.props.style).height).toBe(76)
+  })
+
   it.each(['ios', 'android'] as const)('shrinks the cleared inline input on %s without remounting it', async (os) => {
     jest.replaceProperty(Platform, 'OS', os)
     function Composer() {

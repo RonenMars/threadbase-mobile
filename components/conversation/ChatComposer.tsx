@@ -278,6 +278,14 @@ export function ChatComposer({
   // Clearing the draft fires one last content size for the empty text. Left in state it
   // keeps the next paste pinned at 44pt, because no new size is reported at a fixed height.
   if (value.length === 0 && contentHeight !== 0) setContentHeight(0)
+  // Fabric iOS emits a content size only when Yoga lays the view out, and a pinned height never
+  // changes the layout, so a pinned input is never measured again as the draft grows. Releasing
+  // the pin on every edit lets the next layout re-measure it.
+  const [measuredValue, setMeasuredValue] = useState(value)
+  if (measuredValue !== value) {
+    setMeasuredValue(value)
+    if (Platform.OS === 'ios' && contentHeight !== 0) setContentHeight(0)
+  }
   const grownHeight =
     value.length === 0 || contentHeight === 0
       ? undefined
