@@ -36,6 +36,7 @@ import { lendComposerFocus, returnComposerFocus, useComposerFocus } from '@/hook
 import { AttachmentPreview } from '@/components/conversation/AttachmentPreview'
 import { FileMentionPanel, SkillMentionPanel } from '@/components/conversation/FileMentionBoard'
 import type { ComposerMention, ComposerSlash } from '@/hooks/useFileMentions'
+import { findPeerMarks } from '@/lib/mentionToken'
 import type { SkillEntry } from '@/lib/slashToken'
 import { useTheme } from '@/contexts/ThemeContext'
 import { font, spacing, type Theme } from '@/constants/theme'
@@ -94,6 +95,8 @@ export interface ChatComposerProps {
   /** The marked skill: its name at the start of the text shows in the accent color with an X. */
   skill?: SkillEntry | null
   onClearSkill?: () => void
+  /** What picked peers inserted; each shows in the accent color while it stays a whole word. */
+  peerMarks?: string[]
   /** Replaces the default placeholder, e.g. with the question a "Chat about this" left open. */
   placeholder?: string | null
   /** Focuses the inline input whenever this changes after mount. */
@@ -156,6 +159,7 @@ export function ChatComposer({
   slash = null,
   skill = null,
   onClearSkill,
+  peerMarks = [],
   placeholder = null,
   focusRequest,
 }: ChatComposerProps) {
@@ -292,13 +296,23 @@ export function ChatComposer({
       : Math.min(160, Math.max(44, contentHeight + (Platform.OS === 'android' ? spacing.sm * 2 : 0)))
   const [skillWidth, setSkillWidth] = useState(0)
   const markedSkill = skill !== null && !disabled && value.startsWith(skill.name) ? skill : null
-  const inputChildren = markedSkill ? (
-    <>
-      <Text testID="skill-chip-name" style={styles.skillName}>{markedSkill.name}</Text>
-      <Text>{value.slice(markedSkill.name.length)}</Text>
-    </>
-  ) : undefined
-  const inputValue = markedSkill ? undefined : disabled ? '' : value
+  const peerRanges = (disabled ? [] : findPeerMarks(value, peerMarks)).map((r) => ({ ...r, testID: 'peer-mark' }))
+  const markedRanges = markedSkill
+    ? [{ start: 0, end: markedSkill.name.length, testID: 'skill-chip-name' }, ...peerRanges.filter((r) => r.start >= markedSkill.name.length)]
+    : peerRanges
+  const inputChildren =
+    markedRanges.length > 0 ? (
+      <>
+        {markedRanges.map((r, i) => (
+          <Text key={r.start}>
+            {value.slice(i === 0 ? 0 : markedRanges[i - 1].end, r.start)}
+            <Text testID={r.testID} style={styles.skillName}>{value.slice(r.start, r.end)}</Text>
+          </Text>
+        ))}
+        <Text>{value.slice(markedRanges[markedRanges.length - 1].end)}</Text>
+      </>
+    ) : undefined
+  const inputValue = inputChildren ? undefined : disabled ? '' : value
   const skillClear = (testID: string) =>
     markedSkill && onClearSkill ? (
       <TouchableOpacity

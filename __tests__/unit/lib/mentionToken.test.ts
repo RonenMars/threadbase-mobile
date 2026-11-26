@@ -1,9 +1,13 @@
 import {
   applyMention,
+  applyPeerMention,
+  buildPeerEntries,
   escapeMentionPath,
   extraDirEntries,
   findMentionToken,
+  findPeerMarks,
   rankMentionEntries,
+  rankPeerEntries,
   type MentionEntry,
 } from '@/lib/mentionToken'
 
@@ -174,5 +178,110 @@ describe('extraDirEntries', () => {
   it('skips paths it cannot express relative to the cwd', () => {
     expect(extraDirEntries('C:\\proj', ['C:\\lib'], '')).toEqual([])
     expect(extraDirEntries(cwd, ['relative/x', cwd], '')).toEqual([])
+    })
+  })
+
+describe('peer entries', () => {
+  const base = { projectName: 'tb-mobile', name: 'alpha' }
+  const a = { ...base, id: 'aaaaaaaa-1', peerMention: '@alpha', peerAddress: 'uds:/tmp/cc-socks/1.sock' }
+  const b = { ...base, id: 'bbbbbbbb-2', peerMention: '@"name slug"', peerAddress: 'uds:/tmp/cc-socks/2.sock', projectName: 'tb-streamer' }
+
+  it('inserts the picker token and shows the name, project and short id', () => {
+    expect(buildPeerEntries([a, b], 'self')).toEqual([
+      { id: 'aaaaaaaa-1', name: 'alpha', projectName: 'tb-mobile', shortId: 'aaaaaaaa', insert: '@alpha' },
+      { id: 'bbbbbbbb-2', name: 'name slug', projectName: 'tb-streamer', shortId: 'bbbbbbbb', insert: '@"name slug"' },
+    ])
+  })
+
+  it('leaves out the current session and rows with neither a mention nor an address', () => {
+    const rows = [{ ...a, id: 'self' }, { ...base, id: 'c', peerMention: '@c' }, { ...base, id: 'd' }]
+    expect(buildPeerEntries(rows, 'self').map((p) => p.id)).toEqual(['c'])
+  })
+
+  it('appends the bare address when two peers share a name, and uses it alone when there is no token', () => {
+    const twin = { ...a, id: 'cccccccc-3', peerAddress: 'uds:/tmp/cc-socks/3.sock' }
+    const noMention = { ...base, id: 'dddddddd-4', name: 'odd "name"', peerAddress: 'uds:/tmp/cc-socks/4.sock' }
+    const out = buildPeerEntries([a, twin, noMention], 'self')
+    expect(out.map((p) => p.insert)).toEqual([
+      '@alpha uds:/tmp/cc-socks/1.sock',
+      '@alpha uds:/tmp/cc-socks/3.sock',
+      'uds:/tmp/cc-socks/4.sock',
+    ])
+    expect(out[2].name).toBe('odd "name"')
+  })
+
+  it('ignores a malformed field instead of throwing', () => {
+    const bad = { ...a, peerMention: 42 as unknown as string, peerAddress: undefined }
+    expect(buildPeerEntries([bad], 'self')).toEqual([])
+  })
+
+  it('ranks by name, then project or short id', () => {
+    const peers = buildPeerEntries([a, b], 'self')
+    expect(rankPeerEntries(peers, 'al').map((p) => p.id)).toEqual(['aaaaaaaa-1'])
+    expect(rankPeerEntries(peers, 'streamer').map((p) => p.id)).toEqual(['bbbbbbbb-2'])
+    expect(rankPeerEntries(peers, 'bbbb').map((p) => p.id)).toEqual(['bbbbbbbb-2'])
+    expect(rankPeerEntries(peers, '')).toHaveLength(2)
+  })
+
+  it('replaces the token with the insert text and a space', () => {
+    const [peer] = buildPeerEntries([a], 'self')
+    expect(applyPeerMention('tell @al now', { start: 5, end: 8, dir: '', query: 'al' }, peer)).toEqual({
+      text: 'tell @alpha now',
+      cursor: 12,
+    })
+    expect(applyPeerMention('@al', { start: 0, end: 3, dir: '', query: 'al' }, peer)).toEqual({ text: '@alpha ', cursor: 7 })
+  })
+})
+
+describe('quoted peer names with spaces or tabs', () => {
+  it('keeps one token open across spaces and tabs until the quote closes', () => {
+    const text = 'ask @"picker test\tto mo'
+    expect(findMentionToken(text, text.length)).toEqual({ start: 4, end: text.length, dir: '', query: 'picker test\tto mo' })
+  })
+
+  it('spans to the closing quote when the caret is inside it', () => {
+    const text = 'ask @"picker test" now'
+    expect(findMentionToken(text, 14)).toEqual({ start: 4, end: 18, dir: '', query: 'picker t' })
+  })
+
+  it('is closed once the quote is, and never crosses a newline or an in-word @', () => {
+    expect(findMentionToken('@"picker test" ', 15)).toBeNull()
+    expect(findMentionToken('@"picker\ntest', 14)).toBeNull()
+    expect(findMentionToken('a@"picker te', 12)).toBeNull()
+  })
+
+  it('finds and inserts a spaced name end to end', () => {
+    const [peer] = buildPeerEntries(
+      [{ id: 'eeeeeeee-5', name: 'picker test to mobile', projectName: 'dev', peerMention: '@"picker test to mobile"', peerAddress: 'uds:/s/5.sock' }],
+      'self',
+    )
+    const typed = 'ask @"picker te'
+    const token = findMentionToken(typed, typed.length)!
+    expect(rankPeerEntries([peer], token.query).map((p) => p.id)).toEqual(['eeeeeeee-5'])
+    expect(applyPeerMention(typed, token, peer).text).toBe('ask @"picker test to mobile" ')
+  })
+})
+
+describe('findPeerMarks', () => {
+  const insert = '@"picker test to mobile"'
+
+  it('marks the inserted words while they stand whole', () => {
+    expect(findPeerMarks(`ask ${insert} now`, [insert])).toEqual([{ start: 4, end: 4 + insert.length }])
+    expect(findPeerMarks(insert, [insert])).toEqual([{ start: 0, end: insert.length }])
+  })
+
+  it('drops the mark when characters are added to or removed from the name', () => {
+    expect(findPeerMarks(`ask ${insert}s now`, [insert])).toEqual([])
+    expect(findPeerMarks(`ask x${insert} now`, [insert])).toEqual([])
+    expect(findPeerMarks('ask @"picker test to mobil" now', [insert])).toEqual([])
+    expect(findPeerMarks('ask @"picker test to mobile now', [insert])).toEqual([])
+  })
+
+  it('marks every picked peer and each repeat', () => {
+    expect(findPeerMarks('@a @b @a', ['@a', '@b'])).toEqual([
+      { start: 0, end: 2 },
+      { start: 3, end: 5 },
+      { start: 6, end: 8 },
+    ])
   })
 })

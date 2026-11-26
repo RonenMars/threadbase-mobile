@@ -286,6 +286,21 @@ export interface ConversationPage {
 // 'lastActivityAt'); see toWireSortKey in hooks/useSession.ts for the mapping.
 export type SessionSortKeyWire = 'startedAt' | 'lastActivityAt' | 'projectName' | 'status'
 
+/** One row of `GET /api/peers`: a live Claude session another session can message. */
+export interface PeerRow {
+  id: string
+  name: string
+  projectName: string
+  /** What the CLI `@` picker inserts; absent when the name cannot be quoted. */
+  peerMention?: string
+  /** `uds:<socket path>`, unique per session; used when `peerMention` is absent or shared. */
+  peerAddress?: string
+}
+
+export interface PeersResponse {
+  peers: PeerRow[]
+}
+
 export interface SessionListPage {
   sessions: Session[]
   nextCursor: string | null

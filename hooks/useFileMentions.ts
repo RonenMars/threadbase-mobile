@@ -1,17 +1,19 @@
 import { useCallback, useState } from 'react'
 import type { TextInputSelectionChangeEvent } from 'react-native'
 import { CLAUDE_CODE_PROVIDER, canonicalizeProviderName } from '@/constants/providers'
-import { applyMention, findMentionToken, type MentionEntry, type MentionToken } from '@/lib/mentionToken'
+import { applyMention, applyPeerMention, findMentionToken, type MentionEntry, type MentionToken, type PeerEntry } from '@/lib/mentionToken'
 import { applySkill, findSlashToken, isSkillIntact, type SkillEntry, type SlashToken } from '@/lib/slashToken'
 
 export interface ComposerMention {
   serverId: string
+  /** The session being typed in: its working tree is what gets listed, and peers exclude it. */
   sessionId?: string
   projectPath: string
   /** The session's extra directories (absolute), offered at the top of the picker. */
   additionalPaths?: readonly string[]
   token: MentionToken
   onSelect: (entry: MentionEntry) => void
+  onSelectPeer: (peer: PeerEntry) => void
   onDismiss: () => void
 }
 
@@ -52,6 +54,8 @@ export interface FileMentions {
   clearSkill: () => void
   /** What to send instead of the text while a skill is marked: the text behind a `/`. */
   skillPayload: string | undefined
+  /** What the picked peers inserted; the composer colors those words while they stay whole. */
+  peerMarks: string[]
 }
 
 // Codex and Cursor open their own file popup on `@`, so text typed into their
@@ -76,6 +80,7 @@ export function useFileMentions({
   const [dismissedAt, setDismissedAt] = useState<number | null>(null)
   const [slashDismissed, setSlashDismissed] = useState(false)
   const [skill, setSkill] = useState<SkillEntry | null>(null)
+  const [peerMarks, setPeerMarks] = useState<string[]>([])
 
   const enabled = !!projectPath && supportsFileMentions(provider)
   const token = enabled ? findMentionToken(text, cursor) : null
@@ -134,12 +139,20 @@ export function useFileMentions({
     skill: markedSkill,
     clearSkill,
     skillPayload: markedSkill ? `/${text}` : undefined,
+    peerMarks,
   }
 
   if (!visibleToken || !projectPath) return { ...shared, mention: null }
 
   const onSelect = (entry: MentionEntry) => {
     const next = applyMention(text, visibleToken, entry)
+    onChangeText(next.text)
+    placeCaret(next.cursor)
+  }
+
+  const onSelectPeer = (peer: PeerEntry) => {
+    const next = applyPeerMention(text, visibleToken, peer)
+    setPeerMarks((marks) => (marks.includes(peer.insert) ? marks : [...marks, peer.insert]))
     onChangeText(next.text)
     placeCaret(next.cursor)
   }
@@ -153,6 +166,7 @@ export function useFileMentions({
       additionalPaths,
       token: visibleToken,
       onSelect,
+      onSelectPeer,
       onDismiss: () => setDismissedAt(visibleToken.start),
     },
   }

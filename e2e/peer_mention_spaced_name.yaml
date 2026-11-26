@@ -1,0 +1,51 @@
+appId: com.ronenmars.threadbase
+---
+# Manual flow: pick a peer whose name has spaces, and see it inserted whole.
+# Needs a real streamer whose /api/peers lists a session named
+# "picker test to mobile" (name it with /rename in a Claude Code session).
+# It sends nothing.
+#
+#   node e2e/run-maestro.js test e2e/peer_mention_spaced_name.yaml
+#
+# Starts on the hub of an app already paired with that streamer (see
+# real_server_pair.yaml).
+
+- tapOn:
+    id: "fab-new-session"
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: "browse-first-directory"
+- waitForAnimationToEnd
+- tapOn:
+    text: "Start Session Here"
+- extendedWaitUntil:
+    visible:
+      id: "session-detail-screen"
+    timeout: 30000
+- runFlow:
+    when:
+      visible:
+        id: "leave-session-modal"
+    commands:
+      - tapOn:
+          id: "leave-session-cancel"
+- tapOn:
+    id: "chat-message-input"
+- inputText: 'ask @"picker te'
+- extendedWaitUntil:
+    visible:
+      id: "peer-mention-row-.*"
+    timeout: 8000
+- takeScreenshot: peer-spaced-name-open
+
+# One row matches, so it sits lower than in peer_mention_picker.yaml. By point,
+# because the row's accessibility frame is not where it is drawn.
+- tapOn:
+    point: "50%,52%"
+- assertNotVisible:
+    id: "file-mention-board"
+- assertVisible:
+    id: "chat-message-input"
+    text: 'ask @"picker test to mobile".*'
+- takeScreenshot: peer-spaced-name-picked
