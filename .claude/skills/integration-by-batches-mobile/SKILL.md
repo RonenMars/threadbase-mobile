@@ -53,7 +53,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -H "x-goog-user-project: threadbase-10
 - This app owns degradation ("Server contract - degrade, don't break" in `CLAUDE.md`). QA the pair both ways.
 - Match pairs by the endpoint or field `services/api-client.ts` actually calls, never by feature name.
 - Running a streamer build for QA takes over port 8766 and shares `~/.threadbase/`. Say so before starting it, restore prod afterwards, and never leave the takeover marker behind.
-- When a pair needs the batch streamer deployed on this machine, deploy it from a clean streamer batch worktree with `npm run deploy:force`. This is an exception to the `--force` part of shared hard rule 10 only. `--force` also skips the streamer's lint, tests and dirty-tree check, so confirm the tree is clean before deploying and that `/healthz` shows `dirty: false` after. `dirty: true` means fix the tree and redeploy. The deploy itself still needs the user's yes.
+- When a pair needs the batch streamer deployed on this machine, deploy it from a clean streamer batch worktree with `npm run deploy:force`. This is an exception to the `--force` part of shared hard rule 10 only. `--force` also skips the streamer's lint, tests, dirty-tree check and active-sessions check, so confirm the tree is clean, count the live sessions and tell the user before asking for their yes to the deploy. Afterwards confirm that `/healthz` shows `dirty: false`; `dirty: true` means fix the tree and redeploy. This deploy stays in place until the QA verdict; "restore prod afterwards" then means redeploying streamer `main`, which also needs the user's yes.
 
 ## Landing
 
