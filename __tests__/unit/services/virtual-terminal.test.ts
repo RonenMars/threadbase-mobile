@@ -990,3 +990,35 @@ describe('VirtualTerminal – SGR attributes', () => {
     expect(vt.getLineStyles().size).toBe(0)
   })
 })
+
+// ConPTY emits CSI n X while repainting Claude Code's screen on Windows.
+describe('VirtualTerminal – erase characters (CSI X)', () => {
+  it('blanks n cells from the cursor and leaves the cursor in place', () => {
+    expect(feedAndGet(`abcdefgh\r${CSI}2C${CSI}3XZ`)).toEqual(['abZ  fgh'])
+  })
+
+  it('erases one cell when the count is omitted or zero', () => {
+    expect(feedAndGet(`abc\r${CSI}X`)).toEqual([' bc'])
+    expect(feedAndGet(`abc\r${CSI}0X`)).toEqual([' bc'])
+  })
+
+  it('stops at the end of the row without extending it or touching the next row', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`abc\ndef${CSI}1A\r${CSI}1C${CSI}80X${CSI}1B\r${CSI}5C!`)
+    expect(vt.getLines()).toEqual(['a', 'def  !'])
+  })
+
+  it('drops the styling of erased cells', () => {
+    const vt = new VirtualTerminal()
+    vt.feed(`${CSI}31mred${CSI}0m ok\r${CSI}3X`)
+    expect(vt.getLines()).toEqual(['    ok'])
+    expect(vt.getLineStyles().size).toBe(0)
+  })
+
+  it('is not counted as unsupported, so confidence stays high', () => {
+    const vt = new VirtualTerminal()
+    vt.feed('x'.repeat(100) + `${CSI}18X`.repeat(20))
+    expect(vt.getParseStats().unsupportedSequenceCount).toBe(0)
+    expect(vt.getParseConfidence()).toBe('high')
+  })
+})

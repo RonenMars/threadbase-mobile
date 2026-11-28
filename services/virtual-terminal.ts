@@ -37,7 +37,7 @@ const DEFAULT_VIEWPORT_ROWS = 40
 // as unsupported — they are expected noise in agent TUIs.
 const IGNORED_CSI = new Set(['h', 'l', 'n', 't', 'q', 'c', 's', 'u', 'p'])
 
-const HANDLED_CSI = new Set(['A', 'B', 'C', 'D', 'G', 'H', 'f', 'J', 'K', 'L', 'M', 'S', 'T', 'r', 'm'])
+const HANDLED_CSI = new Set(['A', 'B', 'C', 'D', 'G', 'H', 'f', 'J', 'K', 'L', 'M', 'S', 'T', 'X', 'r', 'm'])
 
 /** A number is an ANSI palette slot (0-7 normal, 8-15 bright) the theme resolves; a string is `#rrggbb`. */
 export type TerminalColor = number | string
@@ -578,6 +578,17 @@ export class VirtualTerminal {
         }
         this.row += n
         break
+      case 'X': {
+        const line = this.grid[this.row]
+        if (!line) break
+        const erased = this.pen?.bg !== undefined ? { bg: this.pen.bg } : undefined
+        for (let c = this.col; c < this.col + n && c < line.chars.length; c++) {
+          line.chars[c] = ' '
+          line.styles[c] = erased
+        }
+        line.styled = undefined
+        break
+      }
       case 'r':
         break
       case 'm':
